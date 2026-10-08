@@ -209,11 +209,20 @@
   border-radius: 4px 18px 4px 18px;
   box-shadow: var(--shadow-window);
 }
+/* 左の窓は、段の中身（長ければこの中で巻く）と、その直下の「次へ」「戻る」。
+   中身が短ければボタンは中身のすぐ下に来て、長ければ窓の下端に留まる（操作する所から離さない） */
 .lesson-left {
   align-self: start;
   max-height: 100%;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.lesson-left-content {
+  flex: 0 1 auto;
+  min-height: 0;
   overflow-y: auto;
-  padding: 22px 30px 26px;
+  padding: 22px 30px 18px;
 }
 .lesson-right {
   align-self: start;
@@ -777,11 +786,18 @@
   background: var(--c);
   transform: rotate(45deg);
 }
+/* 「次へ」は右端（右の図・端末に近い側）。「戻る」はその左 */
 .lesson-actions {
+  flex: none;
   display: flex;
   align-items: center;
+  justify-content: flex-end;
   gap: 10px;
-  margin-left: auto;
+  padding: 12px 22px 16px 30px;
+  border-top: 1px solid var(--hud-line);
+}
+.lesson-actions:empty {
+  display: none;
 }
 .lesson-next {
   display: flex;
@@ -945,8 +961,11 @@
   .lesson-body {
     padding: 12px 20px;
   }
-  .lesson-left {
-    padding: 16px 22px 18px;
+  .lesson-left-content {
+    padding: 16px 22px 12px;
+  }
+  .lesson-actions {
+    padding: 10px 16px 12px 22px;
   }
   .stage-heading {
     font-size: var(--fs-22);

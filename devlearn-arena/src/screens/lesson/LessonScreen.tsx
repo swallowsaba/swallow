@@ -20,6 +20,7 @@ import { PracticeStage } from './PracticeStage';
 import { QuizStage } from './QuizStage';
 import { ResultStage } from './ResultStage';
 import { SummaryStage } from './SummaryStage';
+import { useStepKeys } from './stepKeys';
 import { TermPopover } from './TermPopover';
 import { UnderstandStage } from './UnderstandStage';
 import './LessonScreen.css';
@@ -28,7 +29,8 @@ import './LessonStages.css';
 /**
  * レッスン画面（docs/ui-design.md 7 章・docs/decisions.md D-07）。都市の施設の中に入る別の画面。
  * 背景にその施設の中の景色を薄く敷き、上の帯に施設名・レッスン名・7 段の進み・「中断して都市へ」。
- * 左に段の中身、右に図（実戦では模擬環境）、下に推奨前提・関連・次に学ぶとよいと「次へ」。
+ * 左に段の中身とその直下に「次へ」「戻る」、右に図（実戦では模擬環境）、下に推奨前提・関連・次に学ぶとよい。
+ * Enter で次へ、Backspace で戻る（文字を打つ欄では、その欄が優先）。
  *
  * どの段でも中断でき、進んだ段は記録に残る（次に開くとその段から）。終わった段は上の帯から戻って見られる。
  */
@@ -103,6 +105,9 @@ export function LessonScreen({ session, lessonId, onExit, onLesson, onGlossary }
     setPop({ id, x, y: below + 300 > root.height ? Math.max(8, r.top - root.top - 306) : below });
   }, []);
 
+  // Enter で次へ・Backspace で戻る（用語の小窓が開いている間は、小窓を先に閉じる）
+  useStepKeys(action, pop === null);
+
   const reached: LessonStage = lp?.status === 'in-progress' ? lp.stage : lp?.status === 'completed' ? 'done' : 'explain';
   const go = (stage: LessonStage): void => {
     session.progress.getState().reach(lessonId, stage);
@@ -175,51 +180,55 @@ export function LessonScreen({ session, lessonId, onExit, onLesson, onGlossary }
 
       <div className="lesson-body" ref={bodyRef} style={{ gridTemplateColumns: `${String(split)}fr 12px ${String(100 - split)}fr` }}>
         <main className="lesson-left">
-          {!authored ? (
-            <section className="stage" data-testid="lesson-preparing">
-              <h2 className="stage-heading">このレッスンは準備中</h2>
-              <p className="stage-text">到達目標: {entry.goal}</p>
-              <p className="stage-text is-sub">中身はまだ書き起こしていない。下の推奨前提・関連・次に学ぶとよいレッスンから、ほかのレッスンを選べる。</p>
-            </section>
-          ) : !lesson || !view ? (
-            <p className="stage-text is-sub">読み込み中</p>
-          ) : view === 'explain' ? (
-            <ExplainStage lesson={lesson} onTerm={onTerm} right={right} action={action} onDone={() => go('understand')} />
-          ) : view === 'understand' ? (
-            <UnderstandStage lesson={lesson} onTerm={onTerm} right={right} action={action} onDone={() => go('quiz')} onBack={() => setView('explain')} />
-          ) : view === 'quiz' ? (
-            <QuizStage
-              lesson={lesson}
-              lp={lp}
-              onTerm={onTerm}
-              right={right}
-              action={action}
-              onAnswer={(quizId, choiceIds, correct) => session.progress.getState().answer({ lessonId, quizId, choiceIds, correct }, nowIso())}
-              onDone={() => go('practice')}
-            />
-          ) : view === 'practice' ? (
-            <PracticeStage
-              key={`${lessonId}:${String(lastAttempt?.at ?? '')}`}
-              practice={lesson.practice}
-              sessionId={lessonId}
-              saved={practiceSessions[lessonId]}
-              onSave={(ps) => session.progress.getState().savePractice(ps)}
-              onFinish={(attempt) => {
-                session.progress.getState().finishPractice(lessonId, attempt, nowIso());
-                go('result');
-              }}
-              onTerm={onTerm}
-              right={right}
-              action={action}
-              onBack={() => setView('quiz')}
-            />
-          ) : view === 'result' ? (
-            <ResultStage lesson={lesson} attempt={lastAttempt} onTerm={onTerm} right={right} action={action} onRetry={() => setView('practice')} onNext={() => go('summary')} />
-          ) : view === 'summary' ? (
-            <SummaryStage lesson={lesson} onTerm={onTerm} onLesson={onLesson} right={right} action={action} onBack={() => setView('result')} onNext={finishLesson} />
-          ) : (
-            <DoneStage lesson={lesson} events={runEvents} skill={skills[lesson.domain]} right={right} action={action} onExit={onExit} />
-          )}
+          <div className="lesson-left-content">
+            {!authored ? (
+              <section className="stage" data-testid="lesson-preparing">
+                <h2 className="stage-heading">このレッスンは準備中</h2>
+                <p className="stage-text">到達目標: {entry.goal}</p>
+                <p className="stage-text is-sub">中身はまだ書き起こしていない。下の推奨前提・関連・次に学ぶとよいレッスンから、ほかのレッスンを選べる。</p>
+              </section>
+            ) : !lesson || !view ? (
+              <p className="stage-text is-sub">読み込み中</p>
+            ) : view === 'explain' ? (
+              <ExplainStage lesson={lesson} onTerm={onTerm} right={right} action={action} onDone={() => go('understand')} />
+            ) : view === 'understand' ? (
+              <UnderstandStage lesson={lesson} onTerm={onTerm} right={right} action={action} onDone={() => go('quiz')} onBack={() => setView('explain')} />
+            ) : view === 'quiz' ? (
+              <QuizStage
+                lesson={lesson}
+                lp={lp}
+                onTerm={onTerm}
+                right={right}
+                action={action}
+                onAnswer={(quizId, choiceIds, correct) => session.progress.getState().answer({ lessonId, quizId, choiceIds, correct }, nowIso())}
+                onDone={() => go('practice')}
+              />
+            ) : view === 'practice' ? (
+              <PracticeStage
+                key={`${lessonId}:${String(lastAttempt?.at ?? '')}`}
+                practice={lesson.practice}
+                sessionId={lessonId}
+                saved={practiceSessions[lessonId]}
+                onSave={(ps) => session.progress.getState().savePractice(ps)}
+                onFinish={(attempt) => {
+                  session.progress.getState().finishPractice(lessonId, attempt, nowIso());
+                  go('result');
+                }}
+                onTerm={onTerm}
+                right={right}
+                action={action}
+                onBack={() => setView('quiz')}
+              />
+            ) : view === 'result' ? (
+              <ResultStage lesson={lesson} attempt={lastAttempt} onTerm={onTerm} right={right} action={action} onRetry={() => setView('practice')} onNext={() => go('summary')} />
+            ) : view === 'summary' ? (
+              <SummaryStage lesson={lesson} onTerm={onTerm} onLesson={onLesson} right={right} action={action} onBack={() => setView('result')} onNext={finishLesson} />
+            ) : (
+              <DoneStage lesson={lesson} events={runEvents} skill={skills[lesson.domain]} right={right} action={action} onExit={onExit} />
+            )}
+          </div>
+          {/* 次へ・戻るは、段の中身の直下（操作する所の近く。docs/ui-design.md 7 章） */}
+          <div className="lesson-actions" ref={setAction} />
         </main>
         <div
           className="lesson-split"
@@ -254,7 +263,6 @@ export function LessonScreen({ session, lessonId, onExit, onLesson, onGlossary }
         <LinkRow title="推奨前提" ids={entry.prerequisites} session={session} onLesson={onLesson} />
         <LinkRow title="関連" ids={entry.related} session={session} onLesson={onLesson} />
         <LinkRow title="次に学ぶとよい" ids={entry.next} session={session} onLesson={onLesson} />
-        <div className="lesson-actions" ref={setAction} />
       </footer>
 
       {pop ? (

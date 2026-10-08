@@ -195,6 +195,57 @@ describe('レッスン画面の枠（docs/ui-design.md 7 章）', () => {
   });
 });
 
+describe('次へ・戻るの位置とキーボード（docs/ui-design.md 4・7 章）', () => {
+  /** 押したキーを、今の焦点のある所（無ければ body）から送る */
+  const press = (k: string, target: Element = document.activeElement ?? document.body): void => act(() => {
+    target.dispatchEvent(new KeyboardEvent('keydown', { key: k, bubbles: true, cancelable: true }));
+  });
+  const page = (host: HTMLElement): string | null | undefined => host.querySelector('[data-testid="explain-title"]')?.textContent;
+
+  it('「次へ」「戻る」は左の段の中身の直下にあり、下の帯には無い', async () => {
+    const { host } = await open(createSession(1), 'found.b.04');
+    next(host);
+    const actions = $(host, '.lesson-actions');
+    expect(actions.closest('.lesson-left')).not.toBeNull();
+    // 直前の兄弟が、段の中身を入れた欄
+    expect(actions.previousElementSibling?.contains($(host, '[data-testid="stage-explain"]'))).toBe(true);
+    expect(actions.querySelector('[data-testid="lesson-next"]')).not.toBeNull();
+    expect(actions.querySelector('[data-testid="lesson-back"]')).not.toBeNull();
+    expect(host.querySelector('.lesson-foot [data-testid="lesson-next"]')).toBeNull();
+  });
+
+  it('Enter で次へ、Backspace で戻る。押せない「次へ」は Enter でも進まない', async () => {
+    const session = createSession(1);
+    const { host } = await open(session, 'found.b.04');
+    const first = page(host);
+    press('Enter');
+    const second = page(host);
+    expect(second).not.toBe(first);
+    press('Backspace');
+    expect(page(host)).toBe(first);
+    // 解説を Enter だけで通すと、理解の段へ（段が進んだことが記録される）
+    for (let i = 0; i < 5; i += 1) press('Enter');
+    expect(host.querySelector('[data-testid="stage-understand"]')).not.toBeNull();
+    expect(stageOf(session, 'found.b.04')).toBe('understand');
+    // 理解の 1 問目はまだ答えていないので、Enter では進まない
+    expect(nextEnabled(host)).toBe(false);
+    const before = host.innerHTML;
+    press('Enter');
+    expect(host.innerHTML).toBe(before);
+  });
+
+  it('文字を打つ欄（端末・入力欄）では Enter と Backspace はその欄のもの。段は動かない', async () => {
+    const { host } = await open(createSession(1), 'found.b.04');
+    const first = page(host);
+    const input = document.createElement('textarea');
+    $(host, '.lesson-right').append(input);
+    input.focus();
+    press('Enter', input);
+    press('Backspace', input);
+    expect(page(host)).toBe(first);
+  });
+});
+
 describe('解説（docs/learning-design.md 3 章）', () => {
   it('何か → なぜ必要か → 何に使うか → どんな場面で使うか → 状況説明 の順に 1 画面ずつ進み、最後に理解の段へ', async () => {
     const session = createSession(1);

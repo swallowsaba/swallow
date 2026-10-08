@@ -16,6 +16,7 @@ import { Icon } from '@/ui/icons/Icon';
 import { nowIso } from '../clock';
 import { backdropOf } from '../lesson/backdrops';
 import { PracticeStage } from '../lesson/PracticeStage';
+import { useStepKeys } from '../lesson/stepKeys';
 import { TermPopover } from '../lesson/TermPopover';
 import { Slot, StepButtons, type OnTerm } from '../lesson/widgets';
 import { missionSession } from '../progressStore';
@@ -53,6 +54,8 @@ export function MissionScreen({ session, missionId, onExit, onBoard, onLesson, o
   const [pop, setPop] = useState<{ id: string; x: number; y: number } | null>(null);
   const [right, setRight] = useState<HTMLElement | null>(null);
   const [action, setAction] = useState<HTMLElement | null>(null);
+  // Enter で次へ・Backspace で戻る（レッスン画面と同じ。docs/ui-design.md 4 章）
+  useStepKeys(action, pop === null);
   const rootRef = useRef<HTMLDivElement>(null);
   const popRef = useRef(pop);
   popRef.current = pop;
@@ -128,45 +131,49 @@ export function MissionScreen({ session, missionId, onExit, onBoard, onLesson, o
 
       <div className="lesson-body" style={{ gridTemplateColumns: view === 'practice' ? '38fr 12px 62fr' : '46fr 12px 54fr' }}>
         <main className="lesson-left">
-          {view === 'practice' ? (
-            <>
-              <section className="mission-brief" aria-label="都市の課題">
-                <p className="stage-text"><Rich text={mission.story} onTerm={onTerm} /></p>
-              </section>
-              <PracticeStage
-                key={`${mission.id}:${String(run)}`}
-                practice={mission.practice}
-                sessionId={missionSession(mission.id)}
-                saved={saved}
-                onSave={(ps) => session.progress.getState().savePractice(ps)}
-                onFinish={(attempt) => {
-                  const outcome = session.progress.getState().finishMission(mission.id, attempt, nowIso());
-                  setLast({ attempt: { ...attempt, at: nowIso() }, outcome });
-                  setView('result');
-                  setPop(null);
-                }}
+          <div className="lesson-left-content">
+            {view === 'practice' ? (
+              <>
+                <section className="mission-brief" aria-label="都市の課題">
+                  <p className="stage-text"><Rich text={mission.story} onTerm={onTerm} /></p>
+                </section>
+                <PracticeStage
+                  key={`${mission.id}:${String(run)}`}
+                  practice={mission.practice}
+                  sessionId={missionSession(mission.id)}
+                  saved={saved}
+                  onSave={(ps) => session.progress.getState().savePractice(ps)}
+                  onFinish={(attempt) => {
+                    const outcome = session.progress.getState().finishMission(mission.id, attempt, nowIso());
+                    setLast({ attempt: { ...attempt, at: nowIso() }, outcome });
+                    setView('result');
+                    setPop(null);
+                  }}
+                  onTerm={onTerm}
+                  right={right}
+                  action={action}
+                  onBack={onBoard}
+                  backLabel="依頼の一覧へ"
+                />
+              </>
+            ) : last ? (
+              <MissionResult
+                mission={mission}
+                attempt={last.attempt}
+                outcome={last.outcome}
                 onTerm={onTerm}
                 right={right}
                 action={action}
-                onBack={onBoard}
-                backLabel="依頼の一覧へ"
+                onRetry={() => {
+                  setRun((n) => n + 1);
+                  setView('practice');
+                }}
+                onExit={onExit}
               />
-            </>
-          ) : last ? (
-            <MissionResult
-              mission={mission}
-              attempt={last.attempt}
-              outcome={last.outcome}
-              onTerm={onTerm}
-              right={right}
-              action={action}
-              onRetry={() => {
-                setRun((n) => n + 1);
-                setView('practice');
-              }}
-              onExit={onExit}
-            />
-          ) : null}
+            ) : null}
+          </div>
+          {/* 次へ・戻るは、段の中身の直下（docs/ui-design.md 7 章） */}
+          <div className="lesson-actions" ref={setAction} />
         </main>
         <div className="lesson-split" aria-hidden="true" />
         <aside className={`lesson-right${view === 'practice' ? ' is-console' : ''}`} ref={setRight} aria-label={view === 'practice' ? '仮想端末' : '報酬'} />
@@ -188,7 +195,6 @@ export function MissionScreen({ session, missionId, onExit, onBoard, onLesson, o
             );
           })}
         </section>
-        <div className="lesson-actions" ref={setAction} />
       </footer>
 
       {pop ? <TermPopover termId={pop.id} at={pop} onTerm={(id) => setPop({ ...pop, id })} onClose={() => setPop(null)} onGlossary={onGlossary} /> : null}
