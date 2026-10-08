@@ -1,0 +1,35 @@
+{
+  "domain": "devops",
+  "terms": [
+    {
+      "id": "devops",
+      "word": "DevOps",
+      "reading": "デブオプス",
+      "plain": "作る人（開発・Dev）と動かし続ける人（運用・Ops）をつなぎ、変更を速く安全に届け続ける考え方と進め方。",
+      "why": "2 つのチームが分かれていると、手渡しの待ちで遅れ、障害の原因を押し付け合う。目標と流れを共にすると、速さと安定を両立できる。",
+      "related": [
+        "ci",
+        "continuous-delivery",
+        "monitoring"
+      ],
+      "lessons": [
+        "devops.b.01"
+      ]
+    },
+    {
+      "id": "automation",
+      "word": "自動化",
+      "reading": "じどうか",
+      "plain": "繰り返しの手作業を、スクリプトやパイプラインなどの機械に任せること。",
+      "why": "人は疲れて誤り、手順を飛ばす。機械は決めた手順を何度でも同じように行う。浮いた時間を、判断の要る仕事に回せる。",
+      "related": [
+        "script",
+        "pipeline",
+        "devops"
+      ],
+      "lessons": [
+        "devops.b.02"
+      ]
+    }
+  ]
+}
