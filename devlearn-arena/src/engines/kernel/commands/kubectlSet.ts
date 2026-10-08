@@ -58,7 +58,8 @@ function updateContainers(
     spec: { ...deployment.spec, template: { ...deployment.spec.template, containers } },
     metadata: {
       ...deployment.metadata,
-      annotations: { ...deployment.metadata.annotations, 'kubernetes.io/change-cause': note },
+      // 本物の kubectl は変えた理由（change-cause）を書かない。任務の練習場だけ、読みやすさのために書く
+      annotations: cluster.server === undefined ? { ...deployment.metadata.annotations, 'kubernetes.io/change-cause': note } : deployment.metadata.annotations,
       resourceVersion: deployment.metadata.resourceVersion + 1,
     },
   });

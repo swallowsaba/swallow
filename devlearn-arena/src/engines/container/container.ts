@@ -199,6 +199,14 @@ const NGINX_FILES: Readonly<Record<string, string>> = {
 /** 市の売店の画面（city-shop:1.0） */
 const SHOP_PAGE = '<!DOCTYPE html>\n<html><head><title>市の売店</title></head><body><h1>市の売店</h1><p>図書館の本・公園の地図・記念の品</p></body></html>\n';
 
+/** 売店の次の版の画面（city-shop:1.1） */
+const SHOP_PAGE_11 = '<!DOCTYPE html>\n<html><head><title>市の売店</title></head><body><h1>市の売店</h1><p>図書館の本・公園の地図・記念の品・季節の品</p></body></html>\n';
+
+/** nginx の誤りの画面（本物の形。版を名乗る） */
+const nginxError = (status: string): string => `<html>\r\n<head><title>${status}</title></head>\r\n<body>\r\n<center><h1>${status}</h1></center>\r\n<hr><center>nginx/1.27.2</center>\r\n</body>\r\n</html>\r\n`;
+const NGINX_403 = nginxError('403 Forbidden');
+const NGINX_404 = nginxError('404 Not Found');
+
 /** 模擬のレジストリに置いてあるイメージ（docs/learning-design.md 6 章: 本物は取りに行かない） */
 export const REGISTRY: readonly Image[] = [
   {
@@ -217,13 +225,36 @@ export const REGISTRY: readonly Image[] = [
     procs: [{ command: 'node /app/report.js', memory: 182.4 }],
   },
   {
-    // 市の売店の画面（nginx が置いた HTML を返す。k8s.i.04）
+    // 市の売店の画面（nginx が置いた HTML を返す。k8s.i.04）。動き出すとすぐ待ち受ける（確かめは本物の httpGet で見る）
     ref: 'city-shop:1.0', id: '2a7c5e91f3d8', size: '43.6MB', command: "/docker-entrypoint.sh nginx -g 'daemon off;'",
     serves: {
-      port: 80, body: SHOP_PAGE,
+      port: 80, body: SHOP_PAGE, warmup: 0,
       routes: { '/': { status: 200, body: SHOP_PAGE }, '/index.html': { status: 200, body: SHOP_PAGE } },
     },
     startLog: ['/docker-entrypoint.sh: Configuration complete; ready for start up', 'nginx: start worker processes'],
+  },
+  {
+    // 売店の次の版（季節の品を足した。k8s.i.08）
+    ref: 'city-shop:1.1', id: '7b3f0c9e5a21', size: '43.7MB', command: "/docker-entrypoint.sh nginx -g 'daemon off;'",
+    serves: {
+      port: 80, body: SHOP_PAGE_11, warmup: 0,
+      routes: { '/': { status: 200, body: SHOP_PAGE_11 }, '/index.html': { status: 200, body: SHOP_PAGE_11 } },
+    },
+    startLog: ['/docker-entrypoint.sh: Configuration complete; ready for start up', 'nginx: start worker processes'],
+  },
+  {
+    // 壊れた版（k8s.i.08）。画面の作り方を変えた時に HTML を置く場所を誤り、/usr/share/nginx/html に index.html が無い。
+    // nginx は動くが、/ には本物と同じく 403（ディレクトリの一覧を禁じている）で答える
+    ref: 'city-shop:1.2', id: 'e05d8a4b1c76', size: '43.7MB', command: "/docker-entrypoint.sh nginx -g 'daemon off;'",
+    serves: {
+      port: 80, body: '', warmup: 0,
+      routes: { '/': { status: 403, body: NGINX_403 }, '/index.html': { status: 404, body: NGINX_404 } },
+    },
+    startLog: [
+      '/docker-entrypoint.sh: Configuration complete; ready for start up',
+      'nginx: start worker processes',
+      '[error] 29#29: *1 directory index of "/usr/share/nginx/html/" is forbidden, client: 10.244.1.1, server: localhost, request: "GET / HTTP/1.1"',
+    ],
   },
   {
     // 市の施設の空きを答える API（Node.js の Express。/api の下で答える。k8s.i.04）

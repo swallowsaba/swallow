@@ -9,6 +9,13 @@ import type {
   Secret, Service, ServiceAccount, StatefulSet, StorageClass,
 } from './types';
 
+/** 入れ替えの幅（数か「25%」の形）。書かなければ本物の既定の 25% */
+function intOrPercent(value: unknown): number | string {
+  if (typeof value === 'number') return value;
+  if (typeof value === 'string' && /^\d+%$/.test(value.trim())) return value.trim();
+  return '25%';
+}
+
 /** kind ごとの組み立て。追加するときはここに1つ足す */
 export type Builder = (
   name: string,
@@ -38,8 +45,8 @@ export const BUILDERS: Record<string, Builder> = {
     const built = deployment(name, asNumber(spec['replicas'], 1), template.containers, {
       namespace,
       labels: template.labels,
-      maxSurge: asNumber(rolling['maxSurge'], 1),
-      maxUnavailable: asNumber(rolling['maxUnavailable'], 1),
+      maxSurge: intOrPercent(rolling['maxSurge']),
+      maxUnavailable: intOrPercent(rolling['maxUnavailable']),
     });
     return {
       ...built,

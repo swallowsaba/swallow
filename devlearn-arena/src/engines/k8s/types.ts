@@ -168,12 +168,18 @@ export interface Deployment {
       /** 作る Pod に付けるボリューム（PVC・ConfigMap など）。書かなければ無い */
       volumes?: PodVolume[];
     };
-    strategy: { maxSurge: number; maxUnavailable: number };
+    /** 入れ替えの幅。数か「25%」の形（本物の既定はどちらも 25%）。割合は desired に掛け、増やす側は切り上げ・減らす側は切り捨て */
+    strategy: { maxSurge: number | string; maxUnavailable: number | string };
   };
   status: {
     replicas: number;
     readyReplicas: number;
     updatedReplicas: number;
+    /**
+     * 最後に入れ替えが進んだ時刻（tick）と、その時の進みの印。本物の Progressing の条件の lastUpdateTime に当たる。
+     * 進まないまま progressDeadlineSeconds（600 秒）を過ぎると、期限を過ぎた（ProgressDeadlineExceeded）とする
+     */
+    progress?: { tick: number; mark: string };
   };
 }
 
@@ -201,11 +207,15 @@ export interface Service {
 }
 
 export interface EventRecord {
+  /** 最後に起きた時刻 */
   tick: number;
   type: 'Normal' | 'Warning';
   reason: string;
   object: string;
   message: string;
+  /** 同じ物・同じ理由・同じ文の繰り返しをまとめた回数と、最初に起きた時刻（本物の Event の count と firstTimestamp。1 回なら無い） */
+  count?: number;
+  first?: number;
 }
 
 import type { ControlPlane, Machine } from './bootstrap';

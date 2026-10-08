@@ -352,7 +352,8 @@ const coreSubcommands: Record<string, KubectlHandler> = {
         spec: { ...deployment.spec, template: { ...deployment.spec.template, containers } },
         metadata: {
           ...deployment.metadata,
-          annotations: { ...deployment.metadata.annotations, 'kubernetes.io/change-cause': `image ${image}` },
+          // 本物の kubectl は変えた理由（change-cause）を書かない（履歴は <none>）。任務の練習場だけ、読みやすさのために書く
+          annotations: cluster.server === undefined ? { ...deployment.metadata.annotations, 'kubernetes.io/change-cause': `image ${image}` } : deployment.metadata.annotations,
           resourceVersion: deployment.metadata.resourceVersion + 1,
         },
       });

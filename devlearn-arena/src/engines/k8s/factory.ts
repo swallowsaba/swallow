@@ -138,7 +138,7 @@ export function deployment(
   name: string,
   replicas: number,
   containers: ContainerSpec[],
-  options: { namespace?: string; labels?: Record<string, string>; maxSurge?: number; maxUnavailable?: number } = {},
+  options: { namespace?: string; labels?: Record<string, string>; maxSurge?: number | string; maxUnavailable?: number | string } = {},
 ): Deployment {
   const labels = options.labels ?? { app: name };
   return {
@@ -148,7 +148,7 @@ export function deployment(
       replicas,
       selector: labels,
       template: { labels, containers, nodeSelector: {} },
-      strategy: { maxSurge: options.maxSurge ?? 1, maxUnavailable: options.maxUnavailable ?? 1 },
+      strategy: { maxSurge: options.maxSurge ?? '25%', maxUnavailable: options.maxUnavailable ?? '25%' },
     },
     status: { replicas: 0, readyReplicas: 0, updatedReplicas: 0 },
   };

@@ -181,8 +181,9 @@ describe('PV と PVC（DB のデータの置き場所）', () => {
 
   it('置き場所の決まらない Pod には exec できない（本物の断り方）', () => {
     const c = console_();
+    // 入れ替えの途中なら、本物と同じく動いている古い Pod に入る。置き場所の決まらない Pod だけになるよう、作り直す
+    c.run('kubectl delete deployment db');
     c.apply(PVC('10Gi') + DB('/var/lib/postgresql/data'));
-    c.run('kubectl delete pod -l app=db');
     c.run('kubectl get pods');
     expect(c.run(PSQL('SELECT count(*) FROM reservations')).err).toMatch(/^Error from server \(BadRequest\): pod db-\S+ does not have a host assigned\n$/);
   });

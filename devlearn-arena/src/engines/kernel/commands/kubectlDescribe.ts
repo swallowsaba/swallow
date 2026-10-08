@@ -1,6 +1,6 @@
 import { nodeCondition } from '@/engines/k8s/bootstrap';
-import { realNames, templateHash } from '@/engines/k8s/controllers';
-import { REVISION_KEY } from '@/engines/k8s/rollout';
+import { fenceposts, realNames, templateHash } from '@/engines/k8s/controllers';
+import { deadlineExceeded, REVISION_KEY, rolloutComplete } from '@/engines/k8s/rollout';
 import { isReady } from '@/engines/k8s/kubelet';
 import type {
   ClusterState, ContainerSpec, ContainerStatus, Deployment, HorizontalPodAutoscaler, Ingress, Node, PersistentVolume, PersistentVolumeClaim, Pod, PodVolume, Probe, ReplicaSet, Service,
@@ -128,8 +128,8 @@ export function eventsOf(cluster: ClusterState, object: string, w: number): stri
     const same = groups.find((g) => g.type === e.type && g.reason === e.reason && g.message === e.message);
     if (same) {
       same.last = e.tick;
-      same.count += 1;
-    } else groups.push({ type: e.type, reason: e.reason, message: e.message, first: e.tick, last: e.tick, count: 1 });
+      same.count += e.count ?? 1;
+    } else groups.push({ type: e.type, reason: e.reason, message: e.message, first: e.first ?? e.tick, last: e.tick, count: e.count ?? 1 });
   }
   const shown = groups.sort((a, b) => a.last - b.last).slice(-12);
   if (shown.length === 0) return [`${'Events:'.padEnd(w)}<none>`];
@@ -245,21 +245,60 @@ function envBlock(c: ContainerSpec, indent: string): string[] {
 
 const labelText = (labels: Record<string, string>): string[] => Object.entries(labels).map(([k, v]) => `${k}=${v}`);
 
+/** 雛形のコンテナの、書いた量（Limits・Requests）と確かめ（Liveness・Readiness・Startup）の欄。本物と同じく書いた物だけ */
+function templateExtras(c: ContainerSpec): [string, string][] {
+  const rows: [string, string][] = [];
+  for (const [title, q] of [['Limits', c.limits], ['Requests', c.requests]] as const) {
+    const shown: [string, string][] = [];
+    if (q !== null && q.cpu !== 0) shown.push(['  cpu', formatCpu(q.cpu)]);
+    if (q !== null && q.memory !== 0) shown.push(['  memory', formatMemory(q.memory)]);
+    if (shown.length > 0) rows.push([title, ''], ...shown);
+  }
+  if (c.livenessProbe) rows.push(['Liveness', probeLine(c.livenessProbe, c)]);
+  if (c.readinessProbe) rows.push(['Readiness', probeLine(c.readinessProbe, c)]);
+  if (c.startupProbe) rows.push(['Startup', probeLine(c.startupProbe, c)]);
+  return rows;
+}
+
+const portText = (c: ContainerSpec): [string, string][] => [
+  ['Port', c.ports.length === 0 ? '<none>' : c.ports.map((p) => `${String(p)}/TCP`).join(', ')],
+  ['Host Port', c.ports.length === 0 ? '<none>' : c.ports.map(() => '0/TCP').join(', ')],
+];
+
 /** Pod の雛形（Deployment・ReplicaSet の Pod Template） */
 function podTemplate(template: Deployment['spec']['template']): string[] {
   const lines = ['Pod Template:', ...multi('  Labels', labelText(template.labels), 11), '  Containers:'];
   for (const c of template.containers) {
-    lines.push(`   ${c.name}:`, ...fields([
-      ['Image', c.image],
-      ['Port', c.ports.length === 0 ? '<none>' : c.ports.map((p) => `${String(p)}/TCP`).join(', ')],
-      ['Host Port', c.ports.length === 0 ? '<none>' : c.ports.map(() => '0/TCP').join(', ')],
-    ], '    '), ...envBlock(c, '    '), `    Mounts:  ${c.volumeMounts.length === 0 ? '<none>' : c.volumeMounts.map((m) => `${m.mountPath} from ${m.name}`).join(', ')}`);
+    lines.push(`   ${c.name}:`, ...fields([['Image', c.image], ...portText(c), ...templateExtras(c)], '    '),
+      ...envBlock(c, '    '), `    Mounts:  ${c.volumeMounts.length === 0 ? '<none>' : c.volumeMounts.map((m) => `${m.mountPath} from ${m.name}`).join(', ')}`);
   }
   const volumes = template.volumes ?? [];
   if (volumes.length === 0) lines.push('  Volumes:         <none>');
   else lines.push('  Volumes:', ...volumeLines(volumes, '   '));
   lines.push(...fields([['Node-Selectors', labelText(template.nodeSelector).join(',') || '<none>'], ['Tolerations', '<none>']], '  '));
   return lines;
+}
+
+/**
+ * rollout history --revision=N の Pod の雛形。本物は describe と同じ中身を、頭をそろえずにタブで区切って出す
+ * （端末ではタブの位置で揃って見える）。最後は改行で終わる
+ */
+export function historyTemplate(template: Deployment['spec']['template']): string {
+  const labels = labelText(template.labels);
+  const lines = ['Pod Template:', ...labels.map((l, i) => (i === 0 ? `  Labels:\t${l}` : `  \t${l}`)), '  Containers:'];
+  for (const c of template.containers) {
+    const rows: [string, string][] = [['Image', c.image], ...portText(c), ...templateExtras(c)];
+    lines.push(`   ${c.name}:`, ...rows.map(([k, v]) => (v === '' ? `    ${k}:` : `    ${k}:\t${v}`)));
+    const env = Object.entries(c.env);
+    if (env.length === 0 && c.envFrom.length === 0) lines.push('    Environment:\t<none>');
+    else lines.push(...envBlock(c, '    ').map((l) => l.replace(/: {2}/, ':\t')));
+    lines.push(c.volumeMounts.length === 0 ? '    Mounts:\t<none>' : '    Mounts:', ...c.volumeMounts.map((m) => `      ${m.mountPath} from ${m.name}`));
+  }
+  const volumes = template.volumes ?? [];
+  if (volumes.length === 0) lines.push('  Volumes:\t<none>');
+  else lines.push('  Volumes:', ...volumeLines(volumes, '   '));
+  lines.push(`  Node-Selectors:\t${labelText(template.nodeSelector).join(',') || '<none>'}`, '  Tolerations:\t<none>');
+  return `${lines.join('\n')}\n`;
 }
 
 /** その持ち主の ReplicaSet（新しい世代から） */
@@ -286,6 +325,7 @@ export function describeDeployment(cluster: ClusterState, d: Deployment): string
   const olds = sets.filter((rs) => rs !== current && rs.spec.replicas > 0);
   const annotations = Object.entries(d.metadata.annotations).map(([k, v]) => `${k}: ${v}`);
   const revision = current?.metadata.annotations[REVISION_KEY];
+  const minimumAvailable = available >= d.spec.replicas - fenceposts(d).unavailable;
   const lines = [
     ...multi('Name', [d.metadata.name], w),
     ...multi('Namespace', [d.metadata.namespace], w),
@@ -299,8 +339,9 @@ export function describeDeployment(cluster: ClusterState, d: Deployment): string
     ...podTemplate(d.spec.template),
     'Conditions:',
     ...grid(['Type', 'Status', 'Reason'], [
-      ['Available', available >= d.spec.replicas - d.spec.strategy.maxUnavailable ? 'True' : 'False', available >= d.spec.replicas - d.spec.strategy.maxUnavailable ? 'MinimumReplicasAvailable' : 'MinimumReplicasUnavailable'],
-      ['Progressing', 'True', updated >= d.spec.replicas && olds.length === 0 ? 'NewReplicaSetAvailable' : 'ReplicaSetUpdated'],
+      ['Available', minimumAvailable ? 'True' : 'False', minimumAvailable ? 'MinimumReplicasAvailable' : 'MinimumReplicasUnavailable'],
+      deadlineExceeded(cluster, d) ? ['Progressing', 'False', 'ProgressDeadlineExceeded']
+        : ['Progressing', 'True', rolloutComplete(cluster, d) ? 'NewReplicaSetAvailable' : 'ReplicaSetUpdated'],
     ]),
     ...multi('OldReplicaSets', olds.map(created), 17),
     ...multi('NewReplicaSet', current ? [created(current)] : [], 17),

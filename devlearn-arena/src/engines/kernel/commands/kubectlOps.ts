@@ -4,7 +4,7 @@ import { advanceCluster, matches } from '@/engines/k8s/controllers';
 import { isReady, tickPods } from '@/engines/k8s/kubelet';
 import { isParseError, parseManifests } from '@/engines/k8s/manifest';
 import { canI } from '@/engines/k8s/policy';
-import { revisionsOf, rolloutStatus, rolloutUndo } from '@/engines/k8s/rollout';
+import { PROGRESS_DEADLINE, revisionsOf, rolloutStatus, rolloutUndo } from '@/engines/k8s/rollout';
 import { psql, TABLES_FILE } from '@/engines/container/pg';
 import { appLog } from '@/engines/k8s/apps';
 import { ingressError } from '@/engines/k8s/ingress';
@@ -17,6 +17,7 @@ import type { CommandResult } from '../registry';
 import { resolve } from '../path';
 import { stat } from '../vfs';
 import { fromLines } from './args';
+import { historyTemplate } from './kubectlDescribe';
 import { missingNamespace } from './kubectlNamespace';
 import {
   CLUSTER_SCOPED, FIELD_OF, KINDS, idFor, listOf, matchesSelector, notFound, podFor, table, type KubectlHandler,
@@ -206,27 +207,24 @@ export function applyManifestText(cluster: ClusterState, text: string, source = 
   return { cluster: next, lines, failures };
 }
 
-/** 入れ替えの期限（本物の progressDeadlineSeconds の既定。秒 = tick） */
-const PROGRESS_DEADLINE = 600;
-
 /**
  * rollout status（クラスタを操作する機械）: 本物と同じく、入れ替えが終わるまで時間を進めて待ち、進みが変わるたびに 1 行足す。
- * 期限までに終わらなければ、期限を過ぎたと言って 1 で終わる
+ * 最後に進んでから期限（600 秒）を過ぎれば、期限を過ぎたと言って 1 で終わる
  */
 function waitRollout(cluster: ClusterState, id: string): CommandResult {
   const lines: string[] = [];
   let next = cluster;
-  for (let i = 0; i <= PROGRESS_DEADLINE; i += 1) {
+  for (let i = 0; i <= PROGRESS_DEADLINE * 3; i += 1) {
     const deployment = next.deployments.get(id);
     if (deployment === undefined) break;
     const status = rolloutStatus(next, deployment);
+    if (status.failed) return { stdout: fromLines(lines), stderr: `error: ${status.message}\n`, stderrLast: true, code: 1, patch: { cluster: next } };
     if (lines[lines.length - 1] !== status.message) lines.push(status.message);
     // 終わった時は、Deployment の数の記録（READY の欄）も揃えてから返す（本物はその記録を見て終わりを知る）
     if (status.done) return { stdout: fromLines(lines), patch: { cluster: advanceCluster(next, tickPods) } };
     next = advanceCluster(next, tickPods);
   }
-  const name = id.slice(id.indexOf('/') + 1);
-  return { stdout: fromLines(lines), stderr: `error: deployment "${name}" exceeded its progress deadline\n`, stderrLast: true, code: 1, patch: { cluster: next } };
+  return { stdout: fromLines(lines), patch: { cluster: next } };
 }
 
 /** 1 つの Pod のログ（行）か、まだ動いたことが無いと断る文 */
@@ -371,8 +369,22 @@ export const opsSubcommands: Record<string, KubectlHandler> = {
     }
 
     if (action === 'history') {
+      const revisions = revisionsOf(cluster, deployment);
+      const asked = rest.map((a) => /^--revision=(\d+)$/.exec(a)?.[1]).find((v) => v !== undefined);
+      // 本物の形: 1 行目は「種類/名前 」（後ろに空白）、表の後に空の行。--revision=N はその世代の Pod の雛形（タブで区切る）
+      if (cluster.server !== undefined) {
+        if (asked !== undefined) {
+          const revision = revisions.find((r) => r.revision === Number(asked));
+          if (revision === undefined) return { stderr: 'error: unable to find the specified revision\n', code: 1 };
+          return { stdout: `deployment.apps/${target} with revision #${asked}\n${historyTemplate(revision.replicaSet.spec.template)}\n` };
+        }
+        // 本物の表（tabwriter の欄の間は 2 字）
+        const width = Math.max(8, ...revisions.map((r) => String(r.revision).length)) + 2;
+        const rows = [['REVISION', 'CHANGE-CAUSE'], ...revisions.map((r) => [String(r.revision), r.changeCause])].map(([n = '', c = '']) => `${n.padEnd(width)}${c}`);
+        return { stdout: `deployment.apps/${target} \n${fromLines(rows)}\n` };
+      }
       const rows = [['REVISION', 'CHANGE-CAUSE', 'IMAGE']];
-      for (const revision of revisionsOf(cluster, deployment)) {
+      for (const revision of revisions) {
         rows.push([String(revision.revision), revision.changeCause, revision.image]);
       }
       return { stdout: `deployment.apps/${target}\n${table(rows)}` };

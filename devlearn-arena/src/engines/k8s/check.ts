@@ -17,6 +17,7 @@ import { key, type ClusterState, type Deployment, type Pod } from './types';
  *   deployment/db rows.reservations=4 && pvc/db-data status=Bound
  *   deployment/guide readyUpdated=2 restarts>=1 early=0
  *   hpa/web min=2 max=10 target=50
+ *   deployment/web image=city-shop:1.1 readyUpdated=4 tried=city-shop:1.2
  * 比べ方は >= <= =（status・env・from は = で語を比べる）。比べ方を書かない欄は、値があるかどうか。区画を省けば default。` && ` で別の資源の条件をつなぐ
  */
 
@@ -40,7 +41,7 @@ function exists(cluster: ClusterState, kind: Kind, ns: string, name: string): bo
   return kind === 'deployment' ? cluster.deployments.has(id) : kind === 'service' ? cluster.services.has(id) : cluster.pods.has(id);
 }
 
-function fieldOf(cluster: ClusterState, kind: Kind, ns: string, name: string, field: string): number | string | undefined {
+function fieldOf(cluster: ClusterState, kind: Kind, ns: string, name: string, field: string): number | string | readonly string[] | undefined {
   const id = key(ns, name);
   if (kind === 'pod') {
     const p = cluster.pods.get(id);
@@ -55,6 +56,13 @@ function fieldOf(cluster: ClusterState, kind: Kind, ns: string, name: string, fi
     if (field === 'replicas') return d.spec.replicas;
     if (field === 'readyReplicas') return d.status.readyReplicas;
     if (field === 'updatedReplicas') return d.status.updatedReplicas;
+    // image: 今の設計図の最初のコンテナのイメージ。tried: その Deployment の世代（残っている ReplicaSet）が使ったイメージの全て（= で、その中にあるか）
+    if (field === 'image') return d.spec.template.containers[0]?.image;
+    if (field === 'tried') {
+      return [...cluster.replicaSets.values()]
+        .filter((rs) => rs.metadata.namespace === ns && rs.metadata.ownerReferences.some((o) => o.kind === 'Deployment' && o.name === name))
+        .flatMap((rs) => rs.spec.template.containers.map((c) => c.image));
+    }
     // made: その Deployment の ReplicaSet が作った Pod の数（消された Pod を作り直したことを確かめる）
     // env.名前: Ready の Pod の全てが持つ、その環境変数の値（動かした時に引いた値。Pod ごとに違えば <mixed>）。
     // 今の設計図の Pod が 1 つも動いていなければ無い（入れ替えの途中で、古い Pod だけが同じ値を持っている時に満たさない）
@@ -135,6 +143,10 @@ export function clusterHolds(cluster: ClusterState | null, expr: string): boolea
     if (v === undefined) return false;
     // 比べ方を書かない欄は、値があるかどうか
     if (!f[2] || !f[3]) continue;
+    if (typeof v === 'object') {
+      if (f[2] !== '=' || !v.includes(f[3])) return false;
+      continue;
+    }
     if (typeof v === 'string' || !/^\d+$/.test(f[3])) {
       if (f[2] !== '=' || String(v) !== f[3]) return false;
       continue;

@@ -145,12 +145,14 @@ const deploymentSchema = z.object({
     replicas: z.number().int(),
     selector: stringMap,
     template: templateSchema,
-    strategy: z.object({ maxSurge: z.number().int(), maxUnavailable: z.number().int() }),
+    // 入れ替えの幅は、数か「25%」の形
+    strategy: z.object({ maxSurge: z.union([z.number().int(), z.string()]), maxUnavailable: z.union([z.number().int(), z.string()]) }),
   }),
   status: z.object({
     replicas: z.number().int(),
     readyReplicas: z.number().int(),
     updatedReplicas: z.number().int(),
+    progress: z.object({ tick: z.number().int(), mark: z.string() }).optional(),
   }),
 });
 
@@ -415,6 +417,8 @@ export const clusterSnapshotSchema = z.object({
       reason: z.string(),
       object: z.string(),
       message: z.string(),
+      count: z.number().int().optional(),
+      first: z.number().int().optional(),
     }),
   ),
   configMaps: entries(configMapSchema),

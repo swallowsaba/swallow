@@ -1,6 +1,6 @@
 import { pod as makePod } from './factory';
 import { isReady } from './kubelet';
-import { CHANGE_CAUSE_KEY, REVISION_KEY } from './rollout';
+import { CHANGE_CAUSE_KEY, REVISION_HISTORY_KEY, REVISION_KEY } from './rollout';
 import { syncIngresses } from './ingress';
 import { bindClaims } from './storage';
 import { reconcileWorkloads } from './workloads';
@@ -38,6 +38,18 @@ export function templateHash(template: Deployment['spec']['template'], real = fa
   // 本物の形: 数を 10 進の字にし、1 字ずつ安全な字（SAFE）に置き換える（7c5ddbdf54 のような形）
   if (real) return [...String(hash)].map((d) => SAFE[d.charCodeAt(0) % SAFE.length] ?? 'b').join('');
   return hash.toString(36).slice(0, 6);
+}
+
+/**
+ * 入れ替えの幅を数にする（本物の ResolveFenceposts）。割合は desired に掛け、増やす側は切り上げ・減らす側は切り捨て。
+ * 両方が 0 になる時は、本物と同じく減らす側を 1 にする（入れ替えが進まなくならないように）
+ */
+export function fenceposts(d: Deployment): { surge: number; unavailable: number } {
+  const of = (v: number | string, round: (n: number) => number): number =>
+    typeof v === 'number' ? v : round((Number.parseInt(v, 10) * d.spec.replicas) / 100);
+  const surge = of(d.spec.strategy.maxSurge, Math.ceil);
+  const unavailable = of(d.spec.strategy.maxUnavailable, Math.floor);
+  return surge === 0 && unavailable === 0 ? { surge, unavailable: 1 } : { surge, unavailable };
 }
 
 /** 本物の Kubernetes が名前の印に使う字（読み違えやすい母音・0・1・3 を除いた 27 字） */
@@ -101,18 +113,17 @@ export function reconcile(state: ClusterState): ReconcileResult {
     const hash = templateHash(deployment.spec.template, real);
     const rsName = `${deployment.metadata.name}-${hash}`;
     const rsId = key(deployment.metadata.namespace, rsName);
-
-    const mine = [...replicaSets.values()].filter((rs) =>
+    const ownedBy = (rs: ReplicaSet): boolean =>
       rs.metadata.namespace === deployment.metadata.namespace &&
-      rs.metadata.ownerReferences.some(
-        (o) => o.kind === 'Deployment' && o.name === deployment.metadata.name,
-      ),
-    );
+      rs.metadata.ownerReferences.some((o) => o.kind === 'Deployment' && o.name === deployment.metadata.name);
+    const mine = (): ReplicaSet[] => [...replicaSets.values()].filter(ownedBy);
+    const revisionOf = (rs: ReplicaSet): number => Number(rs.metadata.annotations[REVISION_KEY] ?? '0');
+    const maxRevision = mine().reduce((max, rs) => Math.max(max, revisionOf(rs)), 0);
+    const cause = deployment.metadata.annotations[CHANGE_CAUSE_KEY];
 
-    if (!replicaSets.has(rsId)) {
+    const existing = replicaSets.get(rsId);
+    if (existing === undefined) {
       // 世代番号は、その Deployment の既存 ReplicaSet の最大値 + 1
-      const revision =
-        mine.reduce((max, rs) => Math.max(max, Number(rs.metadata.annotations[REVISION_KEY] ?? '0')), 0) + 1;
       const created: ReplicaSet = {
         kind: 'ReplicaSet',
         metadata: {
@@ -120,10 +131,10 @@ export function reconcile(state: ClusterState): ReconcileResult {
           namespace: deployment.metadata.namespace,
           labels: { ...deployment.spec.template.labels, 'pod-template-hash': hash },
           annotations: {
-            [REVISION_KEY]: String(revision),
-            [CHANGE_CAUSE_KEY]:
-              deployment.metadata.annotations[CHANGE_CAUSE_KEY] ??
-              `image ${deployment.spec.template.containers[0]?.image ?? ''}`,
+            [REVISION_KEY]: String(maxRevision + 1),
+            // 本物は Deployment の注釈（change-cause）を写す。書いていなければ無い（履歴は <none>）。
+            // 本物の形でないクラスタ（任務の練習場）は、読みやすさのためにイメージを書く
+            ...(cause !== undefined ? { [CHANGE_CAUSE_KEY]: cause } : real ? {} : { [CHANGE_CAUSE_KEY]: `image ${deployment.spec.template.containers[0]?.image ?? ''}` }),
           },
           resourceVersion: 1,
           createdAt: tick,
@@ -148,71 +159,80 @@ export function reconcile(state: ClusterState): ReconcileResult {
         object: `deployment/${deployment.metadata.name}`,
         message: `Created new replica set ${rsName}`,
       });
+    } else if (revisionOf(existing) < maxRevision) {
+      // 前の世代の ReplicaSet を使い直す（rollout undo・前と同じ設計図に戻した）。本物と同じく番号を最大 + 1 に付け替え、
+      // 前の番号を revision-history に残す（履歴から前の番号は消える）
+      const history = [existing.metadata.annotations[REVISION_HISTORY_KEY], String(revisionOf(existing))].filter((v) => v !== undefined && v !== '').join(',');
+      replicaSets.set(rsId, {
+        ...existing,
+        metadata: {
+          ...existing.metadata,
+          annotations: {
+            ...existing.metadata.annotations,
+            ...(cause !== undefined ? { [CHANGE_CAUSE_KEY]: cause } : {}),
+            [REVISION_KEY]: String(maxRevision + 1),
+            [REVISION_HISTORY_KEY]: history,
+          },
+        },
+      });
     }
 
-    // 2. ローリングアップデート。maxSurge / maxUnavailable を守って新旧を入れ替える
+    // 2. ローリングアップデート。本物の deployment controller と同じ手順で、新旧の ReplicaSet の数を決める（rolloutRolling）:
+    //    新しい側は、全体が desired + maxSurge を超えない分だけ増やす。古い側は、Ready の数が desired - maxUnavailable を割らない分だけ減らす
+    //    （先に、古い側の Ready でない Pod の分を減らす）。本物は数を変えるたびにすぐ次を計算するので、変わらなくなるまで繰り返す
     const desired = deployment.spec.replicas;
-    const { maxSurge, maxUnavailable } = deployment.spec.strategy;
-    const current = replicaSets.get(rsId);
-    // 古い側の、動けていない（Ready でない）Pod の分は先に縮める（本物の cleanupUnhealthyReplicas）。
-    // 止まった入れ替え（設定の誤り）を直して送り直した時、止まった世代の Pod が枠を塞がない
-    for (const rs of mine) {
-      if (rs.metadata.name === rsName || rs.spec.replicas === 0) continue;
-      const unready = ownedPods({ ...state, pods }, rs).filter((p) => !isReady(p)).length;
-      if (unready === 0) continue;
-      const to = Math.max(0, rs.spec.replicas - unready);
+    const { surge, unavailable } = fenceposts(deployment);
+    const readyOf = (rs: ReplicaSet): number => ownedPods({ ...state, pods }, rs).filter(isReady).length;
+    const scale = (rs: ReplicaSet, to: number): void => {
+      if (to === rs.spec.replicas) return;
       replicaSets.set(key(rs.metadata.namespace, rs.metadata.name), { ...rs, spec: { ...rs.spec, replicas: to } });
       if (real) events.push({
         tick, type: 'Normal', reason: 'ScalingReplicaSet', object: `deployment/${deployment.metadata.name}`,
-        message: `Scaled down replica set ${rs.metadata.name} from ${String(rs.spec.replicas)} to ${String(to)}`,
+        message: `Scaled ${to > rs.spec.replicas ? 'up' : 'down'} replica set ${rs.metadata.name} from ${String(rs.spec.replicas)} to ${String(to)}`,
       });
-    }
-    const olds = mine
-      .map((rs) => replicaSets.get(key(rs.metadata.namespace, rs.metadata.name)) ?? rs)
-      .filter((rs) => rs.metadata.name !== rsName && rs.spec.replicas > 0);
+    };
+    for (let pass = 0; pass < 8; pass += 1) {
+      const before = JSON.stringify(mine().map((rs) => rs.spec.replicas));
+      const current = replicaSets.get(rsId);
+      if (current === undefined) break;
+      // 古い側（数が 0 でない物。作った順）
+      const olds = (): ReplicaSet[] => mine()
+        .filter((rs) => rs.metadata.name !== rsName && rs.spec.replicas > 0)
+        .sort((a, b) => a.metadata.createdAt - b.metadata.createdAt);
+      const total = (): number => mine().reduce((n, rs) => n + rs.spec.replicas, 0);
 
-    if (current) {
-      const oldReplicas = olds.reduce((n, rs) => n + rs.spec.replicas, 0);
-      const readyNew = ownedPods({ ...state, pods }, current).filter(isReady).length;
-      const readyOld = olds.reduce(
-        (n, rs) => n + ownedPods({ ...state, pods }, rs).filter(isReady).length,
-        0,
-      );
-
-      const totalAllowed = desired + maxSurge;
-      const minAvailable = Math.max(0, desired - maxUnavailable);
-
-      // 新しい側を、上限を超えない範囲で増やす
-      let newReplicas = current.spec.replicas;
-      if (real && oldReplicas === 0 && newReplicas !== desired) {
-        // 入れ替える古い側が無ければ、本物と同じく一度にあるべき数にする
-        events.push({
-          tick, type: 'Normal', reason: 'ScalingReplicaSet', object: `deployment/${deployment.metadata.name}`,
-          message: `Scaled ${newReplicas < desired ? 'up' : 'down'} replica set ${rsName} from ${String(newReplicas)} to ${String(desired)}`,
-        });
-        newReplicas = desired;
-      } else if (newReplicas < desired && newReplicas + oldReplicas < totalAllowed) {
-        newReplicas += 1;
-      } else if (newReplicas > desired) {
-        // replicas を減らされたときは、新しい側も 1 tick ずつ目標まで縮める
-        newReplicas -= 1;
+      // 新しい側
+      if (current.spec.replicas > desired) scale(current, desired);
+      else if (current.spec.replicas < desired && total() < desired + surge) {
+        scale(current, current.spec.replicas + Math.min(desired + surge - total(), desired - current.spec.replicas));
       }
-      replicaSets.set(rsId, { ...current, spec: { ...current.spec, replicas: newReplicas } });
 
-      // 新しい側が十分揃ってから、古い側を減らす
-      if (oldReplicas > 0 && readyNew + readyOld - 1 >= minAvailable && readyNew > 0) {
-        const victim = olds[0];
-        if (victim) {
-          const victimId = key(victim.metadata.namespace, victim.metadata.name);
-          replicaSets.set(victimId, {
-            ...victim,
-            spec: { ...victim.spec, replicas: victim.spec.replicas - 1 },
-          });
+      // 古い側
+      if (olds().length > 0) {
+        const fresh = replicaSets.get(rsId) ?? current;
+        const minAvailable = desired - unavailable;
+        let room = total() - minAvailable - (fresh.spec.replicas - readyOf(fresh));
+        if (room > 0) {
+          for (const rs of olds()) {
+            const unhealthy = rs.spec.replicas - readyOf(rs);
+            if (room <= 0 || unhealthy <= 0) continue;
+            const down = Math.min(room, unhealthy);
+            scale(rs, rs.spec.replicas - down);
+            room -= down;
+          }
+          const available = mine().reduce((n, rs) => n + Math.min(rs.spec.replicas, readyOf(rs)), 0);
+          let excess = available - minAvailable;
+          for (const rs of olds()) {
+            if (excess <= 0) break;
+            const down = Math.min(rs.spec.replicas, excess);
+            scale(rs, rs.spec.replicas - down);
+            excess -= down;
+          }
         }
       }
+      if (JSON.stringify(mine().map((rs) => rs.spec.replicas)) === before) break;
     }
   }
-
   // 3. ReplicaSet → Pod（数を合わせる）
   for (const [rsId, rs] of replicaSets) {
     const mine = ownedPods({ ...state, pods }, rs);
@@ -276,13 +296,16 @@ export function reconcile(state: ClusterState): ReconcileResult {
     const updated = mine
       .filter((rs) => rs.metadata.labels['pod-template-hash'] === hash)
       .flatMap((rs) => ownedPods({ ...state, pods }, rs));
+    const status = { replicas: all.length, readyReplicas: all.filter(isReady).length, updatedReplicas: updated.length };
+    // 進んだか（本物の DeploymentProgressing）: 設計図が変わった・新しい側が増えた・古い側が減った・Ready が増えた
+    const prev = deployment.status;
+    const progressed = prev.progress?.mark !== hash ||
+      status.updatedReplicas > prev.updatedReplicas ||
+      status.replicas - status.updatedReplicas < prev.replicas - prev.updatedReplicas ||
+      status.readyReplicas > prev.readyReplicas;
     deployments.set(id, {
       ...deployment,
-      status: {
-        replicas: all.length,
-        readyReplicas: all.filter(isReady).length,
-        updatedReplicas: updated.length,
-      },
+      status: { ...status, progress: progressed || prev.progress === undefined ? { tick, mark: hash } : prev.progress },
     });
   }
 
@@ -314,6 +337,21 @@ export function reconcile(state: ClusterState): ReconcileResult {
     state: { ...state, pods, replicaSets, deployments, services, nameCounter },
     events,
   };
+}
+
+/**
+ * 知らせをためる。本物と同じく、同じ物・同じ理由・同じ文の繰り返しは 1 つにまとめ（回数と最初の時刻を持ち、最後に起きた所へ動かす）、
+ * 新しい物から 200 まで残す。確かめの失敗が続いても、前の知らせ（入れ替えの Scaled up など）が押し出されない
+ */
+export function compactEvents(list: readonly EventRecord[]): EventRecord[] {
+  const merged = new Map<string, EventRecord>();
+  for (const e of list) {
+    const k = [e.object, e.type, e.reason, e.message].join('|');
+    const prev = merged.get(k);
+    if (prev !== undefined) merged.delete(k);
+    merged.set(k, prev === undefined ? e : { ...e, count: (prev.count ?? 1) + (e.count ?? 1), first: prev.first ?? prev.tick });
+  }
+  return [...merged.values()].slice(-200);
 }
 
 /** 1 tick 進める（PV 束ね → コントローラ → kubelet の順） */
@@ -355,13 +393,13 @@ export function advanceCluster(state: ClusterState, tickPods: (s: ClusterState) 
     pods: ticked.pods,
     ipCounter: ticked.ipCounter,
     persistentVolumes: ticked.persistentVolumes ?? reconciled.state.persistentVolumes,
-    events: [
+    events: compactEvents([
       ...state.events,
       ...bound.events,
       ...workloads.events,
       ...reconciled.events,
       ...ticked.events,
       ...entry.events,
-    ].slice(-200),
+    ]),
   };
 }
