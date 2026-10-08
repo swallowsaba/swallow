@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 700 340" font-family="&quot;Noto Sans JP&quot;, sans-serif">
+  <title>自前（オンプレミス）は機械を買って自分の建物に置き、始めるまで数週間かかり、使わない日も機械が残る。クラウドは提供者の大きな機械を仮想化で分けて貸し、数分で借りて、要らなくなれば返せる</title>
+  <g class="el" data-part="onprem">
+    <rect x="20" y="20" width="320" height="230" rx="6" fill="none" stroke="#9fb0c6" stroke-width="2" pointer-events="all" />
+    <text x="180" y="50" text-anchor="middle" font-size="16" fill="#eef2f6">自前（オンプレミス）</text>
+    <rect x="48" y="72" width="64" height="104" rx="3" fill="#0a1424" stroke="#9fb0c6" stroke-width="1.5" />
+    <line x1="56" y1="92" x2="104" y2="92" stroke="#9fb0c6" stroke-width="1.5" />
+    <line x1="56" y1="112" x2="104" y2="112" stroke="#9fb0c6" stroke-width="1.5" />
+    <line x1="56" y1="132" x2="104" y2="132" stroke="#9fb0c6" stroke-width="1.5" />
+    <line x1="56" y1="152" x2="104" y2="152" stroke="#9fb0c6" stroke-width="1.5" />
+    <text x="130" y="92" font-size="13" fill="#eef2f6">買う・届く・置く: 数週間</text>
+    <text x="130" y="122" font-size="13" fill="#eef2f6">使わない日も機械が残る</text>
+    <text x="130" y="152" font-size="13" fill="#eef2f6">電源・修理も自分</text>
+    <text x="180" y="210" text-anchor="middle" font-size="13" fill="#9fb0c6">置き場所と網を自分で決められる</text>
+  </g>
+  <g class="el" data-part="cloud">
+    <rect x="360" y="20" width="320" height="230" rx="6" fill="none" stroke="#5cc1ff" stroke-width="2" pointer-events="all" />
+    <text x="520" y="50" text-anchor="middle" font-size="16" fill="#eef2f6">クラウド（借りる）</text>
+    <rect x="388" y="72" width="64" height="30" rx="3" fill="#0a1424" stroke="#5cc1ff" stroke-width="1.5" />
+    <rect x="388" y="108" width="64" height="30" rx="3" fill="#0a1424" stroke="#5cc1ff" stroke-width="1.5" />
+    <rect x="388" y="144" width="64" height="30" rx="3" fill="#0a1424" stroke="#5cc1ff" stroke-width="1.5" stroke-dasharray="4 3" />
+    <text x="470" y="92" font-size="13" fill="#eef2f6">画面から頼む: 数分</text>
+    <text x="470" y="122" font-size="13" fill="#eef2f6">要らなければ返す</text>
+    <text x="470" y="152" font-size="13" fill="#eef2f6">払うのは使った分だけ</text>
+    <text x="520" y="210" text-anchor="middle" font-size="13" fill="#9fb0c6">機械の世話は提供者がする</text>
+  </g>
+  <g class="el" data-part="virtualization">
+    <rect x="360" y="266" width="320" height="56" rx="6" fill="none" stroke="#3ae08a" stroke-width="2" pointer-events="all" />
+    <text x="520" y="290" text-anchor="middle" font-size="16" fill="#eef2f6">土台: 仮想化</text>
+    <text x="520" y="311" text-anchor="middle" font-size="13" fill="#9fb0c6">大きな機械を分けて、1 台ずつ貸す</text>
+  </g>
+  <text x="180" y="300" text-anchor="middle" font-size="13" fill="#9fb0c6">ずっと同じ量なら、自前が安いこともある</text>
+</svg>
