@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { shellSnapshotSchema } from '@/lib/storage/shellSchema';
+import { shellSnapshotSchema } from '@/save/engine/shell';
 import { findMission } from '@/engines/lesson/missions';
 import { createDefaultRegistry } from './commands';
 import { createClock } from './clock';

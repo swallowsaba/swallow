@@ -1,8 +1,8 @@
 import { z } from 'zod';
-import { clusterSnapshotSchema } from './clusterSchema';
-import { gitSnapshotSchema } from './gitSchema';
-import { topologySnapshotSchema } from './netSchema';
-import { repoSnapshotSchema } from './repoSchema';
+import { clusterSnapshotSchema } from './cluster';
+import { gitSnapshotSchema } from './git';
+import { topologySnapshotSchema } from './net';
+import { repoSnapshotSchema } from './repo';
 
 /**
  * シェルの状態そのもののスキーマ。
@@ -10,10 +10,10 @@ import { repoSnapshotSchema } from './repoSchema';
  * ここを通らないデータは保存にも復元にも使わない。
  * 資源ごとの中身は、エンジンの区切りに合わせて別ファイルに分けてある。
  */
-export { clusterSnapshotSchema } from './clusterSchema';
-export { gitSnapshotSchema } from './gitSchema';
-export { topologySnapshotSchema } from './netSchema';
-export { repoSnapshotSchema } from './repoSchema';
+export { clusterSnapshotSchema } from './cluster';
+export { gitSnapshotSchema } from './git';
+export { topologySnapshotSchema } from './net';
+export { repoSnapshotSchema } from './repo';
 
 export const shellSnapshotSchema = z.object({
   cwd: z.string().min(1),

@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { shellSnapshotSchema } from './shellSchema';
+import { shellSnapshotSchema } from '@/save/engine/shell';
 
 /**
  * 保存データのスキーマ。localStorage への書き込みは必ずここを通す。
@@ -69,7 +69,7 @@ export {
   shellSnapshotSchema,
   topologySnapshotSchema,
   type ShellSnapshot,
-} from './shellSchema';
+} from '@/save/engine/shell';
 
 export const missionProgressSchema = z.object({
   stepIndex: z.number().int().min(0),

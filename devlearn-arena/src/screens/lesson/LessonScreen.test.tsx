@@ -5,6 +5,7 @@ import { entryOf } from '@/content/catalog';
 import { termOf, wordOf } from '@/content/glossary';
 import { loadLesson } from '@/content/lessons';
 import type { Lesson } from '@/content/schema';
+import { useSaveStatus } from '../saveStatus';
 import { createSession, type Session } from '../session';
 import { LessonScreen } from './LessonScreen';
 import { FakeScreen } from './terminal/fakeScreen';
@@ -748,5 +749,33 @@ describe('見本の 2 本を最後まで通せる（docs/development-plan.md Pha
     typeLine('cd /srv/app');
     next(host);
     expect($(host, '[data-testid="stage-result"]').dataset.result).toBe('success');
+  });
+
+  it('途中の実戦の記録が壊れていても（書き換えたファイルを読み込んだ時など）画面は壊れず、初めから始めて 1 行で知らせる', async () => {
+    const broken: Record<string, Record<string, unknown>[]> = {
+      'found.b.04': [{ shell: { cwd: 3 }, run: { stepIndex: 'x' } }, {}],
+      'found.b.01': [{ sim: { type: 'connect', links: [['nowhere', 'cpu']], up: 'x' }, log: [{ line: 1 }], run: {} }, { sim: { type: 'order', stages: [] } }],
+      'db.b.02': [{ statements: [1, 2], log: null, run: {} }],
+      'docker.i.01': [{ shell: {}, run: {}, draft: 5, results: 'x' }],
+    };
+    for (const [id, states] of Object.entries(broken)) {
+      for (const engineState of states) {
+        const session = createSession(1);
+        const l = await lesson(id);
+        const first = await toPractice(session, id, l);
+        act(() => first.root.unmount());
+        roots = roots.filter((r) => r !== first.root);
+        useSaveStatus.getState().set(null);
+        session.progress.getState().savePractice({ lessonId: id, stepIndex: 1, engineState, savedAt: '2026-10-09T10:00:00+09:00' });
+
+        const { host } = await open(session, id);
+        expect(host.querySelector('[data-testid="stage-practice"]'), `${id} ${JSON.stringify(engineState)}`).not.toBeNull();
+        expect(useSaveStatus.getState().message, id).toMatch(/途中の実戦の記録を読めなかった/);
+        if (id === 'found.b.04') expect(screenText()).not.toContain('中断した所から続ける');
+        // 初めから: どの手順も済んでいない
+        expect(host.querySelector('[data-testid="practice-afterward"]'), id).toBeNull();
+      }
+    }
+    useSaveStatus.getState().set(null);
   });
 });

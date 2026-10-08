@@ -24,6 +24,7 @@ import { SIM_NAMES } from './sim/simNames';
 import { SqlConsole } from './sql/SqlPractice';
 import { runStatement, setupSqlOf, tablesOf, type SqlLogEntry } from './sql/sqlRun';
 import { TerminalView, type TerminalHandle } from './terminal/TerminalView';
+import { editorSaved, simSaved, sqlSaved, terminalSaved, useRestored, type EditorSaved, type SimLogEntry, type SimSaved, type SqlSaved, type TerminalSaved } from './savedPractice';
 import { useConst } from './terminal/useConst';
 import { useShellSession } from './terminal/useShellSession';
 import { Feedback, Slot, StepButtons, type OnTerm } from './widgets';
@@ -198,13 +199,8 @@ function safeTest(pattern: string, line: string): boolean {
   }
 }
 
-interface TerminalSaved {
-  shell: ShellSnapshotData;
-  run: PracticeRun;
-}
-
 function TerminalPractice({ practice: p, sessionId, saved, onSave, onFinish, onTerm, right, action, onBack, backLabel = 'クイズへ戻る' }: PracticeStageProps) {
-  const restored = saved?.engineState as TerminalSaved | undefined;
+  const restored = useRestored(() => terminalSaved(p, saved?.engineState));
   const fresh = useMemo<SessionOptions>(() => ({ restore: initialShell(p.environment, p.setup) }), [p]);
   const shell = useShellSession(restored ? { restore: restoreShell(restored.shell) } : fresh);
   const r = useRun(p, restored?.run);
@@ -275,22 +271,13 @@ function TerminalPractice({ practice: p, sessionId, saved, onSave, onFinish, onT
 
 /* ---------- 画面で操作する模擬（模） ---------- */
 
-export interface SimLogEntry {
-  line: string;
-  error: string | null;
-}
-
-interface SimSaved {
-  sim: SimState;
-  log: SimLogEntry[];
-  run: PracticeRun;
-}
+export type { SimLogEntry } from './savedPractice';
 
 function SimPractice({ practice: p, sessionId, saved, onSave, onFinish, onTerm, right, action, onBack, backLabel = 'クイズへ戻る' }: PracticeStageProps) {
   // 開いた時の保存だけを見る（保存するたびに saved は新しくなる。ヒントを開いただけで「中断した所から」と言わない）
-  const [restored] = useState(() => saved?.engineState as SimSaved | undefined);
-  const [resumed, setResumed] = useState(restored !== undefined);
   const fresh = useMemo(() => createSim(p.environment, p.setup), [p]);
+  const restored = useRestored(() => simSaved(p, fresh, saved?.engineState));
+  const [resumed, setResumed] = useState(restored !== undefined);
   const [sim, setSim] = useState<SimState>(restored?.sim ?? fresh);
   const [log, setLog] = useState<SimLogEntry[]>(restored?.log ?? []);
   const simRef = useRef(sim);
@@ -349,13 +336,6 @@ function SimPractice({ practice: p, sessionId, saved, onSave, onFinish, onTerm, 
 
 /* ---------- ブラウザ内 SQL（S。docs/ui-design.md 7.1） ---------- */
 
-interface SqlSaved {
-  /** 実行した文（誤りも含む。開き直す時に、初期状態から順に実行し直す） */
-  statements: string[];
-  log: SqlLogEntry[];
-  run: PracticeRun;
-}
-
 /** 初期状態の SQL で DB を開き、実行した文を順に実行し直す（SQLite の本体は、ここで初めて読む） */
 async function openPracticeDb(p: Practice, statements: readonly string[]): Promise<SqlDb> {
   const { openDb } = await import('@/engines/db/db');
@@ -366,7 +346,7 @@ async function openPracticeDb(p: Practice, statements: readonly string[]): Promi
 
 function SqlPracticeStage({ practice: p, sessionId, saved, onSave, onFinish, onTerm, right, action, onBack, backLabel = 'クイズへ戻る' }: PracticeStageProps) {
   // 開いた時の保存だけを見る（保存するたびに saved は新しくなる。ヒントを開いただけで「中断した所から」と言わない）
-  const [restored] = useState(() => saved?.engineState as SqlSaved | undefined);
+  const restored = useRestored(() => sqlSaved(p, saved?.engineState));
   const [resumed, setResumed] = useState(restored !== undefined);
   const [db, setDb] = useState<SqlDb | null>(null);
   const dbRef = useRef<SqlDb | null>(null);
@@ -455,13 +435,6 @@ function SqlPracticeStage({ practice: p, sessionId, saved, onSave, onFinish, onT
 
 /* ---------- 設定の編集（編。docs/content-spec.md 2.4.2、docs/ui-design.md 7.1） ---------- */
 
-interface EditorSaved {
-  shell: ShellSnapshotData;
-  run: PracticeRun;
-  draft: string;
-  results: EditResult[];
-}
-
 /** 確かめた結果のうち、エラーとして示す物: 打った行と、言われたこと（標準エラー。出力に出たエラーは当たった行だけ。端末と同じ） */
 function errorSource(results: readonly EditResult[], guide: ErrorGuide): { line: string; said: string } | undefined {
   const err = results.find((x) => x.stderr.trim() !== '');
@@ -474,7 +447,7 @@ function errorSource(results: readonly EditResult[], guide: ErrorGuide): { line:
 const applyNames = (edit: EditSpec): string => [...new Set(edit.apply.map((a) => a.split(' ')[0] ?? a))].join('・');
 
 function EditorPractice({ practice: p, edit, sessionId, saved, onSave, onFinish, onTerm, right, action, onBack, backLabel = 'クイズへ戻る' }: PracticeStageProps & { edit: EditSpec }) {
-  const restored = saved?.engineState as EditorSaved | undefined;
+  const restored = useRestored(() => editorSaved(p, saved?.engineState));
   const fresh = useMemo(() => initialShell(p.environment, p.setup), [p]);
   const registry = useConst(() => createDefaultRegistry());
   const clock = useConst(() => createClock());
