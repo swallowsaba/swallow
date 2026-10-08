@@ -1,7 +1,7 @@
 import { backoffMs } from '@/engines/kernel/clock';
 import { initFiles, TABLES_FILE } from '@/engines/container/pg';
-import { appExit } from './apps';
-import { advanceLive, liveApp } from './probes';
+import { appExit, overMemory } from './apps';
+import { advanceLive, liveApp, restartWait } from './probes';
 import { pgOf, readAt, writeAt } from './volumes';
 import { schedule } from './scheduler';
 import { liveEnv, missingEnvRef, volumesReady } from './storage';
@@ -17,6 +17,9 @@ export interface TickResult {
   /** DB が動き出す時に、データを書く場所（PVC で付けた PV）に最初の表を作った後の PV */
   persistentVolumes?: Map<string, PersistentVolume>;
 }
+
+/** 置けない Pod を置き直して、また知らせるまでの時間（本物の podMaxInUnschedulablePodsDuration の既定 5 分） */
+const RESCHEDULE = 300;
 
 function record(
   events: EventRecord[],
@@ -104,18 +107,24 @@ function pullBackoff({ status, tick }: ContainerContext): ContainerStatus {
   };
 }
 
-/** 起動はするがすぐ落ちるコンテナ。CrashLoopBackOff に入る */
-function crashBackoff({ status, tick }: ContainerContext): ContainerStatus {
+/**
+ * 起動はするがすぐ落ちるコンテナ。CrashLoopBackOff に入る。
+ * reason は止まった理由（アプリが自分で終わった Error・終了コード 1 か、メモリの上限を超えてカーネルに止められた OOMKilled・137）
+ */
+function crashBackoff({ status, tick }: ContainerContext, reason: 'Error' | 'OOMKilled' = 'Error'): ContainerStatus {
   if (status.restartAt !== null && tick < status.restartAt) return status;
-  const restartCount = status.restartCount + 1;
-  const waitTicks = Math.ceil(backoffMs(restartCount, 1 * TICK_MS, 300 * TICK_MS) / TICK_MS);
+  // 本物と同じく、作り直して動かした時に数える（初めて止まった時は、まだ作り直していないので 0 のまま。すぐ作り直す）。
+  // このアプリは動かすとすぐまた止まるので、作り直しと止まるのを同じ時に扱う
+  const restartCount = status.lastTerminated === undefined ? status.restartCount : status.restartCount + 1;
   return {
     ...status,
     ready: false,
     started: false,
     restartCount,
-    waitingReason: restartCount >= 2 ? 'CrashLoopBackOff' : 'Error',
-    restartAt: tick + waitTicks,
+    waitingReason: restartCount >= 1 ? 'CrashLoopBackOff' : reason,
+    restartAt: tick + restartWait(restartCount + 1),
+    lastTerminated: { reason, exitCode: reason === 'OOMKilled' ? 137 : 1 },
+    lastRestartAt: tick,
   };
 }
 
@@ -164,7 +173,9 @@ export function tickPods(state: ClusterState): TickResult {
       // 同じ時刻に先に置いた Pod も数に入れる（入れないと、全てが同じ Node に寄る）
       const result = schedule({ ...state, pods }, pod);
       if (result.nodeName === null) {
-        if (pod.status.message !== result.reason) {
+        // 本物の scheduler は置けない Pod を置き直し続け、そのたびに知らせる（少なくとも 5 分ごと）
+        const last = state.events.reduce((t, e) => (e.reason === 'FailedScheduling' && e.object === `pod/${pod.metadata.name}` ? Math.max(t, e.tick) : t), -Infinity);
+        if (pod.status.message !== result.reason || tick - last >= RESCHEDULE) {
           record(events, tick, 'Warning', 'FailedScheduling', pod, result.reason ?? '');
         }
         pod.status = { ...pod.status, message: result.reason };
@@ -220,8 +231,9 @@ export function tickPods(state: ClusterState): TickResult {
       }
 
       // 起動はするがすぐ落ちる（壊れた設定の再現か、イメージのアプリが要る環境変数が無くて止まる）
-      if (spec.crashing || appExit(state, spec, liveEnv(state, pod, spec)) !== null) {
-        const next = crashBackoff(ctx);
+      const oom = overMemory(state, spec);
+      if (spec.crashing || oom || appExit(state, spec, liveEnv(state, pod, spec)) !== null) {
+        const next = crashBackoff(ctx, oom ? 'OOMKilled' : 'Error');
         if (next.restartCount !== status.restartCount) {
           record(
             events, tick, 'Warning', 'BackOff', pod,
@@ -326,7 +338,9 @@ export function tickPods(state: ClusterState): TickResult {
       continue;
     }
 
-    const phase = allReady || liveStarted ? 'Running' : anyWaiting ? 'Pending' : 'ContainerCreating';
+    // 一度動き出して止まったコンテナ（作り直しを待つ CrashLoopBackOff）を持つ Pod も、本物と同じく Running（動けていない間は Pending）
+    const restarted = containers.some((c) => c.lastTerminated !== undefined);
+    const phase = allReady || liveStarted || restarted ? 'Running' : anyWaiting ? 'Pending' : 'ContainerCreating';
     const { readySince, ...rest } = pod.status;
     pod.status = {
       ...rest,

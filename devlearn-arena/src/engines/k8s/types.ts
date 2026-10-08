@@ -104,6 +104,8 @@ export interface ContainerStatus {
   readyFails?: number;
   /** アプリが待ち受ける前に Ready だった（頼みが送られた）tick の数 */
   early?: number;
+  /** 前のコンテナが止まった理由と終了コード（describe の Last State。アプリが終わった Error・1 か、メモリの上限で止められた OOMKilled・137） */
+  lastTerminated?: { reason: string; exitCode: number };
 }
 
 export interface Pod {

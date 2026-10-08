@@ -1,5 +1,6 @@
 import { fromRegistry, normalizeRef } from '@/engines/container/container';
 import { isReady } from './kubelet';
+import { appMemory } from './apps';
 import type { ClusterState, Pod } from './types';
 import { key } from './types';
 
@@ -12,9 +13,8 @@ import { key } from './types';
 /** metrics-server が測る間隔（秒 = tick） */
 export const SCRAPE = 15;
 
-/** 何もしていないコンテナの CPU（m）とメモリ（Mi） */
+/** 何もしていないコンテナの CPU（m） */
 const IDLE_CPU = 1;
-const IDLE_MEMORY = 3;
 
 /** 最後に測った時刻 */
 export function sampledAt(tick: number): number {
@@ -51,7 +51,7 @@ function selects(selector: Readonly<Record<string, string>>, labels: Readonly<Re
 
 /** 測った値があるか（動いていて、動き出してから一度は測った） */
 export function measured(state: ClusterState, pod: Pod): boolean {
-  return pod.status.phase === 'Running' && pod.status.startedAt !== null && sampledAt(state.tick) - pod.status.startedAt >= SCRAPE;
+  return pod.status.phase === 'Running' && pod.status.containerStatuses.some((c) => c.started) && pod.status.startedAt !== null && sampledAt(state.tick) - pod.status.startedAt >= SCRAPE;
 }
 
 /** Pod の CPU の使用量（m）。まだ測っていなければ null。CPU の上限があれば、そこで頭打ち（止めずに絞られる） */
@@ -73,11 +73,8 @@ export function podCpu(state: ClusterState, pod: Pod): number | null {
   return Math.round(use);
 }
 
-/** Pod のメモリの使用量（Mi）。イメージの中のプロセスの合計（無ければ少し）。まだ測っていなければ null */
+/** Pod のメモリの使用量（Mi。アプリが使う量の合計）。まだ測っていなければ null */
 export function podMemory(state: ClusterState, pod: Pod): number | null {
   if (!measured(state, pod)) return null;
-  return Math.round(pod.spec.containers.reduce((sum, c) => {
-    const procs = fromRegistry(normalizeRef(c.image))?.procs;
-    return sum + (procs === undefined ? IDLE_MEMORY : procs.reduce((a, p) => a + p.memory, 0));
-  }, 0));
+  return Math.round(pod.spec.containers.reduce((sum, c) => sum + appMemory(c), 0));
 }

@@ -101,12 +101,12 @@ describe('probe と CrashLoopBackOff', () => {
       'crash2.yaml',
       'kind: Pod\nmetadata:\n  name: c2\nspec:\n  containers:\n    - name: main\n      image: crash-app\n',
     );
-    run('kubectl wait 6');
+    run('kubectl wait 13');
     const first = Number(run('kubectl get pods c2 -o jsonpath={.status.containerStatuses[0].restartCount}').out.trim());
-    run('kubectl wait 6');
+    run('kubectl wait 13');
     const second = Number(run('kubectl get pods c2 -o jsonpath={.status.containerStatuses[0].restartCount}').out.trim());
-    // 待ち時間が伸びるので、同じ tick 数でも増え方は鈍る
-    expect(second).toBeGreaterThan(first);
+    // 待ち時間が伸びる（すぐ・10 秒・20 秒…）ので、同じ時間でも後の方が増え方は鈍る
+    expect(first).toBeGreaterThan(0);
     expect(second - first).toBeLessThan(first);
   });
 

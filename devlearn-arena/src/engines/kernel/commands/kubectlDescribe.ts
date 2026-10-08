@@ -65,9 +65,12 @@ export function describeNode(cluster: ClusterState, node: Node): string {
   const pct = (n: number, of: number): string => `${String(Math.round((n / of) * 100))}%`;
   // 本物と同じく、書いていない量は 0 (0%)
   const share = (n: number, of: number, format: (v: number) => string): string => (n === 0 ? '0 (0%)' : `${format(n)} (${pct(n, of)})`);
+  const total = { req: { cpu: 0, memory: 0 }, lim: { cpu: 0, memory: 0 } };
   const podRows = pods.map((p) => {
     const req = p.spec.containers.reduce((a, s) => ({ cpu: a.cpu + s.requests.cpu, memory: a.memory + s.requests.memory }), { cpu: 0, memory: 0 });
     const lim = p.spec.containers.reduce((a, s) => ({ cpu: a.cpu + (s.limits?.cpu ?? 0), memory: a.memory + (s.limits?.memory ?? 0) }), { cpu: 0, memory: 0 });
+    total.req = { cpu: total.req.cpu + req.cpu, memory: total.req.memory + req.memory };
+    total.lim = { cpu: total.lim.cpu + lim.cpu, memory: total.lim.memory + lim.memory };
     return [
       p.metadata.namespace, p.metadata.name,
       share(req.cpu, cpu, formatCpu), share(lim.cpu, cpu, formatCpu),
@@ -88,10 +91,20 @@ export function describeNode(cluster: ClusterState, node: Node): string {
     ...fields([['InternalIP', nodeAddress(node)], ['Hostname', node.metadata.name]], '  '),
     'Capacity:',
     ...fields([['cpu', String(cpu / 1000)], ['memory', `${String(memory)}Mi`], ['pods', '110']], '  '),
+    // Pod に配れる量（scheduler は、要求の合計がこれを超えない Node に置く）
+    'Allocatable:',
+    ...fields([['cpu', String(cpu / 1000)], ['memory', `${String(memory)}Mi`], ['pods', '110']], '  '),
     'System Info:',
     ...fields([['Kernel Version', NODE_SYSTEM.kernel], ['OS Image', NODE_SYSTEM.os], ['Container Runtime Version', NODE_SYSTEM.runtime], ['Kubelet Version', node.status.version]], '  '),
     `${'Non-terminated Pods:'.padEnd(w + 6)}(${String(pods.length)} in total)`,
     ...(pods.length > 0 ? grid(['Namespace', 'Name', 'CPU Requests', 'CPU Limits', 'Memory Requests', 'Memory Limits', 'Age'], podRows) : []),
+    // 載っている Pod の要求と上限の合計（本物の Allocated resources）
+    'Allocated resources:',
+    '  (Total limits may be over 100 percent, i.e., overcommitted.)',
+    ...grid(['Resource', 'Requests', 'Limits'], [
+      ['cpu', share(total.req.cpu, cpu, formatCpu), share(total.lim.cpu, cpu, formatCpu)],
+      ['memory', share(total.req.memory, memory, formatMemory), share(total.lim.memory, memory, formatMemory)],
+    ]),
     `${'Events:'.padEnd(w + 6)}<none>`,
   ];
   return `${lines.join('\n')}\n`;
@@ -174,9 +187,14 @@ export function describePod(cluster: ClusterState, pod: Pod): string {
       ['Image', spec.image],
       ['Port', spec.ports.length === 0 ? '<none>' : spec.ports.map((p) => `${String(p)}/TCP`).join(', ')],
       ['Host Port', spec.ports.length === 0 ? '<none>' : spec.ports.map(() => '0/TCP').join(', ')],
-      ...stateOf(pod, status),
-      ['Ready', status?.ready === true ? 'True' : 'False'],
-      ['Restart Count', String(status?.restartCount ?? 0)],
+      // 置き場所の決まらない Pod には、本物と同じくコンテナの状態の欄が無い
+      ...(pod.status.nodeName === null ? [] : [
+        ...stateOf(pod, status),
+        // 前のコンテナが止まった理由（本物の Last State。OOMKilled なら終了コード 137）
+        ...(status?.lastTerminated === undefined ? [] : [['Last State', 'Terminated'], ['  Reason', status.lastTerminated.reason], ['  Exit Code', String(status.lastTerminated.exitCode)]] as [string, string][]),
+        ['Ready', status?.ready === true ? 'True' : 'False'],
+        ['Restart Count', String(status?.restartCount ?? 0)],
+      ] as [string, string][]),
     ];
     // 本物と同じく、書いた量だけを出す（何も書かなければ Limits も Requests も無い）
     for (const [title, q] of [['Limits', spec.limits], ['Requests', spec.requests]] as const) {

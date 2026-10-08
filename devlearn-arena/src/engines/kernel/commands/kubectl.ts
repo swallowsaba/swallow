@@ -66,6 +66,22 @@ function watchPods(cluster: ClusterState, namespace: string, name: string | unde
   return { stdout: table(rows), cluster: next };
 }
 
+/** 知らせの欄の条件 1 つ（type=Warning・reason!=Pulled・involvedObject.name=web-…・involvedObject.kind=Pod） */
+function eventField(e: ClusterState['events'][number], cond: string): boolean {
+  const m = /^([A-Za-z.]+)(!=|==|=)(.*)$/.exec(cond.trim());
+  if (m === null) return false;
+  const [, field = '', op = '=', want = ''] = m;
+  const slash = e.object.indexOf('/');
+  const value = field === 'type' ? e.type
+    : field === 'reason' ? e.reason
+      : field === 'involvedObject.name' ? e.object.slice(slash + 1)
+        : field === 'involvedObject.kind' ? e.object.slice(0, slash)
+          : undefined;
+  if (value === undefined) return false;
+  const same = field === 'involvedObject.kind' ? value.toLowerCase() === want.toLowerCase() : value === want;
+  return op === '!=' ? !same : same;
+}
+
 /** 表の右端に LABELS の列を足す（--show-labels） */
 function withLabels(rendered: string, items: readonly Resource[]): string {
   const lines = rendered.replace(/\n$/, '').split('\n');
@@ -184,7 +200,12 @@ const coreSubcommands: Record<string, KubectlHandler> = {
     if (items.length === 0 && !synthetic) {
       return { stdout: `No resources found in ${namespace} namespace.\n` };
     }
-    const rendered = renderTable(cluster, kind, items, format.wide);
+    // 知らせは --field-selector（type=Warning・reason=…・involvedObject.name=…。, で全てを満たす・!= で除く）で絞れる
+    const fieldSelector = values.get('field-selector');
+    const viewed = kind === 'events' && fieldSelector !== undefined
+      ? { ...cluster, events: cluster.events.filter((e) => fieldSelector.split(',').every((cond) => eventField(e, cond))) }
+      : cluster;
+    const rendered = renderTable(viewed, kind, items, format.wide);
     return { stdout: flags.has('show-labels') ? withLabels(rendered, items) : rendered };
   },
 
@@ -446,7 +467,7 @@ function runSub(sub: string, argv: readonly string[], shell: ShellState): Comman
   const { flags, values, operands } = parseArgs([sub, ...rest], {
     withValue: [
       'o', 'n', 'namespace', 'l', 'f', 'as', 'image', 'replicas', 'tcp', 'requests', 'limits', 'succeeds-after',
-      'port', 'target-port', 'type', 'name', 'labels', 'cpu-percent', 'min', 'max',
+      'port', 'target-port', 'type', 'name', 'labels', 'cpu-percent', 'min', 'max', 'field-selector',
     ],
   });
 

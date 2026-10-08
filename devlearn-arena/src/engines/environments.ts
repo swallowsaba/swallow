@@ -134,6 +134,8 @@ export const setupSchema = z.object({
     ageDays: z.number().int().min(0).max(800).optional(),
     /** 初めからクラスタに在る物（マニフェストの YAML。--- で複数）。前から動いている形で置く */
     manifests: z.string().min(1).optional(),
+    /** 少し前（1 分前）に入れた物（マニフェストの YAML）。manifests の後に入れ、その間の動きと知らせを残す（入れたばかりで止まっている物） */
+    recent: z.string().min(1).optional(),
     /** 初めから在る区画（default などの決まった区画のほかに） */
     namespaces: z.array(z.string().regex(/^[a-z0-9]([-a-z0-9]*[a-z0-9])?$/)).optional(),
     /** 入れてある入口の係（ingress-nginx。種類 nginx を受け持つ）と、外から届く住所 */
@@ -277,20 +279,33 @@ function clusterOf(c: NonNullable<PracticeSetup['cluster']>): ClusterState {
     ...(c.ingress === undefined ? {} : { ingressController: { className: 'nginx', address: c.ingress.address } }),
     services: new Map([['default/kubernetes', { ...api, metadata: { ...api.metadata, labels: { component: 'apiserver', provider: 'kubernetes' }, createdAt: born }, status: { endpoints: ['10.0.0.10'] } }]]),
   };
-  if (c.manifests === undefined) return cluster;
-  const applied = applyManifestText(cluster, c.manifests);
-  if ('error' in applied) throw new Error(`setup の cluster.manifests が読めない: ${applied.error}`);
-  if (applied.failures.length > 0) throw new Error(`setup の cluster.manifests が断られた: ${applied.failures.join(' ')}`);
-  // 前から動いている形にする: 落ち着くまで時間を進め、作った時刻をクラスタと同じにし、古い知らせを消す（本物も 1 時間で消える）
-  cluster = applied.cluster;
-  for (let i = 0; i < 20; i += 1) cluster = advanceCluster(cluster, tickPods);
-  const aged = rebirth(cluster, born);
-  // 動いている Pod は、前から動いていて Ready だった（metrics-server も前から測っている）
-  const pods = new Map([...aged.pods].map(([id, p]) => [id, p.status.startedAt === null ? p : {
-    ...p, status: { ...p.status, startedAt: born, ...(p.status.readySince === undefined ? {} : { readySince: born }) },
-  }]));
-  return { ...aged, pods, events: [] };
+  const put = (text: string, field: string): ClusterState => {
+    const applied = applyManifestText(cluster, text);
+    if ('error' in applied) throw new Error(`setup の cluster.${field} が読めない: ${applied.error}`);
+    if (applied.failures.length > 0) throw new Error(`setup の cluster.${field} が断られた: ${applied.failures.join(' ')}`);
+    return applied.cluster;
+  };
+  if (c.manifests !== undefined) {
+    // 前から動いている形にする: 落ち着くまで時間を進め、作った時刻をクラスタと同じにし、古い知らせを消す（本物も 1 時間で消える）
+    cluster = put(c.manifests, 'manifests');
+    for (let i = 0; i < 20; i += 1) cluster = advanceCluster(cluster, tickPods);
+    const aged = rebirth(cluster, born);
+    // 動いている Pod は、前から動いていて Ready だった（metrics-server も前から測っている）
+    const pods = new Map([...aged.pods].map(([id, p]) => [id, p.status.startedAt === null ? p : {
+      ...p, status: { ...p.status, startedAt: born, ...(p.status.readySince === undefined ? {} : { readySince: born }) },
+    }]));
+    cluster = { ...aged, pods, events: [] };
+  }
+  if (c.recent !== undefined) {
+    // 少し前（1 分前）に入れた物。その間の動き（止まる・置けない）と知らせは、そのまま残す
+    cluster = put(c.recent, 'recent');
+    for (let i = 0; i < RECENT_SECONDS; i += 1) cluster = advanceCluster(cluster, tickPods);
+  }
+  return cluster;
 }
+
+/** setup の cluster.recent を入れてから経った時間（秒） */
+const RECENT_SECONDS = 60;
 
 /** 全ての資源の作った時刻を揃える（setup で前から在った物にする） */
 function rebirth(cluster: ClusterState, born: number): ClusterState {

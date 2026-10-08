@@ -24,6 +24,22 @@ export function appLog(state: ClusterState, spec: ContainerSpec, env: Readonly<R
   const image = imageOf(state, spec);
   if (image === undefined) return null;
   const pg = image.pg === undefined || fresh === undefined ? [] : fresh ? PG_INIT : PG_SKIP;
-  // 待ち受けるまでの読み込みの途中なら、起動の行だけ
-  return [...(image.bootLog ?? []), ...pg, ...(appExit(state, spec, env) ?? (warming ? [] : image.startLog))];
+  // 待ち受けるまでの読み込みの途中なら、起動の行だけ。メモリの上限で止められるアプリは、最初の行の途中で止まる（コンテナの模擬と同じ）
+  const started = overMemory(state, spec) ? image.startLog.slice(0, 1) : warming ? [] : image.startLog;
+  return [...(image.bootLog ?? []), ...pg, ...(appExit(state, spec, env) ?? started)];
+}
+
+/** 何もしていないコンテナが使うメモリ（Mi） */
+const IDLE_MEMORY = 3;
+
+/** そのコンテナのアプリが使うメモリ（Mi）。イメージの中のプロセスの合計（無ければ少し） */
+export function appMemory(spec: ContainerSpec): number {
+  const procs = fromRegistry(normalizeRef(spec.image))?.procs;
+  return procs === undefined ? IDLE_MEMORY : procs.reduce((a, p) => a + p.memory, 0);
+}
+
+/** メモリの上限より多く使うアプリか（本物は、上限を超えた所でカーネルが止める: OOMKilled・終了コード 137） */
+export function overMemory(state: ClusterState, spec: ContainerSpec): boolean {
+  const limit = spec.limits?.memory ?? 0;
+  return state.images !== undefined && limit > 0 && appMemory(spec) > limit;
 }

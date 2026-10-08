@@ -43,8 +43,8 @@ function due(probe: Probe, since: number): boolean {
   return (since - probe.initialDelaySeconds) % Math.max(1, probe.periodSeconds) === 0;
 }
 
-/** liveness に落ちて作り直す時の待ち（初めはすぐ。続くと 10 秒・20 秒…と延び、300 秒で止まる） */
-function restartWait(restartCount: number): number {
+/** 止まったコンテナを作り直すまでの待ち（本物の kubelet と同じく、初めはすぐ。続くと 10 秒・20 秒…と延び、300 秒で止まる） */
+export function restartWait(restartCount: number): number {
   return restartCount <= 1 ? 1 : Math.min(10 * 2 ** (restartCount - 2), 300);
 }
 

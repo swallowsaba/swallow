@@ -121,17 +121,21 @@ export function schedule(state: ClusterState, pod: Pod): ScheduleResult {
   }
 
   if (fits.length === 0) {
-    const counted = new Map<string, number>();
-    for (const reason of reasons) counted.set(reason, (counted.get(reason) ?? 0) + 1);
-    const detail = [...counted.entries()]
-      .map(([reason, n]) => `${String(n)} ${reason}`)
-      .join(', ');
+    // 本物と同じく「数 理由」を文字の順に並べ、後ろに、他の Pod を退かせば置けるか（preemption）の見立てを付ける。
+    // 資源が足りない Node は「退かせる Pod が無い」、それ以外（taint・選ぶ条件・止まった Node）は「退かせても置けない」
+    const histogram = (list: readonly string[]): string => {
+      const counted = new Map<string, number>();
+      for (const reason of list) counted.set(reason, (counted.get(reason) ?? 0) + 1);
+      return [...counted.entries()].map(([reason, n]) => `${String(n)} ${reason}`).sort().join(', ');
+    };
+    const preemption = reasons.map((r) => (r.startsWith('Insufficient') ? 'No preemption victims found for incoming pod' : 'Preemption is not helpful for scheduling'));
+    const total = `0/${String(state.nodes.size)} nodes are available`;
     return {
       nodeName: null,
       reason:
         state.nodes.size === 0
           ? 'no nodes available to schedule pods'
-          : `0/${String(state.nodes.size)} nodes are available: ${detail}.`,
+          : `${total}: ${histogram(reasons)}. preemption: ${total}: ${histogram(preemption)}.`,
     };
   }
 

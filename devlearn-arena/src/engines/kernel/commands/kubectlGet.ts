@@ -330,10 +330,13 @@ export function renderTable(
     }
 
     case 'events': {
-      const rows = [['AGE', 'TYPE', 'REASON', 'OBJECT', 'MESSAGE']];
-      for (const e of cluster.events.slice(-20)) {
-        rows.push([at(e.tick), e.type, e.reason, e.object, e.message]);
-      }
+      // 本物と同じく、同じ物への同じ知らせは 1 行にまとめ、最後に出た時（LAST SEEN）の古い順に並べる
+      const groups = new Map<string, { last: number; e: (typeof cluster.events)[number] }>();
+      for (const e of cluster.events) groups.set([e.type, e.reason, e.object, e.message].join('\u0000'), { last: e.tick, e });
+      const shown = [...groups.values()].sort((a, b) => a.last - b.last).slice(-20);
+      if (shown.length === 0) return 'No resources found in default namespace.\n';
+      const rows = [['LAST SEEN', 'TYPE', 'REASON', 'OBJECT', 'MESSAGE']];
+      for (const { last, e } of shown) rows.push([at(last), e.type, e.reason, e.object, e.message]);
       return table(rows);
     }
 

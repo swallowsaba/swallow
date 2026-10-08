@@ -88,6 +88,7 @@ const podSchema = z.object({
         liveFails: z.number().int().optional(),
         readyFails: z.number().int().optional(),
         early: z.number().int().optional(),
+        lastTerminated: z.object({ reason: z.string(), exitCode: z.number().int() }).optional(),
       }),
     ),
     message: z.string().nullable(),
