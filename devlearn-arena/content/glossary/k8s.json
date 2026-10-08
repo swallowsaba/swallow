@@ -603,6 +603,38 @@
       "lessons": [
         "k8s.i.07"
       ]
+    },
+    {
+      "id": "rolling-update",
+      "word": "ローリングアップデート",
+      "reading": "ろーりんぐ・あっぷでーと",
+      "plain": "Pod を少しずつ新しい版に入れ替える更新の仕方。新しい版の Pod を作り、Ready になった分だけ古い Pod を減らす。Deployment の既定の更新の仕方。",
+      "why": "全てを一度に止めずに済む。残った古い Pod が答え続けるので、利用者を止めずに新しい版を配れる。新しい版が Ready にならなければ、そこで止まる。",
+      "related": [
+        "deployment",
+        "readiness-probe",
+        "k8s-revision",
+        "rollback"
+      ],
+      "lessons": [
+        "k8s.i.08"
+      ]
+    },
+    {
+      "id": "k8s-revision",
+      "word": "世代（リビジョン）",
+      "reading": "せだい",
+      "plain": "Deployment の設計図の版ごとに付く番号（revision）。版ごとの ReplicaSet が残り、`kubectl rollout history` で並ぶ。",
+      "why": "前の世代が残っているので、`kubectl rollout undo` ですぐ前の版に戻せる。戻すと、その世代は新しい番号に付け替わる。",
+      "related": [
+        "deployment",
+        "replicaset",
+        "rollback",
+        "rolling-update"
+      ],
+      "lessons": [
+        "k8s.i.08"
+      ]
     }
   ]
 }

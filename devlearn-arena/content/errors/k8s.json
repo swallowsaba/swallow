@@ -622,6 +622,66 @@
         "k8s-requests",
         "k8s-limits"
       ]
+    },
+    {
+      "id": "k8s-set-image-container",
+      "match": "unable to find container named",
+      "meaning": "`set image` で指したコンテナの名前が、Deployment の設計図に無い。何も変わっていない。",
+      "causes": [
+        "`名前=イメージ` の左に、Deployment の名前やイメージの名前を書いた。左はコンテナの名前（web）。",
+        "コンテナの名前の綴りが違う。"
+      ],
+      "hint": "`kubectl get deployment web -o wide` の `CONTAINERS` の欄で、コンテナの名前を見る。",
+      "terms": [
+        "container",
+        "deployment"
+      ]
+    },
+    {
+      "id": "k8s-set-image-pull",
+      "match": "ErrImagePull|ImagePullBackOff",
+      "output": true,
+      "meaning": "新しい版の Pod が、イメージを置き場から取れない。古い Pod は残っているので売店は開いているが、入れ替えは進まない。",
+      "causes": [
+        "イメージのタグの綴りが違う（`1.l` など）。",
+        "その版が置き場に無い。"
+      ],
+      "hint": "`kubectl set image` を正しいイメージでもう一度打てば、その版に入れ替わる（取れない版の Pod は片付けられる）。`kubectl rollout undo deployment/web` で前の版に戻してもよい。",
+      "terms": [
+        "image",
+        "k8s-event"
+      ]
+    },
+    {
+      "id": "k8s-rollout-stuck",
+      "match": "exceeded its progress deadline",
+      "meaning": "新しい版の Pod が Ready にならず、入れ替えが期限（最後に進んでから 600 秒）までに終わらなかった。Deployment は古い Pod を 3 つ残して待っている。自分では前の版に戻さない。",
+      "causes": [
+        "新しい版が壊れていて、readiness に通らない（`kubectl describe pod` に `Readiness probe failed: HTTP probe failed with statuscode: 403`）。",
+        "`kubectl rollout undo` を 2 回続けて打ち、壊れた版に戻した（undo は、その時の 2 番目に新しい世代に戻す）。",
+        "イメージの名前を誤り、新しい Pod がイメージを取れない（`ErrImagePull`）。"
+      ],
+      "hint": "壊れた版はその場で直さず、`kubectl rollout undo deployment/web` で前の版に戻す。どの世代がどの版かは `kubectl rollout history deployment/web --revision=番号` で見る。",
+      "terms": [
+        "rollback",
+        "readiness-probe",
+        "k8s-revision"
+      ]
+    },
+    {
+      "id": "k8s-rollout-outage",
+      "match": "<title>403 Forbidden</title>",
+      "output": true,
+      "meaning": "売店の頼みに、壊れた 1.2 の Pod が 403 で答えている。答えられない版の Pod が Ready になり、頼みが送られている（売店が止まった）。",
+      "causes": [
+        "web の Deployment に readiness の確かめが無い。確かめが無いと、動き出した Pod はすぐ Ready になり、壊れた版でも古い Pod と入れ替わる。",
+        "Deployment を消して `kubectl create deployment` で作り直した。作り直した Deployment には確かめが付かず、古い版の Pod も残らない。"
+      ],
+      "hint": "まず `kubectl rollout undo deployment/web` で前の版に戻して、売店を開け直す。Deployment を作り直したなら、readiness（80 番の /）を付けた設計図を `kubectl apply` で出し直す。",
+      "terms": [
+        "readiness-probe",
+        "rolling-update"
+      ]
     }
   ]
 }

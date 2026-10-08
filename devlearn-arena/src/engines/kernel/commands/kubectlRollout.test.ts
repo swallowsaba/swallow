@@ -97,6 +97,13 @@ describe('ローリングアップデート（本物の deployment controller �
     expect(c.run('kubectl rollout undo deployment/web --to-revision=4').out).toBe('deployment.apps/web skipped rollback (current template already matches revision 4)\n');
   });
 
+  it('-o wide は本物と同じく、Deployment と ReplicaSet にコンテナの名前・イメージ・札の選び方を足す', () => {
+    const c = console_();
+    expect(c.run('kubectl get deployment web -o wide').out).toMatch(/^NAME +READY +UP-TO-DATE +AVAILABLE +AGE +CONTAINERS +IMAGES +SELECTOR\nweb +4\/4 +4 +4 +3d +web +city-shop:1\.0 +app=web\n$/);
+    c.run('kubectl set image deployment/web web=city-shop:1.1');
+    expect(c.run('kubectl get rs -o wide').out).toMatch(/^web-\w+ +2 +2 +0 +\S+ +web +city-shop:1\.1 +app=web,pod-template-hash=\w+$/m);
+  });
+
   it('2 回続けて undo すると、壊れた版（2 番目に新しい世代）に戻る', () => {
     const c = console_();
     c.run('kubectl set image deployment/web web=city-shop:1.1');

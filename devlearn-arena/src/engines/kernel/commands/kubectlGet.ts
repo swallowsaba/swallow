@@ -17,6 +17,14 @@ const shortMode = (mode: string): string => MODE_SHORT[mode] ?? mode;
 /** get hpa の欄（本物の v1.31 の形。TARGETS は「cpu: 今/目標」で、測れない間は <unknown>。REPLICAS は最後に見た数） */
 export const HPA_HEAD = ['NAME', 'REFERENCE', 'TARGETS', 'MINPODS', 'MAXPODS', 'REPLICAS', 'AGE'] as const;
 
+/** -o wide の、設計図の欄（Deployment・ReplicaSet） */
+const WIDE_TEMPLATE = ['CONTAINERS', 'IMAGES', 'SELECTOR'];
+const templateColumns = (template: Deployment['spec']['template'], selector: Record<string, string>): string[] => [
+  template.containers.map((c) => c.name).join(','),
+  template.containers.map((c) => c.image).join(','),
+  Object.entries(selector).map(([k, v]) => `${k}=${v}`).join(','),
+];
+
 export function hpaRow(cluster: ClusterState, h: HorizontalPodAutoscaler): string[] {
   const now = h.status.currentCpuPercent === null ? '<unknown>' : `${String(h.status.currentCpuPercent)}%`;
   return [
@@ -92,7 +100,8 @@ export function renderTable(
     }
 
     case 'deployments': {
-      const rows = [['NAME', 'READY', 'UP-TO-DATE', 'AVAILABLE', 'AGE']];
+      // -o wide は本物と同じく、コンテナの名前・イメージ・札の選び方を足す
+      const rows = [['NAME', 'READY', 'UP-TO-DATE', 'AVAILABLE', 'AGE', ...(wide ? WIDE_TEMPLATE : [])]];
       for (const d of items as Deployment[]) {
         rows.push([
           d.metadata.name,
@@ -100,13 +109,14 @@ export function renderTable(
           String(d.status.updatedReplicas),
           String(d.status.readyReplicas),
           at(d.metadata.createdAt),
+          ...(wide ? templateColumns(d.spec.template, d.spec.selector) : []),
         ]);
       }
       return table(rows);
     }
 
     case 'replicasets': {
-      const rows = [['NAME', 'DESIRED', 'CURRENT', 'READY', 'AGE']];
+      const rows = [['NAME', 'DESIRED', 'CURRENT', 'READY', 'AGE', ...(wide ? WIDE_TEMPLATE : [])]];
       for (const r of items as ReplicaSet[]) {
         rows.push([
           r.metadata.name,
@@ -114,6 +124,7 @@ export function renderTable(
           String(r.status.replicas),
           String(r.status.readyReplicas),
           at(r.metadata.createdAt),
+          ...(wide ? templateColumns(r.spec.template, r.spec.selector) : []),
         ]);
       }
       return table(rows);

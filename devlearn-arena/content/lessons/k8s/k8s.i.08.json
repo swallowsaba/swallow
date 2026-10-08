@@ -1,0 +1,260 @@
+{
+  "id": "k8s.i.08",
+  "domain": "k8s",
+  "level": "intermediate",
+  "theme": "更新",
+  "title": "ローリングアップデート",
+  "goal": "止めずに更新し、戻せる",
+  "minutes": 20,
+  "prerequisites": [
+    "k8s.b.05"
+  ],
+  "related": [
+    "cicd.a.01",
+    "devops.a.01"
+  ],
+  "next": [
+    "k8s.a.04",
+    "cicd.a.01"
+  ],
+  "terms": [
+    "rolling-update",
+    "pod",
+    "deployment",
+    "image",
+    "readiness-probe",
+    "rollback",
+    "replicaset",
+    "k8s-revision",
+    "kubectl",
+    "command",
+    "k8s-service",
+    "container",
+    "curl"
+  ],
+  "explain": {
+    "what": "{{term:rolling-update}}は、{{term:pod}} を少しずつ新しい版に入れ替える更新の仕方。{{term:deployment}} の{{term:image}}を変えると、新しい版の Pod を作っては古い Pod を減らし、全てが入れ替わるまで続ける。既定では、あるべき数の 25% まで多く作ってよく、25% まで欠けてよい。",
+    "why": "全てを一度に止めて入れ替えると、その間は誰も使えない。少しずつなら、残った古い Pod が答え続ける。古い Pod は、新しい Pod が {{term:readiness-probe}} に通った分だけ減らすので、壊れた版なら入れ替えはそこで止まる。止まったら{{term:rollback}}（前の版に戻す）する。",
+    "use": "本番の更新。Deployment は版ごとに {{term:replicaset}} を残し、{{term:k8s-revision}}の番号を付ける。{{term:kubectl}} で入れ替えの進み具合を見て、止まったら前の世代に戻す。前の版を残しておくから、すぐ戻せる。",
+    "when": "市の売店（web）に、季節の品を足した 1.1 と、画面の作り方を変えた 1.2 が届いた。売店は一日中開いていて、止められない。1.2 は、まだ誰も本番で試していない。",
+    "figures": [
+      "k8s-i08-rolling"
+    ]
+  },
+  "understand": [
+    {
+      "kind": "order",
+      "prompt": "4 つの Pod を新しい版にする時の、1 回分の入れ替わりの順に並べる。",
+      "items": [
+        "Deployment が新しい版の Pod を作る",
+        "新しい Pod が readiness に通り、`Ready` になる",
+        "`Ready` になった分だけ、古い Pod を減らす",
+        "全てが新しい版になるまで繰り返す"
+      ],
+      "see": "what"
+    },
+    {
+      "kind": "relation",
+      "prompt": "2 つの関係は？",
+      "a": "新しい版の Pod が readiness に通らない",
+      "b": "古い Pod が減らされずに残り、頼みに答え続ける",
+      "answer": "cause",
+      "why": "古い Pod は、新しい Pod が `Ready` になった分だけ減らす。新しい版が `Ready` にならなければ、入れ替えはそこで止まり、古い版が答え続ける。",
+      "see": "why"
+    }
+  ],
+  "quiz": [
+    {
+      "id": "q1",
+      "kind": "choice",
+      "prompt": "web の入れ替えが、今どこまで進んだかを見たい。打つ{{term:command}}は？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "`kubectl rollout status deployment/web`",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "`kubectl rollout history deployment/web`",
+          "correct": false,
+          "whyNot": "それは世代の一覧。今の入れ替えの進み具合は出ない。"
+        },
+        {
+          "id": "c",
+          "text": "`kubectl rollout undo deployment/web`",
+          "correct": false,
+          "whyNot": "それは前の世代に戻す命令。見るだけのつもりで打つと、版が変わる。"
+        }
+      ],
+      "explanation": "`rollout status` は、入れ替えが終わるまで待ちながら、新しい版になった数を 1 行ずつ出す。終われば `successfully rolled out` と言う。"
+    },
+    {
+      "id": "q2",
+      "kind": "situation",
+      "prompt": "新しい版を配ったら、新しい Pod が `0/1` のまま増えない。利用者は古い版で使えている。まずどうする？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "`kubectl rollout undo` で前の世代に戻し、原因は後で調べる",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "新しい Pod を `kubectl delete pod` で消す",
+          "correct": false,
+          "whyNot": "Deployment が同じ設計図でまた作る。設計図（版）が新しいままなので、何も変わらない。"
+        },
+        {
+          "id": "c",
+          "text": "古い Pod を消して、早く新しい版に入れ替える",
+          "correct": false,
+          "whyNot": "残っている古い Pod が、今の利用者に答えている。消すと売店が止まる。"
+        }
+      ],
+      "explanation": "壊れた版はその場で直そうとせず、まず前の版に戻す。前の版は ReplicaSet として残っているので、すぐ戻せる。"
+    },
+    {
+      "id": "q3",
+      "kind": "predict",
+      "prompt": "4 つの Pod の web に、起動しない版を配った（既定の 25%）。しばらく後の Pod は？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "古い版が 3 つ動き続け、新しい版の 2 つが `Ready` にならないまま止まる",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "全てが新しい版になり、売店が止まる",
+          "correct": false,
+          "whyNot": "古い Pod は、新しい Pod が `Ready` になった分だけ減らす。新しい版が `Ready` にならなければ、3 つより減らさない。"
+        },
+        {
+          "id": "c",
+          "text": "Deployment が自分で前の版に戻す",
+          "correct": false,
+          "whyNot": "Deployment は自分では戻さない。期限を過ぎたと知らせるだけで、戻すのは人（`rollout undo`）。"
+        }
+      ],
+      "explanation": "全体は 5 つまで（4 + 25%）、`Ready` は 3 つ以上（4 − 25%）。新しく 2 つ作り、古い物を 1 つ減らした所で止まる。"
+    },
+    {
+      "id": "q4",
+      "kind": "cause",
+      "prompt": "壊れた版を配ったら、`rollout status` は `successfully rolled out` と言ったのに、売店の全ての頼みが 403 になった。原因は？",
+      "context": {
+        "log": "$ curl -s http://city.example/\n<html>\n<head><title>403 Forbidden</title></head>"
+      },
+      "choices": [
+        {
+          "id": "a",
+          "text": "Pod に readiness の確かめが無く、壊れた版もすぐ `Ready` になって全て入れ替わった",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "{{term:k8s-service}} の宛先を選ぶ札が違う",
+          "correct": false,
+          "whyNot": "札が違えば宛先が空になり、503 になる。403 は、壊れた版の Pod が答えている印。"
+        },
+        {
+          "id": "c",
+          "text": "入れ替えの期限が短すぎた",
+          "correct": false,
+          "whyNot": "期限は、進まない入れ替えを「失敗」と知らせるだけ。確かめが無ければ、期限があっても壊れた版に入れ替わる。"
+        }
+      ],
+      "explanation": "確かめが無いと、{{term:container}}が動き出しただけで `Ready` になる。readiness があれば、答えられない版はそこで止まり、古い版が答え続ける。"
+    }
+  ],
+  "practice": {
+    "mode": "terminal",
+    "purpose": "市の売店 web（Pod 4 つ・`city-shop:1.0`）を、止めずに新しい版にする。Pod には readiness（80 番の / を 5 秒ごとに確かめる）が付いている。売店は {{term:curl}} で `curl -s http://city.example/` と頼むと見られる。まず 1.1 に更新し、次に 1.2 を試す。1.2 が動かなければ、利用者が困る前に 1.1 に戻す。",
+    "environment": "k8s-cluster",
+    "setup": {
+      "hostname": "console",
+      "files": {
+        "/etc/hosts": "127.0.0.1 localhost\n203.0.113.10 city.example\n"
+      },
+      "cluster": {
+        "nodes": 2,
+        "ageDays": 3,
+        "ingress": {
+          "address": "203.0.113.10"
+        },
+        "manifests": "apiVersion: apps/v1\nkind: Deployment\nmetadata:\n  name: web\nspec:\n  replicas: 4\n  selector:\n    matchLabels:\n      app: web\n  template:\n    metadata:\n      labels:\n        app: web\n    spec:\n      containers:\n      - name: web\n        image: city-shop:1.0\n        ports:\n        - containerPort: 80\n        readinessProbe:\n          httpGet:\n            path: /\n            port: 80\n          periodSeconds: 5\n---\napiVersion: v1\nkind: Service\nmetadata:\n  name: web\nspec:\n  selector:\n    app: web\n  ports:\n  - port: 80\n---\napiVersion: networking.k8s.io/v1\nkind: Ingress\nmetadata:\n  name: city\nspec:\n  ingressClassName: nginx\n  rules:\n  - host: city.example\n    http:\n      paths:\n      - path: /\n        pathType: Prefix\n        backend:\n          service:\n            name: web\n            port:\n              number: 80\n"
+      }
+    },
+    "dangerous": [
+      {
+        "id": "delete-deployment",
+        "pattern": "^\\s*kubectl\\s+delete\\s+(?:deployments?|deploy)(?:\\s+|/)web\\b",
+        "why": "Deployment を消すと、Pod も全て消えて売店が止まる。版を変えるのに消して作り直す必要は無い（`set image` で設計図のイメージだけを変える）。作り直した Deployment には readiness の確かめも付かない。"
+      }
+    ],
+    "steps": [
+      {
+        "id": "update",
+        "purpose": "web を `city-shop:1.1` に更新し、全ての Pod が入れ替わるまでを見届ける。",
+        "check": {
+          "kind": "k8s",
+          "expr": "deployment/web image=city-shop:1.1 readyUpdated=4"
+        },
+        "afterward": "`deployment.apps/web image updated`。Deployment は 1.1 の ReplicaSet を作り、新しい Pod を 2 つ作って古い Pod を 1 つ減らした（全体は 5 つまで、`Ready` は 3 つ以上）。新しい Pod が readiness に通るたびに古い Pod を減らし、全てが 1.1 になった。その間も、残った Pod が頼みに答え続けた。",
+        "hints": [
+          "版を変えるのは、Deployment の設計図のイメージを変えること。`kubectl set image` で、コンテナの名前とイメージを `名前=イメージ` の形で書く。コンテナの名前は web。",
+          "`kubectl set image deployment/web web=city-shop:1.1` で変え、進み具合は `kubectl rollout status deployment/web` で見る。",
+          "`kubectl set image deployment/web web=city-shop:1.1` と打ち、`kubectl rollout status deployment/web` と打つ。"
+        ],
+        "expectedErrors": [
+          "k8s-set-image-container",
+          "k8s-set-image-pull",
+          "k8s-rollout-stuck",
+          "k8s-notfound"
+        ]
+      },
+      {
+        "id": "broken",
+        "purpose": "1.2 を配り、入れ替えが進むかを見る。進まなければ、1.1 に戻す。",
+        "check": {
+          "kind": "k8s",
+          "expr": "deployment/web image=city-shop:1.1 readyUpdated=4 tried=city-shop:1.2"
+        },
+        "afterward": "1.2 の Pod は動いたが、/ に 403 で答えて readiness に通らず、`0/1` のままだった。Deployment は新しい Pod を 2 つ作った所で止まり、古い 1.1 の Pod 3 つが頼みに答え続けた。`rollout undo` は 2 番目に新しい世代（1.1）の設計図を書き戻し、1.2 の Pod を片付けて 1.1 を 4 つに戻した。履歴では、1.1 の世代の番号が 2 から 4 に付け替わる。",
+        "hints": [
+          "1.2 にするのは 1.1 と同じ。入れ替えが終わらなければ、`kubectl get pods` の `READY` と、`kubectl describe pod` の `Events` の readiness の結果を見る。",
+          "前の世代に戻すのは `kubectl rollout undo deployment/web`。世代の一覧は `kubectl rollout history deployment/web`、その世代の版は `--revision=番号` を足して見る。",
+          "`kubectl set image deployment/web web=city-shop:1.2` と打ち、`kubectl get pods -w` で新しい Pod が 0/1 のまま増えないのを確かめてから、`kubectl rollout undo deployment/web` と `kubectl rollout status deployment/web` を打つ。"
+        ],
+        "expectedErrors": [
+          "k8s-rollout-stuck",
+          "k8s-rollout-outage",
+          "k8s-set-image-container",
+          "k8s-notfound"
+        ]
+      }
+    ]
+  },
+  "result": {
+    "success": "1.1 を止めずに配り、1.2 では入れ替えが止まったのを見て、`rollout undo` で 1.1 に戻した。その間、売店はずっと開いていた。",
+    "partial": "ヒントを使って確かめた。次は、readiness が無かったら 1.2 を配った時に何が起きたかを、自分の言葉で説明してみよう。",
+    "retry": "まだ確かめ終わっていない。`kubectl get pods` で Pod の `READY` を、`kubectl get deployment web -o wide` で今の版を、`kubectl rollout history deployment/web` で世代を確かめよう。"
+  },
+  "summary": {
+    "points": [
+      "Pod を少しずつ入れ替え、残った Pod が答え続ける",
+      "進み具合は rollout status で見る。`Ready` にならない版では止まる",
+      "壊れた版は、直す前に rollout undo で前の世代に戻す"
+    ],
+    "next": [
+      "k8s.a.04",
+      "cicd.a.01"
+    ],
+    "terms": [
+      "rolling-update",
+      "k8s-revision",
+      "rollback"
+    ]
+  }
+}

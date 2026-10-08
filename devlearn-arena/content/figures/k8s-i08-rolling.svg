@@ -1,0 +1,64 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 700 380" font-family="&quot;Noto Sans JP&quot;, sans-serif">
+  <title>ローリングアップデートは、新しい版の Pod を少し多く作り、Ready になった分だけ古い Pod を減らして、少しずつ入れ替える。新しい版が Ready にならなければ、古い Pod を残したまま止まり、rollout undo で前の世代に戻す</title>
+  <defs>
+    <marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="#9fb0c6" />
+    </marker>
+  </defs>
+  <text x="20" y="26" font-size="13" fill="#9fb0c6">あるべき数は 4 つ。全体は 5 つまで、Ready は 3 つ以上を保つ（既定の 25%）</text>
+  <text x="20" y="56" font-size="16" fill="#3ae08a">動く版</text>
+  <g class="el" data-part="start">
+    <rect x="20" y="68" width="196" height="132" rx="6" fill="none" stroke="#5cc1ff" stroke-width="2" pointer-events="all" />
+    <text x="118" y="92" text-anchor="middle" font-size="13" fill="#eef2f6">古い版が 4 つ</text>
+    <rect x="66" y="108" width="20" height="28" rx="3" fill="none" stroke="#5cc1ff" stroke-width="2" pointer-events="all" />
+    <rect x="94" y="108" width="20" height="28" rx="3" fill="none" stroke="#5cc1ff" stroke-width="2" pointer-events="all" />
+    <rect x="122" y="108" width="20" height="28" rx="3" fill="none" stroke="#5cc1ff" stroke-width="2" pointer-events="all" />
+    <rect x="150" y="108" width="20" height="28" rx="3" fill="none" stroke="#5cc1ff" stroke-width="2" pointer-events="all" />
+    <text x="118" y="164" text-anchor="middle" font-size="13" fill="#9fb0c6">イメージを変える</text>
+    <text x="118" y="186" text-anchor="middle" font-size="13" fill="#9fb0c6">（set image）</text>
+  </g>
+  <line x1="218" y1="134" x2="242" y2="134" stroke="#9fb0c6" stroke-width="2" marker-end="url(#ar)" />
+  <g class="el" data-part="surge">
+    <rect x="246" y="68" width="210" height="132" rx="6" fill="none" stroke="#f2b632" stroke-width="2" pointer-events="all" />
+    <text x="351" y="92" text-anchor="middle" font-size="13" fill="#eef2f6">新しく 2 つ・古い物を 1 つ減らす</text>
+    <rect x="279" y="108" width="20" height="28" rx="3" fill="none" stroke="#5cc1ff" stroke-width="2" pointer-events="all" />
+    <rect x="305" y="108" width="20" height="28" rx="3" fill="none" stroke="#5cc1ff" stroke-width="2" pointer-events="all" />
+    <rect x="331" y="108" width="20" height="28" rx="3" fill="none" stroke="#5cc1ff" stroke-width="2" pointer-events="all" />
+    <rect x="365" y="108" width="20" height="28" rx="3" fill="none" stroke="#f2b632" stroke-width="2" stroke-dasharray="4 3" pointer-events="all" />
+    <rect x="391" y="108" width="20" height="28" rx="3" fill="none" stroke="#f2b632" stroke-width="2" stroke-dasharray="4 3" pointer-events="all" />
+    <text x="351" y="164" text-anchor="middle" font-size="13" fill="#9fb0c6">新しい Pod が Ready になった</text>
+    <text x="351" y="186" text-anchor="middle" font-size="13" fill="#9fb0c6">分だけ、古い Pod を減らす</text>
+  </g>
+  <line x1="458" y1="134" x2="482" y2="134" stroke="#9fb0c6" stroke-width="2" marker-end="url(#ar)" />
+  <g class="el" data-part="done">
+    <rect x="486" y="68" width="194" height="132" rx="6" fill="none" stroke="#3ae08a" stroke-width="2" pointer-events="all" />
+    <text x="583" y="92" text-anchor="middle" font-size="13" fill="#eef2f6">新しい版が 4 つ</text>
+    <rect x="531" y="108" width="20" height="28" rx="3" fill="none" stroke="#3ae08a" stroke-width="2" pointer-events="all" />
+    <rect x="559" y="108" width="20" height="28" rx="3" fill="none" stroke="#3ae08a" stroke-width="2" pointer-events="all" />
+    <rect x="587" y="108" width="20" height="28" rx="3" fill="none" stroke="#3ae08a" stroke-width="2" pointer-events="all" />
+    <rect x="615" y="108" width="20" height="28" rx="3" fill="none" stroke="#3ae08a" stroke-width="2" pointer-events="all" />
+    <text x="583" y="164" text-anchor="middle" font-size="13" fill="#9fb0c6">その間も、残った Pod が</text>
+    <text x="583" y="186" text-anchor="middle" font-size="13" fill="#9fb0c6">頼みに答え続ける</text>
+  </g>
+  <text x="20" y="238" font-size="16" fill="#ff8a7a">壊れた版</text>
+  <g class="el" data-part="stuck">
+    <rect x="20" y="250" width="436" height="112" rx="6" fill="none" stroke="#ff8a7a" stroke-width="2" stroke-dasharray="6 4" pointer-events="all" />
+    <rect x="44" y="270" width="20" height="28" rx="3" fill="none" stroke="#5cc1ff" stroke-width="2" pointer-events="all" />
+    <rect x="70" y="270" width="20" height="28" rx="3" fill="none" stroke="#5cc1ff" stroke-width="2" pointer-events="all" />
+    <rect x="96" y="270" width="20" height="28" rx="3" fill="none" stroke="#5cc1ff" stroke-width="2" pointer-events="all" />
+    <rect x="130" y="270" width="20" height="28" rx="3" fill="none" stroke="#ff8a7a" stroke-width="2" stroke-dasharray="4 3" pointer-events="all" />
+    <rect x="156" y="270" width="20" height="28" rx="3" fill="none" stroke="#ff8a7a" stroke-width="2" stroke-dasharray="4 3" pointer-events="all" />
+    <text x="196" y="282" font-size="13" fill="#eef2f6">新しい 2 つが readiness に通らない</text>
+    <text x="196" y="302" font-size="13" fill="#eef2f6">→ 古い物を減らせず、止まる</text>
+    <text x="44" y="330" font-size="13" fill="#9fb0c6">古い 3 つが答え続ける。600 秒進まなければ、期限を過ぎた</text>
+    <text x="44" y="350" font-size="13" fill="#9fb0c6">（exceeded its progress deadline）と知らせる</text>
+  </g>
+  <line x1="458" y1="306" x2="482" y2="306" stroke="#9fb0c6" stroke-width="2" marker-end="url(#ar)" />
+  <g class="el" data-part="undo">
+    <rect x="486" y="250" width="194" height="112" rx="6" fill="none" stroke="#5cc1ff" stroke-width="2" pointer-events="all" />
+    <text x="583" y="280" text-anchor="middle" font-size="13" fill="#eef2f6">rollout undo</text>
+    <text x="583" y="306" text-anchor="middle" font-size="13" fill="#9fb0c6">前の世代の設計図に戻し、</text>
+    <text x="583" y="328" text-anchor="middle" font-size="13" fill="#9fb0c6">新しい Pod を片付けて</text>
+    <text x="583" y="350" text-anchor="middle" font-size="13" fill="#9fb0c6">古い版を 4 つに戻す</text>
+  </g>
+</svg>
