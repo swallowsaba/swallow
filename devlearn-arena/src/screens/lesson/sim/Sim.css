@@ -338,6 +338,8 @@
 }
 .sim-node {
   position: absolute;
+  /* 右の端に近い部品も、端までの残りの幅に縮めない（添え書きが折れる） */
+  width: max-content;
   display: flex;
   flex-direction: column;
   align-items: center;
