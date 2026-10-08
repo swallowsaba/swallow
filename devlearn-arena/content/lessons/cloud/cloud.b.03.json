@@ -1,0 +1,359 @@
+{
+  "id": "cloud.b.03",
+  "domain": "cloud",
+  "level": "beginner",
+  "theme": "資源",
+  "title": "コンピュート・ストレージ・ネットワーク",
+  "goal": "3 つの資源を組み合わせて小さな構成を作れる",
+  "minutes": 20,
+  "prerequisites": [
+    "cloud.b.02",
+    "net.b.03"
+  ],
+  "related": [
+    "net.b.03",
+    "linux.a.03"
+  ],
+  "next": [
+    "cloud.i.01",
+    "devops.i.01"
+  ],
+  "terms": [
+    "cloud",
+    "compute",
+    "storage",
+    "network",
+    "service",
+    "db",
+    "subnet",
+    "internet-gateway",
+    "firewall",
+    "web",
+    "disk",
+    "cpu"
+  ],
+  "explain": {
+    "what": "{{term:cloud}}で借りる物は、3 つの基本の資源の組み合わせ。計算する機械の{{term:compute}}、物を置く{{term:storage}}、それらをつなぐ{{term:network}}。どの{{term:service}}も、この 3 つを組み合わせて作る。",
+    "why": "3 つの役目に分けて考えると、構成を組み立てられる。特に網は、外から入れる所と入れない所を分ける。{{term:db}} のように外に見せたくない物は、外から入れない網に置く。",
+    "use": "構成の設計。網を{{term:subnet}}に区切り、外への出口（{{term:internet-gateway}}）への道がある所を外側の網、無い所を内側の網にする。外から入れるのは、外側の網に置いた機械だけ。通す{{term:firewall}}の規則も合わせて決める。",
+    "when": "市の小さな {{term:web}} の予約サイトを公開する。予約を書き込む DB と、利用者が上げた画像の置き場もいる。",
+    "figures": [
+      "cloud-b03-network"
+    ]
+  },
+  "understand": [
+    {
+      "kind": "figure-pick",
+      "figure": "cloud-b03-network",
+      "prompt": "計算する機械（コンピュート）に当たる物を全て押す。",
+      "answer": [
+        "web",
+        "db"
+      ],
+      "see": "what"
+    },
+    {
+      "kind": "relation",
+      "prompt": "2 つの関係は？",
+      "a": "DB を、出口への道が無い内側の網に置く",
+      "b": "外から DB に直接届かない",
+      "answer": "cause",
+      "why": "外から入れるのは、出口への道がある網だけ。内側の網には道が無いので、外の誰も DB に頼めない。DB に頼むのは、中の網にいる Web だけ。",
+      "see": "use"
+    }
+  ],
+  "quiz": [
+    {
+      "id": "q1",
+      "kind": "choice",
+      "prompt": "利用者が上げた写真を、たくさん置いておきたい。3 つの資源のどれを使う？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "ストレージ（物を置く場所）",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "コンピュート（計算する機械）",
+          "correct": false,
+          "whyNot": "機械の中の{{term:disk}}にも置けるが、機械を消すと一緒に消え、増やしにくい。置く物は置く場所に分ける。"
+        },
+        {
+          "id": "c",
+          "text": "ネットワーク（つなぐ網）",
+          "correct": false,
+          "whyNot": "網は機械どうしをつなぐ物。物を置く所ではない。"
+        }
+      ],
+      "explanation": "計算は機械、保存は置き場、つなぐのは網。役目ごとに分けると、それぞれを別に増やせる。"
+    },
+    {
+      "id": "q2",
+      "kind": "situation",
+      "prompt": "DB を、外から直接見えないようにしたい。どこに置く？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "出口への道が無い、内側の網",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "出口への道がある、外側の網",
+          "correct": false,
+          "whyNot": "外の誰でも DB に頼めてしまう。"
+        },
+        {
+          "id": "c",
+          "text": "どの網にも置かない",
+          "correct": false,
+          "whyNot": "網に置かない機械には、Web からも頼めない。"
+        }
+      ],
+      "explanation": "外に見せる物（Web）と見せない物（DB）で、置く網を分ける。中の網どうしは行き来できるので、Web から DB には頼める。"
+    },
+    {
+      "id": "q3",
+      "kind": "cause",
+      "prompt": "Web の機械を作ったのに、外から届かない。原因は？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "機械を置いた網に出口への道が無いか、通す規則が無い",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "Web の機械の {{term:cpu}} が少ない",
+          "correct": false,
+          "whyNot": "遅くはなっても、届かない理由にはならない。"
+        },
+        {
+          "id": "c",
+          "text": "ストレージの空きが足りない",
+          "correct": false,
+          "whyNot": "置く場所の問題で、外から入ってくる道とは関係ない。"
+        }
+      ],
+      "explanation": "外から届くには、出口 → 外側の網 → 機械の道と、その頼みを通すファイアウォールの規則の両方が要る。"
+    }
+  ],
+  "practice": {
+    "mode": "simulation",
+    "purpose": "市の予約サイトの小さな構成を作る。Web は外から届くように外側の網に、DB は外から届かないように内側の網に置き、画像の置き場を Web につなぐ。",
+    "environment": "sim-connect",
+    "setup": {
+      "directed": true,
+      "nodes": [
+        {
+          "id": "gw",
+          "label": "出口",
+          "icon": "router",
+          "x": 14,
+          "y": 22,
+          "note": "外から入る口"
+        },
+        {
+          "id": "pub",
+          "label": "外側の網",
+          "icon": "net",
+          "x": 50,
+          "y": 22,
+          "note": "出口への道あり"
+        },
+        {
+          "id": "priv",
+          "label": "内側の網",
+          "icon": "net",
+          "x": 50,
+          "y": 80,
+          "note": "出口への道なし"
+        },
+        {
+          "id": "web",
+          "label": "Web の機械",
+          "icon": "server",
+          "x": 85,
+          "y": 22,
+          "note": "コンピュート"
+        },
+        {
+          "id": "db",
+          "label": "DB の機械",
+          "icon": "db",
+          "x": 14,
+          "y": 80,
+          "note": "コンピュート"
+        },
+        {
+          "id": "store",
+          "label": "画像の置き場",
+          "icon": "disk",
+          "x": 85,
+          "y": 80,
+          "note": "ストレージ"
+        }
+      ],
+      "forbid": [
+        {
+          "a": "pub",
+          "b": "db",
+          "message": "つなげない: DB を外側の網に置くと、外から DB に届いてしまう（外側の網には出口への道がある）"
+        },
+        {
+          "a": "gw",
+          "b": "priv",
+          "message": "つなげない: 内側の網に出口をつなぐと、外から DB に届いてしまう（内側の網も、外から入れる網になる）"
+        },
+        {
+          "a": "gw",
+          "b": "web",
+          "message": "つなげない: 出口は網につなぐ。機械は網の中に置く"
+        },
+        {
+          "a": "gw",
+          "b": "db",
+          "message": "つなげない: 出口は網につなぐ。機械は網の中に置く"
+        },
+        {
+          "a": "pub",
+          "b": "priv",
+          "message": "つなげない: 外側と内側の網は、中どうしなら初めから行き来できる。線は、外から頼みが入ってくる道"
+        },
+        {
+          "a": "web",
+          "b": "db",
+          "message": "つなげない: Web から DB へは、中の網どうしで初めから頼める。線は、外から頼みが入ってくる道"
+        },
+        {
+          "a": "gw",
+          "b": "store",
+          "message": "つなげない: 画像の置き場を出口に直接つなぐと、外の誰でも画像を読み書きできてしまう。置き場は、使う Web からつなぐ"
+        },
+        {
+          "a": "pub",
+          "b": "store",
+          "message": "つなげない: 画像の置き場は、網の中に置く機械ではない。置き場は、使う Web からつなぐ"
+        },
+        {
+          "a": "priv",
+          "b": "store",
+          "message": "つなげない: 画像の置き場は、網の中に置く機械ではない。置き場は、使う Web からつなぐ"
+        }
+      ],
+      "sends": [
+        {
+          "from": "gw",
+          "to": "web",
+          "label": "外から Web に頼む"
+        }
+      ],
+      "panels": [
+        {
+          "kind": "kv",
+          "title": "置く物",
+          "rows": [
+            [
+              "Web の機械",
+              "外から頼まれる"
+            ],
+            [
+              "DB の機械",
+              "予約を書く。頼むのは Web だけ"
+            ],
+            [
+              "画像の置き場",
+              "Web が画像を置く"
+            ]
+          ]
+        },
+        {
+          "kind": "text",
+          "title": "線の意味",
+          "body": "線は、外から頼みが入ってくる道（矢印の向き）。網を機械につなぐと、その網に機械を置いたことになる。外側と内側の網は中どうしなら初めから行き来でき、Web から DB に頼める。"
+        },
+        {
+          "kind": "text",
+          "title": "外から DB へ",
+          "body": "届かない。DB を置いた内側の網には、出口への道が無い。DB に頼めるのは、中の網にいる Web だけ。",
+          "when": "link priv db && !reach gw db"
+        }
+      ]
+    },
+    "steps": [
+      {
+        "id": "public",
+        "purpose": "出口を外側の網につなぎ、Web の機械を外側の網に置く。外から Web に頼みを送り、届くことを確かめる。",
+        "check": {
+          "kind": "sim",
+          "expr": "sent gw web"
+        },
+        "afterward": "外 → 出口 → 外側の網 → Web と届いた。出口への道がある網に置いたので、外から Web に頼める。",
+        "hints": [
+          "網から考える。外から入れるのは、出口がつながった網に置いた機械だけ。",
+          "出口から外側の網へ、外側の網から Web の機械へ、入ってくる向きにつなぐ。つないだら、出口から Web に送ってみる。",
+          "`connect gw pub` `connect pub web` `send gw web` の順に入れる。"
+        ],
+        "expectedErrors": [
+          "cloud-not-public"
+        ]
+      },
+      {
+        "id": "private",
+        "purpose": "DB の機械を、外から届かないように網に置く。",
+        "check": {
+          "kind": "sim",
+          "expr": "link priv db && !reach gw db"
+        },
+        "afterward": "DB は内側の網に置いた。内側の網には出口への道が無いので、外から DB には届かない。Web からは、中の網どうしで頼める。",
+        "hints": [
+          "DB は外から直接使われない。頼むのは Web だけ。",
+          "出口への道が無い網に置く。",
+          "`connect priv db` と入れる。"
+        ],
+        "expectedErrors": [
+          "cloud-db-exposed"
+        ]
+      },
+      {
+        "id": "storage",
+        "purpose": "利用者が上げた画像を置く場所（ストレージ）を、使う Web の機械につなぐ。",
+        "check": {
+          "kind": "sim",
+          "expr": "link web store"
+        },
+        "afterward": "Web が、上げられた画像を置き場に書き、読み出す。計算は機械、保存は置き場、つなぐのは網。3 つの資源で、小さな構成ができた。",
+        "hints": [
+          "画像の置き場を使うのは誰か。外の利用者に直接見せる物ではない。",
+          "使う Web の機械から、置き場へつなぐ。",
+          "`connect web store` と入れる。"
+        ],
+        "expectedErrors": [
+          "cloud-storage-wrong"
+        ]
+      }
+    ]
+  },
+  "result": {
+    "success": "Web は外側の網に、DB は内側の網に置き、画像の置き場を Web につないだ。外から Web に届き、DB には届かない構成を作った。",
+    "partial": "ヒントを使って作った。次は、DB を外側の網に置くと何が起きるかを、自分の言葉で説明してみよう。",
+    "retry": "まだ組み上がっていない。出口 → 網 → 機械の道と、出口への道が無い網を、図で確かめよう。"
+  },
+  "summary": {
+    "points": [
+      "どの構成も、コンピュート・ストレージ・ネットワークの組み合わせ",
+      "外に見せる物と見せない物で、置く網を分ける",
+      "出口と通す規則で、外から入れる所を決める"
+    ],
+    "next": [
+      "cloud.i.01",
+      "devops.i.01"
+    ],
+    "terms": [
+      "compute",
+      "storage",
+      "network"
+    ]
+  }
+}
