@@ -66,7 +66,7 @@ export const orderSetupSchema = z.object({
   items: z.array(z.object({
     id,
     label: z.string().min(1),
-    /** かかる時間（分） */
+    /** かかる時間（単位は unit。無ければ分） */
     minutes: z.number().min(0).optional(),
     /** 先（前の段）に要る物 */
     needs: z.array(id).optional(),
@@ -76,6 +76,8 @@ export const orderSetupSchema = z.object({
   }).strict()).min(2),
   /** 同じ段に並べられる（並行）か */
   parallel: z.boolean().optional(),
+  /** かかる時間の単位（画面に出す。無ければ分）。チームの手順の待ちなど、分で数えない時に書く */
+  unit: z.string().min(1).optional(),
   /** 初めの並び（操作の文の order の後ろと同じ形） */
   initial: z.string().optional(),
   ...panels,

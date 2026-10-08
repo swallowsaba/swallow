@@ -180,3 +180,29 @@ describe('模擬環境（割り振る・読み取って答える）の実戦', (
     expect($('[data-step="os"]').dataset.done).toBe('true');
   });
 });
+
+describe('模擬環境（並べる）の実戦', () => {
+  const order = (unit?: string): Practice => ({
+    mode: 'simulation',
+    purpose: '流れを組む',
+    environment: 'sim-order',
+    setup: {
+      items: [{ id: 'code', label: '書く', minutes: 8 }, { id: 'check', label: '検査', minutes: 2 }],
+      ...(unit === undefined ? {} : { unit }),
+    },
+    steps: [{ id: 'flow', purpose: '並べる', check: { kind: 'sim', expr: 'seq code<check' }, afterward: '並んだ', hints: ['a', 'b', '`order code check` と入れる。'] }],
+  });
+
+  it('時間の単位を書けば、札と合計の時間をその単位で出す。書かなければ分', () => {
+    mount(order('時間'));
+    typeStatement('order code check');
+    expect([...host.querySelectorAll('.sim-card-time')].map((e) => e.textContent)).toEqual(['8 時間', '2 時間']);
+    expect($('.sim-total').textContent).toContain('10 時間');
+    act(() => root?.unmount());
+    root = null;
+    host.remove();
+    mount(order());
+    typeStatement('order code check');
+    expect($('.sim-total').textContent).toContain('10 分');
+  });
+});

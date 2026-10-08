@@ -177,6 +177,7 @@ function OrderView({ s, send }: { s: OrderState; send: Send }) {
   const items = new Map(s.setup.items.map((i) => [i.id, i]));
   const pool = s.setup.items.filter((i) => stageOf(s, i.id) < 0);
   const timed = s.setup.items.some((i) => i.minutes !== undefined);
+  const unit = s.setup.unit ?? '分';
   const without = (id: string): string[][] => s.stages.map((g) => g.filter((x) => x !== id)).filter((g) => g.length > 0);
   const apply = (stages: string[][]): void => {
     send(orderStatement(stages));
@@ -206,7 +207,7 @@ function OrderView({ s, send }: { s: OrderState; send: Send }) {
     return (
       <button key={id} type="button" className={`sim-card${picked === id ? ' is-picked' : ''}`} data-card={id} aria-pressed={picked === id} onClick={() => setPicked(picked === id ? null : id)}>
         <span className="sim-card-label">{it?.label ?? id}</span>
-        {it?.minutes !== undefined ? <span className="sim-card-time num">{it.minutes} 分</span> : null}
+        {it?.minutes !== undefined ? <span className="sim-card-time num">{it.minutes} {unit}</span> : null}
         {it?.needs?.length ? <span className="sim-card-needs">先に要る: {it.needs.map((n) => items.get(n)?.label ?? n).join('・')}</span> : null}
       </button>
     );
@@ -244,7 +245,7 @@ function OrderView({ s, send }: { s: OrderState; send: Send }) {
           ) : null}
         </li>
       </ol>
-      {timed ? <p className="sim-total">合計の時間（各段で最も長い札の時間の和）: <span className="num">{orderTime(s)}</span> 分</p> : null}
+      {timed ? <p className="sim-total">合計の時間（各段で最も長い札の時間の和）: <span className="num">{orderTime(s)}</span> {unit}</p> : null}
       <div className="sim-pool" aria-label="置き場">
         <span className="sim-pool-label">置き場</span>
         {pool.length === 0 ? <span className="sim-pool-empty">全て並べた</span> : pool.map((i) => card(i.id))}
