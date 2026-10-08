@@ -1,0 +1,218 @@
+{
+  "id": "mon.b.02",
+  "domain": "mon",
+  "level": "beginner",
+  "theme": "ログ",
+  "title": "ログ",
+  "goal": "構造化ログを読み、絞り込める",
+  "minutes": 15,
+  "prerequisites": [
+    "mon.b.01"
+  ],
+  "related": [
+    "linux.i.02",
+    "trouble.b.03"
+  ],
+  "next": [
+    "mon.i.01",
+    "sec.a.02"
+  ],
+  "terms": [
+    "structured-log",
+    "log",
+    "log-level",
+    "json",
+    "request-id",
+    "grep",
+    "wc",
+    "pipe",
+    "jq",
+    "sort",
+    "uniq",
+    "service",
+    "file",
+    "db",
+    "disk"
+  ],
+  "explain": {
+    "what": "{{term:structured-log}}は、{{term:log}}の 1 行を項目に分けて書く形。時刻・{{term:log-level}}・{{term:service}}・依頼の番号・内容を、{{term:json}} の名前付きの項目にする。文章だけのログと違い、項目で絞り込み、数えられる。",
+    "why": "1 日に何万行もあるログを、目で全て読むことはできない。項目に分けてあれば、「失敗の行だけ」「予約のサービスだけ」と絞り込み、サービスごとに数えて、どこで失敗が多いかが分かる。",
+    "use": "障害調査・監査。水準で絞り（失敗の行だけを見る）、サービスで数え、{{term:request-id}}で 1 つの頼みの行を、サービスをまたいでつなげて追う。",
+    "when": "昨夜 21 時台に、予約サイトでエラーが出たと連絡があった。予約・支払い・画面・メールの 4 つのサービスが、1 つの{{term:file}}にログを書いている。",
+    "figures": [
+      "mon-b02-structured"
+    ]
+  },
+  "understand": [
+    {
+      "kind": "figure-pick",
+      "figure": "mon-b02-structured",
+      "prompt": "構造化ログで、どのサービスが書いた行かを示す項目を押す。",
+      "answer": [
+        "service"
+      ],
+      "see": "what"
+    },
+    {
+      "kind": "relation",
+      "prompt": "2 つの関係は？",
+      "a": "ログを水準 `ERROR` で絞る",
+      "b": "失敗した頼みの行だけが残る",
+      "answer": "cause",
+      "why": "水準は 1 行ごとの重さの印。`ERROR` は失敗、`WARN` は気になること（遅い・やり直して通った）、`INFO` は普段の記録。重い水準で絞ると、急いで見るべき行だけになる。",
+      "see": "use"
+    }
+  ],
+  "quiz": [
+    {
+      "id": "q1",
+      "kind": "situation",
+      "prompt": "毎日 100 万行出るログから、ある利用者の頼みで何が起きたかを、後ですぐ探せるようにしたい。ログをどう書く？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "時刻・水準・サービス・依頼の `ID`・内容の項目に分けた、構造化ログにする",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "何が起きたかを、1 行の長い文章で丁寧に書く",
+          "correct": false,
+          "whyNot": "文章は人には読みやすいが、項目で絞り込めない。100 万行を目で読むことになる。"
+        },
+        {
+          "id": "c",
+          "text": "サービスごとに、別の機械にログを置く",
+          "correct": false,
+          "whyNot": "置き場所を分けても、文章のままでは絞り込めず、頼みをまたいでつなげることもできない。"
+        }
+      ],
+      "explanation": "項目に分けておけば、水準・サービス・依頼の `ID` で絞り込み、数えられる。"
+    },
+    {
+      "id": "q2",
+      "kind": "choice",
+      "prompt": "本番でログを出しすぎて、{{term:disk}}がすぐ埋まる。どうする？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "出す水準を絞る（本番は `INFO` 以上にし、細かい `DEBUG` は出さない）",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "ログを全て止める",
+          "correct": false,
+          "whyNot": "障害の時に、調べる材料が無くなる。"
+        },
+        {
+          "id": "c",
+          "text": "毎朝、人がディスクの古いログを消す",
+          "correct": false,
+          "whyNot": "人の手に頼ると、忘れた日に止まる。出す量そのものを減らす。"
+        }
+      ],
+      "explanation": "水準は、どの重さから書くかの設定にも使う。開発中は `DEBUG` まで、本番は `INFO` 以上、のように場所で変える。"
+    },
+    {
+      "id": "q3",
+      "kind": "cause",
+      "prompt": "支払いの失敗を、画面・予約・支払いのログでつなげて追えない。原因は？",
+      "context": {
+        "log": "{\"time\":\"21:14:05\",\"level\":\"INFO\",\"service\":\"web\",\"msg\":\"POST /reserve\"}\n{\"time\":\"21:14:05\",\"level\":\"INFO\",\"service\":\"reserve\",\"msg\":\"reservation created\"}\n{\"time\":\"21:14:05\",\"level\":\"ERROR\",\"service\":\"payment\",\"msg\":\"card gateway timeout\"}"
+      },
+      "choices": [
+        {
+          "id": "a",
+          "text": "どの頼みの行かを示す依頼の `ID`（request_id）が、ログに無い",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "水準が書いていない",
+          "correct": false,
+          "whyNot": "水準（level）は書いてある。`ERROR` の行も見つかる。"
+        },
+        {
+          "id": "c",
+          "text": "時刻が書いてある",
+          "correct": false,
+          "whyNot": "時刻は要る。ただ、同じ秒に何件も頼みがあると、時刻だけではどの行が同じ頼みか分からない。"
+        }
+      ],
+      "explanation": "入口で頼みに `ID` を付け、通る全てのサービスがその `ID` をログに書けば、1 つの頼みの行をつなげて追える。"
+    }
+  ],
+  "practice": {
+    "mode": "terminal",
+    "purpose": "昨夜の予約サイトのログ（`~/logs/app.log`。1 行に 1 つの JSON）から、エラーの多いサービスを見つける。サービスは reserve（予約）・payment（支払い）・web（画面）・mail（メール）。",
+    "environment": "linux-basic",
+    "setup": {
+      "cwd": "/home/learner/logs",
+      "files": {
+        "/home/learner/logs/app.log": "{\"time\":\"2026-10-07T21:00:31\",\"level\":\"WARN\",\"service\":\"reserve\",\"request_id\":\"r-1001\",\"msg\":\"slow query 1.8s\"}\n{\"time\":\"2026-10-07T21:01:02\",\"level\":\"INFO\",\"service\":\"reserve\",\"request_id\":\"r-1002\",\"msg\":\"reservation created\"}\n{\"time\":\"2026-10-07T21:01:46\",\"level\":\"WARN\",\"service\":\"payment\",\"request_id\":\"r-1003\",\"msg\":\"retrying card gateway\"}\n{\"time\":\"2026-10-07T21:02:02\",\"level\":\"INFO\",\"service\":\"reserve\",\"request_id\":\"r-1004\",\"msg\":\"reservation created\"}\n{\"time\":\"2026-10-07T21:02:28\",\"level\":\"INFO\",\"service\":\"reserve\",\"request_id\":\"r-1005\",\"msg\":\"reservation created\"}\n{\"time\":\"2026-10-07T21:02:50\",\"level\":\"ERROR\",\"service\":\"reserve\",\"request_id\":\"r-1006\",\"msg\":\"db write failed: deadlock detected\"}\n{\"time\":\"2026-10-07T21:03:22\",\"level\":\"INFO\",\"service\":\"reserve\",\"request_id\":\"r-1007\",\"msg\":\"reservation created\"}\n{\"time\":\"2026-10-07T21:03:56\",\"level\":\"ERROR\",\"service\":\"reserve\",\"request_id\":\"r-1008\",\"msg\":\"db write failed: deadlock detected\"}\n{\"time\":\"2026-10-07T21:04:12\",\"level\":\"WARN\",\"service\":\"payment\",\"request_id\":\"r-1009\",\"msg\":\"retrying card gateway\"}\n{\"time\":\"2026-10-07T21:04:26\",\"level\":\"WARN\",\"service\":\"payment\",\"request_id\":\"r-1010\",\"msg\":\"retrying card gateway\"}\n{\"time\":\"2026-10-07T21:04:57\",\"level\":\"INFO\",\"service\":\"reserve\",\"request_id\":\"r-1011\",\"msg\":\"reservation created\"}\n{\"time\":\"2026-10-07T21:05:04\",\"level\":\"INFO\",\"service\":\"mail\",\"request_id\":\"r-1012\",\"msg\":\"mail sent\"}\n{\"time\":\"2026-10-07T21:05:22\",\"level\":\"ERROR\",\"service\":\"web\",\"request_id\":\"r-1013\",\"msg\":\"template render failed\"}\n{\"time\":\"2026-10-07T21:06:00\",\"level\":\"WARN\",\"service\":\"payment\",\"request_id\":\"r-1014\",\"msg\":\"retrying card gateway\"}\n{\"time\":\"2026-10-07T21:06:37\",\"level\":\"ERROR\",\"service\":\"payment\",\"request_id\":\"r-1015\",\"msg\":\"card gateway timeout\"}\n{\"time\":\"2026-10-07T21:07:01\",\"level\":\"INFO\",\"service\":\"web\",\"request_id\":\"r-1016\",\"msg\":\"GET /reserve 200\"}\n{\"time\":\"2026-10-07T21:07:22\",\"level\":\"INFO\",\"service\":\"web\",\"request_id\":\"r-1017\",\"msg\":\"GET /reserve 200\"}\n{\"time\":\"2026-10-07T21:07:49\",\"level\":\"INFO\",\"service\":\"mail\",\"request_id\":\"r-1018\",\"msg\":\"mail sent\"}\n{\"time\":\"2026-10-07T21:08:06\",\"level\":\"INFO\",\"service\":\"payment\",\"request_id\":\"r-1019\",\"msg\":\"payment accepted\"}\n{\"time\":\"2026-10-07T21:08:24\",\"level\":\"INFO\",\"service\":\"reserve\",\"request_id\":\"r-1020\",\"msg\":\"reservation created\"}\n{\"time\":\"2026-10-07T21:09:04\",\"level\":\"INFO\",\"service\":\"web\",\"request_id\":\"r-1021\",\"msg\":\"GET /reserve 200\"}\n{\"time\":\"2026-10-07T21:09:22\",\"level\":\"WARN\",\"service\":\"web\",\"request_id\":\"r-1022\",\"msg\":\"slow upstream 1.2s\"}\n{\"time\":\"2026-10-07T21:09:52\",\"level\":\"INFO\",\"service\":\"reserve\",\"request_id\":\"r-1023\",\"msg\":\"reservation created\"}\n{\"time\":\"2026-10-07T21:10:01\",\"level\":\"INFO\",\"service\":\"web\",\"request_id\":\"r-1024\",\"msg\":\"GET /reserve 200\"}\n{\"time\":\"2026-10-07T21:10:43\",\"level\":\"ERROR\",\"service\":\"reserve\",\"request_id\":\"r-1025\",\"msg\":\"db write failed: deadlock detected\"}\n{\"time\":\"2026-10-07T21:11:17\",\"level\":\"INFO\",\"service\":\"reserve\",\"request_id\":\"r-1026\",\"msg\":\"reservation created\"}\n{\"time\":\"2026-10-07T21:11:41\",\"level\":\"WARN\",\"service\":\"web\",\"request_id\":\"r-1027\",\"msg\":\"slow upstream 1.2s\"}\n{\"time\":\"2026-10-07T21:11:54\",\"level\":\"INFO\",\"service\":\"payment\",\"request_id\":\"r-1028\",\"msg\":\"payment accepted\"}\n{\"time\":\"2026-10-07T21:12:34\",\"level\":\"ERROR\",\"service\":\"payment\",\"request_id\":\"r-1029\",\"msg\":\"card gateway timeout\"}\n{\"time\":\"2026-10-07T21:12:52\",\"level\":\"INFO\",\"service\":\"reserve\",\"request_id\":\"r-1030\",\"msg\":\"reservation created\"}\n{\"time\":\"2026-10-07T21:13:07\",\"level\":\"INFO\",\"service\":\"payment\",\"request_id\":\"r-1031\",\"msg\":\"payment accepted\"}\n{\"time\":\"2026-10-07T21:13:32\",\"level\":\"WARN\",\"service\":\"mail\",\"request_id\":\"r-1032\",\"msg\":\"queue length 120\"}\n{\"time\":\"2026-10-07T21:14:09\",\"level\":\"INFO\",\"service\":\"web\",\"request_id\":\"r-1033\",\"msg\":\"GET /reserve 200\"}\n{\"time\":\"2026-10-07T21:14:30\",\"level\":\"INFO\",\"service\":\"web\",\"request_id\":\"r-1034\",\"msg\":\"GET /reserve 200\"}\n{\"time\":\"2026-10-07T21:14:37\",\"level\":\"INFO\",\"service\":\"mail\",\"request_id\":\"r-1035\",\"msg\":\"mail sent\"}\n{\"time\":\"2026-10-07T21:15:00\",\"level\":\"WARN\",\"service\":\"payment\",\"request_id\":\"r-1036\",\"msg\":\"retrying card gateway\"}\n{\"time\":\"2026-10-07T21:15:11\",\"level\":\"INFO\",\"service\":\"web\",\"request_id\":\"r-1037\",\"msg\":\"GET /reserve 200\"}\n{\"time\":\"2026-10-07T21:15:57\",\"level\":\"WARN\",\"service\":\"payment\",\"request_id\":\"r-1038\",\"msg\":\"retrying card gateway\"}\n{\"time\":\"2026-10-07T21:16:15\",\"level\":\"WARN\",\"service\":\"payment\",\"request_id\":\"r-1039\",\"msg\":\"retrying card gateway\"}\n{\"time\":\"2026-10-07T21:16:45\",\"level\":\"INFO\",\"service\":\"payment\",\"request_id\":\"r-1040\",\"msg\":\"payment accepted\"}\n{\"time\":\"2026-10-07T21:17:15\",\"level\":\"WARN\",\"service\":\"payment\",\"request_id\":\"r-1041\",\"msg\":\"retrying card gateway\"}\n{\"time\":\"2026-10-07T21:17:57\",\"level\":\"INFO\",\"service\":\"web\",\"request_id\":\"r-1042\",\"msg\":\"GET /reserve 200\"}\n{\"time\":\"2026-10-07T21:18:32\",\"level\":\"ERROR\",\"service\":\"reserve\",\"request_id\":\"r-1043\",\"msg\":\"db write failed: deadlock detected\"}\n{\"time\":\"2026-10-07T21:19:17\",\"level\":\"INFO\",\"service\":\"payment\",\"request_id\":\"r-1044\",\"msg\":\"payment accepted\"}\n{\"time\":\"2026-10-07T21:19:34\",\"level\":\"INFO\",\"service\":\"web\",\"request_id\":\"r-1045\",\"msg\":\"GET /reserve 200\"}\n{\"time\":\"2026-10-07T21:19:50\",\"level\":\"INFO\",\"service\":\"payment\",\"request_id\":\"r-1046\",\"msg\":\"payment accepted\"}\n{\"time\":\"2026-10-07T21:20:16\",\"level\":\"INFO\",\"service\":\"reserve\",\"request_id\":\"r-1047\",\"msg\":\"reservation created\"}\n{\"time\":\"2026-10-07T21:20:38\",\"level\":\"ERROR\",\"service\":\"payment\",\"request_id\":\"r-1048\",\"msg\":\"card gateway timeout\"}\n{\"time\":\"2026-10-07T21:21:16\",\"level\":\"WARN\",\"service\":\"payment\",\"request_id\":\"r-1049\",\"msg\":\"retrying card gateway\"}\n{\"time\":\"2026-10-07T21:21:43\",\"level\":\"INFO\",\"service\":\"web\",\"request_id\":\"r-1050\",\"msg\":\"GET /reserve 200\"}\n{\"time\":\"2026-10-07T21:22:27\",\"level\":\"INFO\",\"service\":\"mail\",\"request_id\":\"r-1051\",\"msg\":\"mail sent\"}\n{\"time\":\"2026-10-07T21:23:05\",\"level\":\"INFO\",\"service\":\"mail\",\"request_id\":\"r-1052\",\"msg\":\"mail sent\"}\n{\"time\":\"2026-10-07T21:23:32\",\"level\":\"INFO\",\"service\":\"web\",\"request_id\":\"r-1053\",\"msg\":\"GET /reserve 200\"}\n{\"time\":\"2026-10-07T21:24:15\",\"level\":\"INFO\",\"service\":\"payment\",\"request_id\":\"r-1054\",\"msg\":\"payment accepted\"}\n{\"time\":\"2026-10-07T21:24:37\",\"level\":\"INFO\",\"service\":\"web\",\"request_id\":\"r-1055\",\"msg\":\"GET /reserve 200\"}\n{\"time\":\"2026-10-07T21:25:07\",\"level\":\"ERROR\",\"service\":\"reserve\",\"request_id\":\"r-1056\",\"msg\":\"db write failed: deadlock detected\"}\n{\"time\":\"2026-10-07T21:25:49\",\"level\":\"INFO\",\"service\":\"reserve\",\"request_id\":\"r-1057\",\"msg\":\"reservation created\"}\n{\"time\":\"2026-10-07T21:26:14\",\"level\":\"ERROR\",\"service\":\"reserve\",\"request_id\":\"r-1058\",\"msg\":\"db write failed: deadlock detected\"}\n{\"time\":\"2026-10-07T21:26:34\",\"level\":\"INFO\",\"service\":\"web\",\"request_id\":\"r-1059\",\"msg\":\"GET /reserve 200\"}\n{\"time\":\"2026-10-07T21:27:10\",\"level\":\"INFO\",\"service\":\"reserve\",\"request_id\":\"r-1060\",\"msg\":\"reservation created\"}\n{\"time\":\"2026-10-07T21:27:52\",\"level\":\"INFO\",\"service\":\"reserve\",\"request_id\":\"r-1061\",\"msg\":\"reservation created\"}\n{\"time\":\"2026-10-07T21:28:33\",\"level\":\"INFO\",\"service\":\"web\",\"request_id\":\"r-1062\",\"msg\":\"GET /reserve 200\"}\n{\"time\":\"2026-10-07T21:28:47\",\"level\":\"ERROR\",\"service\":\"reserve\",\"request_id\":\"r-1063\",\"msg\":\"db write failed: deadlock detected\"}\n{\"time\":\"2026-10-07T21:29:03\",\"level\":\"INFO\",\"service\":\"web\",\"request_id\":\"r-1064\",\"msg\":\"GET /reserve 200\"}\n{\"time\":\"2026-10-07T21:29:23\",\"level\":\"INFO\",\"service\":\"web\",\"request_id\":\"r-1065\",\"msg\":\"GET /reserve 200\"}\n{\"time\":\"2026-10-07T21:29:31\",\"level\":\"INFO\",\"service\":\"payment\",\"request_id\":\"r-1066\",\"msg\":\"payment accepted\"}\n{\"time\":\"2026-10-07T21:29:43\",\"level\":\"ERROR\",\"service\":\"web\",\"request_id\":\"r-1067\",\"msg\":\"template render failed\"}\n{\"time\":\"2026-10-07T21:30:16\",\"level\":\"INFO\",\"service\":\"mail\",\"request_id\":\"r-1068\",\"msg\":\"mail sent\"}\n{\"time\":\"2026-10-07T21:30:55\",\"level\":\"INFO\",\"service\":\"payment\",\"request_id\":\"r-1069\",\"msg\":\"payment accepted\"}\n{\"time\":\"2026-10-07T21:31:11\",\"level\":\"INFO\",\"service\":\"reserve\",\"request_id\":\"r-1070\",\"msg\":\"reservation created\"}\n{\"time\":\"2026-10-07T21:31:40\",\"level\":\"INFO\",\"service\":\"payment\",\"request_id\":\"r-1071\",\"msg\":\"payment accepted\"}\n"
+      }
+    },
+    "steps": [
+      {
+        "id": "count",
+        "purpose": "水準が `ERROR` の行の数を答える。",
+        "check": {
+          "kind": "answer",
+          "equals": "12"
+        },
+        "afterward": "`ERROR` の行は 12 行。71 行のうち `INFO` が 46 行、`WARN` が 13 行。項目（`\"level\":\"ERROR\"`）で絞ったので、内容の文に `ERROR` という字が入った行を拾う心配も無い。",
+        "hints": [
+          "まず `head -3 app.log` で 1 行の形を見る。水準は `\"level\":\"ERROR\"` の項目。",
+          "`grep '\"level\":\"ERROR\"' app.log` で `ERROR` の行だけにし、`wc -l` で数える。2 つは `|` でつなぐ。",
+          "`grep '\"level\":\"ERROR\"' app.log | wc -l` と打ち、出た数 `12` を答える。"
+        ],
+        "expectedErrors": [
+          "mon-counted-warn",
+          "enoent"
+        ]
+      },
+      {
+        "id": "service",
+        "purpose": "`ERROR` の行が一番多いサービスの名前を答える。",
+        "check": {
+          "kind": "answer",
+          "equals": "reserve"
+        },
+        "afterward": "reserve（予約）が 7 行で一番多い。内容は db write failed: deadlock detected（{{term:db}} への書き込みが詰まった）。payment は `WARN` が 9 行あるが、retrying card gateway（やり直して通った）の記録で、失敗ではない。",
+        "hints": [
+          "`ERROR` の行から、サービスの項目だけを取り出して数える。",
+          "`jq -r .service` で各行のサービスの名前だけを出し、`sort | uniq -c | sort -rn` で数の多い順に並べる。",
+          "`grep '\"level\":\"ERROR\"' app.log | jq -r .service | sort | uniq -c | sort -rn` と打ち、一番上の `reserve` を答える。"
+        ],
+        "expectedErrors": [
+          "mon-counted-warn",
+          "web-jq-parse",
+          "web-jq-compile",
+          "enoent"
+        ]
+      }
+    ]
+  },
+  "result": {
+    "success": "ログを水準で絞り、サービスごとに数えて、昨夜エラーの多かったサービスを見つけた。",
+    "partial": "ヒントを使って見つけた。次は、`WARN` の多い payment をなぜ選ばないのかを、自分の言葉で説明してみよう。",
+    "retry": "まだ答えが合っていない。`ERROR` の行だけに絞れているか、`wc -l` や `uniq -c` の数を、項目ごとに確かめよう。"
+  },
+  "summary": {
+    "points": [
+      "ログは項目に分けて書く（構造化ログ）",
+      "水準で絞り、サービスで数える",
+      "依頼の `ID` で、1 つの頼みの行をつなげて追う"
+    ],
+    "next": [
+      "mon.i.01",
+      "sec.a.02"
+    ],
+    "terms": [
+      "structured-log",
+      "log-level",
+      "request-id"
+    ]
+  }
+}

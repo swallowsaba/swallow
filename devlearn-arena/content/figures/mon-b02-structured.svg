@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 700 330" font-family="&quot;Noto Sans JP&quot;, sans-serif">
+  <title>文章だけのログは目で読むしかない。構造化ログは 1 行を項目（時刻・水準・サービス・依頼の ID・内容）に分けて書くので、項目で絞り込み、数えられる</title>
+  <text x="20" y="28" font-size="16" fill="#ff8a7a">文章だけのログ</text>
+  <g class="el" data-part="plain">
+    <rect x="20" y="40" width="660" height="52" rx="6" fill="none" stroke="#ff8a7a" stroke-width="2" stroke-dasharray="6 4" pointer-events="all" />
+    <text x="36" y="72" font-size="14" font-family="&quot;JetBrains Mono&quot;, monospace" fill="#eef2f6">21:14:05 予約の書き込みに失敗しました（デッドロック）</text>
+  </g>
+  <text x="20" y="114" font-size="13" fill="#9fb0c6">どのサービスか・どの頼みか・どれだけ重いかを、読む人が文から推し量る</text>
+  <text x="20" y="160" font-size="16" fill="#3ae08a">構造化ログ（1 行に 1 つの JSON）</text>
+  <g class="el" data-part="time">
+    <rect x="20" y="174" width="150" height="64" rx="6" fill="none" stroke="#5cc1ff" stroke-width="2" pointer-events="all" />
+    <text x="95" y="198" text-anchor="middle" font-size="13" fill="#9fb0c6">time（時刻）</text>
+    <text x="95" y="222" text-anchor="middle" font-size="13" font-family="&quot;JetBrains Mono&quot;, monospace" fill="#eef2f6">21:14:05</text>
+  </g>
+  <g class="el" data-part="level">
+    <rect x="178" y="174" width="110" height="64" rx="6" fill="none" stroke="#ff8a7a" stroke-width="2" pointer-events="all" />
+    <text x="233" y="198" text-anchor="middle" font-size="13" fill="#9fb0c6">level（水準）</text>
+    <text x="233" y="222" text-anchor="middle" font-size="13" font-family="&quot;JetBrains Mono&quot;, monospace" fill="#eef2f6">ERROR</text>
+  </g>
+  <g class="el" data-part="service">
+    <rect x="296" y="174" width="124" height="64" rx="6" fill="none" stroke="#f2b632" stroke-width="2" pointer-events="all" />
+    <text x="358" y="198" text-anchor="middle" font-size="13" fill="#9fb0c6">service</text>
+    <text x="358" y="222" text-anchor="middle" font-size="13" font-family="&quot;JetBrains Mono&quot;, monospace" fill="#eef2f6">reserve</text>
+  </g>
+  <g class="el" data-part="request_id">
+    <rect x="428" y="174" width="120" height="64" rx="6" fill="none" stroke="#3ae08a" stroke-width="2" pointer-events="all" />
+    <text x="488" y="198" text-anchor="middle" font-size="13" fill="#9fb0c6">request_id</text>
+    <text x="488" y="222" text-anchor="middle" font-size="13" font-family="&quot;JetBrains Mono&quot;, monospace" fill="#eef2f6">r-1042</text>
+  </g>
+  <g class="el" data-part="msg">
+    <rect x="556" y="174" width="124" height="64" rx="6" fill="none" stroke="#9fb0c6" stroke-width="2" pointer-events="all" />
+    <text x="618" y="198" text-anchor="middle" font-size="13" fill="#9fb0c6">msg（内容）</text>
+    <text x="618" y="222" text-anchor="middle" font-size="13" fill="#eef2f6">書き込み失敗</text>
+  </g>
+  <text x="20" y="272" font-size="13" fill="#9fb0c6">項目で絞る: level が ERROR の行だけ ／ 数える: service ごとの行の数</text>
+  <text x="20" y="298" font-size="13" fill="#9fb0c6">つなげる: 同じ request_id の行を、サービスをまたいで並べる</text>
+</svg>
