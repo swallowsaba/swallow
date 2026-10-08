@@ -41,6 +41,15 @@ describe('jq（JSON から値を取り出す）', () => {
     expect(run(`cat items.json | jq '.[0].stock'`).out).toBe('0\n');
   });
 
+  it('入力は JSON の値の並び（1 行に 1 つの JSON Lines）。本物と同じく値ごとに式を当て、読めない行に来たらそこまで出して止まる', () => {
+    const lines = '{"level":"ERROR","service":"reserve"}\n{"level":"INFO","service":"web"}\n{"level":"ERROR","service":"payment"}\n';
+    expect(runJq('.service', lines, { raw: true }).out).toBe('reserve\nweb\npayment\n');
+    expect(runJq('select(.level == "ERROR") | .service', lines, { raw: true }).out).toBe('reserve\npayment\n');
+    expect(runJq('.', '1 2\n"a"', { compact: true }).out).toBe('1\n2\n"a"\n');
+    expect(runJq('.service', `${lines}not json\n`, { raw: true })).toEqual({ out: 'reserve\nweb\npayment\n', err: 'parse error: Invalid literal at line 4, column 4\n', code: 2 });
+    expect(runJq('.service.x', lines, {})).toMatchObject({ code: 5, err: 'jq: error (at <stdin>:1): Cannot index string with "x"\n' });
+  });
+
   it('配列に .name と書くと、本物と同じ言い方で失敗する（配列と 1 つの値の取り違え）', () => {
     const r = run('jq ".name" items.json');
     expect(r.code).toBe(5);

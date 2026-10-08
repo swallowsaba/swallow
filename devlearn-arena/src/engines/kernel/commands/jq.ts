@@ -3,11 +3,12 @@ import type { CommandSpec } from '../registry';
 import { exists, isDir, readFile } from '../vfs';
 
 /**
- * jq（JSON から値を取り出す）の小さな模型。純粋な関数。docs/lessons/web.md の web.i.02 が使う。
+ * jq（JSON から値を取り出す）の小さな模型。純粋な関数。docs/lessons/web.md の web.i.02 と、構造化ログ（mon.b.02）が使う。
  *
  * - 式: `.`・`.名前`・`.[番号]`（負の番号は後ろから）・`.[]`・`|`・`,`・`( )`・`[ … ]`（集める）・文字列と数と true・false・null
  * - 比べる: `==` `!=` `<` `<=` `>` `>=`・`and` `or`・`not`
  * - 関数: `select(式)`・`map(式)`・`length`・`keys`
+ * - 入力は JSON の値の並び（JSON Lines のログなど）。値ごとに式を当てる
  * - 出力は 2 字下げで整える（-c で 1 行、-r で文字列を引用符なし）
  * - 誤りは本物と同じ言い方と終了の値（式が読めない 3・入力が JSON でない 2・たどれない 5）
  */
@@ -280,28 +281,71 @@ export function runJq(filter: string, text: string, opts: JqOptions): { out: str
     return { out: '', err: `${head} at <top-level>, line 1:\n${filter}\njq: 1 compile error\n`, code: 3 };
   }
   if (text.trim() === '') return { out: '', code: 0 };
-  let value: Json;
-  try {
-    value = JSON.parse(text) as Json;
-  } catch (e) {
-    const at = /position (\d+)/.exec(e instanceof Error ? e.message : '')?.[1];
-    const pos = at === undefined ? text.length : Number(at);
-    const before = text.slice(0, pos);
-    const line = before.split('\n').length;
-    const column = pos - before.lastIndexOf('\n');
-    return { out: '', err: `parse error: Invalid literal at line ${String(line)}, column ${String(column)}\n`, code: 2 };
-  }
-  const lines = (text.match(/\n/g) ?? []).length;
+  // 本物と同じく、入力は JSON の値の並び（1 行に 1 つの JSON Lines など）。値ごとに式を当て、読めない所に来たらそこで止まる
   let out = '';
-  try {
-    for (const v of evaluate(program, value)) {
-      out += `${opts.raw && typeof v === 'string' ? v : opts.compact ? JSON.stringify(v) : JSON.stringify(v, null, 2)}\n`;
+  let end = 0;
+  for (;;) {
+    const next = nextValue(text, end);
+    if (next === null) break;
+    if ('error' in next) {
+      const before = text.slice(0, next.error);
+      const line = before.split('\n').length;
+      const column = next.error - before.lastIndexOf('\n');
+      return { out, err: `parse error: Invalid literal at line ${String(line)}, column ${String(column)}\n`, code: 2 };
     }
-  } catch (e) {
-    if (!(e instanceof RunError)) throw e;
-    return { out, err: `jq: error (at ${opts.source ?? '<stdin>'}:${String(lines)}): ${e.message}\n`, code: 5 };
+    end = next.end;
+    // 誤りの文の行は、本物と同じく値の後ろの空白（改行）まで読んだ所
+    let after = end;
+    while (after < text.length && /\s/.test(text[after] ?? '')) after += 1;
+    const lines = (text.slice(0, after).match(/\n/g) ?? []).length;
+    try {
+      for (const v of evaluate(program, next.value)) {
+        out += `${opts.raw && typeof v === 'string' ? v : opts.compact ? JSON.stringify(v) : JSON.stringify(v, null, 2)}\n`;
+      }
+    } catch (e) {
+      if (!(e instanceof RunError)) throw e;
+      return { out, err: `jq: error (at ${opts.source ?? '<stdin>'}:${String(lines)}): ${e.message}\n`, code: 5 };
+    }
   }
   return { out, code: 0 };
+}
+
+/** from から次の JSON の値を 1 つ読む（無ければ null。読めなければ誤りの位置） */
+function nextValue(text: string, from: number): { value: Json; end: number } | { error: number } | null {
+  let i = from;
+  while (i < text.length && /\s/.test(text[i] ?? '')) i += 1;
+  if (i >= text.length) return null;
+  const start = i;
+  const c = text[i] ?? '';
+  if (c === '{' || c === '[' || c === '"') {
+    // 括弧の深さと文字列をたどって、値の終わりを探す
+    let depth = 0;
+    let inString = false;
+    for (; i < text.length; i += 1) {
+      const ch = text[i] ?? '';
+      if (inString) {
+        if (ch === '\\') i += 1;
+        else if (ch === '"') {
+          inString = false;
+          if (depth === 0) break;
+        }
+      } else if (ch === '"') inString = true;
+      else if (ch === '{' || ch === '[') depth += 1;
+      else if (ch === '}' || ch === ']') {
+        depth -= 1;
+        if (depth === 0) break;
+      }
+    }
+    i += 1;
+  } else {
+    while (i < text.length && !/[\s{}[\],"]/.test(text[i] ?? '')) i += 1;
+  }
+  try {
+    return { value: JSON.parse(text.slice(start, i)) as Json, end: i };
+  } catch (e) {
+    const at = /position (\d+)/.exec(e instanceof Error ? e.message : '')?.[1];
+    return { error: at === undefined ? Math.min(i, text.length) : start + Number(at) };
+  }
 }
 
 export const jqCommands: CommandSpec[] = [
