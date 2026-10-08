@@ -25,6 +25,8 @@ import { SqlConsole } from './sql/SqlPractice';
 import { runStatement, setupSqlOf, tablesOf, type SqlLogEntry } from './sql/sqlRun';
 import { TerminalView, type TerminalHandle } from './terminal/TerminalView';
 import { editorSaved, simSaved, sqlSaved, terminalSaved, useRestored, type EditorSaved, type SimLogEntry, type SimSaved, type SqlSaved, type TerminalSaved } from './savedPractice';
+import { sfx } from '@/lib/sfx';
+import { useSettings } from '../settingsContext';
 import { useConst } from './terminal/useConst';
 import { useShellSession } from './terminal/useShellSession';
 import { Feedback, Slot, StepButtons, type OnTerm } from './widgets';
@@ -68,6 +70,7 @@ function useRun(p: Practice, initial: PracticeRun | undefined) {
   const [run, setRun] = useState<PracticeRun>(() => initial ?? startRun());
   const [error, setError] = useState<ShownError | null>(null);
   const [danger, setDanger] = useState<string | null>(null);
+  const { sound } = useSettings();
   const runRef = useRef(run);
   runRef.current = run;
   const set = (next: PracticeRun): PracticeRun => {
@@ -82,8 +85,10 @@ function useRun(p: Practice, initial: PracticeRun | undefined) {
     setError,
     danger,
     set,
-    /** 1 つの操作の結果を受け取る */
+    /** 1 つの操作の結果を受け取る。音を入れていれば、エラーと手順の達成で鳴らす */
     took(r: CommandOutcome, said: string, line: string): PracticeRun {
+      if (sound && r.error) sfx.error();
+      else if (sound && r.run.stepIndex > runRef.current.stepIndex) sfx.step();
       setError(r.error ? { guide: r.error, said: said.trim(), line: line.trim() } : null);
       if (r.danger) setDanger(r.danger.why);
       return set(r.run);
@@ -201,6 +206,7 @@ function safeTest(pattern: string, line: string): boolean {
 
 function TerminalPractice({ practice: p, sessionId, saved, onSave, onFinish, onTerm, right, action, onBack, backLabel = 'クイズへ戻る' }: PracticeStageProps) {
   const restored = useRestored(() => terminalSaved(p, saved?.engineState));
+  const { commandHints } = useSettings();
   const fresh = useMemo<SessionOptions>(() => ({ restore: initialShell(p.environment, p.setup) }), [p]);
   const shell = useShellSession(restored ? { restore: restoreShell(restored.shell) } : fresh);
   const r = useRun(p, restored?.run);
@@ -257,7 +263,7 @@ function TerminalPractice({ practice: p, sessionId, saved, onSave, onFinish, onT
           </div>
           {step?.check.kind === 'answer' ? <AnswerForm key={step.id} onAnswer={onAnswer} /> : null}
           {r.error ? <ErrorGuidePanel error={r.error} onTerm={onTerm} onClose={() => { r.setError(null); termRef.current?.focus(); }} /> : null}
-          {step && !r.error ? (
+          {step && !r.error && commandHints ? (
             <p className="practice-candidates" data-testid="practice-candidates">
               <span className="practice-candidates-label">今打てるコマンドの候補</span>
               {[...commandCandidates(step), 'help'].map((c) => <code key={c} className="practice-candidate">{c}</code>)}

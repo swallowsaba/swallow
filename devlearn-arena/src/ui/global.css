@@ -65,3 +65,12 @@ button {
     display: flex;
   }
 }
+
+/* 動きを減らす設定（docs/ui-design.md 2.1: 画面の切り替えは即時）。画面の動きを止める */
+:root[data-motion='reduced'] *,
+:root[data-motion='reduced'] *::before,
+:root[data-motion='reduced'] *::after {
+  animation: none !important;
+  transition: none !important;
+  scroll-behavior: auto !important;
+}

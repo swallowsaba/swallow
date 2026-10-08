@@ -148,7 +148,7 @@ describe('最初からやり直す', () => {
     await saver.replace(freshSave({ id: 'p-new', now: AT, settings }));
     const reopened = await openSession(backend, { now, newId: () => 'p-x' });
     expect(reopened.player).toEqual({ id: 'p-new', name: '市長', createdAt: AT });
-    expect(reopened.settings).toEqual(settings);
+    expect(reopened.session.settings.getState().settings).toEqual(settings);
     expect(reopened.session.city.getState().city).toEqual(newCity());
     expect(reopened.session.progress.getState().progress).toEqual(emptyProgress());
     expect(reopened.session.progress.getState().practiceSessions).toEqual({});

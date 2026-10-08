@@ -120,7 +120,7 @@
 | アイコン | 自作 SVG | `src/ui/icons/` | 線 1.6〜2px。絵文字を使わない |
 | レッスンの図 | 自作 SVG | `content/figures/<ID>.svg` | 6 章の決まり |
 | フォント | woff2（@fontsource） | 依存として取得 | 2 章 |
-| 効果音 | 自作または CC0 | `public/sfx/` | `docs/decisions.md` Q-03 |
+| 効果音 | 自作（Web Audio で波形から作る。音声ファイルを持たない） | `src/lib/sfx.ts` | `docs/decisions.md` Q-03。設定の「音」を入れた時だけ鳴らす |
 
 - ファイル名は小文字の英数字とハイフン
 - 各 SVG は 30KB 以内。`viewBox` を必ず持ち、色は tokens の値だけを使う

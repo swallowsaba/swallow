@@ -3,6 +3,8 @@ import { overlayOf, stageProgress, type OverlayKind } from '@/city/overlay';
 import { useStore } from 'zustand';
 import { useShallow } from 'zustand/react/shallow';
 import { demolish } from '@/city/place';
+import { displayOf, type Display } from '@/city/render/display';
+import type { Settings } from '@/save/schema';
 import { CityRenderer } from '@/city/render/CityRenderer';
 import { RANK_NAMES, rankOf } from '@/game/rank';
 import { STAGE_NAMES } from '@/game/stage';
@@ -95,6 +97,10 @@ export function CityScreen({ session, active = true, current, disabled = [], onE
     fit();
     window.addEventListener('resize', fit);
     renderer.start();
+    // 表示品質と動きを減らす設定を、描き方に写す（変えたらその場で）
+    const toDisplay = (x: Settings): Display => displayOf({ quality: x.quality, reduceMotion: x.reduceMotion });
+    renderer.setDisplay(toDisplay(session.settings.getState().settings));
+    const offSettings = session.settings.subscribe((x) => renderer.setDisplay(toDisplay(x.settings)));
     const isActive = (): boolean => activeRef.current;
     const detach = attachControls(canvas, renderer, isActive);
     const detachBuild = attachBuildControls(canvas, renderer, store, isActive);
@@ -136,6 +142,7 @@ export function CityScreen({ session, active = true, current, disabled = [], onE
     w.__city = renderer;
     w.__cityStore = store;
     return () => {
+      offSettings();
       cancelAnimationFrame(raf);
       unsubscribe();
       detachBuild();
@@ -145,7 +152,7 @@ export function CityScreen({ session, active = true, current, disabled = [], onE
       window.removeEventListener('resize', fit);
       delete document.body.dataset.cityReady;
     };
-  }, [store]);
+  }, [store, session.settings]);
 
   // 名札は、都市の上に重ねた知らせと表示切替の所を避ける（描き直しのたびに、出ている部品の位置を測って渡す）
   useLayoutEffect(() => {

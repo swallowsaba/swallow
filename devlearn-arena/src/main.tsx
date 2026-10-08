@@ -10,6 +10,9 @@ import { freshSave } from './save/manage';
 import type { SaveControls } from './screens/settings/SettingsScreen';
 import { nowIso } from './screens/clock';
 import { useSaveStatus } from './screens/saveStatus';
+import { applySettings } from './screens/settingsContext';
+import { attachSounds } from './screens/sound';
+import { sfx } from './lib/sfx';
 import './ui/fonts';
 import './ui/global.css';
 
@@ -45,6 +48,12 @@ function takeAfterReopen(): string | null {
 const backend = idbBackend();
 void openSession(backend, { now: nowIso, newId: () => crypto.randomUUID() }).then((opened) => {
   if (opened.problem) useSaveStatus.getState().set(opened.problem);
+  // 文字の大きさ・動き・表示品質を、描く前にページの根へ写す（変えたら、その場で写し直す）
+  const settings = opened.session.settings;
+  applySettings(settings.getState().settings, document.documentElement);
+  settings.subscribe((s) => applySettings(s.settings, document.documentElement));
+  // 効果音（設定で音を入れた時だけ。既定は消音）
+  attachSounds(opened.session, (name) => sfx[name]());
   const saver = startAutosave(opened, backend, { now: nowIso, onStatus: (m) => useSaveStatus.getState().set(m) });
   const flush = (): void => void saver.flush();
   window.addEventListener('pagehide', flush);
@@ -57,7 +66,7 @@ void openSession(backend, { now: nowIso, newId: () => crypto.randomUUID() }).the
   // 書き出し・読み込み・やり直し（設定）。置き換えたら保存先から開き直し、都市画面から始める
   const saves: SaveControls = {
     snapshot: saver.snapshot,
-    fresh: () => freshSave({ id: crypto.randomUUID(), now: nowIso(), settings: opened.settings }),
+    fresh: () => freshSave({ id: crypto.randomUUID(), now: nowIso(), settings: opened.session.settings.getState().settings }),
     replace: async (data, message) => {
       await saver.replace(data);
       putAfterReopen(message);

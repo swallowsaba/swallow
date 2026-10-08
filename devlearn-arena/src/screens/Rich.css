@@ -28,3 +28,9 @@
   overflow-x: auto;
   line-height: 1.5;
 }
+/* ふりがな（設定で入れた時だけ。docs/learning-design.md 8 章） */
+.rich-term rt {
+  font-size: var(--fs-12);
+  font-weight: 400;
+  color: var(--hud-text-sub);
+}

@@ -5,7 +5,8 @@
   left: 14px;
   z-index: 8;
   width: 300px;
-  max-height: 160px;
+  /* 文字を大きくした時は、同じ 3 行が入るように広げる */
+  max-height: calc(160px * var(--font-scale, 1));
   overflow: hidden;
   background: var(--hud-bg);
   border: 2px solid var(--hud-line);

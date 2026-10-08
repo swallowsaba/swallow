@@ -17,6 +17,7 @@ import { createSession, type Session } from './screens/session';
 import { nowIso } from './screens/clock';
 import { SaveNotice } from './screens/SaveNotice';
 import { SettingsScreen, type SaveControls } from './screens/settings/SettingsScreen';
+import { SettingsContext } from './screens/settingsContext';
 import { skillValues } from './screens/skills';
 import type { EntryId } from './ui/TopBar';
 
@@ -91,7 +92,7 @@ export function App({ session: given, saves }: { session?: Session; saves?: Save
   const startLesson = useCallback((id: string): void => go({ name: 'lesson', lessonId: id }), []);
 
   return (
-    <>
+    <SettingsContext.Provider value={session.settings}>
       <CityScreen
         session={session}
         active={route.name === 'city'}
@@ -106,7 +107,7 @@ export function App({ session: given, saves }: { session?: Session; saves?: Save
         onMission={(id) => go({ name: 'missions', missionId: id })}
       />
       {route.name === 'growth' ? <GrowthScreen session={session} onClose={toCity} /> : null}
-      {route.name === 'settings' && saves ? <SettingsScreen saves={saves} onClose={toCity} /> : null}
+      {route.name === 'settings' && saves ? <SettingsScreen session={session} saves={saves} onClose={toCity} /> : null}
       {route.name === 'learn' ? (
         <LearnScreen
           session={session}
@@ -166,6 +167,6 @@ export function App({ session: given, saves }: { session?: Session; saves?: Save
         <h1>PC の大きな画面で遊んでください</h1>
         <p>このゲームは横 1280・縦 720 以上の画面に合わせて作っています。</p>
       </div>
-    </>
+    </SettingsContext.Provider>
   );
 }

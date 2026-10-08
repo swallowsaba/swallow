@@ -13,6 +13,10 @@
 
 .overlay-buttons {
   display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  /* 下中央の建設メニュー（幅 約 520）に重ならない幅まで。文字を大きくして入らない時は 2 段にする */
+  max-width: calc(50vw - 284px);
   align-items: center;
   gap: 2px;
   padding: 4px 6px;

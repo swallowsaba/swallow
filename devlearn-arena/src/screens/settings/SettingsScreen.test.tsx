@@ -37,12 +37,12 @@ afterEach(() => {
   useSaveStatus.getState().set(null);
 });
 
-function mount(saves: SaveControls): HTMLDivElement {
+function mount(saves: SaveControls, session = createSession()): HTMLDivElement {
   const host = document.createElement('div');
   document.body.append(host);
   const root = createRoot(host);
   roots.push(root);
-  act(() => root.render(<SettingsScreen saves={saves} onClose={() => undefined} />));
+  act(() => root.render(<SettingsScreen session={session} saves={saves} onClose={() => undefined} />));
   return host;
 }
 
@@ -156,3 +156,28 @@ describe('設定の保存（書き出し・読み込み・最初からやり直�
     expect(host.querySelector('[data-testid="autosave-state"]')?.textContent).toContain('保存できなかった');
   });
 });
+
+describe('設定の項目（音・動き・文字・画質・ふりがな・コマンドの候補）', () => {
+  it('選ぶと設定が変わり、選んでいる物が分かる。既定は音を消し、動き・文字・画質は標準、ふりがなは無し、コマンドの候補は出す', () => {
+    const session = createSession();
+    const host = mount(controls(), session);
+    const choice = (group: string, label: string): HTMLButtonElement => {
+      const g = host.querySelector(`[data-setting="${group}"]`);
+      const b = [...(g?.querySelectorAll('button') ?? [])].find((x) => x.textContent === label);
+      if (!b) throw new Error(`${group} の「${label}」が無い`);
+      return b;
+    };
+    const pressed = (group: string): string[] => [...(host.querySelector(`[data-setting="${group}"]`)?.querySelectorAll('button[aria-pressed="true"]') ?? [])].map((b) => b.textContent ?? '');
+    expect(['sound', 'reduceMotion', 'fontScale', 'quality', 'furigana', 'commandHints'].map(pressed)).toEqual([['鳴らさない'], ['減らさない'], ['標準'], ['標準'], ['付けない'], ['出す']]);
+
+    act(() => choice('sound', '鳴らす').click());
+    act(() => choice('reduceMotion', '減らす').click());
+    act(() => choice('fontScale', '特大').click());
+    act(() => choice('quality', '低').click());
+    act(() => choice('furigana', '付ける').click());
+    act(() => choice('commandHints', '出さない').click());
+    expect(session.settings.getState().settings).toEqual({ sound: true, reduceMotion: true, fontScale: 1.3, quality: 'low', furigana: true, commandHints: false });
+    expect(pressed('fontScale')).toEqual(['特大']);
+  });
+});
+

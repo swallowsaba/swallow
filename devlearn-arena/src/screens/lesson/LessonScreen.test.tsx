@@ -6,6 +6,7 @@ import { termOf, wordOf } from '@/content/glossary';
 import { loadLesson } from '@/content/lessons';
 import type { Lesson } from '@/content/schema';
 import { useSaveStatus } from '../saveStatus';
+import { SettingsContext } from '../settingsContext';
 import { createSession, type Session } from '../session';
 import { LessonScreen } from './LessonScreen';
 import { FakeScreen } from './terminal/fakeScreen';
@@ -91,7 +92,11 @@ async function open(session: Session, lessonId: string): Promise<Opened> {
   const onLesson = vi.fn();
   const onGlossary = vi.fn();
   act(() => {
-    root.render(<LessonScreen session={session} lessonId={lessonId} onExit={onExit} onLesson={onLesson} onGlossary={onGlossary} />);
+    root.render(
+      <SettingsContext.Provider value={session.settings}>
+        <LessonScreen session={session} lessonId={lessonId} onExit={onExit} onLesson={onLesson} onGlossary={onGlossary} />
+      </SettingsContext.Provider>,
+    );
   });
   // 中身の読み込み（分野ごとに後から読む）を待つ
   for (let i = 0; i < 100 && !host.querySelector('.stage'); i += 1) {
@@ -749,6 +754,16 @@ describe('見本の 2 本を最後まで通せる（docs/development-plan.md Pha
     typeLine('cd /srv/app');
     next(host);
     expect($(host, '[data-testid="stage-result"]').dataset.result).toBe('success');
+  });
+
+  it('コマンドの候補は設定で消せる（docs/learning-design.md 8 章）', async () => {
+    const session = createSession(1);
+    session.settings.getState().set({ commandHints: false });
+    const id = 'found.b.04';
+    const { host } = await toPractice(session, id, await lesson(id));
+    expect(host.querySelector('[data-testid="practice-candidates"]')).toBeNull();
+    act(() => session.settings.getState().set({ commandHints: true }));
+    expect($(host, '[data-testid="practice-candidates"]').textContent).toContain('pwd');
   });
 
   it('途中の実戦の記録が壊れていても（書き換えたファイルを読み込んだ時など）画面は壊れず、初めから始めて 1 行で知らせる', async () => {

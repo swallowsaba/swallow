@@ -82,6 +82,17 @@ describe('リロードしても進捗が消えない', () => {
     expect(second.session.city.getState().city.funds).toBe(first.session.city.getState().city.funds);
   });
 
+  it('設定を変えると 2 秒後に保存され、開き直すと元に戻る', async () => {
+    const backend = memoryBackend();
+    const first = await openSession(backend, { now, newId: () => 'p-1' });
+    const saver = startAutosave(first, backend, { now });
+    first.session.settings.getState().set({ fontScale: 1.3, reduceMotion: true });
+    await vi.advanceTimersByTimeAsync(2100);
+    saver.stop();
+    const second = await openSession(backend, { now, newId: () => 'p-1' });
+    expect(second.session.settings.getState().settings).toMatchObject({ fontScale: 1.3, reduceMotion: true, sound: false });
+  });
+
   it('レッスンの段が進んだ時は、2 秒を待たずにすぐ保存する', async () => {
     const backend = memoryBackend();
     const opened = await openSession(backend, { now, newId: () => 'p-1' });

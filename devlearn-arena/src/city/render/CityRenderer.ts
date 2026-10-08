@@ -15,6 +15,7 @@ import { MAP_SIZE, generateTerrain, type Terrain } from '../terrain';
 import type { City, Facility, FacilityType, Point, Road } from '../types';
 import { drawGround, prepareGround, toLayer, type GroundData, type LayerSpace } from './ground';
 import { agentSvg, allAgentSvgs, allFacilitySvgs, facilityAsset, SpriteCache } from './sprites';
+import { DEFAULT_DISPLAY, type Display } from './display';
 
 /**
  * 都市ビューの描画（Canvas 2D）。模型（src/city）を読んで描くだけで、書き換えない。
@@ -95,6 +96,9 @@ export class CityRenderer {
   private dirty = true;
   private frameTimes: number[] = [];
   private onReady: (() => void) | undefined;
+  private display: Display = DEFAULT_DISPLAY;
+  /** 車と人を止めた時の、都市の時刻（秒） */
+  private frozenAt: number | null = null;
 
   constructor(private readonly canvas: HTMLCanvasElement, cityState: City, onReady?: () => void) {
     const ctx = canvas.getContext('2d', { alpha: false });
@@ -111,7 +115,7 @@ export class CityRenderer {
     this.agents = agentsOf(cityState, this.net);
     this.agentsKey = agentsKeyOf(cityState);
     this.camera = createCamera({ x: 48.5, y: 48 }, 1.25, 0);
-    this.dpr = Math.min(2, window.devicePixelRatio || 1);
+    this.dpr = this.pixelRatio();
     this.sprites = new SpriteCache(this.dpr);
     void this.sprites.preload([...allFacilitySvgs(), ...allAgentSvgs()]).then(() => {
       this.ready = true;
@@ -119,8 +123,22 @@ export class CityRenderer {
     });
   }
 
+  private pixelRatio(): number {
+    return Math.min(this.display.pixelRatioCap, window.devicePixelRatio || 1);
+  }
+
+  /** 描き方の設定（表示品質・動きを減らす。src/city/render/display.ts） */
+  setDisplay(display: Display): void {
+    const prev = this.display;
+    this.display = display;
+    if (!display.agentsMove && prev.agentsMove) this.frozenAt = this.cityState.day * SECONDS_PER_DAY;
+    if (display.agentsMove) this.frozenAt = null;
+    if (display.pixelRatioCap !== prev.pixelRatioCap) this.resize(this.viewport.width, this.viewport.height);
+    this.dirty = true;
+  }
+
   resize(width: number, height: number): void {
-    const dpr = Math.min(2, window.devicePixelRatio || 1);
+    const dpr = this.pixelRatio();
     if (dpr !== this.dpr) {
       this.dpr = dpr;
       this.sprites = new SpriteCache(dpr);
@@ -361,7 +379,8 @@ export class CityRenderer {
    */
   private placeAgents(order: NonNullable<CityRenderer['order']>): Map<number, { agent: Agent; x: number; y: number; facing: Rotation }[]> {
     const out = new Map<number, { agent: Agent; x: number; y: number; facing: Rotation }[]>();
-    const seconds = this.cityState.day * SECONDS_PER_DAY;
+    if (!this.display.agents) return out;
+    const seconds = this.frozenAt ?? this.cityState.day * SECONDS_PER_DAY;
     const rotation = this.camera.rotation;
     for (const agent of this.agents) {
       const pose = agentPose(this.net, agent, seconds);
@@ -564,7 +583,8 @@ export class CityRenderer {
     const radius = Math.max(...[[-1, -1], [1, -1], [1, 1], [-1, 1]].map(([dx, dy]) => Math.abs(toLayer(s, { x: h.at.x + (dx ?? 0) * half, y: h.at.y + (dy ?? 0) * half })[0] - cx)));
     const fade = Math.min(1, (h.until - now) / 1000);
     for (let k = 0; k < 2; k += 1) {
-      const t = ((now / 1600 + k / 2) % 1);
+      // 動きを減らす時は、輪を広げずに 2 重の輪で止めておく
+      const t = this.display.ringsMove ? (now / 1600 + k / 2) % 1 : k * 0.3;
       const r = radius * (0.8 + t * 0.5);
       ctx.beginPath();
       ctx.ellipse(o.x + cx, o.y + cy, r, r / 2, 0, 0, Math.PI * 2);

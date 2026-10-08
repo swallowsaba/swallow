@@ -2,7 +2,7 @@ import type { Progress } from '@/game/types';
 import { createSession, type Session } from '@/screens/session';
 import { readFailureText, readSave } from './migrations';
 import { fromSaveData, newPlayer, toSaveData, type PlayerMeta } from './saveData';
-import { DEFAULT_SETTINGS, type SaveData, type Settings } from './schema';
+import type { SaveData } from './schema';
 
 /**
  * 起動時の読み込みと自動保存（docs/architecture.md 5 章・docs/data-model.md 7 章）。
@@ -19,9 +19,9 @@ export interface SaveBackend {
 }
 
 export interface Opened {
+  /** 遊んでいる状態（都市・学習の記録・設定） */
   session: Session;
   player: PlayerMeta;
-  settings: Settings;
   /** 読み込みで起きた問題（画面に 1 行で出す） */
   problem?: string;
   /** false なら保存しない（読めなかった保存データの写しを残せず、上書きすると失うため） */
@@ -42,7 +42,6 @@ export async function openSession(backend: SaveBackend, options: OpenOptions): P
   const fresh = (problem?: string, canSave = true): Opened => ({
     session: createSession(),
     player: newPlayer(options.newId(), options.now()),
-    settings: DEFAULT_SETTINGS,
     canSave,
     ...(problem === undefined ? {} : { problem }),
   });
@@ -55,7 +54,7 @@ export async function openSession(backend: SaveBackend, options: OpenOptions): P
   const read = readSave(raw);
   if (read.ok) {
     const parts = fromSaveData(read.data);
-    return { session: createSession(undefined, parts), player: parts.player, settings: parts.settings, canSave: true };
+    return { session: createSession(undefined, parts), player: parts.player, canSave: true };
   }
   if (read.reason === 'empty') return fresh();
   const what = readFailureText(read.reason).what.replace(/。$/, '');
@@ -99,9 +98,9 @@ export interface Autosave {
   replace: (data: SaveData) => Promise<void>;
 }
 
-const snapshotOf = ({ session, player, settings }: Opened, at: string): SaveData => {
+const snapshotOf = ({ session, player }: Opened, at: string): SaveData => {
   const p = session.progress.getState();
-  return toSaveData({ player, settings, city: session.city.getState().city, progress: p.progress, practiceSessions: p.practiceSessions }, at, at.slice(0, 10));
+  return toSaveData({ player, settings: session.settings.getState().settings, city: session.city.getState().city, progress: p.progress, practiceSessions: p.practiceSessions }, at, at.slice(0, 10));
 };
 
 /** 遊んでいる状態の変化を見張り、保存する */
@@ -151,6 +150,9 @@ export function startAutosave(opened: Opened, backend: SaveBackend, options: Aut
   const offCity = session.city.subscribe((s, prev) => {
     if (s.city !== prev.city) schedule();
   });
+  const offSettings = session.settings.subscribe((s, prev) => {
+    if (s.settings !== prev.settings) schedule();
+  });
   const offProgress = session.progress.subscribe((s, prev) => {
     if (stopped || replacing) return;
     if (stageMoved(prev.progress, s.progress)) void save();
@@ -162,6 +164,7 @@ export function startAutosave(opened: Opened, backend: SaveBackend, options: Aut
     if (timer !== null) clearTimeout(timer);
     timer = null;
     offCity();
+    offSettings();
     offProgress();
   };
 

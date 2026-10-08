@@ -3,7 +3,7 @@
   flex: 1;
   min-height: 0;
   display: grid;
-  grid-template-columns: 232px 1fr 380px;
+  grid-template-columns: calc(232px * var(--font-scale, 1)) 1fr 380px;
 }
 .learn.is-graph .learn-body {
   grid-template-columns: 1fr 380px;
@@ -440,7 +440,7 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  height: 40px;
+  min-height: 40px;
   padding: 0 26px 0 22px;
   border: none;
   color: var(--navy);
@@ -456,8 +456,8 @@
   transform: translateY(2px);
 }
 .entry-first {
-  height: 40px;
-  padding: 0 20px;
+  min-height: 40px;
+  padding: 6px 20px;
   border: 1px solid var(--hud-line);
   background: var(--hud-bg);
   color: var(--hud-text);
@@ -725,7 +725,7 @@
 /* 1280×720 など横の狭い画面 */
 @media (max-width: 1599px) {
   .learn-body {
-    grid-template-columns: 196px 1fr 330px;
+    grid-template-columns: calc(196px * var(--font-scale, 1)) 1fr 330px;
   }
   .learn.is-graph .learn-body {
     grid-template-columns: 1fr 330px;

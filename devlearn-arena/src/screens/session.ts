@@ -1,7 +1,9 @@
 import type { City } from '@/city/types';
 import type { PracticeSession, Progress } from '@/game/types';
 import { createCityStore, type CityStore } from './city/cityStore';
+import type { Settings } from '@/save/schema';
 import { createProgressStore, type ProgressStore } from './progressStore';
+import { createSettingsStore, type SettingsStore } from './settingsStore';
 
 /**
  * 遊んでいる間の状態（都市と学習の記録）。全ての画面が同じものを読む。
@@ -10,6 +12,7 @@ import { createProgressStore, type ProgressStore } from './progressStore';
 export interface Session {
   city: CityStore;
   progress: ProgressStore;
+  settings: SettingsStore;
 }
 
 /** 保存から戻す時の、遊んでいる状態（src/save/autosave.ts） */
@@ -17,6 +20,7 @@ export interface SessionStart {
   city: City;
   progress: Progress;
   practiceSessions: Record<string, PracticeSession>;
+  settings?: Settings;
 }
 
 export function createSession(seed?: number, start?: SessionStart): Session {
@@ -25,5 +29,5 @@ export function createSession(seed?: number, start?: SessionStart): Session {
     const c = city.getState().city;
     city.getState().setCity({ ...c, funds: c.funds + amount });
   }, start?.progress, start?.practiceSessions);
-  return { city, progress };
+  return { city, progress, settings: createSettingsStore(start?.settings) };
 }
