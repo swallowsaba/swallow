@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 700 340" font-family="&quot;Noto Sans JP&quot;, sans-serif">
+  <title>自動化の候補は、頻度（横）と、1 回の時間と誤りやすさ（縦）で選ぶ。どちらも大きい作業から先に自動化し、まれな作業は手のままでよい。毎回違う判断が要る作業は、手順書で人を支える</title>
+  <defs>
+    <marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="#9fb0c6" />
+    </marker>
+  </defs>
+  <line x1="80" y1="300" x2="680" y2="300" stroke="#9fb0c6" stroke-width="2" marker-end="url(#ar)" />
+  <text x="676" y="326" text-anchor="end" font-size="13" fill="#9fb0c6">頻度（多い →）</text>
+  <line x1="80" y1="300" x2="80" y2="20" stroke="#9fb0c6" stroke-width="2" marker-end="url(#ar)" />
+  <text x="20" y="40" font-size="13" fill="#9fb0c6">時間と</text>
+  <text x="20" y="58" font-size="13" fill="#9fb0c6">誤り</text>
+  <text x="20" y="76" font-size="13" fill="#9fb0c6">（大 ↑）</text>
+  <g class="el" data-part="first">
+    <rect x="390" y="30" width="280" height="125" rx="6" fill="#3ae08a" fill-opacity="0.15" stroke="#3ae08a" stroke-width="2" />
+    <text x="530" y="66" text-anchor="middle" font-size="16" fill="#eef2f6">先に自動化する</text>
+    <text x="530" y="96" text-anchor="middle" font-size="13" fill="#9fb0c6">変更ごとの検査・配布</text>
+    <text x="530" y="118" text-anchor="middle" font-size="13" fill="#9fb0c6">浮く時間も、減る誤りも大きい</text>
+  </g>
+  <g class="el" data-part="next">
+    <rect x="390" y="165" width="280" height="125" rx="6" fill="none" stroke="#5cc1ff" stroke-width="2" pointer-events="all" />
+    <text x="530" y="201" text-anchor="middle" font-size="16" fill="#eef2f6">次の候補</text>
+    <text x="530" y="231" text-anchor="middle" font-size="13" fill="#9fb0c6">毎朝の同じ確認</text>
+  </g>
+  <g class="el" data-part="judge">
+    <rect x="100" y="30" width="280" height="125" rx="6" fill="none" stroke="#f2b632" stroke-width="2" pointer-events="all" />
+    <text x="240" y="66" text-anchor="middle" font-size="16" fill="#eef2f6">判断が要るなら人</text>
+    <text x="240" y="96" text-anchor="middle" font-size="13" fill="#9fb0c6">障害の見極め</text>
+    <text x="240" y="118" text-anchor="middle" font-size="13" fill="#9fb0c6">手順書と道具で支える</text>
+  </g>
+  <g class="el" data-part="rare">
+    <rect x="100" y="165" width="280" height="125" rx="6" fill="none" stroke="#9aa9b5" stroke-width="2" pointer-events="all" />
+    <text x="240" y="201" text-anchor="middle" font-size="16" fill="#eef2f6">手のままでよい</text>
+    <text x="240" y="231" text-anchor="middle" font-size="13" fill="#9fb0c6">年 1 回の棚卸し</text>
+    <text x="240" y="253" text-anchor="middle" font-size="13" fill="#9fb0c6">作る手間の方が大きい</text>
+  </g>
+</svg>

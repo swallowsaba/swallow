@@ -7,6 +7,7 @@
 // 実戦は、各手順の最初に 1 度わざと誤った文（コマンド）を入れてエラーの小窓を撮り、最後のヒントの答えを入れて進める。
 // FIRST='docker logs web' を付けると、わざと誤る代わりにその行を入れる（出力に当てる想定エラーの小窓を撮る）。
 // 2 つ以上の欄を選んで出来上がる誤りは、FIRST='set a 1 ;; set b 2' のように ` ;; ` で区切って順に入れる。
+// RESET=1 を付けると、エラーの小窓を撮った後に「初めに戻す」を押してから答える。
 // FIRST_STEP=手順の ID を付けると、最初の手順の代わりにその手順でわざと誤る。
 // 答える手順で FIRST を端末に打つ時は FIRST_TERM=1 を付ける。
 // HINTS=1 を付けると、最初の手順のヒント 3 段を開いた画面（-hints）も撮る。
@@ -176,6 +177,11 @@ export default async function domain(page, shot) {
       for (const f of firsts) await enter(f, answerStep && process.env.FIRST_TERM === undefined);
       console.log('エラー', await page.getAttribute('[data-testid="practice-error"]', 'data-guide'), await text(page, '[data-testid="practice-error"]'));
       await shot(`${tag}-error`);
+      // RESET=1: わざと誤った操作が残ると最後のヒントで通れない時（表に行を足しすぎた など）は、初めに戻してから答える
+      if (process.env.RESET) {
+        await page.click('[data-testid="practice-reset"]');
+        await wait(page);
+      }
     }
     for (const [j, line] of lines.entries()) {
       // 答える手順は、最後の物が答え。前の物は端末で調べるコマンド
