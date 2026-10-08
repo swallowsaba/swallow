@@ -1,0 +1,40 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 700 320" font-family="&quot;Noto Sans JP&quot;, sans-serif">
+  <title>変更の流れは、書く・CI の検査・承認の待ち・配る・監視の段でできていて、次の改善に戻る。各段の時間を棒の長さで比べると、承認の待ち（9 日）が一番長く、CI（10 分）はほとんど時間を取っていない</title>
+  <defs>
+    <marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="#9fb0c6" />
+    </marker>
+  </defs>
+  <g class="el" data-part="code">
+    <rect x="20" y="30" width="660" height="40" rx="4" fill="none" stroke="#9aa9b5" stroke-width="1" pointer-events="all" />
+    <text x="34" y="56" font-size="16" fill="#eef2f6">書く</text>
+    <rect x="160" y="40" width="120" height="20" rx="3" fill="#5cc1ff" fill-opacity="0.5" />
+    <text x="292" y="56" font-size="13" fill="#9fb0c6">3 日</text>
+  </g>
+  <g class="el" data-part="ci">
+    <rect x="20" y="78" width="660" height="40" rx="4" fill="none" stroke="#9aa9b5" stroke-width="1" pointer-events="all" />
+    <text x="34" y="104" font-size="16" fill="#eef2f6">CI の検査</text>
+    <rect x="160" y="88" width="3" height="20" fill="#5cc1ff" />
+    <text x="176" y="104" font-size="13" fill="#9fb0c6">10 分</text>
+  </g>
+  <g class="el" data-part="approve">
+    <rect x="20" y="126" width="660" height="40" rx="4" fill="none" stroke="#ff8a7a" stroke-width="2" pointer-events="all" />
+    <text x="34" y="152" font-size="16" fill="#eef2f6">承認の待ち</text>
+    <rect x="160" y="136" width="360" height="20" rx="3" fill="#ff8a7a" fill-opacity="0.6" />
+    <text x="532" y="152" font-size="13" fill="#ff8a7a">9 日（週 1 回の会議）</text>
+  </g>
+  <g class="el" data-part="deploy">
+    <rect x="20" y="174" width="660" height="40" rx="4" fill="none" stroke="#9aa9b5" stroke-width="1" pointer-events="all" />
+    <text x="34" y="200" font-size="16" fill="#eef2f6">配る</text>
+    <rect x="160" y="184" width="40" height="20" rx="3" fill="#5cc1ff" fill-opacity="0.5" />
+    <text x="212" y="200" font-size="13" fill="#9fb0c6">1 日</text>
+  </g>
+  <g class="el" data-part="monitor">
+    <rect x="20" y="222" width="660" height="40" rx="4" fill="none" stroke="#9aa9b5" stroke-width="1" pointer-events="all" />
+    <text x="34" y="248" font-size="16" fill="#eef2f6">監視</text>
+    <rect x="160" y="232" width="40" height="20" rx="3" fill="#3ae08a" fill-opacity="0.5" />
+    <text x="212" y="248" font-size="13" fill="#9fb0c6">1 日</text>
+  </g>
+  <path d="M 680 248 C 696 248 696 290 660 290 L 40 290 C 6 290 6 50 18 50" fill="none" stroke="#9fb0c6" stroke-width="1.5" stroke-dasharray="5 4" marker-end="url(#ar)" />
+  <text x="350" y="310" text-anchor="middle" font-size="13" fill="#9fb0c6">監視で分かったことが、次の改善（書く）に戻る</text>
+</svg>

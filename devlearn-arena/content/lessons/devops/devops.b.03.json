@@ -1,0 +1,282 @@
+{
+  "id": "devops.b.03",
+  "domain": "devops",
+  "level": "beginner",
+  "theme": "流れ",
+  "title": "CI/CD と DevOps",
+  "goal": "変更が本番に届くまでの流れを描ける",
+  "minutes": 15,
+  "prerequisites": [
+    "cicd.b.05"
+  ],
+  "related": [
+    "cicd.b.02",
+    "git.i.03"
+  ],
+  "next": [
+    "devops.i.01"
+  ],
+  "terms": [
+    "ci",
+    "deploy",
+    "monitoring",
+    "continuous-delivery",
+    "lead-time",
+    "devops"
+  ],
+  "explain": {
+    "what": "変更が本番に届くまでの流れ全体を見ること。コードを書く → {{term:ci}}で検査 → {{term:deploy}} → {{term:monitoring}} → 改善、と回る。{{term:continuous-delivery}}の仕組みは、この流れの一部を支える。",
+    "why": "流れの速さは、一番遅い段で決まる。CI だけを速くしても、承認の待ちが 9 日なら、届くのは速くならない。全体を描いて、一番長い待ちから手を付ける。",
+    "use": "流れの改善。各段の作業の時間と、段の間の待ちを書き出し、届くまでの時間（{{term:lead-time}}）の一番大きい所を短くする。配った後の監視までを流れに入れ、次の改善につなげる。",
+    "when": "CI は 10 分で終わるのに、本番に届くまで 2 週間かかる。どこが遅いのか、誰も全体を知らない。",
+    "figures": [
+      "devops-b03-flow"
+    ]
+  },
+  "understand": [
+    {
+      "kind": "order",
+      "prompt": "変更が利用者に届き、次の改善につながるまでの流れを、順に並べる。",
+      "items": [
+        "コードを書く",
+        "検査する",
+        "配る",
+        "監視する",
+        "改善する"
+      ],
+      "see": "what"
+    },
+    {
+      "kind": "figure-pick",
+      "figure": "devops-b03-flow",
+      "prompt": "届くまでの時間を一番長くしている段を押す。",
+      "answer": [
+        "approve"
+      ],
+      "see": "why"
+    }
+  ],
+  "quiz": [
+    {
+      "id": "q1",
+      "kind": "situation",
+      "prompt": "CI は 10 分で終わるのに、本番に届くまで 2 週間かかる。何から手を付ける？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "流れ全体を描き、一番長い待ちを短くする",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "CI をさらに速くする",
+          "correct": false,
+          "whyNot": "10 分を 5 分にしても、2 週間はほとんど変わらない。"
+        },
+        {
+          "id": "c",
+          "text": "コードを書く人を増やす",
+          "correct": false,
+          "whyNot": "書き終えた変更が途中で待っているので、書く速さは問題ではない。"
+        }
+      ],
+      "explanation": "流れの速さは一番遅い段で決まる。全体を描かないと、どこが一番遅いかが分からない。"
+    },
+    {
+      "id": "q2",
+      "kind": "choice",
+      "prompt": "変更の流れの最後に来る物は？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "監視して、次の改善につなげる",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "本番に配って終わり",
+          "correct": false,
+          "whyNot": "配った後に、利用者に効いたか・壊れていないかを見て初めて、次に何を直すかが分かる。"
+        },
+        {
+          "id": "c",
+          "text": "承認の書類を保存する",
+          "correct": false,
+          "whyNot": "記録は残すが、流れの目的は利用者に届けて良くし続けること。"
+        }
+      ],
+      "explanation": "流れは配って終わりではない。監視で分かったことが、次の変更の始まりになる。"
+    },
+    {
+      "id": "q3",
+      "kind": "cause",
+      "prompt": "承認待ちが長く、届くのが遅い。原因になりやすいのは？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "別の人に手渡して、決まった日まで待つ段がある",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "検査が自動で動いている",
+          "correct": false,
+          "whyNot": "自動の検査は、待ちを減らす側。"
+        },
+        {
+          "id": "c",
+          "text": "変更が小さい",
+          "correct": false,
+          "whyNot": "小さい変更は確かめやすく、承認も早い。"
+        }
+      ],
+      "explanation": "週 1 回の会議のような手渡しの段は、作業は短くても、待ちが長い。決まりを自動の検査に書けば、その場で承認できる。"
+    }
+  ],
+  "practice": {
+    "mode": "simulation",
+    "purpose": "書き終えた予約サイトの変更が、本番に届くまでの流れを描き、一番長い待ちを短くする。今は 12 日かかる。半分の 6 日以下にする。",
+    "environment": "sim-order",
+    "setup": {
+      "unit": "日",
+      "items": [
+        {
+          "id": "ci",
+          "label": "CI の検査と見直し",
+          "minutes": 1,
+          "extra": true
+        },
+        {
+          "id": "approve",
+          "label": "週 1 回の承認会議を待つ",
+          "minutes": 9,
+          "extra": true
+        },
+        {
+          "id": "deploy",
+          "label": "配って見張る",
+          "minutes": 2
+        },
+        {
+          "id": "ci-fast",
+          "label": "CI を 2 倍速くした検査と見直し",
+          "minutes": 0.5,
+          "extra": true
+        },
+        {
+          "id": "auto",
+          "label": "検査が通れば、その場で承認",
+          "minutes": 1,
+          "extra": true
+        }
+      ],
+      "panels": [
+        {
+          "kind": "kv",
+          "title": "今の流れ（書き終えた後）",
+          "rows": [
+            [
+              "1",
+              "CI の検査と見直し。CI は 10 分、見直しを待って 1 日"
+            ],
+            [
+              "2",
+              "週 1 回の承認会議。会議を待ち、差し戻されると次の週。平均 9 日"
+            ],
+            [
+              "3",
+              "配って見張る。2 日"
+            ]
+          ]
+        },
+        {
+          "kind": "kv",
+          "title": "直す手",
+          "rows": [
+            [
+              "CI を速く",
+              "CI と見直しを 2 倍速くする"
+            ],
+            [
+              "その場で承認",
+              "会議で確かめていた決まりを、自動の検査に書く。通れば承認"
+            ]
+          ]
+        },
+        {
+          "kind": "log",
+          "title": "流した結果",
+          "when": "has ci-fast && has approve",
+          "lines": [
+            "CI は速くなったが、届くまで 11.5 日",
+            "承認会議の 9 日の待ちが、そのまま残った"
+          ]
+        },
+        {
+          "kind": "log",
+          "title": "流した結果",
+          "when": "has auto && !has approve && has deploy && time<=6",
+          "lines": [
+            "届くまで 4 日（前は 12 日）",
+            "配った後の見張りで、次に直す所が見つかった"
+          ]
+        }
+      ]
+    },
+    "steps": [
+      {
+        "id": "draw",
+        "purpose": "今の流れを描く。左の「今の流れ」の順に並べ、合計の日数と、一番長い段を見る。",
+        "check": {
+          "kind": "sim",
+          "expr": "seq ci<approve<deploy && !has ci-fast && !has auto"
+        },
+        "afterward": "今の流れは 1 + 9 + 2 = 12 日。CI は 10 分で終わるのに、承認会議の待ちが 9 日と、全体の 4 分の 3 を占めている。",
+        "hints": [
+          "流れを見る。左の「今の流れ」の 3 つの段を、上から順に並べる。",
+          "CI の検査と見直し → 承認会議 → 配って見張る、の 3 段。直す手の札はまだ使わない。",
+          "`order ci approve deploy` と入れる。"
+        ],
+        "expectedErrors": [
+          "devops-flow-order"
+        ]
+      },
+      {
+        "id": "shorten",
+        "purpose": "一番長い待ちを短くして、届くまでを 6 日以下にする。",
+        "check": {
+          "kind": "sim",
+          "expr": "has ci && !has ci-fast && !has approve && seq ci<auto<deploy && time<=6"
+        },
+        "afterward": "承認会議の 9 日を、その場の承認の 1 日に替えた。届くまで 12 日が 4 日になった。CI を速くしても 0.5 日しか縮まなかった所を、一番長い待ちを直して 8 日縮めた。",
+        "hints": [
+          "待ちを見る。札の日数で一番大きいのはどれか。そこを直す手はどれか。",
+          "承認会議を、検査が通ればその場で承認する札に替える。CI はそのままでよい。",
+          "`order ci auto deploy` と入れる。"
+        ],
+        "expectedErrors": [
+          "devops-fast-step"
+        ]
+      }
+    ]
+  },
+  "result": {
+    "success": "流れ全体を描き、一番長い承認会議の待ちを直して、届くまでを 12 日から 4 日にした。",
+    "partial": "ヒントを使って直した。次は、CI を速くしても届くのが速くならなかった理由を、自分の言葉で説明してみよう。",
+    "retry": "まだ短くなっていない。合計の日数と各札の日数を見て、一番大きい札を探そう。"
+  },
+  "summary": {
+    "points": [
+      "流れ全体を描いて見る",
+      "一番長い待ちから短くする",
+      "配った後の監視までが流れ"
+    ],
+    "next": [
+      "devops.i.02"
+    ],
+    "terms": [
+      "lead-time",
+      "monitoring"
+    ]
+  }
+}

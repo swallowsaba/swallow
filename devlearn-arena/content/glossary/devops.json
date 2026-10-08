@@ -13,7 +13,8 @@
         "monitoring"
       ],
       "lessons": [
-        "devops.b.01"
+        "devops.b.01",
+        "devops.b.03"
       ]
     },
     {
@@ -29,6 +30,20 @@
       ],
       "lessons": [
         "devops.b.02"
+      ]
+    },
+    {
+      "id": "lead-time",
+      "word": "リードタイム",
+      "plain": "変更を書き終えてから、本番で利用者に届くまでの時間。作業の時間と、段の間の待ちの合計。",
+      "why": "流れの速さを 1 つの数で見られる。一番長い待ちを短くすると、大きく縮む。",
+      "related": [
+        "ci",
+        "continuous-delivery",
+        "devops"
+      ],
+      "lessons": [
+        "devops.b.03"
       ]
     }
   ]
