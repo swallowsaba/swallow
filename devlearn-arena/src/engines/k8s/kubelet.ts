@@ -112,7 +112,10 @@ function pullBackoff({ status, tick }: ContainerContext): ContainerStatus {
  * reason は止まった理由（アプリが自分で終わった Error・終了コード 1 か、メモリの上限を超えてカーネルに止められた OOMKilled・137）
  */
 function crashBackoff({ status, tick }: ContainerContext, reason: 'Error' | 'OOMKilled' = 'Error'): ContainerStatus {
-  if (status.restartAt !== null && tick < status.restartAt) return status;
+  if (status.restartAt !== null && tick < status.restartAt) {
+    // 止まった時は理由（OOMKilled・Error）、作り直しを待つ間は CrashLoopBackOff（本物の STATUS の移り方）
+    return status.restartCount >= 1 && status.waitingReason !== 'CrashLoopBackOff' ? { ...status, waitingReason: 'CrashLoopBackOff' } : status;
+  }
   // 本物と同じく、作り直して動かした時に数える（初めて止まった時は、まだ作り直していないので 0 のまま。すぐ作り直す）。
   // このアプリは動かすとすぐまた止まるので、作り直しと止まるのを同じ時に扱う
   const restartCount = status.lastTerminated === undefined ? status.restartCount : status.restartCount + 1;
@@ -121,7 +124,7 @@ function crashBackoff({ status, tick }: ContainerContext, reason: 'Error' | 'OOM
     ready: false,
     started: false,
     restartCount,
-    waitingReason: restartCount >= 1 ? 'CrashLoopBackOff' : reason,
+    waitingReason: reason,
     restartAt: tick + restartWait(restartCount + 1),
     lastTerminated: { reason, exitCode: reason === 'OOMKilled' ? 137 : 1 },
     lastRestartAt: tick,

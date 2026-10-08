@@ -578,6 +578,50 @@
       "terms": [
         "k8s-requests"
       ]
+    },
+    {
+      "id": "k8s-oom",
+      "match": "\\nreport-\\S+ +0/1 +(?:OOMKilled|CrashLoopBackOff|Error) +[^\\n]*\\n$",
+      "output": true,
+      "meaning": "report の Pod が止まり、作り直しを繰り返している。アプリがメモリの上限（limits）より多く使おうとして、カーネルに止められた（`OOMKilled`・終了コード 137）。",
+      "causes": [
+        "上限の `memory:` が、アプリが実際に使う量（182Mi ほど）より小さい。",
+        "上限を直したつもりで、要求（`requests:`）だけを変えた。"
+      ],
+      "hint": "`limits:` の `memory:` を、使う量より余裕のある値（`256Mi` など）にする。要求は上限以下にする。",
+      "terms": [
+        "oomkilled",
+        "k8s-limits"
+      ]
+    },
+    {
+      "id": "k8s-requests-pending",
+      "match": "\\nboard-\\S+ +0/1 +Pending +[^\\n]*\\n(?:report-[^\\n]*\\n)*$",
+      "output": true,
+      "meaning": "board の Pod が `Pending` のまま。どの Node にも置かれていない。",
+      "causes": [
+        "要求（`requests:`）の CPU かメモリが、どの Node の空きより大きい（`Insufficient cpu`）。Node 1 台は CPU 4 個・メモリ 8192Mi。",
+        "単位を誤った（`100m` のつもりで `100` と書くと、CPU 100 個分）。"
+      ],
+      "hint": "知らせの `FailedScheduling` の文を読む。要求を、アプリが使う量に合わせて小さくする（掲示板は `100m` で足りる）。",
+      "terms": [
+        "k8s-requests",
+        "k8s-scheduler"
+      ]
+    },
+    {
+      "id": "k8s-requests-over-limit",
+      "match": "must be less than or equal to (?:cpu|memory) limit",
+      "meaning": "要求（requests）が上限（limits）より大きいと言われ、その Deployment は書き込まれなかった（ほかの物は書き込まれた）。",
+      "causes": [
+        "上限を増やさずに、要求だけを増やした。",
+        "要求と上限を逆に書いた。"
+      ],
+      "hint": "要求は上限以下にする。上限だけを書けば、要求は上限と同じ量になる。",
+      "terms": [
+        "k8s-requests",
+        "k8s-limits"
+      ]
     }
   ]
 }

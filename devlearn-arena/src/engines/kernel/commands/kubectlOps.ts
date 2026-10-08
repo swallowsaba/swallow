@@ -1,3 +1,4 @@
+import { formatCpu, formatMemory } from '@/engines/k8s/quantity';
 import { CNI_NAMES } from '@/engines/k8s/bootstrap';
 import { advanceCluster, matches } from '@/engines/k8s/controllers';
 import { isReady, tickPods } from '@/engines/k8s/kubelet';
@@ -134,6 +135,12 @@ function mountError(resource: Resource): string | null {
       if (!volumes.some((v) => v.name === m.name)) {
         return `The ${resource.kind} "${resource.metadata.name}" is invalid: ${path}.containers[${String(i)}].volumeMounts[${String(j)}].name: Not found: "${m.name}"`;
       }
+    }
+    // 本物と同じく、要求（requests）は上限（limits）を超えられない
+    const over = (['cpu', 'memory'] as const).find((r) => c.limits !== null && c.limits[r] > 0 && c.requests[r] > c.limits[r]);
+    if (over !== undefined && c.limits !== null) {
+      const show = over === 'cpu' ? formatCpu : formatMemory;
+      return `The ${resource.kind} "${resource.metadata.name}" is invalid: ${path}.containers[${String(i)}].resources.requests: Invalid value: "${show(c.requests[over])}": must be less than or equal to ${over} limit of ${show(c.limits[over])}`;
     }
   }
   return null;

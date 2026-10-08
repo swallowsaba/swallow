@@ -573,6 +573,36 @@
       "lessons": [
         "k8s.i.06"
       ]
+    },
+    {
+      "id": "k8s-limits",
+      "word": "limits",
+      "reading": "りみっつ",
+      "plain": "コンテナが使ってよい CPU とメモリの上限（resources.limits）。CPU は上限で絞られて遅くなり、メモリは上限を超えるとコンテナが止められる。",
+      "why": "1 つのアプリが Node の資源を使い尽くして、同じ Node のほかの Pod まで巻き込むのを防ぐ。実際に使う量より小さいと、止められ続ける。",
+      "related": [
+        "k8s-requests",
+        "oomkilled",
+        "cgroups"
+      ],
+      "lessons": [
+        "k8s.i.07"
+      ]
+    },
+    {
+      "id": "oomkilled",
+      "word": "OOMKilled",
+      "reading": "おーおーえむ・きるど",
+      "plain": "コンテナがメモリの上限（limits）に届き、カーネルに止められたこと（Out Of Memory）。終了コードは 137。",
+      "why": "アプリの誤りではなく、上限が使う量より小さいことが多い。何度止められても、上限を直すまで作り直しを繰り返す（CrashLoopBackOff）。",
+      "related": [
+        "k8s-limits",
+        "memory",
+        "kernel"
+      ],
+      "lessons": [
+        "k8s.i.07"
+      ]
     }
   ]
 }

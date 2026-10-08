@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 700 340" font-family="&quot;Noto Sans JP&quot;, sans-serif">
+  <title>requests は置く時に効く。要求の合計が Node の空きに入らなければ、どの Node にも置かれず Pending。limits は動く時に効く。メモリの上限より多く使うと、カーネルに止められる（OOMKilled・137）</title>
+  <text x="20" y="26" font-size="16" fill="#eef2f6">requests: 置く時に、Node の空きと比べる</text>
+  <g class="el" data-part="nodes">
+    <rect x="20" y="44" width="130" height="200" rx="6" fill="none" stroke="#5cc1ff" stroke-width="2" pointer-events="all" />
+    <text x="85" y="66" text-anchor="middle" font-size="13" fill="#eef2f6">node-1</text>
+    <rect x="45" y="78" width="80" height="160" rx="3" fill="none" stroke="#9fb0c6" stroke-width="2" stroke-dasharray="4 3" pointer-events="all" />
+    <text x="85" y="162" text-anchor="middle" font-size="13" fill="#9fb0c6">CPU 4 個</text>
+    <rect x="160" y="44" width="130" height="200" rx="6" fill="none" stroke="#5cc1ff" stroke-width="2" pointer-events="all" />
+    <text x="225" y="66" text-anchor="middle" font-size="13" fill="#eef2f6">node-2</text>
+    <rect x="185" y="78" width="80" height="160" rx="3" fill="none" stroke="#9fb0c6" stroke-width="2" stroke-dasharray="4 3" pointer-events="all" />
+    <text x="225" y="162" text-anchor="middle" font-size="13" fill="#9fb0c6">CPU 4 個</text>
+  </g>
+  <g class="el" data-part="board">
+    <rect x="310" y="44" width="100" height="240" rx="3" fill="none" stroke="#ff8a7a" stroke-width="2" pointer-events="all" />
+    <text x="360" y="150" text-anchor="middle" font-size="13" fill="#eef2f6">board の要求</text>
+    <text x="360" y="172" text-anchor="middle" font-size="16" fill="#ff8a7a">CPU 6 個</text>
+  </g>
+  <text x="20" y="276" font-size="13" fill="#ff8a7a">どの Node の 4 個にも入らない</text>
+  <text x="20" y="296" font-size="13" fill="#ff8a7a">→ 置かれず Pending（Insufficient cpu）</text>
+  <text x="440" y="26" font-size="16" fill="#eef2f6">limits: 動く時の上限</text>
+  <g class="el" data-part="limit-small">
+    <rect x="440" y="44" width="240" height="110" rx="6" fill="none" stroke="#ff8a7a" stroke-width="2" pointer-events="all" />
+    <text x="452" y="68" font-size="13" fill="#eef2f6">report: 使う量 182Mi</text>
+    <rect x="452" y="80" width="133" height="20" rx="3" fill="none" stroke="#5cc1ff" stroke-width="2" pointer-events="all" />
+    <line x1="545" y1="74" x2="545" y2="106" stroke="#ff8a7a" stroke-width="3" />
+    <text x="452" y="124" font-size="13" fill="#ff8a7a">上限 128Mi を超える</text>
+    <text x="452" y="144" font-size="13" fill="#ff8a7a">→ 止められる（OOMKilled・137）</text>
+  </g>
+  <g class="el" data-part="limit-ok">
+    <rect x="440" y="174" width="240" height="110" rx="6" fill="none" stroke="#3ae08a" stroke-width="2" pointer-events="all" />
+    <text x="452" y="198" font-size="13" fill="#eef2f6">report: 使う量 182Mi</text>
+    <rect x="452" y="210" width="133" height="20" rx="3" fill="none" stroke="#5cc1ff" stroke-width="2" pointer-events="all" />
+    <line x1="640" y1="204" x2="640" y2="236" stroke="#3ae08a" stroke-width="3" />
+    <text x="452" y="254" font-size="13" fill="#3ae08a">上限 256Mi の内側</text>
+    <text x="452" y="274" font-size="13" fill="#3ae08a">→ 動き続ける</text>
+  </g>
+  <text x="350" y="324" text-anchor="middle" font-size="13" fill="#9fb0c6">値は、アプリが実際に使う量から決める（kubectl top で見る）</text>
+</svg>

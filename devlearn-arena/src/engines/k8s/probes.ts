@@ -118,6 +118,8 @@ export function advanceLive(
 /** これから状態が変わる途中か（確かめの失敗が続いている・止められている・作り直しを待っている・待ち受ける前） */
 export function settling(state: ClusterState, pod: Pod): boolean {
   return pod.status.containerStatuses.some((status, i) => {
+    // 止まって作り直しを待つコンテナ（CrashLoopBackOff。作り直すとまた止まる）
+    if (status.lastTerminated !== undefined && status.restartAt !== null && status.restartAt > state.tick) return true;
     const spec = pod.spec.containers[i];
     const app = spec === undefined ? undefined : liveApp(state, spec);
     if (app === undefined || spec === undefined) return false;

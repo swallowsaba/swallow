@@ -54,6 +54,8 @@ describe('資源の要求と上限（本物の置き方と止め方）', () => {
     expect(described).toMatch(/ +State: +Waiting\n +Reason: +CrashLoopBackOff\n +Last State: +Terminated\n +Reason: +OOMKilled\n +Exit Code: +137\n/);
     // 読み込みの途中で止められるので、待ち受けの行は出ない
     expect(c.run('kubectl logs deploy/report').out).toBe('report: loading 1,240 reservations into memory\n');
+    // -w は作り直しまで見続け、止まった時は OOMKilled、待つ間は CrashLoopBackOff と移る
+    expect(c.run('kubectl get pods -w').out).toMatch(/^(report-\S+) +0\/1 +OOMKilled +4 \(0s ago\) +\S+\n\1 +0\/1 +CrashLoopBackOff +4 \(1s ago\) +\S+\n/m);
   });
 
   it('get events は本物の欄で、同じ知らせをまとめ、--field-selector で絞れる', () => {
@@ -64,6 +66,14 @@ describe('資源の要求と上限（本物の置き方と止め方）', () => {
     expect(warnings).toMatch(/Warning +BackOff +pod\/report-\S+ +Back-off restarting failed container report\n/);
     expect(warnings).not.toContain('Normal');
     expect(c.run('kubectl get events --field-selector type=Warning,reason=BackOff').out).not.toContain('FailedScheduling');
+  });
+
+  it('要求（requests）が上限（limits）より大きいと、本物と同じく断る（ほかの物は書き込む）', () => {
+    const c = console_();
+    const r = c.apply(CITY('100m', '256Mi').replace('            memory: 256Mi\n          limits:', '            memory: 512Mi\n          limits:'));
+    expect(r.code).toBe(1);
+    expect(r.out).toBe('deployment.apps/board configured\n');
+    expect(r.err).toBe('The Deployment "report" is invalid: spec.template.spec.containers[0].resources.requests: Invalid value: "512Mi": must be less than or equal to memory limit of 256Mi\n');
   });
 
   it('要求を Node に入る量に、上限を使う量より大きくすると、両方とも動き続ける。describe node に配った量が出る', () => {

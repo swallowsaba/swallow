@@ -1,0 +1,259 @@
+{
+  "id": "k8s.i.07",
+  "domain": "k8s",
+  "level": "intermediate",
+  "theme": "資源",
+  "title": "資源の要求と上限",
+  "goal": "requests と limits を設定し、配置への影響を説明できる",
+  "minutes": 20,
+  "prerequisites": [
+    "k8s.i.06"
+  ],
+  "related": [
+    "ctr.i.02",
+    "found.i.01"
+  ],
+  "next": [
+    "k8s.i.08"
+  ],
+  "terms": [
+    "k8s-requests",
+    "container",
+    "cpu",
+    "memory",
+    "k8s-limits",
+    "pod",
+    "k8s-scheduler",
+    "k8s-node",
+    "kernel",
+    "oomkilled",
+    "app",
+    "k8s-event",
+    "kubectl",
+    "yaml",
+    "image"
+  ],
+  "explain": {
+    "what": "{{term:k8s-requests}}は、{{term:container}}が最低限ほしい {{term:cpu}} と{{term:memory}}の量。{{term:k8s-limits}}は、使ってよい上限。requests は {{term:pod}} を置く時に、limits は動いている間に効く。",
+    "why": "{{term:k8s-scheduler}}は、requests の合計が {{term:k8s-node}} の空きに収まる所にだけ Pod を置く。大きすぎる requests の Pod は、どこにも置けずに待つ。limits より多くメモリを使うと、{{term:kernel}}がコンテナを止める（{{term:oomkilled}}）。",
+    "use": "安定した運用。requests で、1 つの Node に詰め込みすぎない。limits で、1 つの{{term:app}}が Node のメモリを使い尽くし、同じ Node のほかの Pod まで巻き込むのを防ぐ。",
+    "when": "1 分前に入れた 2 つのアプリが動かない。掲示板は置き場所が決まらないまま待ち、夜の集計は止まっては作り直されている。どちらも、量の書き方を誤っていた。",
+    "figures": [
+      "k8s-i07-resources"
+    ]
+  },
+  "understand": [
+    {
+      "kind": "relation",
+      "prompt": "2 つの関係は？",
+      "a": "requests の CPU が、どの Node の空きよりも大きい",
+      "b": "Pod がどの Node にも置かれず、`Pending` のまま待つ",
+      "answer": "cause",
+      "why": "置く時は、実際に使う量ではなく requests で空きを数える。入る Node が無ければ、置き場所が決まらない。",
+      "see": "why"
+    },
+    {
+      "kind": "situation",
+      "prompt": "Pod が `OOMKilled` で止まり、作り直しを繰り返している。見直すのはどれ？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "limits のメモリ（使ってよい上限）",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "requests の CPU",
+          "correct": false,
+          "whyNot": "CPU の requests は、置く場所を決める時に使う。動いた後に止められる理由ではない。"
+        },
+        {
+          "id": "c",
+          "text": "Node の数",
+          "correct": false,
+          "whyNot": "Pod は置かれて動き出してから止まっている。置き場所の問題ではない。"
+        }
+      ],
+      "see": "why"
+    }
+  ],
+  "quiz": [
+    {
+      "id": "q1",
+      "kind": "cause",
+      "prompt": "Pod が `Pending` のまま動かない。{{term:k8s-event}}にこう出ている。原因は？",
+      "context": {
+        "log": "Warning  FailedScheduling  default-scheduler  0/2 nodes are available: 2 Insufficient cpu."
+      },
+      "choices": [
+        {
+          "id": "a",
+          "text": "requests の CPU が、どの Node の空きよりも大きい",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "limits が小さすぎる",
+          "correct": false,
+          "whyNot": "limits は動き出した後に効く。置けない理由にはならない。"
+        },
+        {
+          "id": "c",
+          "text": "{{term:image}}の名前が違う",
+          "correct": false,
+          "whyNot": "名前の誤りなら、置かれた後にイメージを取れず `ErrImagePull` になる。`Pending` の理由は置き場所。"
+        }
+      ],
+      "explanation": "`Insufficient cpu` は「CPU の空きが足りない」。requests を、アプリが使う量に合わせて小さくするか、空きのある Node を足す。"
+    },
+    {
+      "id": "q2",
+      "kind": "cause",
+      "prompt": "夜の集計の Pod が、何度も作り直されている。`kubectl describe pod` にこう出ている。原因は？",
+      "context": {
+        "log": "    State:          Waiting\n      Reason:       CrashLoopBackOff\n    Last State:     Terminated\n      Reason:       OOMKilled\n      Exit Code:    137"
+      },
+      "choices": [
+        {
+          "id": "a",
+          "text": "アプリが、メモリの上限（limits）より多く使った",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "Node のメモリが足りない",
+          "correct": false,
+          "whyNot": "Node に空きが無ければ、そもそも置かれない（`Pending`）。137 は、上限で止められた印。"
+        },
+        {
+          "id": "c",
+          "text": "CPU の上限が低い",
+          "correct": false,
+          "whyNot": "CPU は上限で絞られて遅くなるだけで、止められはしない。止められるのはメモリ。"
+        }
+      ],
+      "explanation": "`OOMKilled`（終了コード 137）は、メモリの上限に届いてカーネルに止められた印。上限を、使う量より余裕のある値にする。"
+    },
+    {
+      "id": "q3",
+      "kind": "situation",
+      "prompt": "念のため、全ての Pod に requests を CPU 4 個ずつ書くことにした。Node は 2 台で、1 台に CPU 4 個。Pod を 3 つ作ると？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "2 つしか置けず、3 つ目は `Pending` になる",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "全て置かれ、余った分は使われないだけ",
+          "correct": false,
+          "whyNot": "置く時は、実際に使う量ではなく requests の合計で空きを数える。"
+        },
+        {
+          "id": "c",
+          "text": "Node が自動で増える",
+          "correct": false,
+          "whyNot": "Node を増やすのは別の仕組み。requests を書いただけでは増えない。"
+        }
+      ],
+      "explanation": "requests を大きくしすぎると、空いているのに置けなくなる。実際に使う量に、少し余裕を足した値にする。"
+    },
+    {
+      "id": "q4",
+      "kind": "term",
+      "prompt": "requests は何？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "Pod を置く Node を選ぶ時に、確保を求める量",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "使ってよい量の上限",
+          "correct": false,
+          "whyNot": "それは limits。"
+        },
+        {
+          "id": "c",
+          "text": "今使っている量",
+          "correct": false,
+          "whyNot": "今の量は `kubectl top pods` で見る。requests は、書いて求める量。"
+        }
+      ],
+      "explanation": "requests は置く時の約束の量、limits は動く時の上限。上限だけを書けば、要求は上限と同じ量になる。"
+    }
+  ],
+  "practice": {
+    "mode": "editor",
+    "purpose": "1 分前に入れた city.yaml の 2 つのアプリが動かない。掲示板（board）は `Pending` のまま、夜の集計（report）は止まっては作り直されている。Node は 2 台で、1 台に CPU 4 個・メモリ 8192Mi。report は、検証の機械では 182Mi ほど使って動いていた。要求と上限を直し、両方を動き続けさせる。保存すると、送って Pod の様子を見て、`Warning` の知らせと Pod の一覧を出す。",
+    "environment": "k8s-cluster",
+    "setup": {
+      "hostname": "console",
+      "cwd": "/home/learner/city",
+      "dirs": [
+        "/home/learner/city"
+      ],
+      "files": {
+        "/home/learner/city/city.yaml": "apiVersion: apps/v1\nkind: Deployment\nmetadata:\n  name: board\nspec:\n  replicas: 1\n  selector:\n    matchLabels:\n      app: board\n  template:\n    metadata:\n      labels:\n        app: board\n    spec:\n      containers:\n      - name: board\n        image: city-board:1.0\n        resources:\n          requests:\n            cpu: \"6\"\n            memory: 64Mi\n---\napiVersion: apps/v1\nkind: Deployment\nmetadata:\n  name: report\nspec:\n  replicas: 1\n  selector:\n    matchLabels:\n      app: report\n  template:\n    metadata:\n      labels:\n        app: report\n    spec:\n      containers:\n      - name: report\n        image: city-report:1.0\n        resources:\n          requests:\n            memory: 128Mi\n          limits:\n            memory: 128Mi\n"
+      },
+      "cluster": {
+        "nodes": 2,
+        "ageDays": 3,
+        "recent": "apiVersion: apps/v1\nkind: Deployment\nmetadata:\n  name: board\nspec:\n  replicas: 1\n  selector:\n    matchLabels:\n      app: board\n  template:\n    metadata:\n      labels:\n        app: board\n    spec:\n      containers:\n      - name: board\n        image: city-board:1.0\n        resources:\n          requests:\n            cpu: \"6\"\n            memory: 64Mi\n---\napiVersion: apps/v1\nkind: Deployment\nmetadata:\n  name: report\nspec:\n  replicas: 1\n  selector:\n    matchLabels:\n      app: report\n  template:\n    metadata:\n      labels:\n        app: report\n    spec:\n      containers:\n      - name: report\n        image: city-report:1.0\n        resources:\n          requests:\n            memory: 128Mi\n          limits:\n            memory: 128Mi\n"
+      },
+      "edit": {
+        "path": "/home/learner/city/city.yaml",
+        "apply": [
+          "kubectl apply -f city.yaml",
+          "kubectl get pods -w",
+          "kubectl get events --field-selector type=Warning",
+          "kubectl get pods"
+        ]
+      }
+    },
+    "steps": [
+      {
+        "id": "fit",
+        "purpose": "board の要求（requests）を Node に入る量にし、report の上限（limits）を使う量より大きくする。両方の Pod が `Running` で、作り直されなければよい。",
+        "check": {
+          "kind": "k8s",
+          "expr": "deployment/board readyUpdated=1 && deployment/report readyUpdated=1 restarts=0"
+        },
+        "afterward": "board の Pod は、要求が Node の空きに入ったので置かれ、動き出した。report の Pod は、上限 256Mi の内側で 182Mi を使って動き続け、もう止められない。古い知らせ（`FailedScheduling`・`BackOff`）は、前の Pod の物として残る。",
+        "hints": [
+          "board は `Pending`。知らせの `FailedScheduling` の文（`Insufficient cpu`）を読み、要求の `cpu:` と Node 1 台の CPU（4 個）を比べる。掲示板は軽いアプリで、`100m`（CPU 0.1 個分）で足りる。",
+          "report は `OOMKilled`。アプリが使う量（182Mi）と、上限（`limits:`）の `memory:` を比べる。上限は使う量より余裕をもって大きく（`256Mi`）し、要求（`requests:`）は上限以下にする。",
+          "`apiVersion: apps/v1\nkind: Deployment\nmetadata:\n  name: board\nspec:\n  replicas: 1\n  selector:\n    matchLabels:\n      app: board\n  template:\n    metadata:\n      labels:\n        app: board\n    spec:\n      containers:\n      - name: board\n        image: city-board:1.0\n        resources:\n          requests:\n            cpu: \"100m\"\n            memory: 64Mi\n---\napiVersion: apps/v1\nkind: Deployment\nmetadata:\n  name: report\nspec:\n  replicas: 1\n  selector:\n    matchLabels:\n      app: report\n  template:\n    metadata:\n      labels:\n        app: report\n    spec:\n      containers:\n      - name: report\n        image: city-report:1.0\n        resources:\n          requests:\n            memory: 256Mi\n          limits:\n            memory: 256Mi\n` と保存する。"
+        ],
+        "expectedErrors": [
+          "k8s-requests-over-limit",
+          "k8s-oom",
+          "k8s-requests-pending",
+          "k8s-yaml"
+        ]
+      }
+    ]
+  },
+  "result": {
+    "success": "要求を Node の空きに入る量にし、上限を使う量より大きくして、置けない Pod と止められる Pod の両方を動かした。",
+    "partial": "ヒントを使って直した。次は、`Pending` と `OOMKilled` が、それぞれ requests と limits のどちらで起きるかを、自分の言葉で説明してみよう。",
+    "retry": "まだ両方は動いていない。保存した結果の Pod の一覧で、board が `Pending` か、report が `OOMKilled`・`CrashLoopBackOff` かを見て、直す値を決めよう。"
+  },
+  "summary": {
+    "points": [
+      "requests は置く時。Node の空きに入らないと置かれずに待つ",
+      "limits は動く時。メモリを超えると OOMKilled",
+      "値は、実際に使う量から決める"
+    ],
+    "next": [
+      "k8s.a.02"
+    ],
+    "terms": [
+      "k8s-requests",
+      "k8s-limits",
+      "oomkilled"
+    ]
+  }
+}
