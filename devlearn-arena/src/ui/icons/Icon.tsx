@@ -5,7 +5,8 @@
 export type IconName =
   | 'learn' | 'mission' | 'glossary' | 'settings' | 'funds' | 'xp' | 'people' | 'stage' | 'emblem'
   | 'road' | 'zone' | 'facility' | 'park' | 'demolish' | 'rotate' | 'pause' | 'curve' | 'straight' | 'alert'
-  | 'graph' | 'list' | 'search' | 'close' | 'start' | 'check' | 'hint' | 'terminal' | 'upgrade' | 'down' | 'database';
+  | 'graph' | 'list' | 'search' | 'close' | 'start' | 'check' | 'hint' | 'terminal' | 'upgrade' | 'down' | 'database'
+  | 'export' | 'import' | 'restart' | 'save';
 
 const PATHS: Record<IconName, string> = {
   // 開いた本
@@ -67,6 +68,14 @@ const PATHS: Record<IconName, string> = {
   // 下向きの山（選ぶ欄を開く）
   down: 'M6 9.5l6 6 6-6',
   // 積んだ円盤（データベース）
+  // 箱から上へ出す（書き出す）
+  export: 'M4 14v5.5h16V14 M12 15V3.5 M7.5 8 12 3.5 16.5 8',
+  // 箱へ下ろす（読み込む）
+  import: 'M4 14v5.5h16V14 M12 3.5V15 M7.5 10.5 12 15l4.5-4.5',
+  // 輪を戻る（最初からやり直す）
+  restart: 'M4 12a8 8 0 1 0 2.4-5.7 M4 4v5h5',
+  // 保存（角の欠けた記録の板）
+  save: 'M5 3.5h11.5L19 6v14.5H5Z M8 3.5v5h7v-5 M8 20.5v-6h8v6',
   database: 'M5 6c0-1.4 3.1-2.5 7-2.5s7 1.1 7 2.5-3.1 2.5-7 2.5S5 7.4 5 6Z M5 6v12c0 1.4 3.1 2.5 7 2.5s7-1.1 7-2.5V6 M5 12c0 1.4 3.1 2.5 7 2.5s7-1.1 7-2.5',
 };
 

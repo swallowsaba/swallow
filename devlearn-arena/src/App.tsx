@@ -16,6 +16,7 @@ import { MISSIONS } from './content/missions';
 import { createSession, type Session } from './screens/session';
 import { nowIso } from './screens/clock';
 import { SaveNotice } from './screens/SaveNotice';
+import { SettingsScreen, type SaveControls } from './screens/settings/SettingsScreen';
 import { skillValues } from './screens/skills';
 import type { EntryId } from './ui/TopBar';
 
@@ -31,16 +32,18 @@ const ENTRY_ROUTES: Partial<Record<EntryId, Route>> = {
   glossary: { name: 'glossary' },
   growth: { name: 'growth' },
   mission: { name: 'missions' },
+  settings: { name: 'settings' },
 };
 
 function currentEntry(route: Route): EntryId | undefined {
   if (route.name === 'learn') return route.view === 'graph' ? 'graph' : 'learn';
-  if (route.name === 'glossary' || route.name === 'growth') return route.name;
+  if (route.name === 'glossary' || route.name === 'growth' || route.name === 'settings') return route.name;
   if (route.name === 'missions') return 'mission';
   return undefined;
 }
 
-export function App({ session: given }: { session?: Session } = {}) {
+/** saves: 保存の操作（書き出し・読み込み・やり直し）。無ければ設定は開けない */
+export function App({ session: given, saves }: { session?: Session; saves?: SaveControls } = {}) {
   const route = useRoute();
   const session = useMemo(() => given ?? createSession(), [given]);
 
@@ -93,6 +96,7 @@ export function App({ session: given }: { session?: Session } = {}) {
         session={session}
         active={route.name === 'city'}
         current={currentEntry(route)}
+        disabled={saves ? [] : ['settings']}
         onEntry={(id) => {
           const r = ENTRY_ROUTES[id];
           if (r) go(r);
@@ -102,6 +106,7 @@ export function App({ session: given }: { session?: Session } = {}) {
         onMission={(id) => go({ name: 'missions', missionId: id })}
       />
       {route.name === 'growth' ? <GrowthScreen session={session} onClose={toCity} /> : null}
+      {route.name === 'settings' && saves ? <SettingsScreen saves={saves} onClose={toCity} /> : null}
       {route.name === 'learn' ? (
         <LearnScreen
           session={session}

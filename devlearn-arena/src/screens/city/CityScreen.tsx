@@ -26,9 +26,11 @@ import './CityScreen.css';
  * 都市画面（docs/ui-design.md 3 章）。全画面の都市ビューに、上の帯と建設メニューを小さく重ねる。
  * 学習者が道路を引き、区画を塗り、施設と公園を置く。区画の建物は自動で建ち、育つ（docs/decisions.md D-03）。
  */
-export function CityScreen({ session, active = true, current, onEntry, onLesson, onLibrary, onMission }: {
+export function CityScreen({ session, active = true, current, disabled = [], onEntry, onLesson, onLibrary, onMission }: {
   session: Session;
   active?: boolean;
+  /** 上の帯の入口のうち、開けない物 */
+  disabled?: readonly EntryId[];
   /** 上の帯で、今開いている画面の入口を光らせる */
   current?: EntryId | undefined;
   onEntry?: (id: EntryId) => void;
@@ -174,7 +176,7 @@ export function CityScreen({ session, active = true, current, onEntry, onLesson,
         rankName={RANK_NAMES[rankOf(xp)]}
         population={state.population}
         stageName={STAGE_NAMES[state.stage]}
-        disabled={['settings']}
+        disabled={disabled}
         current={current}
         {...(onEntry ? { onEntry } : {})}
       />

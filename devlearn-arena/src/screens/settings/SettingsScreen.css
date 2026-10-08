@@ -1,0 +1,213 @@
+/* 設定（docs/ui-design.md 2 章）。都市の上に重ねる計器の窓。保存の欄は、横に 3 つの区画（書き出す・読み込む・やり直す）を並べる */
+.window.settings {
+  width: min(1180px, calc(100vw - 64px));
+  height: auto;
+  max-height: 100%;
+}
+
+.settings-body {
+  min-height: 0;
+  overflow-y: auto;
+  padding: 18px 24px 22px;
+}
+
+.settings-save-head {
+  display: grid;
+  grid-template-columns: auto auto 1fr;
+  align-items: center;
+  gap: 10px 12px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--hud-line);
+}
+.settings-save-icon {
+  display: flex;
+  color: var(--gold);
+}
+.settings-heading {
+  margin: 0;
+  font-family: var(--font-heading);
+  font-weight: 800;
+  font-size: var(--fs-22);
+  line-height: 1.3;
+}
+.settings-autosave {
+  margin: 0;
+  padding-left: 14px;
+  border-left: 2px solid var(--ok);
+  font-size: var(--fs-14);
+  line-height: 1.6;
+  color: var(--hud-text-sub);
+}
+.settings-autosave:has(.settings-problem) {
+  border-left-color: var(--bad);
+}
+.settings-problem {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--hud-text);
+}
+.settings-problem svg {
+  flex: none;
+  color: var(--bad);
+}
+
+/* 3 つの区画。カードにせず、縦の仕切り線で分けた計器の列にする */
+.settings-bays {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+}
+.settings-bay {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 0;
+  padding: 16px 22px 4px;
+}
+.settings-bay + .settings-bay {
+  border-left: 1px solid var(--hud-line);
+}
+.settings-bay:first-child {
+  padding-left: 0;
+}
+.settings-bay:last-child {
+  padding-right: 0;
+}
+.settings-bay-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  font-family: var(--font-heading);
+  font-weight: 700;
+  font-size: var(--fs-18);
+  line-height: 1.3;
+  color: var(--gold);
+}
+.settings-bay-text {
+  margin: 0;
+  font-size: var(--fs-14);
+  line-height: 1.7;
+  color: var(--hud-text);
+}
+
+/* 確かめ（読み込む前の中身・やり直す前の注意） */
+.settings-confirm {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.settings-facts {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 4px 14px;
+  margin: 0;
+  padding: 10px 14px;
+  background: var(--hud-bg);
+  border-left: 3px solid var(--gold);
+  font-size: var(--fs-14);
+  line-height: 1.5;
+}
+.settings-facts dt {
+  color: var(--hud-text-sub);
+}
+.settings-facts dd {
+  margin: 0;
+  font-weight: 700;
+}
+.settings-facts .num {
+  font-family: var(--font-number);
+  font-size: var(--fs-16);
+}
+.settings-warn {
+  margin: 0;
+  padding-left: 12px;
+  border-left: 3px solid var(--warn);
+  font-size: var(--fs-14);
+  line-height: 1.7;
+}
+
+/* 読めなかった・書けなかった（何が起きたか・どうすればよいか） */
+.settings-error {
+  padding: 8px 12px;
+  background: var(--hud-bg);
+  border-left: 3px solid var(--bad);
+  font-size: var(--fs-14);
+  line-height: 1.6;
+}
+.settings-error p {
+  margin: 0;
+}
+.settings-error svg {
+  flex: none;
+  margin-right: 6px;
+  vertical-align: -2px;
+  color: var(--bad);
+}
+.settings-error.is-line {
+  margin: 14px 0 0;
+}
+
+.settings-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: auto;
+  padding-top: 4px;
+}
+.settings-primary,
+.settings-secondary {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 38px;
+  font-weight: 700;
+  line-height: 1.2;
+  cursor: pointer;
+}
+.settings-primary {
+  padding: 0 24px 0 20px;
+  border: none;
+  color: var(--navy);
+  background: linear-gradient(180deg, var(--gold-light), var(--gold));
+  font-size: var(--fs-16);
+  clip-path: polygon(12px 0, 100% 0, calc(100% - 12px) 100%, 0 100%);
+}
+.settings-primary.is-danger {
+  color: var(--hud-text);
+  background: var(--bad);
+}
+.settings-secondary {
+  padding: 0 18px;
+  border: 1px solid var(--hud-line);
+  color: var(--hud-text);
+  background: var(--hud-bg);
+  font-size: var(--fs-14);
+  clip-path: polygon(10px 0, 100% 0, calc(100% - 10px) 100%, 0 100%);
+}
+.settings-secondary:hover,
+.settings-secondary:focus-visible {
+  border-color: var(--gold);
+  color: var(--gold-light);
+  outline: none;
+}
+.settings-primary:focus-visible {
+  outline: 2px solid var(--hud-text);
+  outline-offset: -4px;
+}
+.settings-primary:active,
+.settings-secondary:active {
+  transform: translateY(2px);
+}
+.settings-primary:disabled,
+.settings-secondary:disabled {
+  opacity: 0.45;
+  cursor: default;
+  transform: none;
+}
+
+/* ファイルを選ぶ欄は隠し、「ファイルを選ぶ」から開く */
+.settings-file {
+  display: none;
+}

@@ -12,12 +12,14 @@ import { DOMAIN_IDS, type DomainId } from './content/schema';
  *   #/lesson/<レッスン ID>     レッスン画面（7 段の学習。施設の中に入る別の画面）
  *   #/glossary[/<用語 ID>]     用語集
  *   #/growth                  成長画面
+ *   #/settings                設定（保存の書き出し・読み込み・やり直し）
  *   #/missions[/<ミッション ID>] ミッション一覧（ID で選んだ状態で開く）
  *   #/mission/<ミッション ID>   ミッションの実戦（施設の中に入る別の画面）
  */
 export type Route =
   | { name: 'city' }
   | { name: 'growth' }
+  | { name: 'settings' }
   | { name: 'learn'; view: 'list' | 'graph'; lessonId?: string; domain?: DomainId }
   | { name: 'glossary'; termId?: string }
   | { name: 'lesson'; lessonId: string }
@@ -34,6 +36,8 @@ export function parseHash(hash: string): Route {
   switch (head) {
     case 'growth':
       return { name: 'growth' };
+    case 'settings':
+      return { name: 'settings' };
     case 'learn':
     case 'graph': {
       const route: Route = { name: 'learn', view: head === 'graph' ? 'graph' : 'list' };
@@ -73,6 +77,8 @@ export function hashOf(route: Route): string {
       return '#/city';
     case 'growth':
       return '#/growth';
+    case 'settings':
+      return '#/settings';
     case 'glossary':
       return route.termId ? `#/glossary/${route.termId}` : '#/glossary';
     case 'lesson':

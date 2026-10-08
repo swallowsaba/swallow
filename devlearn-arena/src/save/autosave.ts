@@ -90,15 +90,31 @@ export interface Autosave {
   /** 待っている保存があれば、今すぐ書く */
   flush: () => Promise<void>;
   stop: () => void;
+  /** 今の状態の保存データ（書き出しに使う） */
+  snapshot: () => SaveData;
+  /**
+   * 保存データを丸ごと置き換える（読み込み・最初からやり直す）。書けたら見張りを止め、以後この状態では保存しない
+   * （呼ぶ側が保存先から開き直す）。書けなければ投げ、今の状態の自動保存を続ける
+   */
+  replace: (data: SaveData) => Promise<void>;
 }
+
+const snapshotOf = ({ session, player, settings }: Opened, at: string): SaveData => {
+  const p = session.progress.getState();
+  return toSaveData({ player, settings, city: session.city.getState().city, progress: p.progress, practiceSessions: p.practiceSessions }, at, at.slice(0, 10));
+};
 
 /** 遊んでいる状態の変化を見張り、保存する */
 export function startAutosave(opened: Opened, backend: SaveBackend, options: AutosaveOptions): Autosave {
-  const { session, player, settings } = opened;
+  const { session } = opened;
   const delay = options.delayMs ?? 2000;
-  if (!opened.canSave) return { flush: () => Promise.resolve(), stop: () => undefined };
+  const snapshot = (): SaveData => snapshotOf(opened, options.now());
+  // 読めなかった保存データを残せなかった時は自動では書かない。置き換えは、利用者が選んだ時だけ書く
+  if (!opened.canSave) return { flush: () => Promise.resolve(), stop: () => undefined, snapshot, replace: (data) => backend.write(data) };
   let timer: ReturnType<typeof setTimeout> | null = null;
   let stopped = false;
+  /** 置き換えを書いている間は、今の状態を書かない */
+  let replacing = false;
   let failed = false;
   let writing: Promise<void> = Promise.resolve();
 
@@ -107,9 +123,7 @@ export function startAutosave(opened: Opened, backend: SaveBackend, options: Aut
       clearTimeout(timer);
       timer = null;
     }
-    const at = options.now();
-    const p = session.progress.getState();
-    const data = toSaveData({ player, settings, city: session.city.getState().city, progress: p.progress, practiceSessions: p.practiceSessions }, at, at.slice(0, 10));
+    const data = snapshot();
     // 書き込みは順に（前の書き込みより古い物で上書きしない）
     writing = writing.then(() => backend.write(data)).then(
       () => {
@@ -127,7 +141,7 @@ export function startAutosave(opened: Opened, backend: SaveBackend, options: Aut
   };
 
   const schedule = (): void => {
-    if (stopped || timer !== null) return;
+    if (stopped || replacing || timer !== null) return;
     timer = setTimeout(() => {
       timer = null;
       void save();
@@ -138,19 +152,37 @@ export function startAutosave(opened: Opened, backend: SaveBackend, options: Aut
     if (s.city !== prev.city) schedule();
   });
   const offProgress = session.progress.subscribe((s, prev) => {
-    if (stopped) return;
+    if (stopped || replacing) return;
     if (stageMoved(prev.progress, s.progress)) void save();
     else if (s.progress !== prev.progress || s.practiceSessions !== prev.practiceSessions) schedule();
   });
 
+  const stop = (): void => {
+    stopped = true;
+    if (timer !== null) clearTimeout(timer);
+    timer = null;
+    offCity();
+    offProgress();
+  };
+
   return {
-    flush: () => (timer !== null ? save() : writing),
-    stop: () => {
-      stopped = true;
+    flush: () => (timer !== null && !replacing ? save() : writing),
+    stop,
+    snapshot,
+    replace: async (data) => {
+      replacing = true;
       if (timer !== null) clearTimeout(timer);
       timer = null;
-      offCity();
-      offProgress();
+      // 前の書き込みが終わってから書く（古い状態で後から上書きしない）
+      const done = writing.then(() => backend.write(data));
+      writing = done.then(() => undefined, () => undefined);
+      try {
+        await done;
+      } catch (e) {
+        replacing = false;
+        throw e;
+      }
+      stop();
     },
   };
 }
