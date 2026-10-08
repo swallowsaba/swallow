@@ -15,6 +15,7 @@ import { landmarkOf } from './city/facilities';
 import { MISSIONS } from './content/missions';
 import { createSession, type Session } from './screens/session';
 import { nowIso } from './screens/clock';
+import { SaveNotice } from './screens/SaveNotice';
 import { skillValues } from './screens/skills';
 import type { EntryId } from './ui/TopBar';
 
@@ -155,6 +156,7 @@ export function App({ session: given }: { session?: Session } = {}) {
           onLesson={(id) => go({ name: 'learn', view: 'list', lessonId: id })}
         />
       ) : null}
+      <SaveNotice />
       <div className="too-small" role="alert">
         <h1>PC の大きな画面で遊んでください</h1>
         <p>このゲームは横 1280・縦 720 以上の画面に合わせて作っています。</p>

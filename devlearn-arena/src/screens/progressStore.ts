@@ -38,7 +38,7 @@ export interface ProgressState {
 /** ミッションの実戦の途中の状態を保存する名前 */
 export const missionSession = (missionId: string): string => `mission:${missionId}`;
 
-export function createProgressStore(onFunds: (amount: number) => void, initial: Progress = emptyProgress()) {
+export function createProgressStore(onFunds: (amount: number) => void, initial: Progress = emptyProgress(), sessions: Record<string, PracticeSession> = {}) {
   return create<ProgressState>((set, get) => ({
     progress: initial,
     learn: (records) => {
@@ -55,7 +55,7 @@ export function createProgressStore(onFunds: (amount: number) => void, initial: 
       return outcome;
     },
     reach: (lessonId, stage) => set({ progress: reachStage(get().progress, lessonId, stage) }),
-    practiceSessions: {},
+    practiceSessions: sessions,
     savePractice: (session) => set({ practiceSessions: { ...get().practiceSessions, [session.lessonId]: session } }),
     finishPractice: (lessonId, attempt, at) => {
       const outcome = finishPractice(get().progress, { lessonId, attempt: { ...attempt, at } }, at, LESSONS);

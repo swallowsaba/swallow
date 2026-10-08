@@ -13,8 +13,10 @@ export interface JournalEntry {
 }
 
 const DB_NAME = 'devlearn-arena';
-const DB_VERSION = 1;
+/** 版 2 で、保存データの save ストアを足した（docs/data-model.md 7 章。src/save/idb.ts） */
+const DB_VERSION = 2;
 const STORE_JOURNAL = 'journal';
+export const STORE_SAVE = 'save';
 
 let dbPromise: Promise<IDBDatabase> | null = null;
 const memoryJournal: JournalEntry[] = [];
@@ -23,7 +25,7 @@ function available(): boolean {
   return typeof indexedDB !== 'undefined';
 }
 
-function openDb(): Promise<IDBDatabase> {
+export function openDb(): Promise<IDBDatabase> {
   dbPromise ??= new Promise<IDBDatabase>((resolve, reject) => {
     const req = indexedDB.open(DB_NAME, DB_VERSION);
     req.onupgradeneeded = () => {
@@ -31,9 +33,21 @@ function openDb(): Promise<IDBDatabase> {
       if (!db.objectStoreNames.contains(STORE_JOURNAL)) {
         db.createObjectStore(STORE_JOURNAL, { keyPath: 'id', autoIncrement: true });
       }
+      if (!db.objectStoreNames.contains(STORE_SAVE)) db.createObjectStore(STORE_SAVE);
     };
-    req.onsuccess = () => resolve(req.result);
-    req.onerror = () => reject(req.error ?? new Error('IndexedDB open failed'));
+    req.onsuccess = () => {
+      // 別のタブが新しい版で開こうとしたら、閉じて譲る（譲らないと、そのタブの読み込みが止まる）
+      req.result.onversionchange = () => {
+        req.result.close();
+        dbPromise = null;
+      };
+      resolve(req.result);
+    };
+    req.onerror = () => {
+      // 開けなかった時は、次に呼んだ時に開き直せるようにする
+      dbPromise = null;
+      reject(req.error ?? new Error('IndexedDB open failed'));
+    };
   });
   return dbPromise;
 }

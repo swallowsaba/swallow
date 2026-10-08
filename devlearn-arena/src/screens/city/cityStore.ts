@@ -93,8 +93,9 @@ export interface CityGameState {
 /** 1 つの知らせを出しておく時間（docs/ui-design.md 3 章: 3 秒で消える） */
 export const NOTICE_MS = 3000;
 
-export function createCityStore(seed?: number) {
-  const city = newCity(seed);
+/** 都市の状態を作る。保存から戻す時は、保存した都市（initial）から始める */
+export function createCityStore(seed?: number, initial?: City) {
+  const city = initial ?? newCity(seed);
   const terrain = generateTerrain(city.seed);
   return create<CityGameState>((set, get) => ({
     city,
