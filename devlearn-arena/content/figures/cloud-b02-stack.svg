@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 700 340" font-family="&quot;Noto Sans JP&quot;, sans-serif">
+  <title>アプリ・実行環境・OS・仮想化・機械の 5 つの層のうち、IaaS は仮想化と機械を、PaaS は実行環境から下を、SaaS は全ての層を提供者が世話をする。残りは借りた側が世話をする</title>
+  <g class="el" data-part="app">
+    <rect x="20" y="40" width="260" height="48" rx="4" fill="none" stroke="#9fb0c6" stroke-width="2" pointer-events="all" />
+    <text x="150" y="70" text-anchor="middle" font-size="16" fill="#eef2f6">アプリ</text>
+  </g>
+  <g class="el" data-part="runtime">
+    <rect x="20" y="94" width="260" height="48" rx="4" fill="none" stroke="#9fb0c6" stroke-width="2" pointer-events="all" />
+    <text x="150" y="124" text-anchor="middle" font-size="16" fill="#eef2f6">実行環境</text>
+  </g>
+  <g class="el" data-part="os">
+    <rect x="20" y="148" width="260" height="48" rx="4" fill="none" stroke="#9fb0c6" stroke-width="2" pointer-events="all" />
+    <text x="150" y="178" text-anchor="middle" font-size="16" fill="#eef2f6">OS</text>
+  </g>
+  <g class="el" data-part="virtualization">
+    <rect x="20" y="202" width="260" height="48" rx="4" fill="none" stroke="#9fb0c6" stroke-width="2" pointer-events="all" />
+    <text x="150" y="232" text-anchor="middle" font-size="16" fill="#eef2f6">仮想化</text>
+  </g>
+  <g class="el" data-part="machine">
+    <rect x="20" y="256" width="260" height="48" rx="4" fill="none" stroke="#9fb0c6" stroke-width="2" pointer-events="all" />
+    <text x="150" y="286" text-anchor="middle" font-size="16" fill="#eef2f6">機械</text>
+  </g>
+  <g class="el">
+    <text x="365" y="28" text-anchor="middle" font-size="16" fill="#eef2f6">IaaS</text>
+    <rect x="320" y="40" width="90" height="156" rx="4" fill="none" stroke="#f2b632" stroke-width="2" />
+    <rect x="320" y="202" width="90" height="102" rx="4" fill="#5cc1ff" fill-opacity="0.25" stroke="#5cc1ff" stroke-width="2" />
+    <text x="500" y="28" text-anchor="middle" font-size="16" fill="#eef2f6">PaaS</text>
+    <rect x="455" y="40" width="90" height="48" rx="4" fill="none" stroke="#f2b632" stroke-width="2" />
+    <rect x="455" y="94" width="90" height="210" rx="4" fill="#5cc1ff" fill-opacity="0.25" stroke="#5cc1ff" stroke-width="2" />
+    <text x="635" y="28" text-anchor="middle" font-size="16" fill="#eef2f6">SaaS</text>
+    <rect x="590" y="40" width="90" height="264" rx="4" fill="#5cc1ff" fill-opacity="0.25" stroke="#5cc1ff" stroke-width="2" />
+    <text x="635" y="70" text-anchor="middle" font-size="13" fill="#eef2f6">使うだけ</text>
+  </g>
+  <rect x="320" y="318" width="16" height="12" rx="2" fill="none" stroke="#f2b632" stroke-width="2" />
+  <text x="344" y="329" font-size="13" fill="#9fb0c6">借りた側が世話をする</text>
+  <rect x="510" y="318" width="16" height="12" rx="2" fill="#5cc1ff" fill-opacity="0.25" stroke="#5cc1ff" stroke-width="2" />
+  <text x="534" y="329" font-size="13" fill="#9fb0c6">提供者が世話をする</text>
+</svg>

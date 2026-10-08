@@ -1,0 +1,272 @@
+{
+  "id": "cloud.b.02",
+  "domain": "cloud",
+  "level": "beginner",
+  "theme": "形",
+  "title": "IaaS・PaaS・SaaS",
+  "goal": "どこまでを自分で管理するかで区別できる",
+  "minutes": 15,
+  "prerequisites": [
+    "cloud.b.01"
+  ],
+  "related": [
+    "ctr.b.01",
+    "db.i.05"
+  ],
+  "next": [
+    "cloud.b.03",
+    "cloud.i.03"
+  ],
+  "terms": [
+    "cloud",
+    "iaas",
+    "vm",
+    "paas",
+    "app",
+    "runtime",
+    "saas",
+    "service",
+    "os",
+    "web",
+    "server",
+    "virtualization"
+  ],
+  "explain": {
+    "what": "{{term:cloud}}の借り方は、どこまでを提供者に任せるかで 3 つに分かれる。{{term:iaas}}は{{term:vm}}まで、{{term:paas}}は{{term:app}}を動かす{{term:runtime}}まで、{{term:saas}}は出来上がったアプリまで、提供者が用意して世話をする。",
+    "why": "任せる範囲が広いほど手間は減るが、自分で決められる所も減る。{{term:os}} を自由に設定したいのか、更新の手間を無くしたいのか。手間と自由のどちらを取るかで、形を選ぶ。",
+    "use": "{{term:service}}の構成を選ぶ時。同じ予約サイトでも、IaaS なら OS から自分で入れ、PaaS なら書いたアプリを置くだけ、SaaS なら出来上がった物の設定だけになる。",
+    "when": "市で {{term:web}} の予約サイトを始めたい。アプリは自分たちで書けるが、{{term:server}}の OS の更新や見張りに人を割けない。",
+    "figures": [
+      "cloud-b02-stack"
+    ]
+  },
+  "understand": [
+    {
+      "kind": "figure-pick",
+      "figure": "cloud-b02-stack",
+      "prompt": "IaaS を使う時に、借りた側が自分で世話をする層を全て押す。",
+      "answer": [
+        "app",
+        "runtime",
+        "os"
+      ],
+      "see": "what"
+    },
+    {
+      "kind": "match",
+      "prompt": "例えと、正確な説明を結ぶ。",
+      "pairs": [
+        [
+          "空の部屋を借り、家具も自分で入れる",
+          "IaaS: 仮想の機械を借り、OS から上は自分で入れる"
+        ],
+        [
+          "家具付きの部屋を借り、荷物だけ持ち込む",
+          "PaaS: 実行環境まで用意され、書いたアプリを置くだけ"
+        ],
+        [
+          "ホテルに泊まり、部屋を使うだけ",
+          "SaaS: 出来上がったアプリを使うだけ"
+        ]
+      ],
+      "see": "what"
+    }
+  ],
+  "quiz": [
+    {
+      "id": "q1",
+      "kind": "term",
+      "prompt": "IaaS で借りた仮想の機械の、OS の更新をするのは誰？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "借りた側（利用者）",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "提供者",
+          "correct": false,
+          "whyNot": "IaaS で提供者が世話をするのは、機械と{{term:virtualization}}まで。OS から上は、借りた側が入れて更新する。"
+        },
+        {
+          "id": "c",
+          "text": "誰もしなくてよい",
+          "correct": false,
+          "whyNot": "更新しないと、見つかった弱点が残り続ける。"
+        }
+      ],
+      "explanation": "IaaS は自由が大きい代わりに、OS の更新・見張りも借りた側の仕事になる。"
+    },
+    {
+      "id": "q2",
+      "kind": "situation",
+      "prompt": "古い地図の仕組みを動かす。OS の特別な設定と、自分で入れる道具が要る。どの形を選ぶ？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "IaaS",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "PaaS",
+          "correct": false,
+          "whyNot": "OS と実行環境は提供者が決めて世話をする。特別な設定や道具は入れられない。"
+        },
+        {
+          "id": "c",
+          "text": "SaaS",
+          "correct": false,
+          "whyNot": "出来上がったアプリを使う形。自分の仕組みは動かせない。"
+        }
+      ],
+      "explanation": "OS から自分で決めたい時は、手間が増えても IaaS。自由が要るかどうかで選ぶ。"
+    },
+    {
+      "id": "q3",
+      "kind": "order",
+      "prompt": "提供者に任せる範囲が広い順に並べる。",
+      "order": [
+        "SaaS",
+        "PaaS",
+        "IaaS"
+      ],
+      "explanation": "SaaS はアプリまで、PaaS は実行環境まで、IaaS は仮想の機械まで、提供者が世話をする。広いほど手間は減り、自由も減る。"
+    }
+  ],
+  "practice": {
+    "mode": "simulation",
+    "purpose": "市の 3 つの仕事に、IaaS・PaaS・SaaS のどれが最も合うかを、理由とともに選ぶ。",
+    "environment": "sim-read",
+    "setup": {
+      "questions": [
+        {
+          "id": "reserve",
+          "prompt": "予約サイトを公開する。アプリは自分たちで書くが、OS の更新や見張りに人を割けない",
+          "options": [
+            "IaaS・OSから自分で決められる",
+            "PaaS・アプリだけ置けばよい",
+            "PaaS・OSも自由に変えられる",
+            "SaaS・出来上がった物を使うだけ"
+          ]
+        },
+        {
+          "id": "mail",
+          "prompt": "職員のメールを使う。自分で作る気は無く、来週から使い始めたい",
+          "options": [
+            "IaaS・OSから自分で決められる",
+            "PaaS・アプリだけ置けばよい",
+            "SaaS・出来上がった物を使うだけ",
+            "SaaS・自分のアプリも置ける"
+          ]
+        },
+        {
+          "id": "map",
+          "prompt": "古い地図の仕組みを動かす。OS の特別な設定と、自分で入れる道具が要る",
+          "options": [
+            "IaaS・OSから自分で決められる",
+            "IaaS・OSの更新も提供者がする",
+            "PaaS・アプリだけ置けばよい",
+            "SaaS・出来上がった物を使うだけ"
+          ]
+        }
+      ],
+      "panels": [
+        {
+          "kind": "kv",
+          "title": "提供者が世話をする範囲",
+          "rows": [
+            [
+              "IaaS",
+              "機械・仮想化。OS から上は自分"
+            ],
+            [
+              "PaaS",
+              "機械〜実行環境。書いたアプリは自分"
+            ],
+            [
+              "SaaS",
+              "アプリまで全て。使うだけ"
+            ]
+          ]
+        },
+        {
+          "kind": "kv",
+          "title": "自分で決められる所",
+          "rows": [
+            [
+              "IaaS",
+              "OS・実行環境・アプリ"
+            ],
+            [
+              "PaaS",
+              "書いたアプリ"
+            ],
+            [
+              "SaaS",
+              "アプリの設定だけ"
+            ]
+          ]
+        }
+      ]
+    },
+    "steps": [
+      {
+        "id": "less-work",
+        "purpose": "手間を減らしたい 2 つの仕事（予約サイト・メール）に、形と理由を選ぶ。左の「世話をする範囲」を見る。",
+        "check": {
+          "kind": "sim",
+          "expr": "answered reserve=PaaS・アプリだけ置けばよい mail=SaaS・出来上がった物を使うだけ"
+        },
+        "afterward": "自分で書いた予約サイトは、実行環境まで任せられる PaaS に置くだけ。作る気の無いメールは、出来上がった物を使う SaaS。どちらも OS の更新は提供者がする。",
+        "hints": [
+          "管理したい範囲を見る。自分で書いた物があるか、OS まで触りたいか。",
+          "書いたアプリを置くだけなら PaaS。何も作らずに使うだけなら SaaS。PaaS で OS は変えられず、SaaS に自分のアプリは置けない。",
+          "`answer reserve PaaS・アプリだけ置けばよい` `answer mail SaaS・出来上がった物を使うだけ` の順に入れる。"
+        ],
+        "expectedErrors": [
+          "cloud-tradeoff-missed"
+        ]
+      },
+      {
+        "id": "freedom",
+        "purpose": "自由が要る仕事（古い地図の仕組み）に、形と理由を選ぶ。左の「自分で決められる所」を見る。",
+        "check": {
+          "kind": "sim",
+          "expr": "answered map=IaaS・OSから自分で決められる"
+        },
+        "afterward": "OS の特別な設定と道具が要るので、OS から自分で決められる IaaS。代わりに、OS の更新と見張りも自分たちの仕事になる。",
+        "hints": [
+          "OS の特別な設定が要る。OS を自分で決められるのはどの形か。",
+          "OS から自分で決められるのは IaaS だけ。ただし IaaS では、OS の更新は提供者でなく自分がする。",
+          "`answer map IaaS・OSから自分で決められる` と入れる。"
+        ],
+        "expectedErrors": [
+          "cloud-tradeoff-missed"
+        ]
+      }
+    ]
+  },
+  "result": {
+    "success": "手間を減らしたい仕事には任せる範囲の広い形を、自由が要る仕事には IaaS を、理由とともに選び分けた。",
+    "partial": "ヒントを使って選んだ。次は、任せる範囲が広いと何が減るのか（手間と自由）を、自分の言葉で説明してみよう。",
+    "retry": "まだ合っていない。左の 2 つの情報で、その形で誰が何を世話し、何を自分で決められるかを確かめよう。"
+  },
+  "summary": {
+    "points": [
+      "3 つの形は、提供者に任せる範囲が違う",
+      "任せるほど手間は減り、自由も減る",
+      "誰が何に責任を持つかの境目は、「責任共有モデル」で詳しく学ぶ"
+    ],
+    "next": [
+      "cloud.b.03",
+      "cloud.i.03"
+    ],
+    "terms": [
+      "iaas",
+      "paas",
+      "saas"
+    ]
+  }
+}
