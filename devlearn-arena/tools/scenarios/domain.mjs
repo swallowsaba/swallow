@@ -6,6 +6,7 @@
 // レッスンの中身（content/lessons）を読んで正しく答え、7 段を通す: 解説 → 理解 → クイズ → 実戦 → 結果 → まとめ → XP / スキル。
 // 実戦は、各手順の最初に 1 度わざと誤った文（コマンド）を入れてエラーの小窓を撮り、最後のヒントの答えを入れて進める。
 // FIRST='docker logs web' を付けると、わざと誤る代わりにその行を入れる（出力に当てる想定エラーの小窓を撮る）。
+// 2 つ以上の欄を選んで出来上がる誤りは、FIRST='set a 1 ;; set b 2' のように ` ;; ` で区切って順に入れる。
 // FIRST_STEP=手順の ID を付けると、最初の手順の代わりにその手順でわざと誤る。
 // 答える手順で FIRST を端末に打つ時は FIRST_TERM=1 を付ける。
 // HINTS=1 を付けると、最初の手順のヒント 3 段を開いた画面（-hints）も撮る。
@@ -171,7 +172,8 @@ export default async function domain(page, shot) {
       const wrong = editor ? (bad ? lines[0].replace(good ?? '', bad) : lines[0].replace(/;(\s*\n\s*\})/, '$1')) : null;
       // ブラウザ内 SQL は、最初の語の綴りを誤った文（syntax error）
       const sqlWrong = sql && !answerStep ? lines[0].replace(/^(\w+)\w/, '$1') : null;
-      await enter(process.env.FIRST ?? wrong ?? sqlWrong ?? (sim ? `${lines[0].split(' ')[0]} no-such-thing` : answerStep ? 'わからない' : 'cd /no-such-dir'), answerStep && process.env.FIRST_TERM === undefined);
+      const firsts = process.env.FIRST?.split(' ;; ') ?? [wrong ?? sqlWrong ?? (sim ? `${lines[0].split(' ')[0]} no-such-thing` : answerStep ? 'わからない' : 'cd /no-such-dir')];
+      for (const f of firsts) await enter(f, answerStep && process.env.FIRST_TERM === undefined);
       console.log('エラー', await page.getAttribute('[data-testid="practice-error"]', 'data-guide'), await text(page, '[data-testid="practice-error"]'));
       await shot(`${tag}-error`);
     }

@@ -1,0 +1,41 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 700 330" font-family="&quot;Noto Sans JP&quot;, sans-serif">
+  <title>アラートは、しきい値（5% を超えた）と継続時間（5 分続いた）の両方を満たした時に、決めた通知先（当番）へ知らせ、対応の手順を付ける。一瞬の跳ねでは鳴らない</title>
+  <defs>
+    <marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="#9fb0c6" />
+    </marker>
+  </defs>
+  <g class="el" data-part="graph">
+    <text x="20" y="24" font-size="13" fill="#9fb0c6">エラーの割合</text>
+    <line x1="20" y1="70" x2="680" y2="70" stroke="#f2b632" stroke-width="1.5" stroke-dasharray="6 4" />
+    <text x="676" y="62" text-anchor="end" font-size="13" fill="#f2b632">しきい値 5%</text>
+    <line x1="20" y1="130" x2="680" y2="130" stroke="#9fb0c6" stroke-width="1" />
+    <polyline points="20,124 120,122 150,122 160,40 172,122 300,124 400,123 430,56 450,52 470,58 490,54 510,57 530,123 680,124" fill="none" stroke="#ff8a7a" stroke-width="2" stroke-linejoin="round" />
+    <text x="166" y="152" text-anchor="middle" font-size="13" fill="#eef2f6">1 分の跳ね: 鳴らさない</text>
+    <text x="480" y="152" text-anchor="middle" font-size="13" fill="#eef2f6">5 分を超えて続く: 鳴らす</text>
+  </g>
+  <g class="el" data-part="threshold">
+    <rect x="20" y="180" width="150" height="80" rx="6" fill="none" stroke="#f2b632" stroke-width="2" pointer-events="all" />
+    <text x="95" y="208" text-anchor="middle" font-size="16" fill="#eef2f6">しきい値</text>
+    <text x="95" y="234" text-anchor="middle" font-size="13" fill="#9fb0c6">5% を超えた</text>
+  </g>
+  <line x1="172" y1="220" x2="190" y2="220" stroke="#9fb0c6" stroke-width="2" marker-end="url(#ar)" />
+  <g class="el" data-part="duration">
+    <rect x="194" y="180" width="150" height="80" rx="6" fill="none" stroke="#5cc1ff" stroke-width="2" pointer-events="all" />
+    <text x="269" y="208" text-anchor="middle" font-size="16" fill="#eef2f6">継続時間</text>
+    <text x="269" y="234" text-anchor="middle" font-size="13" fill="#9fb0c6">5 分続いた</text>
+  </g>
+  <line x1="346" y1="220" x2="364" y2="220" stroke="#9fb0c6" stroke-width="2" marker-end="url(#ar)" />
+  <g class="el" data-part="notify">
+    <rect x="368" y="180" width="150" height="80" rx="6" fill="none" stroke="#3ae08a" stroke-width="2" pointer-events="all" />
+    <text x="443" y="208" text-anchor="middle" font-size="16" fill="#eef2f6">通知先</text>
+    <text x="443" y="234" text-anchor="middle" font-size="13" fill="#9fb0c6">当番に電話</text>
+  </g>
+  <line x1="520" y1="220" x2="538" y2="220" stroke="#9fb0c6" stroke-width="2" marker-end="url(#ar)" />
+  <g class="el" data-part="runbook">
+    <rect x="542" y="180" width="138" height="80" rx="6" fill="none" stroke="#9fb0c6" stroke-width="2" pointer-events="all" />
+    <text x="611" y="208" text-anchor="middle" font-size="16" fill="#eef2f6">対応の手順</text>
+    <text x="611" y="234" text-anchor="middle" font-size="13" fill="#9fb0c6">何から見るか</text>
+  </g>
+  <text x="350" y="300" text-anchor="middle" font-size="13" fill="#9fb0c6">知らせるのは、人が今すぐ動く必要がある時だけ。鳴りすぎると、本当の異常を見逃す</text>
+</svg>
