@@ -72,7 +72,7 @@ describe('リロードしても進捗が消えない', () => {
     // リロード（同じ保存先から開き直す）
     const second = await openSession(backend, { now, newId: () => 'p-other' });
     expect(second.problem).toBeUndefined();
-    expect(second.player.id).toBe('p-1');
+    expect(second.session.player.getState().player.id).toBe('p-1');
     expect(second.session.progress.getState().progress).toEqual(first.session.progress.getState().progress);
     expect(second.session.progress.getState().progress.lessons['linux.b.01']?.status).toBe('completed');
     expect(second.session.progress.getState().practiceSessions).toEqual(first.session.progress.getState().practiceSessions);
@@ -112,7 +112,7 @@ describe('リロードしても進捗が消えない', () => {
     const backend = memoryBackend();
     const opened = await openSession(backend, { now, newId: () => 'p-new' });
     expect(opened.problem).toBeUndefined();
-    expect(opened.player).toEqual({ id: 'p-new', name: '市長', createdAt: AT });
+    expect(opened.session.player.getState().player).toEqual({ id: 'p-new', name: '市長', createdAt: AT, introSeen: false });
     expect(opened.session.city.getState().city).toEqual(newCity());
     expect(opened.session.progress.getState().progress.lessons).toEqual({});
   });

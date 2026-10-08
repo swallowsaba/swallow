@@ -1,7 +1,7 @@
 import type { Progress } from '@/game/types';
 import { createSession, type Session } from '@/screens/session';
 import { readFailureText, readSave } from './migrations';
-import { fromSaveData, newPlayer, toSaveData, type PlayerMeta } from './saveData';
+import { fromSaveData, newPlayer, toSaveData } from './saveData';
 import type { SaveData } from './schema';
 
 /**
@@ -19,9 +19,8 @@ export interface SaveBackend {
 }
 
 export interface Opened {
-  /** 遊んでいる状態（都市・学習の記録・設定） */
+  /** 遊んでいる状態（都市・学習の記録・設定・市長） */
   session: Session;
-  player: PlayerMeta;
   /** 読み込みで起きた問題（画面に 1 行で出す） */
   problem?: string;
   /** false なら保存しない（読めなかった保存データの写しを残せず、上書きすると失うため） */
@@ -40,8 +39,7 @@ const reasonOf = (e: unknown): string => (e instanceof Error ? e.name !== 'Error
 /** 保存先から、遊んでいる状態を開く。読めなくても投げず、新しい都市で始めて、何が起きたかを problem に書く */
 export async function openSession(backend: SaveBackend, options: OpenOptions): Promise<Opened> {
   const fresh = (problem?: string, canSave = true): Opened => ({
-    session: createSession(),
-    player: newPlayer(options.newId(), options.now()),
+    session: createSession(undefined, { player: newPlayer(options.newId(), options.now()) }),
     canSave,
     ...(problem === undefined ? {} : { problem }),
   });
@@ -54,7 +52,7 @@ export async function openSession(backend: SaveBackend, options: OpenOptions): P
   const read = readSave(raw);
   if (read.ok) {
     const parts = fromSaveData(read.data);
-    return { session: createSession(undefined, parts), player: parts.player, canSave: true };
+    return { session: createSession(undefined, parts), canSave: true };
   }
   if (read.reason === 'empty') return fresh();
   const what = readFailureText(read.reason).what.replace(/。$/, '');
@@ -98,9 +96,9 @@ export interface Autosave {
   replace: (data: SaveData) => Promise<void>;
 }
 
-const snapshotOf = ({ session, player }: Opened, at: string): SaveData => {
+const snapshotOf = ({ session }: Opened, at: string): SaveData => {
   const p = session.progress.getState();
-  return toSaveData({ player, settings: session.settings.getState().settings, city: session.city.getState().city, progress: p.progress, practiceSessions: p.practiceSessions }, at, at.slice(0, 10));
+  return toSaveData({ player: session.player.getState().player, settings: session.settings.getState().settings, city: session.city.getState().city, progress: p.progress, practiceSessions: p.practiceSessions }, at, at.slice(0, 10));
 };
 
 /** 遊んでいる状態の変化を見張り、保存する */
@@ -153,6 +151,9 @@ export function startAutosave(opened: Opened, backend: SaveBackend, options: Aut
   const offSettings = session.settings.subscribe((s, prev) => {
     if (s.settings !== prev.settings) schedule();
   });
+  const offPlayer = session.player.subscribe((s, prev) => {
+    if (s.player !== prev.player) schedule();
+  });
   const offProgress = session.progress.subscribe((s, prev) => {
     if (stopped || replacing) return;
     if (stageMoved(prev.progress, s.progress)) void save();
@@ -165,6 +166,7 @@ export function startAutosave(opened: Opened, backend: SaveBackend, options: Aut
     timer = null;
     offCity();
     offSettings();
+    offPlayer();
     offProgress();
   };
 

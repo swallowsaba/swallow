@@ -9,6 +9,7 @@
 //   SHOOT_FPS=1           都市を毎フレーム描き直させ、3 秒間の fps を測って表示する
 //   SHOOT_EVAL='...'      撮る前にページで実行する式（カメラを動かすなど）
 //   SHOOT_TWICE=2000      その間隔で 2 枚撮る（動きの確認。<名前>-2.png）
+//   SHOOT_INTRO=1         初回の操作説明を閉じずに撮る（既定では閉じてから撮る）
 //   SHOOT_SCRIPT=tools/scenarios/town.mjs
 //                         撮る前に、画面を操作する台本を動かす（台本は shot(名前) で途中の画面も撮れる）
 import { chromium } from 'playwright';
@@ -38,6 +39,8 @@ try {
   await page.goto(url, { waitUntil: 'networkidle' });
   await page.waitForFunction(() => document.body.dataset.cityReady === '1' || !document.querySelector('[data-testid="city-screen"]'), null, { timeout: 30000 });
   await page.evaluate(() => document.fonts.ready);
+  // 初めて開いた時の操作説明は、それを撮る時のほかは閉じる（閉じたことは保存され、次からは出ない）
+  if (!process.env.SHOOT_INTRO) await page.evaluate(() => document.querySelector('[data-testid="intro"] .intro-skip')?.click());
   if (process.env.SHOOT_EVAL) await page.evaluate(process.env.SHOOT_EVAL);
   if (process.env.SHOOT_SCRIPT) {
     const script = await import(pathToFileURL(process.env.SHOOT_SCRIPT).href);

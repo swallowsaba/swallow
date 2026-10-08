@@ -16,6 +16,8 @@ export interface PlayerMeta {
   id: string;
   name: string;
   createdAt: string;
+  /** 初回の操作説明を見終えた・飛ばした */
+  introSeen: boolean;
 }
 
 /** 保存する、遊んでいる状態 */
@@ -28,7 +30,7 @@ export interface SaveParts {
 }
 
 /** 新しい市長（既定の名前は「市長」） */
-export const newPlayer = (id: string, createdAt: string): PlayerMeta => ({ id, name: '市長', createdAt });
+export const newPlayer = (id: string, createdAt: string): PlayerMeta => ({ id, name: '市長', createdAt, introSeen: false });
 
 /**
  * 保存データを作る。スキルとエンジニア段階は、学習の記録から計算した値を写しておく（読む時は記録から計算し直す）。
@@ -56,9 +58,9 @@ export function toSaveData(parts: SaveParts, savedAt: string, today: string): Sa
 
 /** 保存データから、遊んでいる状態を戻す */
 export function fromSaveData(data: SaveData): SaveParts {
-  const { id, name, createdAt, xp, settings } = data.player;
+  const { id, name, createdAt, introSeen, xp, settings } = data.player;
   return {
-    player: { id, name, createdAt },
+    player: { id, name, createdAt, introSeen },
     settings,
     city: data.city,
     progress: { xp, lessons: data.lessons, reviews: data.reviews, missions: data.missions, xpLog: data.xpLog },

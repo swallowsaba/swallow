@@ -5,6 +5,7 @@ import { useShallow } from 'zustand/react/shallow';
 import { demolish } from '@/city/place';
 import { displayOf, type Display } from '@/city/render/display';
 import type { Settings } from '@/save/schema';
+import { Intro } from './Intro';
 import { CityRenderer } from '@/city/render/CityRenderer';
 import { RANK_NAMES, rankOf } from '@/game/rank';
 import { STAGE_NAMES } from '@/game/stage';
@@ -204,6 +205,7 @@ export function CityScreen({ session, active = true, current, disabled = [], onE
           <BuildMenu state={state} landmarks={landmarks} />
           <PlacementHint hint={state.confirm ? null : state.hint} />
           <DemolishConfirm target={state.confirm} onYes={onYes} onNo={onNo} />
+          <Intro session={session} />
         </>
       ) : null}
     </div>

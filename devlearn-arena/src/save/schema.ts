@@ -8,7 +8,8 @@ import { DOMAIN_IDS } from '@/content/schema';
  * 版が上がったら SAVE_VERSION を上げ、src/save/migrations.ts に前の版からの移行を足す。
  */
 
-export const SAVE_VERSION = 1;
+/** 版 2: 市長に、初回の操作説明を見終えたか（introSeen）を足した */
+export const SAVE_VERSION = 2;
 
 const domainId = z.enum(DOMAIN_IDS);
 const at = z.string().min(1);
@@ -38,6 +39,8 @@ export const playerSchema = z.object({
   id: z.string().min(1),
   name: z.string().min(1),
   createdAt: at,
+  /** 初回の操作説明（docs/ui-design.md 9 章）を見終えた・飛ばした */
+  introSeen: z.boolean(),
   xp: count,
   engineerRank: z.enum(['apprentice', 'junior', 'middle', 'senior', 'lead']),
   skills: z.record(domainId, skillStateSchema),

@@ -91,8 +91,6 @@ describe('保存データ（docs/data-model.md 7 章）', () => {
   });
 
   it('古い版は、今の版になるまで移行を順に当ててから確かめる。移行の道が無い版や、移行が投げた物は読めない', () => {
-    // 版 1 が最初の版なので、本物の移行はまだ無い（版を上げた時に足す）
-    expect(MIGRATIONS).toEqual({});
     // 仕組み: 版 1 → 2 → 3 と順に当てる（版 1 は a を数でなく文字で持ち、版 2 は b が無かった）
     const schema = z.object({ version: z.literal(3), a: z.number(), b: z.string() }).strict() as unknown as ZodType<SaveData>;
     const migrations: Record<number, Migration> = {
@@ -103,9 +101,9 @@ describe('保存データ（docs/data-model.md 7 章）', () => {
     expect(readSave({ version: 2, a: 7 }, { migrations, version: 3, schema })).toEqual({ ok: true, data: { version: 3, a: 7, b: 'added' }, migratedFrom: 2 });
     expect(readSave({ version: 0, a: 1 }, { migrations, version: 3, schema })).toMatchObject({ ok: false, reason: 'too-old' });
     expect(readSave({ version: 1, a: 1 }, { migrations: { ...migrations, 2: () => { throw new Error('壊れた'); } }, version: 3, schema })).toMatchObject({ ok: false, reason: 'invalid' });
-    // 本物の形で: 仮に版 0 が設定を持たず、都市の名前を town と呼んでいたなら、移行して今の版として読める
+    // 本物の形で: 仮に版 0 が設定を持たず、都市の名前を town と呼んでいたなら、版 0 → 1 → 2 と移して今の版として読める
     const current = toSaveData(played(), '2026-10-04T12:00:00+09:00', '2026-10-04');
-    const player0 = Object.fromEntries(Object.entries(current.player).filter(([k]) => k !== 'settings'));
+    const player0 = Object.fromEntries(Object.entries(current.player).filter(([k]) => k !== 'settings' && k !== 'introSeen'));
     const { name, ...city0 } = current.city;
     const v0 = { ...current, version: 0, player: player0, city: { ...city0, town: name } };
     const toV1: Migration = (old) => {
@@ -113,9 +111,21 @@ describe('保存データ（docs/data-model.md 7 章）', () => {
       return { ...old, player: { ...(old.player as object), settings: DEFAULT_SETTINGS }, city: { ...city, name: town } };
     };
     expect(readSave(JSON.stringify(v0))).toMatchObject({ ok: false, reason: 'too-old' });
-    const migrated = readSave(JSON.stringify(v0), { migrations: { 0: toV1 } });
+    const migrated = readSave(JSON.stringify(v0), { migrations: { ...MIGRATIONS, 0: toV1 } });
     expect(migrated).toMatchObject({ ok: true, migratedFrom: 0 });
-    expect(migrated.ok && migrated.data).toEqual({ ...current, player: { ...current.player, settings: DEFAULT_SETTINGS } });
+    expect(migrated.ok && migrated.data).toEqual({ ...current, player: { ...current.player, settings: DEFAULT_SETTINGS, introSeen: true } });
+  });
+
+  it('版 1 の保存データは版 2 に移る（市長に introSeen を足す。もう遊んだ人なので、初回の操作説明は出さない）', () => {
+    const current = toSaveData(played(), '2026-10-04T12:00:00+09:00', '2026-10-04');
+    expect(current.version).toBe(2);
+    const player1 = Object.fromEntries(Object.entries(current.player).filter(([k]) => k !== 'introSeen'));
+    const v1 = { ...current, version: 1, player: player1 };
+    const migrated = readSave(JSON.stringify(v1));
+    expect(migrated).toMatchObject({ ok: true, migratedFrom: 1 });
+    expect(migrated.ok && migrated.data).toEqual({ ...current, player: { ...current.player, introSeen: true } });
+    // 移行は受け取った物を変えない
+    expect(v1.player).not.toHaveProperty('introSeen');
   });
 
   it('書き出すファイルの名前は devlearn-save-<日付>.json', () => {

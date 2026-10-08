@@ -11,6 +11,7 @@ interface Player {
   id: string;                    // 端末内で生成
   name: string;                  // 市長の名前（既定: 市長）
   createdAt: string;             // ISO 日時
+  introSeen: boolean;            // 初回の操作説明（docs/ui-design.md 9 章）を見終えた・飛ばした（版 2 で足した。版 1 からの移行では true）
   xp: number;                    // 累計 XP（消費しない）
   engineerRank: 'apprentice' | 'junior' | 'middle' | 'senior' | 'lead';
   skills: Record<DomainId, SkillState>;

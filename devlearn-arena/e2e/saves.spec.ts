@@ -38,6 +38,9 @@ const stateOf = (page: Page) =>
 async function open(page: Page): Promise<void> {
   await page.goto('#/city');
   await page.waitForFunction(() => document.body.dataset.cityReady === '1');
+  // 初回の操作説明は飛ばす（飛ばしたことも保存の対象）
+  const intro = page.getByTestId('intro');
+  if (await intro.count()) await page.keyboard.press('Escape');
 }
 
 async function played(page: Page): Promise<string> {

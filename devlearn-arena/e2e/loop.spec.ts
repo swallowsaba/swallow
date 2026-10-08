@@ -51,6 +51,13 @@ test('都市を作り、施設から学び、7 段を通して都市へ戻ると
   await expect(page.getByTestId('city-screen')).toBeVisible();
   await page.waitForFunction(() => document.body.dataset.cityReady === '1');
 
+  // 初回の操作説明（docs/ui-design.md 9 章）: 3 回に分けて、Enter で読み進める
+  for (const n of ['1', '2', '3']) {
+    await expect(page.getByTestId('intro')).toHaveAttribute('data-step', n);
+    await page.keyboard.press('Enter');
+  }
+  await expect(page.getByTestId('intro')).toHaveCount(0);
+
   // G2: 移動・拡大縮小・回転（キーボード）。同じマスの画面の位置が変わる
   for (const key of ['d', '+', 'e']) {
     const before = await at(page, 48, 47);

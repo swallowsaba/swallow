@@ -1,0 +1,98 @@
+/* 初回の操作説明（docs/ui-design.md 9 章）。示す所を金の枠で囲み、その近くに説明の札を出す。都市は覆わない */
+.intro {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  pointer-events: none;
+}
+.intro-mark {
+  position: fixed;
+  border: 2px solid var(--gold-light);
+  border-radius: 6px 18px 6px 18px;
+  box-shadow: 0 0 0 3px var(--hud-bg), var(--shadow-window);
+  animation: intro-mark 1.6s ease-in-out infinite;
+}
+@keyframes intro-mark {
+  50% {
+    border-color: var(--gold);
+  }
+}
+
+.intro-card {
+  position: fixed;
+  width: 420px;
+  padding: 16px 20px 14px;
+  background: var(--hud-bg-strong);
+  border: 2px solid var(--hud-line);
+  border-radius: 4px 18px 4px 18px;
+  box-shadow: var(--shadow-window);
+  pointer-events: auto;
+}
+.intro-count {
+  margin: 0;
+  font-size: var(--fs-13);
+  color: var(--gold);
+}
+.intro-title {
+  margin: 0 0 6px;
+  font-family: var(--font-heading);
+  font-weight: 800;
+  font-size: var(--fs-22);
+  line-height: 1.3;
+}
+.intro-line {
+  margin: 0 0 4px;
+  font-size: var(--fs-14);
+  line-height: 1.6;
+}
+.intro-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 10px;
+}
+.intro-skip,
+.intro-next {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 36px;
+  font-weight: 700;
+  line-height: 1.2;
+  cursor: pointer;
+}
+.intro-skip {
+  padding: 0 16px;
+  border: 1px solid var(--hud-line);
+  background: var(--hud-bg);
+  color: var(--hud-text);
+  font-size: var(--fs-14);
+  clip-path: polygon(10px 0, 100% 0, calc(100% - 10px) 100%, 0 100%);
+}
+.intro-next {
+  padding: 0 22px 0 18px;
+  border: none;
+  color: var(--navy);
+  background: linear-gradient(180deg, var(--gold-light), var(--gold));
+  font-size: var(--fs-16);
+  clip-path: polygon(12px 0, 100% 0, calc(100% - 12px) 100%, 0 100%);
+}
+.intro-skip:active,
+.intro-next:active {
+  transform: translateY(2px);
+}
+.intro-skip:hover,
+.intro-skip:focus-visible {
+  border-color: var(--gold);
+  color: var(--gold-light);
+  outline: none;
+}
+.intro-next:focus-visible {
+  outline: 2px solid var(--hud-text);
+  outline-offset: -4px;
+}
+.intro kbd {
+  font-family: var(--font-number);
+  font-size: var(--fs-12);
+  opacity: 0.75;
+}

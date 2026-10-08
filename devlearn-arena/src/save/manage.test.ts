@@ -3,7 +3,7 @@ import { newCity } from '@/city/newCity';
 import { emptyProgress } from '@/game/progress';
 import { openSession, startAutosave, type SaveBackend } from './autosave';
 import { checkImport, exportFile, freshSave } from './manage';
-import { readSave, type Migration } from './migrations';
+import { MIGRATIONS, readSave, type Migration } from './migrations';
 import { DEFAULT_SETTINGS, SAVE_VERSION } from './schema';
 
 /**
@@ -74,7 +74,7 @@ describe('書き出しと読み込み', () => {
 
     // 開き直す（読み込んだ後は、保存先から開き直して画面に出す）
     const reopened = await openSession(other, { now, newId: () => 'p-x' });
-    expect(reopened.player).toEqual(opened.player);
+    expect(reopened.session.player.getState().player).toEqual(opened.session.player.getState().player);
     expect(reopened.session.city.getState().city).toEqual(opened.session.city.getState().city);
     expect(reopened.session.progress.getState().progress).toEqual(opened.session.progress.getState().progress);
     expect(reopened.session.progress.getState().practiceSessions).toEqual(opened.session.progress.getState().practiceSessions);
@@ -128,15 +128,16 @@ describe('書き出しと読み込み', () => {
   it('古い版のファイルは、今の版に移してから読み込み、移したことを示す', () => {
     const current = freshSave({ id: 'p-1', now: AT, settings: DEFAULT_SETTINGS });
     // 仮の版 0: 市長の名前を mayor と呼んでいた
-    const { name, ...player0 } = current.player;
+    const { name, ...rest } = current.player;
+    const player0 = Object.fromEntries(Object.entries(rest).filter(([k]) => k !== 'introSeen'));
     const v0 = JSON.stringify({ ...current, version: 0, player: { ...player0, mayor: name } });
     const toV1: Migration = (old) => {
       const { mayor, ...player } = old.player as Record<string, unknown>;
       return { ...old, player: { ...player, name: mayor } };
     };
     expect(checkImport(v0).ok).toBe(false);
-    const checked = checkImport(v0, { migrations: { 0: toV1 } });
-    expect(checked.ok && checked.data).toEqual(current);
+    const checked = checkImport(v0, { migrations: { ...MIGRATIONS, 0: toV1 } });
+    expect(checked.ok && checked.data).toEqual({ ...current, player: { ...current.player, introSeen: true } });
     expect(checked.ok && checked.summary.migratedFrom).toBe(0);
   });
 });
@@ -147,12 +148,12 @@ describe('最初からやり直す', () => {
     const settings = { ...DEFAULT_SETTINGS, reduceMotion: true };
     await saver.replace(freshSave({ id: 'p-new', now: AT, settings }));
     const reopened = await openSession(backend, { now, newId: () => 'p-x' });
-    expect(reopened.player).toEqual({ id: 'p-new', name: '市長', createdAt: AT });
+    expect(reopened.session.player.getState().player).toEqual({ id: 'p-new', name: '市長', createdAt: AT, introSeen: false });
     expect(reopened.session.settings.getState().settings).toEqual(settings);
     expect(reopened.session.city.getState().city).toEqual(newCity());
     expect(reopened.session.progress.getState().progress).toEqual(emptyProgress());
     expect(reopened.session.progress.getState().practiceSessions).toEqual({});
-    expect(opened.player.id).toBe('p-1');
+    expect(opened.session.player.getState().player.id).toBe('p-1');
   });
 
   it('置き換えの書き込みに失敗したら、投げて知らせ、今の記録の自動保存を続ける', async () => {

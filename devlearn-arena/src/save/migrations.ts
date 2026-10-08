@@ -9,7 +9,10 @@ import { SAVE_VERSION, saveDataSchema, type SaveData } from './schema';
 export type Migration = (old: Record<string, unknown>) => Record<string, unknown>;
 
 /** 版 1 が最初の版。版を上げる時に、前の版からの移行をここに足す */
-export const MIGRATIONS: Readonly<Record<number, Migration>> = {};
+export const MIGRATIONS: Readonly<Record<number, Migration>> = {
+  /** 版 1 → 2: 市長に introSeen を足す。版 1 の記録はもう遊んだ人の物なので、初回の操作説明は出さない */
+  1: (old) => ({ ...old, player: { ...(old.player as Record<string, unknown>), introSeen: true } }),
+};
 
 export type ReadFailure =
   /** 何も無い（初めて遊ぶ） */
