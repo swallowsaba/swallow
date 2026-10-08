@@ -152,10 +152,10 @@ describe('学習ライブラリ（docs/ui-design.md 6 章）', () => {
 
   it('書き起こしたレッスンは、目安の時間を中身から読む。まだのレッスンは 10〜20 分', async () => {
     const { host } = open(createSession(1), { lessonId: 'linux.i.01' });
-    await act(async () => {
-      await new Promise((r) => setTimeout(r, 50));
+    // 中身は後から読み込む。全てのテストを並べて動かすと 50ms では読み終わらないことがあるので、読めるまで待つ
+    await vi.waitFor(() => {
+      expect($(host, '.entry-facts').textContent).toMatch(/目安\d+ 分/);
     });
-    expect($(host, '.entry-facts').textContent).toMatch(/目安\d+ 分/);
     click($(host, '[data-lesson="net.b.01"]'));
     expect($(host, '.entry-facts').textContent).toContain('目安10〜20 分');
   });
