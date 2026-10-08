@@ -757,3 +757,80 @@ V1・V3・V4・V9・V10 は都市画面の項目で、この分野では都市�
 - i.06 の図で、compose.yaml の字下げが消えていた（SVG は行の頭の空白を詰める）→ 字下げの分だけ x をずらした。長い行が枠に触れたので枠を広げた
 - i.01 の撮影でわざと `RUN npm instal` と書いたら、作れたのに部品が入らずアプリが止まった。本物の npm では instal は install の別名で、部品が入る → install の別名（i・instal・add など）で部品を入れ、知らない npm の命令は本物と同じく Unknown command で止めるようにした（先に失敗するテストを書いた）。撮影は `RUN npm instll` で RUN の失敗の小窓を撮った
 - 本番の機械の空の一覧（docker images）で、見出しの欄の間が本物より詰まっていた（テストで気づいた）→ 表の欄の幅を本物と同じく 10 字以上にした
+
+## k8s（Kubernetes）
+
+記録した日: 2026-10-08
+
+### 作ったもの
+
+範囲のレッスン 15 本（初級 7 本・中級 8 本。上級は Q-04 の範囲外）。独立した分野として、考え方（宣言・入れ子）→ 機械（Node）→ 動かす物（Pod・Deployment・Service・Namespace）→ 設定と保存（ConfigMap・Secret・PV/PVC）→ 公開と運用（Ingress・確かめ・数・資源・更新）の順に段階を踏む。
+
+| ID | 題名 | 実戦 | 模擬環境 | 手順 |
+|---|---|---|---|---|
+| k8s.b.01 | Kubernetes とは・なぜ必要か | 模 | 設定する（サーバ 2 が夜中に止まる出来事を、手で置く方式と、あるべき数 3 を宣言して任せる方式で比べる） | 2 |
+| k8s.b.02 | コンテナとの関係 | 模 | 割り振る（5 枚の札を入れ子の場所に入れ、クラスタ ⊃ Node ⊃ Pod ⊃ コンテナの構成図を完成させる） | 2 |
+| k8s.b.03 | クラスタと Node | 端 | k8s-cluster（get nodes を読み、Pod を動かす Node の台数と、使えない NotReady の Node を答える） | 2 |
+| k8s.b.04 | Pod | 端 | k8s-cluster（kubectl run で web の Pod を作り、get pods -w で ContainerCreating から Running まで追う） | 2 |
+| k8s.b.05 | Deployment | 端 | k8s-cluster（web を 3 つの Deployment で作り、Pod を 1 つ消して作り直されることを確かめる） | 3 |
+| k8s.b.06 | Service | 端 | k8s-cluster（expose で入口を付け、Pod を全て作り直しても住所は同じで宛先が入れ替わることを確かめる） | 4 |
+| k8s.b.07 | Namespace | 端 | k8s-cluster（区画 dev・prod を作って web を置き、同じ名前の web が 3 つの区画に並ぶことを答える） | 4 |
+| k8s.i.01 | ConfigMap | 編 | k8s-cluster（直書きの接続先を ConfigMap に移して envFrom で受け取り、値を変えて Pod を作り直させる） | 2 |
+| k8s.i.02 | Secret | 編 | k8s-cluster（DB のパスワードを Secret に移して secretKeyRef で渡し、Git に入れる db.yaml から値を消す） | 2 |
+| k8s.i.03 | Volume（PV と PVC） | 編 | k8s-cluster（係の PV を PVC で申請して DB の書く場所に付け、Pod を作り直しても予約が残ることを確かめる） | 1 |
+| k8s.i.04 | Ingress | 編 | k8s-cluster（city.example の / を shop に、/api を api に振り分ける Ingress を書き、curl で確かめる） | 2 |
+| k8s.i.05 | ヘルスチェック | 編 | k8s-cluster（起動に 20 秒かかる guide に readiness と liveness を付け、固めた Pod が作り直されるまでを見る） | 1 |
+| k8s.i.06 | スケーリング | 端 | k8s-cluster（scale で手で 4 つにし、autoscale で 50%・2〜10 の HPA を付け、要求を書いて波で増やし、止めて減らす） | 4 |
+| k8s.i.07 | 資源の要求と上限 | 編 | k8s-cluster（Pending の board の要求と、OOMKilled の report の上限を直して両方を動き続けさせる） | 1 |
+| k8s.i.08 | ローリングアップデート | 端 | k8s-cluster（set image で 1.1 に入れ替え、Ready にならない 1.2 で止まるのを見て rollout undo で戻す） | 2 |
+
+- 図 15 枚（`content/figures/k8s-*.svg`）。tokens の色・13px 以上・要素 7 つまで。押す問題の部分は `data-part`
+- 用語集 `content/glossary/k8s.json` は 42 語（宣言的・クラスタ・Node・Pod・Deployment・ReplicaSet・Service・Namespace・ConfigMap・Secret・PV・PVC・Ingress・liveness・readiness・HPA・requests・limits・OOMKilled・ローリングアップデート・世代など）
+- エラーの解説 48 件（`content/errors/k8s.json`）。出力に当てる物（`output`）は、get pods の状態（ErrImagePull・Pending・OOMKilled・Running の数）・get endpoints の空・get hpa の `<unknown>`・curl の答え（404・503・403）など
+- 模擬に足した物（`src/engines/k8s`・`src/engines/kernel/commands/kubectl*`。どれも本物の v1.31 の出力と断りの文に寄せた。各レッスンの前のコミットで、先に失敗するテストを書いてから直した）
+  - 時間と状態（b.03〜b.05）: kubectl を打つたびに 2 秒流れ、Pod は ContainerCreating を経て Running。get pods -w は変わるたびに 1 行。取れるイメージは置き場の物だけ（ErrImagePull → ImagePullBackOff）。describe node・pod・deployment、ReplicaSet と Pod の名前は本物の形（同じ操作から同じ名前）
+  - Service と区画（b.06・b.07）: 名前から ClusterIP を配り、get endpoints・describe service。Namespace（create・get・delete、-n・-A、無い区画には作れない）
+  - 設定・秘密・保存（i.01〜i.03）: ConfigMap・Secret の値はコンテナを動かした時に引く（変えても作り直すまで古いまま）。参照先が無ければ CreateContainerConfigError。apply の created・configured・unchanged。Secret の base64 の誤り。PVC は合う PV と結ばれ、作った後は変えられない。PVC で付けた場所に書いた物は PV に残り、それ以外は作り直すと消える。予約の DB（city-db:1.0）に exec の psql
+  - 公開と確かめ（i.04・i.05）: 入口の係（ingress-nginx）と外の住所。curl は Ingress の規則で Service に振り分け、Ready の Pod のイメージが答える（404・502・503）。待ち受けるまでの秒数を持つアプリは、本物の httpGet の liveness・readiness で見る（作り直しは すぐ・10 秒・20 秒…と延びる）
+  - 数と資源（i.06・i.07）: metrics-server と同じく 15 秒ごとに使用量を測り（top pods）、HPA は本物の計算（使用率 = 使用量 ÷ 要求、1 割以内なら変えない、減らすのは 5 分様子を見てから）。要求と上限の数量を本物と同じく読み、要求が入る Node にだけ置く（FailedScheduling）。上限より多くメモリを使うアプリは OOMKilled（137）。get events と --field-selector
+  - 入れ替え（i.08）: 本物の deployment controller の数え方（maxSurge・maxUnavailable は既定 25%）。Ready にならない版では古い Pod を残して止まり、600 秒で期限を過ぎる（rollout status が失敗し、Progressing は ProgressDeadlineExceeded）。rollout history（--revision）・undo（前の ReplicaSet を使い直して番号を付け替える・skipped rollback）。同じ知らせの繰り返しは 1 つにまとめて数える。get deployment・rs -o wide
+- 実戦の達成条件 k8s に、deployment の made・env.名前・from.名前・rows.表・readyUpdated・restarts・early・image・tried、service の endpoints、pod の status、namespace、pvc、hpa を足した（`docs/content-spec.md` 2.4）。setup の cluster に nodes・controlPlane・notReady・ageDays・namespaces・manifests・recent・ingress を足した
+
+### 完成条件
+
+| 条件 | 結果 |
+|---|---|
+| 範囲内の全レッスンが検証を通る | 合格。k8s の 15 本が `src/content/validate.test.ts` の全ての規則を通る。範囲の 15 本が全て揃うこともテストで確かめる（`DONE_DOMAINS` に k8s） |
+| 最後のヒントで通る | 合格。15 本の全ての手順で、最後のヒントの `` の中を順に模擬環境に与えると達成条件を満たす（検証の `replayAnswers`）。画面でも、撮影の台本で 15 本とも最後のヒントの答えを入れて最後まで通した（入れ替えの数え方を本物に寄せた後に、15 本とも撮り直した） |
+
+### テスト
+
+- `npm run typecheck` `npm run lint` `npm run test`: 全て通過（試し台を除いて 179 ファイル・5,512 件）
+- `npm run content:check`: 目録 211 本・用語 336・図 121 に問題なし
+- 模擬のテスト（`src/engines/kernel/commands/kubectl*.test.ts`・`src/engines/k8s/*.test.ts`）: Pod の状態の移り・Deployment と ReplicaSet・Service と宛先・区画・ConfigMap と Secret の引き方・PV と PVC・Ingress の振り分け・確かめ（liveness・readiness）・HPA の計算・要求と上限（Pending・OOMKilled）・入れ替え（`kubectlRollout.test.ts`: 25% で 1 つ多く作って 1 つ減らす・Ready にならない版では古い 3 つを残して止まり期限を過ぎる・undo で番号が付け替わる・履歴の形と --revision・2 回続けての undo・止まった入れ替えの undo・readiness が無いと壊れた版に入れ替わって 403・2 つなら減らす側は 0・-o wide）
+- 保存と復元（`src/engines/kernel/session.test.ts`）: レッスンのクラスタ（入れ替えの進みの印・まとめた知らせの回数を含む）がそのまま戻る
+
+### 視覚確認
+
+撮影: k8s.i.08 を 1920×1080 で全段とヒントを開いた画面（`shots/p10-k8s-i08-*.png`。エラーの小窓は 1.2 で入れ替えが期限を過ぎた所）、1280×720 で全段（`shots/p10-k8s-1280-i08-*.png`。エラーの小窓は set image のコンテナの名前の誤り）。
+ほかの 14 本も 1280×720 で全段を通して撮った（`shots/p10-k8s-<b01〜i07>-*.png`）。各レッスンの実戦の画面と、i.08 の全段を開いて確かめた。
+
+| # | 結果 | 確かめたこと |
+|---|---|---|
+| V2 | 合格 | 横長の画面で、左に目的・手順・ヒント、右に端末・編集欄と確かめた結果・模擬環境の操作盤。ウェブページの見た目でない |
+| V5 | 合格 | 標準のボタン・青いリンクが無い。選ぶ欄は自作の印 |
+| V6 | 合格 | 本文は Noto Sans JP、見出しは M PLUS 1、コマンド・端末・編集欄の YAML は JetBrains Mono、XP は Barlow Condensed |
+| V7 | 合格 | 同じ形の札が 6 枚以上並ぶ画面は無い（b.02 の割り振るの札は 5 枚） |
+| V8 | 合格 | 全ての段で、後ろにクラスタ施設の中（サーバの棚・鉢植え）の景色。上の帯に施設名 |
+| V11 | 合格 | 図と画面に絵文字は無い。図は自作の SVG（Pod は枠の形、壊れた版は赤の点線） |
+
+V1・V3・V4・V9・V10 は都市画面の項目で、この分野では都市画面を変えていない。
+
+気づいて直したこと:
+
+- i.05 の撮影で、rollout status の期限切れの断り（標準エラー）が、進みの行より先に出ていた → 本物と同じく進みの行の後に断る（命令の結果に stderrLast を足した。先に失敗するテストを書いた）
+- i.04 で、保存した実戦のクラスタを戻すと、窓口の住所・置き場・区画・PV の中身などが落ちていた（保存の形に無かった）→ 保存の形に足した（先に失敗するテストを書いた）
+- i.07 の前に、作り直しの待ちが 1 秒から倍になっていて、1 分で 6 回作り直していた → 本物と同じく、すぐ・10 秒・20 秒…と延ばした（先に失敗するテストを書いた）
+- i.08 の前に、Deployment の入れ替えが 1 tick に 1 つずつで、既定の幅が数の 1・1 だった（4 つで壊れた版を配ると、本物は古い 3 つ・新しい 2 つで止まるのに、模擬は古い 4 つ・新しい 1 つだった）→ 本物の deployment controller の数え方と 25% の既定にした。rollout undo が世代の印ごと設計図を書き戻して、前の ReplicaSet を使い直さずに別の物を作っていたのも直した
+- i.08 の撮影で、10 分止まった入れ替えの後の describe deployment に、入れ替えの初めの知らせ（Scaled up）が出ていなかった（確かめの失敗の知らせが 200 件の枠から押し出していた）→ 本物と同じく、同じ知らせの繰り返しを 1 つにまとめて回数を数える
+- i.08 の最後のヒントで rollout status を打つと、正しい手順でも期限切れの断りが「エラー」に数えられた → 最後のヒントは get pods -w で 0/1 のまま増えないのを見る形にした（rollout status で見た人には、期限切れの解説が undo を示す）
