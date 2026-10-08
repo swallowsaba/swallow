@@ -29,8 +29,8 @@ const ctx: ValidateContext = {
 const navy = '#0a1424';
 const COLORS = new Set([...Object.values(hud), ...Object.values(accent), ...Object.values(state), ...Object.values(domain), navy].filter((c) => c.startsWith('#')).map((c) => c.toLowerCase()));
 
-/** 書き終えた分野（docs/development-plan.md Phase 10 の順に足す） */
-const DONE_DOMAINS = ['found', 'linux', 'net', 'web', 'git', 'trouble', 'sec', 'db', 'cicd', 'ctr', 'docker', 'k8s', 'mon', 'cloud', 'devops'] as const;
+/** 書き終えた分野（docs/development-plan.md Phase 10 の順に足す。lab は初級が無く、中級も Q-04 の範囲外なので、範囲のレッスンは 0 本） */
+const DONE_DOMAINS = ['found', 'linux', 'net', 'web', 'git', 'trouble', 'sec', 'db', 'cicd', 'ctr', 'docker', 'k8s', 'mon', 'cloud', 'devops', 'lab'] as const;
 
 let lessons: Lesson[] = [];
 beforeAll(async () => {
