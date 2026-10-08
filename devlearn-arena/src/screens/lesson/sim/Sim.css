@@ -390,7 +390,10 @@
   font-family: var(--font-mono);
 }
 .sim-field-id {
+  display: inline-block;
   margin-left: 8px;
+  /* 欄の ID は打つ名前そのもの。途中で折らない（「し / きい値」に見える） */
+  white-space: nowrap;
 }
 .sim-node.is-picked .sim-node-note,
 .sim-node.is-picked .sim-node-id {
