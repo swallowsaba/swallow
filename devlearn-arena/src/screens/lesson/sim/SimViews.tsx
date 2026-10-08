@@ -1,7 +1,8 @@
-import { useState, type ReactNode } from 'react';
+import { useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 import { isUp, orderStatement, orderTime, stageOf, usedOf, assignTime } from '@/engines/sim/sim';
 import type { AssignState, ConfigState, ConnectState, OrderState, Panel, ReadState, SimState } from '@/engines/sim/types';
 import { Icon } from '@/ui/icons/Icon';
+import { CHART, chartLayout } from './chartLayout';
 import { SimIcon } from './SimIcon';
 
 /**
@@ -62,22 +63,32 @@ const SERIES = ['is-s0', 'is-s1', 'is-s2', 'is-s3'];
 
 /** 折れ線のグラフ。縦軸は 0 から最大の値まで */
 function Chart({ panel }: { panel: Extract<Panel, { kind: 'chart' }> }) {
-  const w = 520;
-  const h = 150;
-  const left = 44;
-  const bottom = 22;
+  // 置かれた枠の幅で描く（縮めると目盛りの字が小さくなる）
+  const ref = useRef<HTMLElement>(null);
+  const [measured, setMeasured] = useState(0);
+  useLayoutEffect(() => {
+    const el = ref.current;
+    if (el === null) return;
+    const fit = (): void => setMeasured(el.clientWidth);
+    fit();
+    if (typeof ResizeObserver === 'undefined') return;
+    const ro = new ResizeObserver(fit);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+  const { width: w, labels } = chartLayout(measured, panel.x);
+  const { height: h, left, bottom } = CHART;
   const max = Math.max(1, ...panel.series.flatMap((s) => s.values));
-  const xAt = (i: number): number => left + ((w - left - 10) * i) / Math.max(1, panel.x.length - 1);
+  const xAt = (i: number): number => labels[i]?.x ?? left;
   const yAt = (v: number): number => 8 + (h - bottom - 8) * (1 - v / max);
-  const every = Math.max(1, Math.ceil(panel.x.length / 8));
   return (
-    <figure className="sim-chart">
-      <svg viewBox={`0 0 ${String(w)} ${String(h)}`} role="img" aria-label={`${panel.title}のグラフ`}>
+    <figure className="sim-chart" ref={ref}>
+      <svg viewBox={`0 0 ${String(w)} ${String(h)}`} width={w} height={h} role="img" aria-label={`${panel.title}のグラフ`}>
         <line className="sim-chart-axis" x1={left} y1={h - bottom} x2={w - 6} y2={h - bottom} />
         <line className="sim-chart-axis" x1={left} y1={8} x2={left} y2={h - bottom} />
         <text className="sim-chart-label" x={left - 6} y={14} textAnchor="end">{max}</text>
         <text className="sim-chart-label" x={left - 6} y={h - bottom} textAnchor="end">0</text>
-        {panel.x.map((x, i) => (i % every === 0 ? <text key={i} className="sim-chart-label" x={xAt(i)} y={h - 4} textAnchor="middle">{x}</text> : null))}
+        {labels.map((l, i) => (l.text === null ? null : <text key={i} className="sim-chart-label" x={l.x} y={h - 4} textAnchor="middle">{l.text}</text>))}
         {panel.series.map((s, k) => (
           <polyline key={s.label} className={`sim-chart-line ${SERIES[k] ?? ''}`} points={s.values.map((v, i) => `${String(xAt(i))},${String(yAt(v))}`).join(' ')} />
         ))}
