@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 700 380" font-family="&quot;Noto Sans JP&quot;, sans-serif">
+  <title>昼から遅いと言われた日の 4 つのグラフ（9:00〜14:00）。遅い 5% の応答時間と CPU は 12:00 から跳ねたが、メモリは朝から増え続けて 12:00 に上限に届いていた。頼みの数は 11:30 に増えたが、その時は遅くなっていない</title>
+  <g class="el" data-part="graph-0">
+    <text x="14" y="46" font-size="16" fill="#eef2f6">応答時間</text>
+    <text x="14" y="66" font-size="13" fill="#9fb0c6">遅い 5%（秒）</text>
+    <line x1="140" y1="82" x2="680" y2="82" stroke="#9fb0c6" stroke-width="1" />
+    <polyline points="140,74 194,74 248,74 302,72 356,74 410,72 464,39 518,35 572,37 626,31 680,30" fill="none" stroke="#ff8a7a" stroke-width="2" stroke-linejoin="round" />
+  </g>
+  <g class="el" data-part="graph-1">
+    <text x="14" y="126" font-size="16" fill="#eef2f6">CPU</text>
+    <text x="14" y="146" font-size="13" fill="#9fb0c6">使用率（%）</text>
+    <line x1="140" y1="162" x2="680" y2="162" stroke="#9fb0c6" stroke-width="1" />
+    <polyline points="140,147 194,146 248,145 302,146 356,145 410,145 464,118 518,116 572,117 626,115 680,114" fill="none" stroke="#f2b632" stroke-width="2" stroke-linejoin="round" />
+  </g>
+  <g class="el" data-part="graph-2">
+    <text x="14" y="206" font-size="16" fill="#eef2f6">メモリ</text>
+    <text x="14" y="226" font-size="13" fill="#9fb0c6">上限 4.8 GB</text>
+    <line x1="140" y1="242" x2="680" y2="242" stroke="#9fb0c6" stroke-width="1" />
+    <polyline points="140,217 194,212 248,208 302,202 356,198 410,192 464,188 518,188 572,188 626,188 680,188" fill="none" stroke="#5cc1ff" stroke-width="2" stroke-linejoin="round" />
+  </g>
+  <g class="el" data-part="graph-3">
+    <text x="14" y="286" font-size="16" fill="#eef2f6">頼みの数</text>
+    <text x="14" y="306" font-size="13" fill="#9fb0c6">1 分ごと</text>
+    <line x1="140" y1="322" x2="680" y2="322" stroke="#9fb0c6" stroke-width="1" />
+    <polyline points="140,288 194,285 248,283 302,281 356,280 410,273 464,271 518,274 572,277 626,278 680,280" fill="none" stroke="#3ae08a" stroke-width="2" stroke-linejoin="round" />
+  </g>
+  <g class="el" data-part="morning">
+    <rect x="142" y="14" width="212" height="330" rx="4" fill="none" stroke="#9fb0c6" stroke-width="1.5" stroke-dasharray="5 4" pointer-events="all" />
+    <text x="248" y="366" text-anchor="middle" font-size="13" fill="#eef2f6">9:00〜11:00</text>
+  </g>
+  <g class="el" data-part="lunch">
+    <rect x="358" y="14" width="104" height="330" rx="4" fill="none" stroke="#9fb0c6" stroke-width="1.5" stroke-dasharray="5 4" pointer-events="all" />
+    <text x="410" y="366" text-anchor="middle" font-size="13" fill="#eef2f6">11:00〜12:00</text>
+  </g>
+  <g class="el" data-part="noon">
+    <rect x="466" y="14" width="212" height="330" rx="4" fill="none" stroke="#9fb0c6" stroke-width="1.5" stroke-dasharray="5 4" pointer-events="all" />
+    <text x="572" y="366" text-anchor="middle" font-size="13" fill="#eef2f6">12:00〜14:00</text>
+  </g>
+</svg>
