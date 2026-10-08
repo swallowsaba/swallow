@@ -1,6 +1,8 @@
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { shellSnapshotSchema } from '@/save/engine/shell';
-import { findMission } from '@/engines/lesson/missions';
+import { createRepo } from '@/engines/github/pr';
 import { createDefaultRegistry } from './commands';
 import { createClock } from './clock';
 import { execute } from './shell';
@@ -10,12 +12,14 @@ import type { ShellState } from './registry';
 
 const registry = createDefaultRegistry();
 
-/** 任務を少し進めてから、保存 → スキーマ検証 → 復元 を通す */
-function roundTrip(missionId: string, lines: readonly string[]): ShellState {
-  const mission = findMission(missionId);
-  if (!mission) throw new Error(`任務が見つかりません: ${missionId}`);
+/** レッスンの実戦の初めの状態 */
+const practiceOf = (path: string): { environment: string; setup: unknown } =>
+  (JSON.parse(readFileSync(join(process.cwd(), 'content', 'lessons', `${path}.json`), 'utf8')) as { practice: { environment: string; setup: unknown } }).practice;
+
+/** 少し進めてから、保存 → スキーマ検証 → 復元 を通す */
+function roundTrip(start: ShellState, lines: readonly string[]): ShellState {
   const clock = createClock();
-  let state = createShellState(mission.initial);
+  let state = start;
   for (const line of lines) state = execute(state, line, registry, clock).state;
 
   const raw = JSON.parse(JSON.stringify(snapshotShell(state))) as unknown;
@@ -28,7 +32,7 @@ function roundTrip(missionId: string, lines: readonly string[]): ShellState {
 
 describe('シェルの保存と復元', () => {
   it('ファイルと変数と履歴が戻る', () => {
-    const restored = roundTrip('kernel/00/shell-warmup', ['mkdir reports', 'echo hi > reports/a.txt']);
+    const restored = roundTrip(initialShell('linux-basic', {}), ['mkdir reports', 'echo hi > reports/a.txt']);
     expect(restored.vfs.nodes.get('/home/learner/reports/a.txt')).toEqual({
       kind: 'file',
       content: 'hi\n',
@@ -37,25 +41,25 @@ describe('シェルの保存と復元', () => {
   });
 
   it('Git のオブジェクトと参照が戻る', () => {
-    const restored = roundTrip('git/01/objects', ['git init', 'git add .', 'git commit -m "x"']);
+    const restored = roundTrip(initialShell('linux-basic', {}), ['echo a > a.txt', 'git init', 'git add .', 'git commit -m "x"']);
     expect(restored.git).not.toBeNull();
     expect(restored.git?.refs.get('refs/heads/main')).toBeDefined();
   });
 
   it('クラスタが戻る', () => {
-    const restored = roundTrip('k8s/01/first-kubectl', ['kubectl get pods']);
+    const restored = roundTrip(initialShell('k8s-cluster', {}), ['kubectl get pods']);
     expect(restored.cluster).not.toBeNull();
     expect(restored.cluster?.nodes.size ?? 0).toBeGreaterThan(0);
   });
 
   it('ネットワークが戻る', () => {
-    const restored = roundTrip('net/05/ttl-hop', ['ip addr']);
+    const restored = roundTrip(((p) => initialShell(p.environment, p.setup))(practiceOf('net/net.b.06')), ['ip addr']);
     expect(restored.net).not.toBeNull();
     expect(restored.net?.devices.size ?? 0).toBeGreaterThan(0);
   });
 
   it('GitHub のリポジトリが戻る', () => {
-    const restored = roundTrip('github/04/boss-blocked-merge', [
+    const restored = roundTrip(createShellState({ repo: createRepo('acme', 'app'), files: { '/home/learner': null }, cwd: '/home/learner' }), [
       'gh protect main --approvals=1 --checks=Build',
       'gh pr create -t "機能追加" -b feature',
     ]);
@@ -95,10 +99,9 @@ describe('シェルの保存と復元', () => {
   });
 
   it('クラスタを進めた結果もそのまま戻る', () => {
-    const mission = findMission('k8s/07/boss-service-no-endpoint');
-    if (!mission) throw new Error('missing');
     const clock = createClock();
-    let state = createShellState(mission.initial);
+    const manifests = 'apiVersion: apps/v1\nkind: Deployment\nmetadata:\n  name: web\nspec:\n  replicas: 3\n  selector:\n    matchLabels:\n      app: web\n  template:\n    metadata:\n      labels:\n        app: web\n    spec:\n      containers:\n      - name: web\n        image: city-web:1.0\n';
+    let state = initialShell('k8s-cluster', { cluster: { nodes: 2, manifests } });
     for (const line of ['kubectl get pods', 'kubectl get pods', 'kubectl get pods']) {
       state = execute(state, line, registry, clock).state;
     }

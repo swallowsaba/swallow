@@ -99,3 +99,7 @@
 | 6 | `src/features/terminal/useDiagramRunner.ts`、`src/__tests__/terminal.test.tsx`、`src/legacy/ui/motion.test.tsx` | 削除した旧図・旧作業画面を動かす物と、そのテスト。端末の表示（`TerminalView`）は Phase 7 の判定まで残す |
 | 6 | `three` `@react-three/fiber` `@react-three/drei` `@types/three` | `src/city3d/` の削除と同時（6 章の表） |
 | 7 | `src/features/terminal/TimeScrubber.tsx` `typist.ts` | 旧作業画面で図から打ち込む・時間をさかのぼる部品。実戦の端末（`src/screens/lesson/terminal/`）では使わない |
+| 12 | `src/engines/lesson/`（予定は Phase 10） | 判定を関数で書く旧来の任務。レッスンは `content/` のデータと `src/learning/` に置き換え済み。起動から辿れない。`src/engines/kernel/session.test.ts` は、旧任務の代わりに今の模擬環境（`initialShell`）とレッスンの実戦の初めの状態で確かめるように直した |
+| 12 | `src/features/settings/` `src/features/NotFoundPage.tsx` `src/store/` `src/lib/storage/local.ts` `schema.ts`（予定は Phase 11） | 旧来の設定画面と保存。設定画面（`src/screens/settings/`）と `src/save/` に置き換えた。シェルの写しの形の決まり（`src/lib/storage/*Schema.ts`）は、途中の実戦の記録を開く時の確かめに使うので `src/save/engine/` へ移した。`src/lib/storage/idb.ts` は保存先を開く所だけを残した |
+| 12 | `src/legacy/ui/`（予定は Phase 12）・`src/legacy/content/` `src/i18n/` `src/styles/index.css` `src/lib/xp.ts` `achievements.ts` `review.ts` `date.ts` `useSfx.ts` `src/engines/city/` `scripts/check-docs-links.mts` `tailwind.config.ts` `postcss.config.js` | 旧画面とその部品・文言・計算。どれも起動から辿れない。効果音（`src/lib/sfx.ts`）は Phase 12 で使うので残した |
+| 12 | `framer-motion` `react-router-dom` `tailwindcss` `postcss` `autoprefixer` | 旧画面の削除と同時（6 章の表）。`vite.config.ts` の分け方からも外した |

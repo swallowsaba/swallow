@@ -18,8 +18,7 @@ export default defineConfig({
     rollupOptions: {
       output: {
         manualChunks: {
-          'vendor-react': ['react', 'react-dom', 'react-router-dom'],
-          'vendor-motion': ['framer-motion'],
+          'vendor-react': ['react', 'react-dom'],
           // 端末はページを開いてから読めばよい。初回に載せない
           'vendor-term': ['@xterm/xterm', '@xterm/addon-fit'],
           'vendor-yaml': ['js-yaml'],
