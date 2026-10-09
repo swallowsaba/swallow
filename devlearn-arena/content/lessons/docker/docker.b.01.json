@@ -34,7 +34,11 @@
     "registry",
     "program",
     "kernel",
-    "kubernetes"
+    "kubernetes",
+    "systemd",
+    "service",
+    "root-user",
+    "permission"
   ],
   "explain": {
     "what": "{{term:docker}}は、{{term:container}}を作り・動かし・配る道具。命令を受け付ける {{term:cli}}（docker という{{term:command}}）と、裏で動いて実際に仕事をする本体の {{term:docker-engine}} に分かれる。CLI が頼み、本体が{{term:image}}を取ってきてコンテナを動かす。",
@@ -170,158 +174,92 @@
     }
   ],
   "practice": {
-    "mode": "simulation",
-    "purpose": "市の 2 台の開発の機械で、docker version と docker info を打った結果がある。CLI と本体の版と状態を読み取って答える。",
-    "environment": "sim-read",
+    "mode": "terminal",
+    "purpose": "市の開発の機械 `dev-01` で、手順書のとおり `docker ps` を打つと「`Cannot connect to the Docker daemon`」と出た。{{term:docker}}の{{term:cli}}（`Client`）と、裏の本体（{{term:docker-engine}}。`Server`）のどちらに何が起きているかを `docker version` で切り分け、本体を動かして、`docker info` で中のコンテナの様子を読む。",
+    "environment": "container-host",
     "setup": {
-      "questions": [
-        {
-          "id": "client",
-          "prompt": "dev-01 の CLI（Client）の版",
-          "options": [
-            "27.3.1",
-            "26.1.4",
-            "1.7.22",
-            "1.1.14"
-          ]
-        },
-        {
-          "id": "engine",
-          "prompt": "dev-01 の本体（Server）の版",
-          "options": [
-            "27.3.1",
-            "26.1.4",
-            "1.7.22",
-            "1.1.14"
-          ]
-        },
-        {
-          "id": "running",
-          "prompt": "dev-01 で、今動いているコンテナの数",
-          "options": [
-            "4",
-            "3",
-            "1",
-            "6"
-          ]
-        },
-        {
-          "id": "dev02",
-          "prompt": "dev-02 でコンテナを動かせない理由",
-          "options": [
-            "CLIが無い",
-            "Engineが動いていない",
-            "イメージが無い",
-            "版が古い"
-          ]
-        }
+      "hostname": "dev-01",
+      "images": [
+        "nginx:1.27",
+        "httpd:2.4",
+        "city-board:1.0"
       ],
-      "panels": [
-        {
-          "kind": "log",
-          "title": "dev-01 で docker version",
-          "lines": [
-            "Client:",
-            " Version:      27.3.1",
-            " API version:  1.45",
-            "Server: Docker Engine",
-            " Engine:",
-            "  Version:     26.1.4",
-            " containerd:",
-            "  Version:     1.7.22",
-            " runc:",
-            "  Version:     1.1.14"
-          ]
-        },
-        {
-          "kind": "log",
-          "title": "dev-01 で docker info（一部）",
-          "lines": [
-            "Server:",
-            " Containers: 4",
-            "  Running: 3",
-            "  Paused: 0",
-            "  Stopped: 1",
-            " Images: 6"
-          ]
-        },
-        {
-          "kind": "log",
-          "title": "dev-02 で docker version",
-          "lines": [
-            "Client:",
-            " Version:      27.3.1",
-            " API version:  1.47",
-            "Cannot connect to the Docker daemon at unix:///var/run/docker.sock. Is the docker daemon running?"
-          ]
+      "services": {
+        "docker": {
+          "description": "Docker Application Container Engine",
+          "active": true,
+          "enabled": true
         }
+      },
+      "run": [
+        "docker run -d --name board -p 8080:80 city-board:1.0",
+        "docker run -d --name web nginx:1.27",
+        "docker run -d --name api httpd:2.4",
+        "docker run -d --name old-web nginx:1.27",
+        "docker stop old-web",
+        "sudo systemctl stop docker"
       ]
     },
     "steps": [
       {
-        "id": "version",
-        "purpose": "dev-01 の docker version から、CLI（`Client:`）と本体（`Server:`）の版を、それぞれ答える。",
+        "id": "client",
+        "purpose": "`docker version` で、CLI（`Client:` の段）と本体（`Server:` の段）の、どこまで出てどこで止まるかを見る。止まっていても出る、CLI の版を答える。",
         "check": {
-          "kind": "sim",
-          "expr": "answered client=27.3.1 engine=26.1.4"
+          "kind": "answer",
+          "equals": "27.3.1"
         },
-        "afterward": "CLI は 27.3.1、本体は 26.1.4。2 つは別のプログラムなので、版も別々に上がる。その下で containerd と runc がコンテナを動かしている。",
+        "afterward": "CLI の版 `27.3.1` までは出たが、`Server:` の段は出ずに「`Cannot connect to the Docker daemon`」で止まった。CLI はあるが、頼む先の本体（daemon）が動いていない。CLI と本体は別のプログラム。",
         "hints": [
-          "`docker version` は、`Client:` の段に CLI の版、`Server:` の段に本体の版を出す。",
-          "`Client:` の下の `Version` と、`Server:` の `Engine:` の下の `Version` を読む。containerd と runc の版は、さらに下のランタイムの物。",
-          "「dev-01 の CLI（Client）の版」は「27.3.1」を押す、「dev-01 の本体（Server）の版」は「26.1.4」を押す。"
+          "`docker version` は、`Client:` の段に CLI の版、`Server:` の段に本体の版を出す。本体につながらない時は、どこで止まるかを見る。",
+          "`Client:` の下の `Version` の行が CLI の版。その後の `Cannot connect to the Docker daemon` は、本体に届かないという意味。",
+          "`docker version` を打ち、`27.3.1` と答える。"
         ],
         "expectedErrors": [
+          "docker-daemon",
           "docker-engine-misread"
-        ],
-        "actions": [
-          {
-            "op": "answer",
-            "question": "client",
-            "value": "27.3.1"
-          },
-          {
-            "op": "answer",
-            "question": "engine",
-            "value": "26.1.4"
-          }
         ]
       },
       {
-        "id": "state",
-        "purpose": "dev-01 の docker info から動いているコンテナの数を、dev-02 の結果から動かせない理由を答える。",
+        "id": "start",
+        "purpose": "本体は、{{term:systemd}}が管理する `docker` という{{term:service}}として動く。`systemctl` で状態を確かめてから、本体を動かす。",
         "check": {
-          "kind": "sim",
-          "expr": "answered running=3 dev02=Engineが動いていない"
+          "kind": "service",
+          "name": "docker",
+          "active": true
         },
-        "afterward": "dev-01 では 4 つのうち 3 つが動いている（1 つは止まっている）。dev-02 は CLI の版は出たが、本体につながらなかった。裏の本体が動いていない。",
+        "afterward": "`docker` のサービスが `active (running)` になり、本体が動き出した。もう一度 `docker version` を打つと、今度は `Server:` の段に、本体（`Engine`）と、その下でコンテナを動かす `containerd`・`runc` の版も出る。",
         "hints": [
-          "`docker info` の `Containers` は作った全ての数。動いている数は `Running` の行。dev-02 は、どこまで出てどこで止まったかを見る。",
-          "dev-02 は `Client:` の版までは出ている。その後の `Cannot connect to the Docker daemon` は、本体（daemon）に届かないという意味。",
-          "「dev-01 で、今動いているコンテナの数」は「3」を押す、「dev-02 でコンテナを動かせない理由」は「Engineが動いていない」を押す。"
+          "サービスの状態は `systemctl status 名前`、動かすのは `systemctl start 名前`。動かすには{{term:root-user}}の{{term:permission}}（`sudo`）が要る。",
+          "`systemctl status docker` で `inactive (dead)` を確かめ、`sudo systemctl start docker` で動かす。",
+          "`systemctl status docker` `sudo systemctl start docker` `docker version` を順に打つ。"
+        ],
+        "expectedErrors": [
+          "docker-daemon"
+        ]
+      },
+      {
+        "id": "info",
+        "purpose": "`docker info` で、本体が覚えているコンテナの様子を読む。作ってある 4 つのうち、今動いているコンテナの数を答える。",
+        "check": {
+          "kind": "answer",
+          "equals": "3"
+        },
+        "afterward": "`Containers: 4` のうち `Running: 3`、`Stopped: 1`（止めてある `old-web`）。本体が止まっていた間も、コンテナの記録は本体の側（`/var/lib/docker`）に残っていた。`docker ps` でも、動いている 3 つが並ぶ。",
+        "hints": [
+          "`docker info` の `Server:` の段の `Containers` は、作った全ての数。その下に、動いている・止まっている数が並ぶ。",
+          "`Containers: 4` の下の `Running` の行を読む。",
+          "`docker info` を打ち、`3` と答える。"
         ],
         "expectedErrors": [
           "docker-engine-misread"
-        ],
-        "actions": [
-          {
-            "op": "answer",
-            "question": "running",
-            "value": "3"
-          },
-          {
-            "op": "answer",
-            "question": "dev02",
-            "value": "Engineが動いていない"
-          }
         ]
       }
     ]
   },
   "result": {
-    "success": "`docker version` と `docker info` から、CLI と本体の版と状態を読み分けられた。",
-    "partial": "ヒントを使って読み取れた。次は、エラーの文のどこで CLI と本体の区切りが分かるかを、自分の言葉で説明してみよう。",
-    "retry": "まだ答えが合っていない。`docker version` の `Client:` と `Server:` の段を分けて読み直そう。"
+    "success": "`docker version` で CLI と本体を切り分け、`systemctl` で本体を動かし、`docker info` でコンテナの様子を読めた。",
+    "partial": "ヒントを使って読めた。次は、`Cannot connect to the Docker daemon` が出た時に、まず何を確かめるかを説明してみよう。",
+    "retry": "まだ読み切れていない。`docker version` の `Client:` と `Server:` の段を、1 つずつ確かめよう。"
   },
   "summary": {
     "points": [

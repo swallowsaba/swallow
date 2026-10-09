@@ -47,11 +47,13 @@ export interface ServiceTable {
   services: ReadonlyMap<string, Service>;
   /** ログに書く時刻を進めるための数（同じ操作からは同じログ） */
   tick: number;
+  /** ログの行に出す機械の名前（無ければ server） */
+  host?: string;
 }
 
 /** log を書けば、それまでのログ（journalctl で読める行）を持って始める */
-export function createServiceTable(seed: readonly (Omit<Service, 'log'> & { log?: readonly string[] })[] = []): ServiceTable {
-  return { services: new Map(seed.map((s) => [s.name, { ...s, log: s.log ?? [] }])), tick: 0 };
+export function createServiceTable(seed: readonly (Omit<Service, 'log'> & { log?: readonly string[] })[] = [], host?: string): ServiceTable {
+  return { services: new Map(seed.map((s) => [s.name, { ...s, log: s.log ?? [] }])), tick: 0, ...(host !== undefined ? { host } : {}) };
 }
 
 /** web と web.service のどちらで書いても同じサービスを指す */
@@ -73,9 +75,9 @@ type LogLine = string | { from: string; text: string };
 
 function update(table: ServiceTable, s: Service, lines: LogLine[]): ServiceTable {
   const services = new Map(table.services);
-  const log = [...s.log, ...lines.map((l, i) => `${stamp(table.tick + i)} server ${typeof l === 'string' ? `systemd[1]: ${l}` : `${l.from}: ${l.text}`}`)];
+  const log = [...s.log, ...lines.map((l, i) => `${stamp(table.tick + i)} ${table.host ?? 'server'} ${typeof l === 'string' ? `systemd[1]: ${l}` : `${l.from}: ${l.text}`}`)];
   services.set(s.name, { ...s, log });
-  return { services, tick: table.tick + lines.length };
+  return { ...table, services, tick: table.tick + lines.length };
 }
 
 function find(table: ServiceTable, raw: string): Service | ServiceError {

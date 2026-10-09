@@ -7,7 +7,7 @@
 - 図: CLI → Engine → ランタイム → コンテナ。他の道具（Podman など）との並び
 - 理解: [図] CLI と Engine を押す ／ [はい・いいえ] コンテナ技術 ＝ Docker → いいえ
 - クイズ: [用語] Docker Engine → 裏で動く本体 ／ [原因特定] Cannot connect to the Docker daemon → Engine が動いていない ／ [選択] Docker の位置 → コンテナを扱う道具の 1 つ
-- 実戦（模）: 目的=Engine の状態と版を確かめる ／ 達成=正しく回答 ／ ヒント=①版を見る ②状態 ③docker version と docker info ／ エラー=接続できない→原因候補「Engine の停止」
+- 実戦（端）: 目的=docker ps が「Cannot connect to the Docker daemon」で止まる dev-01 で、CLI と本体（Engine）を切り分けて本体を動かし、中のコンテナの様子を読む ／ 達成=①docker version で CLI の版（27.3.1）を答える ②docker のサービスが active ③docker info の Running（3）を答える ／ ヒント=①docker version の Client と Server の段 ②systemctl status docker と sudo systemctl start docker ③docker info の Running の行 ／ エラー=Cannot connect to the Docker daemon→原因候補「Engine（docker のサービス）の停止」
 - 結果: 成功=Docker の構成を理解 ／ 未達=構成図を示す
 - まとめ: ①Docker はコンテナの道具 ②CLI と Engine ③ほかの道具もある ／ 次: docker.b.02
 

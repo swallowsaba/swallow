@@ -230,3 +230,28 @@
 - 原則 3・4 は画面の操作の決まりなので、端末だけの k8s の分野には当たらない
 
 検査: `npm run typecheck`・`npm run lint`・`npm run test`（161 ファイル・1764 件）・`npm run content:check` が通った。
+
+## docker（2026-10-10）
+
+11 本の実戦が全て本物の docker になった（端末 9 本・設定の編集 2 本。設定の編集は、保存すると本物の `docker build`・`docker compose` などが走る）。
+
+| レッスン | 直す前 | 直した後 | 打つ物 |
+|---|---|---|---|
+| docker.b.01 Docker とは | sim-read（2 台の結果を読んで押して答える） | terminal | `docker ps` が `Cannot connect to the Docker daemon` で止まる dev-01 で、`docker version`（Client の版は出て Server で止まる）→ `systemctl status docker`・`sudo systemctl start docker` → `docker version`（Engine・containerd・runc）→ `docker info`（Containers 4・Running 3） |
+| ほかの 10 本 | terminal・editor | そのまま | 本物の docker |
+
+模擬に足した物・直した物（単体テストあり。`src/engines/docker/info.test.ts`）:
+
+- `docker version`: Client の段（CLI の版）と Server の段（Engine・containerd・runc の版）。本体につながらない時は、本物と同じく Client の段まで出してから断る
+- `docker info`: Containers・Running・Paused・Stopped・Images・Server Version ほか
+- 本体（Engine）を systemd の `docker` のサービスにつないだ: setup の services に `docker` があれば、止まっている間は docker の命令が `Cannot connect to the Docker daemon` で断られ、`systemctl start docker` で動く。コンテナの記録は止まっている間も残る。`docker` のサービスが無い機械では、前と同じくいつも動いている
+- journal の行の機械の名前: 前は、どの機械でも `server` と書いていた。setup の hostname を出すようにした（保存から戻しても残る）
+
+内容: エラーの案内 `docker-engine-misread` を答えの段に合わせた（つながらない時は、前からある `docker-daemon` を使う）。`docs/lessons/docker.md` の実戦の設計、`docs/curriculum.md` の記号（模 → 端）、目録を直した。
+
+画面の確かめ（`tools/scenarios/rework.mjs`、1920×1080）:
+
+- `rw-docker.b.01-start` / `-done`: 原則 1（`docker version` の Client と Server の段・`systemctl`・`docker info` の Running の行が端末に出る）・原則 5（目的の `dev-01`・`Client`・`Server`・`docker version`・`docker info`・`old-web` が端末に同じ名前で出る。journal の行も `dev-01`）を満たす。3 つの段が全て達成になる
+- 原則 3・4 は画面の操作の決まりなので、端末だけの docker の分野には当たらない
+
+検査: `npm run typecheck`・`npm run lint`・`npm run test`（162 ファイル・1767 件）・`npm run content:check` が通った。

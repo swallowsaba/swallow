@@ -45,16 +45,15 @@
     {
       "id": "docker-engine-misread",
       "match": "答えが合っていない",
-      "meaning": "答えは受け取ったが、docker version・docker info の読み方が合っていない。",
+      "meaning": "答えは受け取ったが、聞かれた版や数ではない。",
       "causes": [
-        "Client（CLI）と Server（Engine）の段を取り違えた。containerd・runc の版は、さらに下のランタイムの物。",
-        "docker info の Containers（作った全ての数）を、動いている数と読んだ。動いている数は Running の行。",
-        "Engine につながらないエラーを、CLI の問題と読んだ。Client の版は出ている。"
+        "`Client:` と `Server:` の段を取り違えた。CLI の版は `Client:` の下。",
+        "`Containers`（作った全ての数）を答えた。今動いている数は `Running` の行。"
       ],
-      "hint": "Client: と Server: の段を分けて読む。エラーの行は、どこまで出てから止まったかを見る。",
+      "hint": "`docker version` と `docker info` の段の見出し（`Client:`・`Server:`）と、その下の行を 1 つずつ当てよう。",
       "terms": [
-        "docker-engine",
-        "cli"
+        "cli",
+        "docker-engine"
       ]
     },
     {

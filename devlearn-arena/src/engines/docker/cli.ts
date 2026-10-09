@@ -33,6 +33,63 @@ function contextFiles(vfs: VfsState, dir: string): Record<string, string> {
 }
 
 const NO_DOCKER = 'Cannot connect to the Docker daemon at unix:///var/run/docker.sock. Is the docker daemon running?\n';
+
+/** 模擬の CLI と本体（Engine）と、その下のランタイムの版（docker version・docker info に出す） */
+const VERSIONS = { client: '27.3.1', clientApi: '1.47', engine: '27.3.1', engineApi: '1.47', containerd: '1.7.22', runc: '1.1.14' } as const;
+
+/** docker version の Client の段（本体につながらなくても出る） */
+const CLIENT_SECTION = [
+  'Client: Docker Engine - Community',
+  ` Version:           ${VERSIONS.client}`,
+  ` API version:       ${VERSIONS.clientApi}`,
+  ' Go version:        go1.22.7',
+  ' Git commit:        ce12230',
+  ' OS/Arch:           linux/amd64',
+  ' Context:           default',
+];
+
+/** docker version の Server の段（本体と、その下の containerd・runc） */
+const SERVER_SECTION = [
+  'Server: Docker Engine - Community',
+  ' Engine:',
+  `  Version:          ${VERSIONS.engine}`,
+  `  API version:      ${VERSIONS.engineApi} (minimum version 1.24)`,
+  '  Go version:       go1.22.7',
+  '  OS/Arch:          linux/amd64',
+  ' containerd:',
+  `  Version:          ${VERSIONS.containerd}`,
+  ' runc:',
+  `  Version:          ${VERSIONS.runc}`,
+];
+
+/** docker info（本物の形の一部: 数と版） */
+function infoOf(host: ContainerHost): string {
+  const running = host.containers.filter((c) => c.state === 'running').length;
+  return lines([
+    'Client: Docker Engine - Community',
+    ` Version:    ${VERSIONS.client}`,
+    ' Context:    default',
+    '',
+    'Server:',
+    ` Containers: ${String(host.containers.length)}`,
+    `  Running: ${String(running)}`,
+    '  Paused: 0',
+    `  Stopped: ${String(host.containers.length - running)}`,
+    ` Images: ${String(host.images.length)}`,
+    ` Server Version: ${VERSIONS.engine}`,
+    ' Storage Driver: overlay2',
+    ' Cgroup Driver: systemd',
+    ` containerd version: ${VERSIONS.containerd}`,
+    ` runc version: ${VERSIONS.runc}`,
+    ' Docker Root Dir: /var/lib/docker',
+  ]);
+}
+
+/** 本体（Engine）が systemd の docker のサービスとして在り、止まっているか（サービスが無い機械では、いつも動いている） */
+const engineStopped = (shell: ShellState): boolean => {
+  const svc = shell.services?.services.get('docker');
+  return svc !== undefined && svc.active !== 'active';
+};
 const lines = (xs: readonly string[]): string => (xs.length === 0 ? '' : `${xs.join('\n')}\n`);
 
 /** 表（本物の docker と同じ tabwriter の形: 欄の間は 3 字、欄の幅は 10 字以上） */
@@ -503,7 +560,10 @@ export const dockerCommands: CommandSpec[] = [
     summary: 'コンテナを動かす・止める・一覧する（Docker）',
     handler: ({ argv, shell }) => {
       const world = shell.containers;
-      if (world === null) return { stderr: NO_DOCKER, code: 1 };
+      const down = world === null || engineStopped(shell);
+      // 本物と同じく、本体につながらなくても、CLI の版（Client の段）は出す
+      if (argv[1] === 'version') return down ? { stdout: lines(CLIENT_SECTION), stderr: NO_DOCKER, stderrLast: true, code: 1 } : { stdout: lines([...CLIENT_SECTION, '', ...SERVER_SECTION]) };
+      if (world === null || down) return { stderr: NO_DOCKER, code: 1 };
       // 頼む先の Engine（--context 名前・-c 名前。無ければ docker context use で選んだ物）
       let args = argv.slice(1);
       let name = world.context ?? 'default';
@@ -528,6 +588,8 @@ export const dockerCommands: CommandSpec[] = [
 function dockerOn(host: ContainerHost, verb: string | undefined, rest: readonly string[], shell: ShellState): CommandResult {
       const set = (h: ContainerHost, extra: CommandResult = {}): CommandResult => ({ ...extra, patch: { containers: h } });
       switch (verb) {
+        case 'info':
+          return { stdout: infoOf(host) };
         case undefined:
         case '--help':
           return {

@@ -112,7 +112,7 @@ export interface ShellSnapshotData {
   net: TopologySnapshot | null;
   repo: RepoSnapshot | null;
   /** 古い保存には無い */
-  services?: { services: Service[]; tick: number } | null;
+  services?: { services: Service[]; tick: number; host?: string } | null;
   containers?: ContainerHost | null;
   web?: WebWorld | null;
   /** 古い保存には無い */
@@ -146,7 +146,7 @@ export function snapshotShell(state: ShellState): ShellSnapshotData {
     cluster: state.cluster === null ? null : snapshotCluster(state.cluster),
     net: state.net === null ? null : snapshotTopology(state.net),
     repo: state.repo === null ? null : snapshotRepo(state.repo),
-    services: state.services === null ? null : { services: [...state.services.services.values()], tick: state.services.tick },
+    services: state.services === null ? null : { services: [...state.services.services.values()], tick: state.services.tick, ...(state.services.host !== undefined ? { host: state.services.host } : {}) },
     containers: state.containers,
     web: state.web,
     ...(state.gitServers ? { gitServers: [...state.gitServers.values()].map((g) => ({ url: g.url, ...(g.ssh !== undefined ? { ssh: g.ssh } : {}), keys: [...g.keys], state: snapshotGit(g.state), ...(g.forge ? { forge: g.forge } : {}) })) } : {}),
@@ -179,7 +179,7 @@ export function restoreShell(snapshot: ShellSnapshotData): ShellState {
     cluster: snapshot.cluster === null ? null : restoreCluster(snapshot.cluster),
     net: snapshot.net === null ? null : restoreTopology(snapshot.net),
     repo: snapshot.repo === null ? null : restoreRepo(snapshot.repo),
-    services: snapshot.services ? { services: new Map(snapshot.services.services.map((s) => [s.name, s])), tick: snapshot.services.tick } : null,
+    services: snapshot.services ? { services: new Map(snapshot.services.services.map((s) => [s.name, s])), tick: snapshot.services.tick, ...(snapshot.services.host !== undefined ? { host: snapshot.services.host } : {}) } : null,
     containers: snapshot.containers ?? null,
     web: snapshot.web ?? null,
     ...(snapshot.gitServers ? { gitServers: new Map(snapshot.gitServers.map((g) => [g.url, { ...g, state: restoreGit(g.state) }])) } : {}),

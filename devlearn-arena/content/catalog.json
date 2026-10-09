@@ -3368,7 +3368,7 @@
       "title": "Docker とは",
       "goal": "Docker Engine と CLI の関係、コンテナ技術の中での位置を説明できる",
       "practice": [
-        "simulation"
+        "terminal"
       ],
       "prerequisites": [
         "ctr.b.03"

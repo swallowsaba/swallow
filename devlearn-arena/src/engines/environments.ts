@@ -360,7 +360,7 @@ export function shellOptions(environment: string, setup: unknown): SessionOption
       ...(v.config !== undefined ? { config: v.config } : {}),
       ...(v.zone !== undefined ? { zone: v.zone } : {}),
       ...(v.log !== undefined ? { log: v.log } : {}),
-    })));
+    })), s.hostname);
   }
   if (s.processes) options.processes = s.processes;
   if (s.cluster) options.cluster = clusterOf(s.cluster);

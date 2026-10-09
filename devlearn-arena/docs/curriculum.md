@@ -315,7 +315,7 @@ lab は複数分野の組み合わせ
 
 | ID | 難易度 | テーマ | レッスン | 到達目標 | 実戦 | 推奨前提 | 関連 | 次に学ぶとよい |
 |---|---|---|---|---|---|---|---|---|
-| docker.b.01 | 初級 | Engine | Docker とは | Docker Engine と CLI の関係、コンテナ技術の中での位置を説明できる | 模 | ctr.b.03 | ctr.i.01, docker.a.03 | docker.b.02 |
+| docker.b.01 | 初級 | Engine | Docker とは | Docker Engine と CLI の関係、コンテナ技術の中での位置を説明できる | 端 | ctr.b.03 | ctr.i.01, docker.a.03 | docker.b.02 |
 | docker.b.02 | 初級 | image | イメージを取る・見る | pull/images でイメージを扱える | 端 | docker.b.01 | ctr.b.05, ctr.b.03 | docker.b.03 |
 | docker.b.03 | 初級 | run | コンテナを動かす | run/ps/stop/rm で動かし止められる | 端 | docker.b.02 | linux.i.01, k8s.b.04 | docker.b.04, docker.b.05, docker.i.01 |
 | docker.b.04 | 初級 | 公開 | ポートを公開する | -p で外から繋がるようにできる | 端 | docker.b.03, net.b.04 | net.b.04, k8s.b.06 | docker.b.05 |
