@@ -5,6 +5,9 @@ const BASE = process.env.E2E_BASE ?? '/devlearn-arena/';
 export default defineConfig({
   testDir: './e2e',
   fullyParallel: true,
+  // 手元の vite preview は、多くのブラウザから同時に読まれると、レッスンの中身の読み込みが
+  // 10〜60 秒止まることがある（サーバ自身は即座に返す。Phase 12 で確かめた）。2 つまでにする
+  workers: 2,
   reporter: process.env.CI ? 'github' : 'list',
   use: { baseURL: `http://localhost:4173${BASE}`, trace: 'on-first-retry' },
   projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'] } }],

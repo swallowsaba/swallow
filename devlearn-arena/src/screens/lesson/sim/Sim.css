@@ -176,7 +176,9 @@
 .sim-chart-line.is-s2,
 .sim-chart-key.is-s2 { stroke: var(--ok); color: var(--ok); }
 .sim-chart-line.is-s3,
-.sim-chart-key.is-s3 { stroke: var(--bad); color: var(--bad); }
+.sim-chart-key.is-s3 { stroke: var(--bad); }
+/* 赤は文字に使うと地との差が足りないので、凡例の線だけを赤くする */
+.sim-chart-key.is-s3::before { background: var(--bad); }
 .sim-chart-legend {
   display: flex;
   flex-wrap: wrap;
@@ -405,11 +407,11 @@
   padding: 1px 10px;
   border: none;
   background: var(--hud-bg);
-  color: var(--bad);
+  color: var(--hud-text);
   font-family: var(--font-body);
   font-size: var(--fs-12);
   font-weight: 700;
-  box-shadow: inset 0 0 0 1px var(--bad);
+  box-shadow: inset 0 0 0 1px var(--bad), inset 3px 0 0 var(--bad);
   cursor: pointer;
 }
 .sim-node-start:hover,
@@ -520,7 +522,9 @@
   color: var(--ok);
 }
 .sim-slot-cap.is-over {
-  color: var(--bad);
+  /* 超えた: 文字は本文の色のまま、赤い下線で示す（赤の文字は地との差が足りない） */
+  color: var(--hud-text);
+  box-shadow: inset 0 -2px 0 var(--bad);
 }
 .sim-slot-note {
   margin: 6px 12px 0;

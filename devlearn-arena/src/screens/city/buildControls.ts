@@ -225,10 +225,20 @@ export function attachBuildControls(canvas: HTMLCanvasElement, renderer: CityRen
       s.togglePause();
     } else if (k === 'b') {
       s.openMenu(s.menu ? null : 'road');
-    } else if (k === 'tab' && !(e.target instanceof HTMLElement && /^(BUTTON|A)$/.test(e.target.tagName))) {
-      // ボタンにいる時の Tab は、画面の部品を順にたどる（キーボードの操作を奪わない）
+      // 開いた引き出しの最初の項目へ（Tab で項目を順に、Enter で選ぶ。置く所はマウスで選ぶ）
+      if (!s.menu) requestAnimationFrame(() => document.querySelector<HTMLElement>('[data-testid="build-drawer"] button')?.focus());
+    } else if (k === 'tab' && s.city.facilities.length > 0 && !(e.target instanceof HTMLElement && /^(BUTTON|A)$/.test(e.target.tagName))) {
+      // ボタンにいる時の Tab は、画面の部品を順にたどる（キーボードの操作を奪わない）。施設が無ければ、画面の部品をたどる
       e.preventDefault();
       cycle(e.shiftKey ? -1 : 1);
+    } else if (k === 'enter' && s.selected && !(e.target instanceof HTMLElement && /^(BUTTON|A)$/.test(e.target.tagName))) {
+      // 選んだ建物の情報パネルの中へ（最初の操作に焦点を置く。ここで学ぶ・ミッション・アップグレードを Tab でたどる）
+      const panel = document.querySelector('[data-testid="info-panel"]');
+      const first = panel?.querySelector<HTMLElement>('[data-testid="info-lessons"] button') ?? panel?.querySelector<HTMLElement>('button:not([disabled])');
+      if (first) {
+        e.preventDefault();
+        first.focus();
+      }
     }
   };
 
