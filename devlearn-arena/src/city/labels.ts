@@ -55,40 +55,69 @@ export function overlaps(a: ScreenRect, b: ScreenRect, pad = 0): boolean {
 /** 建物の画面の上の輪郭（凸な多角形）。矩形でもよい */
 export type Obstacle = ScreenRect | readonly { x: number; y: number }[];
 
-function corners(r: ScreenRect): { x: number; y: number }[] {
-  return [{ x: r.x0, y: r.y0 }, { x: r.x1, y: r.y0 }, { x: r.x1, y: r.y1 }, { x: r.x0, y: r.y1 }];
-}
-
-/** 矩形と凸な多角形が重なるか（分離軸で調べる） */
+/** 矩形と凸な多角形が重なるか（分離軸で調べる）。毎フレーム何千回も呼ぶので、配列を作らずに数える */
 export function rectHitsPolygon(r: ScreenRect, poly: readonly { x: number; y: number }[]): boolean {
-  const xs = poly.map((p) => p.x);
-  const ys = poly.map((p) => p.y);
-  if (Math.max(...xs) <= r.x0 || Math.min(...xs) >= r.x1 || Math.max(...ys) <= r.y0 || Math.min(...ys) >= r.y1) return false;
-  const box = corners(r);
-  for (let i = 0; i < poly.length; i += 1) {
+  let minX = Infinity;
+  let maxX = -Infinity;
+  let minY = Infinity;
+  let maxY = -Infinity;
+  for (const p of poly) {
+    if (p.x < minX) minX = p.x;
+    if (p.x > maxX) maxX = p.x;
+    if (p.y < minY) minY = p.y;
+    if (p.y > maxY) maxY = p.y;
+  }
+  if (maxX <= r.x0 || minX >= r.x1 || maxY <= r.y0 || minY >= r.y1) return false;
+  const n = poly.length;
+  for (let i = 0; i < n; i += 1) {
     const a = poly[i] as { x: number; y: number };
-    const b = poly[(i + 1) % poly.length] as { x: number; y: number };
+    const b = poly[(i + 1) % n] as { x: number; y: number };
     const nx = b.y - a.y;
     const ny = a.x - b.x;
-    const project = (pts: readonly { x: number; y: number }[]): [number, number] => {
-      let lo = Infinity;
-      let hi = -Infinity;
-      for (const p of pts) {
-        const v = p.x * nx + p.y * ny;
-        lo = Math.min(lo, v);
-        hi = Math.max(hi, v);
-      }
-      return [lo, hi];
-    };
-    const [p0, p1] = project(poly);
-    const [q0, q1] = project(box);
+    let p0 = Infinity;
+    let p1 = -Infinity;
+    for (const p of poly) {
+      const v = p.x * nx + p.y * ny;
+      if (v < p0) p0 = v;
+      if (v > p1) p1 = v;
+    }
+    // 矩形の 4 隅の射影の幅
+    const ax = nx * r.x0;
+    const bx = nx * r.x1;
+    const ay = ny * r.y0;
+    const by = ny * r.y1;
+    const q0 = Math.min(ax, bx) + Math.min(ay, by);
+    const q1 = Math.max(ax, bx) + Math.max(ay, by);
     if (p1 <= q0 || q1 <= p0) return false;
   }
   return true;
 }
 
-function hits(rect: ScreenRect, o: Obstacle): boolean {
-  return 'x0' in o ? overlaps(rect, o) : rectHitsPolygon(rect, o);
+/** 障害物の外接矩形を先に求めておく（名札 1 枚ごとに何十もの位置を試すので、毎回求め直さない） */
+interface Prepared extends ScreenRect {
+  poly: readonly { x: number; y: number }[] | null;
+}
+
+function prepare(o: Obstacle): Prepared {
+  if ('x0' in o) return { x0: o.x0, y0: o.y0, x1: o.x1, y1: o.y1, poly: null };
+  let x0 = Infinity;
+  let y0 = Infinity;
+  let x1 = -Infinity;
+  let y1 = -Infinity;
+  for (const p of o) {
+    x0 = Math.min(x0, p.x);
+    y0 = Math.min(y0, p.y);
+    x1 = Math.max(x1, p.x);
+    y1 = Math.max(y1, p.y);
+  }
+  return { x0, y0, x1, y1, poly: o };
+}
+
+/** rectHitsPolygon・overlaps と同じ判定（外接矩形で先にふるい落とす） */
+function hits(rect: ScreenRect, o: Prepared): boolean {
+  if (!o.poly) return overlaps(rect, o);
+  if (o.x1 <= rect.x0 || o.x0 >= rect.x1 || o.y1 <= rect.y0 || o.y0 >= rect.y1) return false;
+  return rectHitsPolygon(rect, o.poly);
 }
 
 /** 試す位置（指す点の真上から、近い順に上・左右・下へ離れていく） */
@@ -120,14 +149,19 @@ export function layoutLabels(requests: readonly LabelRequest[], obstacles: reado
   const left = area.left ?? 0;
   const right = area.width - (area.right ?? 0);
   const order = [...requests].sort((a, b) => b.priority - a.priority || a.id.localeCompare(b.id));
+  const blocks = obstacles.map(prepare);
+  const tries = new Map<string, { dx: number; dy: number }[]>();
   for (const r of order) {
-    for (const c of candidates(r.width, r.height)) {
+    const key = `${String(r.width)}x${String(r.height)}`;
+    const list = tries.get(key) ?? candidates(r.width, r.height);
+    tries.set(key, list);
+    for (const c of list) {
       const x = r.ax - r.width / 2 + c.dx;
       const y = r.ay - r.height - GAP + c.dy;
       const rect = { x0: x, y0: y, x1: x + r.width, y1: y + r.height };
       if (rect.x0 < left || rect.x1 > right || rect.y0 < top || rect.y1 > bottom) continue;
       if (placed.some((p) => overlaps(rect, { x0: p.x, y0: p.y, x1: p.x + p.width, y1: p.y + p.height }, PAD))) continue;
-      if (obstacles.some((o) => hits(rect, o))) continue;
+      if (blocks.some((o) => hits(rect, o))) continue;
       placed.push({ id: r.id, x, y, width: r.width, height: r.height, ax: r.ax, ay: r.ay, leader: c.dx !== 0 || c.dy !== 0 });
       break;
     }

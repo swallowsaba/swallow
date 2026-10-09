@@ -30,9 +30,11 @@ import './CityScreen.css';
  * 都市画面（docs/ui-design.md 3 章）。全画面の都市ビューに、上の帯と建設メニューを小さく重ねる。
  * 学習者が道路を引き、区画を塗り、施設と公園を置く。区画の建物は自動で建ち、育つ（docs/decisions.md D-03）。
  */
-export function CityScreen({ session, active = true, current, disabled = [], onEntry, onLesson, onLibrary, onMission }: {
+export function CityScreen({ session, active = true, covered = false, current, disabled = [], onEntry, onLesson, onLibrary, onMission }: {
   session: Session;
   active?: boolean;
+  /** 不透明な画面（レッスン・ミッションの実戦）が都市を覆っている。その間は都市を描かない */
+  covered?: boolean;
   /** 上の帯の入口のうち、開けない物 */
   disabled?: readonly EntryId[];
   /** 上の帯で、今開いている画面の入口を光らせる */
@@ -157,6 +159,11 @@ export function CityScreen({ session, active = true, current, disabled = [], onE
       delete document.body.dataset.cityReady;
     };
   }, [store, session.settings]);
+
+  // レッスン・ミッションの実戦が都市を覆っている間は描かない（描く物を作り直した時も写し直す）
+  useEffect(() => {
+    rendererRef.current?.setCovered(covered);
+  }, [covered, store, session.settings]);
 
   // 名札は、都市の上に重ねた知らせと表示切替の所を避ける（描き直しのたびに、出ている部品の位置を測って渡す）
   useLayoutEffect(() => {

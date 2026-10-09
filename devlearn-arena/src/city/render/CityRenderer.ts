@@ -49,12 +49,14 @@ export interface RenderStats {
   /** 置けた名札の数と、置きたかった数 */
   labels: number;
   labelsWanted: number;
+  /** 実際に描き直した回数（覆われている間は増えない） */
+  draws: number;
 }
 
 export class CityRenderer {
   readonly size = MAP_SIZE;
   camera: Camera;
-  stats: RenderStats = { fps: 0, frames: 0, drawnObjects: 0, agents: 0, labels: 0, labelsWanted: 0 };
+  stats: RenderStats = { fps: 0, frames: 0, drawnObjects: 0, agents: 0, labels: 0, labelsWanted: 0, draws: 0 };
   /** 最後に描いた名札（撮影と確かめの道具が読む） */
   lastLabels: { id: string; x: number; y: number; width: number; height: number }[] = [];
   /** 準備が終わり、最初の絵を描いたら true */
@@ -159,7 +161,7 @@ export class CityRenderer {
       this.stats.fps = this.frameTimes.length;
       this.stats.frames += 1;
       if (this.continuous) this.dirty = true;
-      this.draw();
+      if (!this.covered) this.draw();
       this.raf = requestAnimationFrame(loop);
     };
     this.raf = requestAnimationFrame(loop);
@@ -427,6 +429,7 @@ export class CityRenderer {
   private draw(): void {
     if (!this.dirty) return;
     this.dirty = false;
+    this.stats.draws += 1;
     const ctx = this.ctx;
     const { width, height } = this.viewport;
     ctx.setTransform(this.dpr, 0, 0, this.dpr, 0, 0);
@@ -794,6 +797,16 @@ export class CityRenderer {
   }
 
   /** 計測用: 毎フレーム描き直させる（車や人が動く Phase 2 からは常に描き直す） */
+  /**
+   * 不透明な画面（レッスン・ミッションの実戦）が都市を覆っている間は描かない（見えない都市に手間を掛けない）。
+   * 都市の時間は進み続け、外れたらすぐ今の姿を描き直す。覆う画面が開く動きの間は、最後に描いた姿が透けて見える
+   */
+  setCovered(on: boolean): void {
+    this.covered = on;
+    if (!on) this.dirty = true;
+  }
+  private covered = false;
+
   setContinuous(on: boolean): void {
     this.continuous = on;
   }

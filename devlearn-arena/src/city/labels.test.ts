@@ -80,4 +80,31 @@ describe('名札の配置', () => {
   it('同じ入力からは同じ配置', () => {
     expect(layoutLabels(crowd(30, 300, 3), [], area)).toEqual(layoutLabels(crowd(30, 300, 3), [], area));
   });
+
+  it('矩形と輪郭の重なりは、分離軸の素直な判定と一致する（境で接するだけは重ならない）', () => {
+    // 素直な判定: 輪郭の各辺の法線に、輪郭と矩形の 4 隅を射影して、離れている軸があれば重ならない
+    const plain = (r: ScreenRect, poly: { x: number; y: number }[]): boolean => {
+      const box = [{ x: r.x0, y: r.y0 }, { x: r.x1, y: r.y0 }, { x: r.x1, y: r.y1 }, { x: r.x0, y: r.y1 }];
+      return poly.every((a, i) => {
+        const b = poly[(i + 1) % poly.length] as { x: number; y: number };
+        const span = (pts: { x: number; y: number }[]): number[] => pts.map((p) => p.x * (b.y - a.y) + p.y * (a.x - b.x));
+        const p = span(poly);
+        const q = span(box);
+        return !(Math.max(...p) <= Math.min(...q) || Math.max(...q) <= Math.min(...p));
+      }) && !(Math.max(...poly.map((p) => p.x)) <= r.x0 || Math.min(...poly.map((p) => p.x)) >= r.x1
+        || Math.max(...poly.map((p) => p.y)) <= r.y0 || Math.min(...poly.map((p) => p.y)) >= r.y1);
+    };
+    let hit = 0;
+    for (let k = 0; k < 200; k += 1) {
+      const cx = 300 + (k % 40) * 7;
+      const cy = 200 + ((k * 13) % 50);
+      const poly = [{ x: cx, y: cy - 40 }, { x: cx + 80, y: cy }, { x: cx, y: cy + 40 }, { x: cx - 80, y: cy }];
+      const r = { x0: 330 + (k % 5) * 9, y0: 150 + (k % 7) * 11, x1: 390 + (k % 5) * 9, y1: 174 + (k % 7) * 11 };
+      expect(rectHitsPolygon(r, poly), `k=${String(k)}`).toBe(plain(r, poly));
+      if (plain(r, poly)) hit += 1;
+    }
+    // 重なる場合と重ならない場合の両方を調べている
+    expect(hit).toBeGreaterThan(20);
+    expect(hit).toBeLessThan(180);
+  });
 });

@@ -96,6 +96,7 @@ export function App({ session: given, saves }: { session?: Session; saves?: Save
       <CityScreen
         session={session}
         active={route.name === 'city'}
+        covered={route.name === 'lesson' || route.name === 'mission'}
         current={currentEntry(route)}
         disabled={saves ? [] : ['settings']}
         onEntry={(id) => {
