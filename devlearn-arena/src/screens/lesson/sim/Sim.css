@@ -1,5 +1,5 @@
-/* 実戦の右側の、画面で操作する模擬環境（docs/ui-design.md 7.1・docs/visual-design.md 4 章）。
-   計器の盤の上に、部品・札・枠・欄を置く。色は tokens の変数だけ */
+/* 実戦の右側の、画面で操作する模擬環境（docs/ui-design.md 7.1・docs/visual-design.md 4 章・REWORK-PRACTICE.txt）。
+   計器の盤の上に、部品・札・枠を置き、ドラッグで置く・つなぐ・並べ替える。操作の結果は動きで見せる。色は tokens の変数だけ */
 
 .sim-console {
   background: var(--navy);
@@ -199,6 +199,99 @@
   color: var(--hud-text-sub);
 }
 
+/* ---------- 読む所（押すと強調・拡大） ---------- */
+.sim-part {
+  cursor: zoom-in;
+}
+.sim-part:hover,
+.sim-part:focus-visible {
+  outline: none;
+  background: var(--hud-bg-strong);
+}
+.sim-kv-row.sim-part:hover > *,
+.sim-kv-row.sim-part:focus-visible > * {
+  background: var(--hud-bg-strong);
+}
+.sim-part.is-focus,
+.sim-kv-row.is-focus > * {
+  background: var(--hud-bg-strong);
+  box-shadow: inset 3px 0 0 var(--gold);
+  color: var(--gold-light);
+}
+.sim-log-line {
+  display: block;
+}
+.sim-zoom {
+  margin-bottom: 14px;
+  padding: 10px 14px 12px;
+  background: var(--hud-bg-strong);
+  box-shadow: inset 0 0 0 2px var(--gold);
+  border-radius: 4px 14px 4px 14px;
+  animation: sim-zoom-in 0.22s ease-out;
+}
+.sim-zoom-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 6px;
+}
+.sim-zoom-title {
+  flex: 1;
+  font-family: var(--font-heading);
+  font-size: var(--fs-13);
+  font-weight: 700;
+  color: var(--gold-light);
+}
+.sim-zoom-kv {
+  margin: 0;
+  display: grid;
+  grid-template-columns: fit-content(40%) minmax(0, 1fr);
+  gap: 4px 16px;
+  font-size: var(--fs-18);
+}
+.sim-zoom-pair {
+  display: contents;
+}
+.sim-zoom-kv dt {
+  color: var(--hud-text-sub);
+  font-size: var(--fs-14);
+  align-self: center;
+}
+.sim-zoom-kv dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+.sim-zoom-kv dd.is-code {
+  font-family: var(--font-mono);
+}
+.sim-zoom-line {
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: var(--fs-18);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.sim-zoom-text {
+  margin: 0;
+  font-size: var(--fs-18);
+  line-height: 1.6;
+}
+.sim-chart-point.is-s0 circle { fill: var(--gold); }
+.sim-chart-point.is-s1 circle { fill: var(--info); }
+.sim-chart-point.is-s2 circle { fill: var(--ok); }
+.sim-chart-point.is-s3 circle { fill: var(--bad); }
+.sim-chart-value {
+  fill: var(--hud-text);
+  font-family: var(--font-number);
+  font-size: var(--fs-12);
+}
+@keyframes sim-zoom-in {
+  from {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+}
+
 /* ---------- 部品・札・道具 ---------- */
 .sim-tool {
   padding: 3px 12px;
@@ -227,6 +320,12 @@
   opacity: 0.45;
   cursor: default;
 }
+.sim-resumed {
+  margin-left: auto;
+  margin-right: 10px;
+  font-size: var(--fs-12);
+  color: var(--hud-text-sub);
+}
 .sim-card {
   display: inline-flex;
   flex-direction: column;
@@ -236,26 +335,49 @@
   padding: 6px 12px 7px 10px;
   border: none;
   border-left: 3px solid var(--hud-text-sub);
-  background: var(--hud-bg);
+  background: var(--hud-bg-strong);
   color: var(--hud-text);
   font-family: var(--font-body);
   font-size: var(--fs-14);
   text-align: left;
   box-shadow: inset 0 0 0 1px var(--hud-line);
-  cursor: pointer;
+  transition: transform 0.15s ease-out, box-shadow 0.15s ease-out, opacity 0.15s;
+}
+/* つまんで運べる札: 手の形と、左の縁の握り */
+.sim-card.is-draggable {
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+  background-image: radial-gradient(circle, var(--hud-text-sub) 1px, var(--transparent) 1.5px);
+  background-size: 5px 5px;
+  background-repeat: repeat-y;
+  background-position: 3px 4px;
+  padding-left: 14px;
 }
 .sim-card:hover,
 .sim-card:focus-visible {
   outline: none;
   border-left-color: var(--gold);
+  transform: translateY(-1px);
+  box-shadow: inset 0 0 0 1px var(--gold);
 }
-.sim-card.is-picked {
+.sim-card.is-dragging {
+  opacity: 0.35;
+}
+.sim-card.is-lifted {
   border-left-color: var(--gold);
   color: var(--navy);
-  background: linear-gradient(180deg, var(--gold-light), var(--gold));
+  background-color: var(--gold-light);
+  background-image: none;
 }
 .sim-card.is-in {
   border-left-color: var(--ok);
+}
+/* 置き違えた札・流れを止めた札: 赤い縁で示し、一度揺れる（赤の文字は地との差が足りない） */
+.sim-card.is-wrong {
+  border-left-color: var(--bad);
+  box-shadow: inset 0 0 0 2px var(--bad);
+  animation: sim-shake 0.4s ease-in-out 1;
 }
 .sim-card-label {
   font-weight: 700;
@@ -264,13 +386,28 @@
   font-size: var(--fs-13);
   color: var(--gold-light);
 }
-.sim-card.is-picked .sim-card-time,
-.sim-card.is-picked .sim-card-needs {
+.sim-card.is-lifted .sim-card-time,
+.sim-card.is-lifted .sim-card-needs {
   color: var(--navy);
 }
 .sim-card-needs {
   font-size: var(--fs-12);
   color: var(--hud-text-sub);
+}
+/* ドラッグしている札の写し（指先に付いて動く） */
+.sim-ghost {
+  position: fixed;
+  z-index: 50;
+  padding: 6px 12px;
+  transform: translate(-50%, -120%) rotate(-2deg);
+  background: linear-gradient(180deg, var(--gold-light), var(--gold));
+  color: var(--navy);
+  font-family: var(--font-body);
+  font-size: var(--fs-14);
+  font-weight: 700;
+  white-space: nowrap;
+  box-shadow: var(--shadow-window);
+  pointer-events: none;
 }
 .sim-pool {
   display: flex;
@@ -280,6 +417,11 @@
   margin-top: 14px;
   padding: 10px 12px;
   border-top: 1px dashed var(--hud-line);
+  transition: background 0.15s;
+}
+.sim-pool.is-over {
+  background: var(--hud-bg-strong);
+  box-shadow: inset 0 0 0 2px var(--gold);
 }
 .sim-pool-label {
   width: 100%;
@@ -301,6 +443,19 @@
   font-size: var(--fs-18);
   color: var(--gold-light);
 }
+.sim-note {
+  margin: 8px 0 0;
+  padding: 6px 12px;
+  font-size: var(--fs-13);
+  background: var(--hud-bg-strong);
+  animation: sim-zoom-in 0.2s ease-out;
+}
+.sim-note.is-bad {
+  box-shadow: inset 3px 0 0 var(--bad);
+}
+.sim-note.is-good {
+  box-shadow: inset 3px 0 0 var(--ok);
+}
 
 /* ---------- つなぐ ---------- */
 .sim-board {
@@ -312,31 +467,88 @@
 .sim-wires {
   position: absolute;
   inset: 0;
-  width: 100%;
-  height: 100%;
   overflow: visible;
+}
+.sim-wire {
+  cursor: pointer;
+}
+.sim-wire:focus-visible {
+  outline: none;
 }
 .sim-wire-hit {
   stroke: var(--transparent);
-  stroke-width: 4;
-  cursor: pointer;
+  stroke-width: 14;
 }
 .sim-wire-line {
   stroke: var(--hud-text-sub);
   stroke-width: 2.5;
   stroke-dasharray: 6 5;
   pointer-events: none;
+  transition: stroke 0.2s;
 }
 .sim-wire.is-live .sim-wire-line {
   stroke: var(--gold);
   stroke-dasharray: none;
+  animation: sim-wire-in 0.35s ease-out;
 }
-.sim-wire-hit:hover + .sim-wire-line {
+.sim-wire:hover .sim-wire-line,
+.sim-wire:focus-visible .sim-wire-line {
   stroke: var(--bad);
 }
 .sim-wire-head {
   fill: var(--gold);
   pointer-events: none;
+}
+/* ドラッグの途中の線（つなげる先の上では金、つなげない先の上では赤） */
+.sim-wire-draft {
+  stroke: var(--hud-text);
+  stroke-width: 2;
+  stroke-dasharray: 4 4;
+  pointer-events: none;
+}
+.sim-wire-draft.is-good {
+  stroke: var(--gold);
+  stroke-dasharray: none;
+}
+.sim-wire-draft.is-bad {
+  stroke: var(--bad);
+}
+/* 線を流れる光の粒と、送った荷物 */
+.sim-flow {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+.sim-particle {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 7px;
+  height: 7px;
+  margin: -3.5px 0 0 -3.5px;
+  border-radius: 50%;
+  background: var(--gold-light);
+  box-shadow: 0 0 6px 2px var(--gold);
+  offset-rotate: 0deg;
+  animation: sim-flow 1.8s linear infinite;
+}
+.sim-packet {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 14px;
+  height: 14px;
+  margin: -7px 0 0 -7px;
+  border-radius: 3px;
+  background: var(--ok);
+  box-shadow: 0 0 10px 3px var(--ok);
+  offset-rotate: 0deg;
+  offset-distance: 100%;
+  animation: sim-packet 1s ease-in-out both;
+}
+.sim-packet.is-stuck {
+  background: var(--bad);
+  box-shadow: 0 0 10px 3px var(--bad);
 }
 .sim-node {
   position: absolute;
@@ -348,59 +560,72 @@
   gap: 4px;
   transform: translate(-50%, -50%);
 }
-.sim-node-button {
+.sim-node-body {
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 2px;
   min-width: 96px;
   padding: 8px 10px 6px;
-  border: none;
   background: var(--hud-bg-strong);
   color: var(--hud-text);
   font-family: var(--font-body);
   box-shadow: inset 0 0 0 2px var(--hud-line);
   border-radius: 4px 14px 4px 14px;
-  cursor: pointer;
+  cursor: crosshair;
+  touch-action: none;
+  user-select: none;
+  transition: box-shadow 0.15s, transform 0.15s;
 }
-.sim-node-button:hover,
-.sim-node-button:focus-visible {
+.sim-node-body:hover,
+.sim-node-body:focus-visible {
   outline: none;
   box-shadow: inset 0 0 0 2px var(--gold);
 }
-.sim-node.is-picked .sim-node-button {
+.sim-node-body[aria-pressed='true'],
+.sim-node.is-from .sim-node-body {
   color: var(--navy);
   background: linear-gradient(180deg, var(--gold-light), var(--gold));
 }
-.sim-node.is-down .sim-node-button {
+.sim-node.is-over .sim-node-body {
+  transform: scale(1.06);
+  box-shadow: inset 0 0 0 3px var(--gold), 0 0 14px var(--gold);
+}
+.sim-node.is-refuse .sim-node-body {
+  box-shadow: inset 0 0 0 3px var(--bad), 0 0 14px var(--bad);
+}
+.sim-node.is-down .sim-node-body {
   color: var(--hud-text-sub);
   box-shadow: inset 0 0 0 2px var(--bad);
+}
+/* 荷物が届いた・止まった部品（荷物が着く頃に光る） */
+.sim-node.is-arrived .sim-node-body {
+  box-shadow: inset 0 0 0 2px var(--ok), 0 0 8px var(--ok);
+  animation: sim-arrive 0.7s ease-out var(--delay, 0s) both;
+}
+.sim-node.is-stuck .sim-node-body {
+  box-shadow: inset 0 0 0 3px var(--bad), 0 0 16px var(--bad);
+  animation: sim-stuck 0.5s ease-out var(--delay, 0s) both;
+}
+.sim-node-stuck {
+  padding: 1px 8px;
+  font-size: var(--fs-12);
+  font-weight: 700;
+  background: var(--hud-bg-strong);
+  box-shadow: inset 0 0 0 1px var(--bad), inset 3px 0 0 var(--bad);
+  animation: sim-zoom-in 0.2s ease-out var(--delay, 0s) both;
 }
 .sim-node-label {
   font-size: var(--fs-14);
   font-weight: 700;
   white-space: nowrap;
 }
-.sim-node-note,
-.sim-node-id,
-.sim-field-id,
-.sim-slot-id {
+.sim-node-note {
   font-size: var(--fs-12);
   color: var(--hud-text-sub);
 }
-.sim-node-id,
-.sim-field-id,
-.sim-slot-id {
-  font-family: var(--font-mono);
-}
-.sim-field-id {
-  display: inline-block;
-  margin-left: 8px;
-  /* 欄の ID は打つ名前そのもの。途中で折らない（「し / きい値」に見える） */
-  white-space: nowrap;
-}
-.sim-node.is-picked .sim-node-note,
-.sim-node.is-picked .sim-node-id {
+.sim-node.is-from .sim-node-note,
+.sim-node-body[aria-pressed='true'] .sim-node-note {
   color: var(--navy);
 }
 .sim-node-start {
@@ -421,6 +646,21 @@
   background: var(--ok);
   box-shadow: none;
 }
+.sim-drag-tip {
+  position: absolute;
+  z-index: 3;
+  padding: 3px 10px;
+  transform: translate(22px, 18px);
+  font-size: var(--fs-12);
+  font-weight: 700;
+  white-space: nowrap;
+  background: var(--hud-bg-strong);
+  box-shadow: inset 3px 0 0 var(--gold), 0 0 0 1px var(--hud-line);
+  pointer-events: none;
+}
+.sim-drag-tip.is-bad {
+  box-shadow: inset 3px 0 0 var(--bad), 0 0 0 1px var(--bad);
+}
 
 .sim-sends {
   display: flex;
@@ -428,32 +668,102 @@
   gap: 8px;
   margin-bottom: 8px;
 }
-.sim-tool.is-arrived {
-  color: var(--ok);
-  box-shadow: inset 0 0 0 1px var(--ok);
+/* 送るボタン: 何をするか（上の行）と、どこからどこへ（下の行）を文字で示す */
+.sim-send {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 1px;
+  padding: 5px 14px 6px;
+  border: none;
+  background: var(--hud-bg-strong);
+  color: var(--gold-light);
+  font-family: var(--font-body);
+  text-align: left;
+  box-shadow: inset 0 0 0 1px var(--gold);
+  clip-path: polygon(6px 0, 100% 0, calc(100% - 6px) 100%, 0 100%);
+  cursor: pointer;
+}
+.sim-send:hover,
+.sim-send:focus-visible {
+  outline: none;
+  color: var(--navy);
+  background: linear-gradient(180deg, var(--gold-light), var(--gold));
+}
+.sim-send-label {
+  font-size: var(--fs-14);
+  font-weight: 700;
+}
+.sim-send-state {
+  font-size: var(--fs-12);
+  color: var(--hud-text-sub);
+}
+.sim-send:hover .sim-send-state,
+.sim-send:focus-visible .sim-send-state {
+  color: var(--navy);
+}
+.sim-send.is-arrived {
+  box-shadow: inset 0 0 0 1px var(--ok), inset 3px 0 0 var(--ok);
 }
 
 /* ---------- 並べる ---------- */
 .sim-stages {
+  position: relative;
   margin: 0;
-  padding: 0;
+  padding: 0 0 0 14px;
   list-style: none;
   display: grid;
   gap: 8px;
 }
+/* 左の流れの線。流すと、上から下へ光が走る */
+.sim-stages::before {
+  content: '';
+  position: absolute;
+  top: 6px;
+  bottom: 6px;
+  left: 3px;
+  width: 3px;
+  background: var(--hud-line);
+}
+.sim-stages.is-run::before {
+  background: linear-gradient(180deg, var(--gold), var(--gold-light));
+  transform-origin: top;
+  animation: sim-rail 0.45s linear both;
+  animation-duration: calc(var(--n, 4) * 0.45s);
+}
 .sim-stage {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: 12px;
+  gap: 8px 12px;
   min-height: 52px;
   padding: 6px 10px;
   border-left: 3px solid var(--gold);
   background: var(--hud-bg);
+  transition: box-shadow 0.15s, background 0.15s;
 }
-.sim-stage.is-new {
-  border-left-style: dashed;
+.sim-stage.is-over {
+  background: var(--hud-bg-strong);
+  box-shadow: inset 0 0 0 2px var(--gold);
+}
+/* 流す: 上の段から順に光る。止まった段は赤く、その先は暗いまま */
+.sim-stages.is-run .sim-stage {
+  animation: sim-stage-run 0.4s ease-out both;
+  animation-delay: calc(var(--i, 0) * 0.45s);
+}
+.sim-stage.is-stop {
+  border-left-color: var(--bad);
+  box-shadow: inset 0 0 0 2px var(--bad);
+}
+.sim-stages.is-run .sim-stage.is-stop {
+  animation-name: sim-stage-stop;
+}
+.sim-stage.is-unreached {
+  opacity: 0.45;
   border-left-color: var(--hud-text-sub);
-  background: var(--transparent);
+}
+.sim-stages.is-run .sim-stage.is-unreached {
+  animation: none;
 }
 .sim-stage-no {
   flex: none;
@@ -468,14 +778,58 @@
   gap: 8px;
   flex: 1;
 }
-.sim-stage-tools {
+.sim-stage-time {
+  font-size: var(--fs-13);
+  color: var(--hud-text-sub);
+}
+.sim-stage-why {
+  flex-basis: 100%;
+  margin: 0;
+  padding-left: 34px;
+  font-size: var(--fs-13);
+  font-weight: 700;
+  animation: sim-zoom-in 0.25s ease-out both;
+  animation-delay: calc(var(--i, 0) * 0.45s + 0.3s);
+}
+.sim-stage-done {
+  padding: 6px 10px;
+  font-size: var(--fs-13);
+  font-weight: 700;
+  color: var(--hud-text-sub);
+  box-shadow: inset 3px 0 0 var(--hud-text-sub);
+  animation: sim-zoom-in 0.25s ease-out both;
+  animation-delay: calc(var(--i, 0) * 0.45s);
+}
+.sim-stage-done.is-all {
+  color: var(--hud-text);
+  box-shadow: inset 3px 0 0 var(--ok);
+}
+/* 段の間・一番下の受け口（ドラッグしている間だけ開く） */
+.sim-gap {
   display: flex;
-  flex-wrap: wrap;
-  justify-content: flex-end;
-  gap: 6px;
+  align-items: center;
+  min-height: 10px;
+  padding: 0 10px;
+  border: 1px dashed var(--transparent);
+  transition: min-height 0.15s, border-color 0.15s, background 0.15s;
+}
+.sim-gap-mark {
+  font-size: var(--fs-12);
+  color: var(--hud-text-sub);
+}
+.sim-order:not(.is-carrying) .sim-gap:not(:last-of-type) .sim-gap-mark {
+  display: none;
+}
+.sim-order.is-carrying .sim-gap {
+  min-height: 34px;
+  border-color: var(--hud-line);
+}
+.sim-gap.is-over {
+  background: var(--hud-bg-strong);
+  border-color: var(--gold);
 }
 
-/* ---------- 割り振る ---------- */
+/* ---------- 置く ---------- */
 .sim-slots {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
@@ -488,6 +842,26 @@
   background: var(--hud-bg);
   box-shadow: inset 0 0 0 1px var(--hud-line);
   border-radius: 4px 14px 4px 14px;
+  transition: box-shadow 0.15s, background 0.15s;
+}
+.sim-slot.is-target {
+  box-shadow: inset 0 0 0 1px var(--hud-text-sub);
+}
+.sim-slot:focus-visible {
+  outline: none;
+  box-shadow: inset 0 0 0 2px var(--gold);
+}
+.sim-slot.is-over {
+  background: var(--hud-bg-strong);
+  box-shadow: inset 0 0 0 2px var(--gold), 0 0 14px var(--gold);
+}
+/* 入った: 枠が一度光る。入らない: 赤く光り、理由が 1 行出る */
+.sim-slot.is-took {
+  animation: sim-took 0.6s ease-out;
+}
+.sim-slot.is-refused {
+  box-shadow: inset 0 0 0 2px var(--bad);
+  animation: sim-refuse 0.6s ease-out;
 }
 .sim-slot-head {
   display: flex;
@@ -495,22 +869,8 @@
   align-items: baseline;
   gap: 4px 8px;
   padding: 8px 12px;
-  border: none;
   border-bottom: 1px solid var(--hud-line);
-  background: var(--transparent);
   color: var(--hud-text);
-  font-family: var(--font-body);
-  text-align: left;
-  cursor: pointer;
-}
-.sim-slot-head:disabled {
-  cursor: default;
-}
-.sim-slot.is-target .sim-slot-head:hover,
-.sim-slot.is-target .sim-slot-head:focus-visible {
-  outline: none;
-  color: var(--navy);
-  background: linear-gradient(180deg, var(--gold-light), var(--gold));
 }
 .sim-slot-label {
   font-size: var(--fs-14);
@@ -521,10 +881,25 @@
   font-size: var(--fs-14);
   color: var(--ok);
 }
+.sim-slot.is-took .sim-slot-cap {
+  animation: sim-count 0.5s ease-out;
+}
 .sim-slot-cap.is-over {
   /* 超えた: 文字は本文の色のまま、赤い下線で示す（赤の文字は地との差が足りない） */
   color: var(--hud-text);
   box-shadow: inset 0 -2px 0 var(--bad);
+}
+.sim-slot-meter {
+  display: block;
+  height: 4px;
+  margin: 0 12px;
+  background: var(--hud-bg-strong);
+}
+.sim-slot-meter-fill {
+  display: block;
+  height: 100%;
+  background: var(--ok);
+  transition: width 0.4s ease-out;
 }
 .sim-slot-note {
   margin: 6px 12px 0;
@@ -537,79 +912,17 @@
   gap: 6px;
   padding: 8px 10px 10px;
 }
-
-/* ---------- 設定する・答える ---------- */
-.sim-fields {
-  display: grid;
-  gap: 10px;
-  margin-bottom: 14px;
-}
-.sim-field {
-  display: grid;
-  grid-template-columns: minmax(140px, 38%) 1fr;
-  align-items: center;
-  gap: 4px 12px;
-}
-.sim-field-label {
-  font-size: var(--fs-14);
+.sim-slot-why {
+  margin: 0 10px 10px;
+  padding: 4px 8px;
+  font-size: var(--fs-13);
   font-weight: 700;
+  background: var(--hud-bg-strong);
+  box-shadow: inset 3px 0 0 var(--bad);
+  animation: sim-zoom-in 0.2s ease-out;
 }
-.sim-field-note,
-.sim-field-now {
-  grid-column: 2;
-  font-size: var(--fs-12);
-  color: var(--hud-text-sub);
-}
-.sim-field-form {
-  display: flex;
-  gap: 8px;
-}
-.sim-input,
-.sim-select {
-  min-width: 0;
-  width: 100%;
-  padding: 5px 8px;
-  border: none;
-  background: var(--hud-bg);
-  color: var(--hud-text);
-  font-family: var(--font-mono);
-  font-size: var(--fs-14);
-  box-shadow: inset 0 0 0 1px var(--hud-line);
-}
-.sim-input:focus,
-.sim-select:focus {
-  outline: none;
-  box-shadow: inset 0 0 0 2px var(--gold);
-}
-.sim-select option {
-  background: var(--navy);
-}
-/* 選ぶ欄は、ブラウザの標準の矢印を消して自作の印を重ねる */
-.sim-select-wrap {
-  position: relative;
-  display: block;
-  min-width: 0;
-}
-.sim-select {
-  appearance: none;
-  padding-right: 26px;
-  cursor: pointer;
-}
-.sim-select-wrap > svg {
-  position: absolute;
-  top: 50%;
-  right: 8px;
-  transform: translateY(-50%);
-  color: var(--gold);
-  pointer-events: none;
-}
-/* 表の中の選ぶ欄は、細くても「選ぶ」と選んだ値が読める幅を残す */
-.sim-table .sim-select-wrap {
-  min-width: 82px;
-}
-.sim-config-table {
-  margin-top: 6px;
-}
+
+/* ---------- 答える ---------- */
 .sim-question {
   margin-bottom: 14px;
   padding: 8px 12px 10px;
@@ -649,34 +962,7 @@
   background: linear-gradient(180deg, var(--gold-light), var(--gold));
 }
 
-/* ---------- 操作の文 ---------- */
-.sim-statements {
-  flex: none;
-  border-top: 1px solid var(--hud-line);
-  background: var(--hud-bg-strong);
-}
-.sim-log {
-  max-height: 92px;
-  margin: 0;
-  padding: 6px 16px;
-  overflow-y: auto;
-  list-style: none;
-  font-size: var(--fs-13);
-}
-.sim-log-empty {
-  color: var(--hud-text-sub);
-}
-.sim-log-line code {
-  font-family: var(--font-mono);
-  color: var(--ok);
-}
-.sim-log-line.is-error code {
-  color: var(--info);
-}
-.sim-log-said {
-  margin-left: 10px;
-  color: var(--hud-text-sub);
-}
+/* ---------- 端末と SQL の「調べて答える」欄（実戦の左の答えの形。src/screens/lesson/PracticeStage.tsx） ---------- */
 .sim-command {
   display: flex;
   align-items: center;
@@ -689,20 +975,95 @@
   font-weight: 700;
   color: var(--gold);
 }
+.sim-input {
+  min-width: 0;
+  width: 100%;
+  padding: 5px 8px;
+  border: none;
+  background: var(--hud-bg);
+  color: var(--hud-text);
+  font-family: var(--font-mono);
+  font-size: var(--fs-14);
+  box-shadow: inset 0 0 0 1px var(--hud-line);
+}
+.sim-input:focus {
+  outline: none;
+  box-shadow: inset 0 0 0 2px var(--gold);
+}
 .sim-input.is-command {
   flex: 1;
 }
-.sim-forms {
-  border-top: none;
-  padding-top: 0;
+
+/* ---------- 動き ---------- */
+@keyframes sim-flow {
+  from { offset-distance: 0%; opacity: 0; }
+  15% { opacity: 1; }
+  85% { opacity: 1; }
+  to { offset-distance: 100%; opacity: 0; }
+}
+@keyframes sim-packet {
+  from { offset-distance: 0%; }
+  to { offset-distance: 100%; }
+}
+@keyframes sim-wire-in {
+  from { stroke-dashoffset: 40; stroke: var(--gold-light); }
+}
+@keyframes sim-arrive {
+  0% { box-shadow: inset 0 0 0 2px var(--hud-line); }
+  40% { box-shadow: inset 0 0 0 3px var(--ok), 0 0 22px var(--ok); transform: scale(1.08); }
+  100% { box-shadow: inset 0 0 0 2px var(--ok), 0 0 8px var(--ok); }
+}
+@keyframes sim-stuck {
+  from { box-shadow: inset 0 0 0 2px var(--hud-line); }
+}
+@keyframes sim-took {
+  0% { box-shadow: inset 0 0 0 2px var(--ok), 0 0 20px var(--ok); }
+  100% { box-shadow: inset 0 0 0 1px var(--hud-line); }
+}
+@keyframes sim-refuse {
+  0%, 100% { transform: none; }
+  20% { transform: translateX(-5px); box-shadow: inset 0 0 0 3px var(--bad), 0 0 22px var(--bad); }
+  45% { transform: translateX(5px); }
+  70% { transform: translateX(-3px); }
+}
+@keyframes sim-shake {
+  0%, 100% { transform: none; }
+  30% { transform: translateX(-4px); }
+  60% { transform: translateX(4px); }
+}
+@keyframes sim-count {
+  from { transform: scale(1.5); color: var(--gold-light); }
+}
+@keyframes sim-rail {
+  from { transform: scaleY(0); }
+}
+@keyframes sim-stage-run {
+  from { opacity: 0.45; box-shadow: none; }
+  50% { box-shadow: inset 0 0 0 2px var(--gold), 0 0 14px var(--gold); }
+  to { opacity: 1; }
+}
+@keyframes sim-stage-stop {
+  from { opacity: 0.45; box-shadow: none; }
+  50% { box-shadow: inset 0 0 0 3px var(--bad), 0 0 18px var(--bad); }
+  to { opacity: 1; box-shadow: inset 0 0 0 2px var(--bad); }
+}
+/* 動きを減らす設定（OS の設定とゲームの設定）: 動きを即時にする（終わりの形をすぐ出す）。光の粒は出さない */
+@media (prefers-reduced-motion: reduce) {
+  .sim-console *,
+  .sim-ghost {
+    animation: none !important;
+    transition: none !important;
+  }
+  .sim-particle {
+    display: none;
+  }
+}
+:root[data-motion='reduced'] .sim-particle {
+  display: none;
 }
 
-/* 縦の低い画面（1280×720 など）では、文の記録を短くして、操作する所を広く取る */
+/* 縦の低い画面（1280×720 など）では、置くの枠を低くし、置き場の札が送らずに見えるようにする */
 @media (max-height: 820px) {
-  .sim-log {
-    max-height: 56px;
-  }
-  /* 割り振るの枠を低くし、置き場の札が送らずに見えるようにする */
   .sim-slot {
     min-height: 84px;
   }
@@ -716,7 +1077,7 @@
   container-type: inline-size;
 }
 @container (max-width: 560px) {
-  .sim-node-button {
+  .sim-node-body {
     min-width: 76px;
     padding: 6px 6px 4px;
   }

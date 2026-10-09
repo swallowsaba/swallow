@@ -267,10 +267,17 @@
         "hints": [
           "つながらない時は、近い所から確かめる。家の中どうしなら、ルータの手前で済む。",
           "「家のもう 1 台へ送る」を押す。",
-          "`send pc pc2` と入れる。"
+          "「家のもう 1 台へ送る」を押す。"
         ],
         "expectedErrors": [
           "not-reached"
+        ],
+        "actions": [
+          {
+            "op": "send",
+            "from": "pc",
+            "to": "pc2"
+          }
         ]
       },
       {
@@ -284,11 +291,23 @@
         "hints": [
           "「サーバへ送る」を押すと、どこまで届いたかが知らせに出る。そこから先を見よう。",
           "ルータまでは届くが、その先のプロバイダとの線が無い。ルータとプロバイダをつなぐ。",
-          "`connect router isp` `send pc server` の順に入れる。"
+          "「ルータ」から「プロバイダ」へドラッグして線を引く、「サーバへ送る」を押す。"
         ],
         "expectedErrors": [
           "not-reached",
           "sim-forbidden"
+        ],
+        "actions": [
+          {
+            "op": "connect",
+            "a": "router",
+            "b": "isp"
+          },
+          {
+            "op": "send",
+            "from": "pc",
+            "to": "server"
+          }
         ]
       }
     ]

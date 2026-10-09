@@ -7,8 +7,8 @@ import { createClock } from '@/engines/kernel/clock';
 import { createDefaultRegistry } from '@/engines/kernel/commands';
 import type { ShellState } from '@/engines/kernel/registry';
 import { restoreShell, snapshotShell, type SessionOptions, type ShellSnapshotData } from '@/engines/kernel/session';
-import { applyStatement, createSim, isSettled, SIM_VERBS } from '@/engines/sim/sim';
-import type { SimState } from '@/engines/sim/types';
+import { applyAction, createSim, describeAction, isSettled } from '@/engines/sim/sim';
+import type { SimAction, SimOutcome, SimState } from '@/engines/sim/types';
 import type { SqlDb } from '@/engines/db/check';
 import type { PracticeAttempt, PracticeSession } from '@/game/types';
 import {
@@ -24,7 +24,7 @@ import { SIM_NAMES } from './sim/simNames';
 import { SqlConsole } from './sql/SqlPractice';
 import { runStatement, setupSqlOf, tablesOf, type SqlLogEntry } from './sql/sqlRun';
 import { TerminalView, type TerminalHandle } from './terminal/TerminalView';
-import { editorSaved, simSaved, sqlSaved, terminalSaved, useRestored, type EditorSaved, type SimLogEntry, type SimSaved, type SqlSaved, type TerminalSaved } from './savedPractice';
+import { editorSaved, simSaved, sqlSaved, terminalSaved, useRestored, type EditorSaved, type SimSaved, type SqlSaved, type TerminalSaved } from './savedPractice';
 import { sfx } from '@/lib/sfx';
 import { useSettings } from '../settingsContext';
 import { useConst } from './terminal/useConst';
@@ -119,7 +119,7 @@ function PracticeLeft({ p, run, kind, onHint, danger, onTerm, action, onBack, ba
   const finished = isFinished(p, run);
   const step = currentStep(p, run);
   const shown = step ? (run.hints[step.id] ?? 0) : 0;
-  const answerWord = p.mode === 'simulation' ? 'そのまま入れられる答え' : p.mode === 'editor' ? 'そのまま保存できる答え' : p.mode === 'sql' ? 'そのまま実行できる答え' : 'そのまま打てる答え';
+  const answerWord = p.mode === 'simulation' ? 'そのまま通る操作' : p.mode === 'editor' ? 'そのまま保存できる答え' : p.mode === 'sql' ? 'そのまま実行できる答え' : 'そのまま打てる答え';
   return (
     <section className="stage stage-practice" aria-label="実戦" data-testid="stage-practice">
       <p className="stage-count">
@@ -277,60 +277,52 @@ function TerminalPractice({ practice: p, sessionId, saved, onSave, onFinish, onT
 
 /* ---------- 画面で操作する模擬（模） ---------- */
 
-export type { SimLogEntry } from './savedPractice';
-
 function SimPractice({ practice: p, sessionId, saved, onSave, onFinish, onTerm, right, action, onBack, backLabel = 'クイズへ戻る' }: PracticeStageProps) {
   // 開いた時の保存だけを見る（保存するたびに saved は新しくなる。ヒントを開いただけで「中断した所から」と言わない）
   const fresh = useMemo(() => createSim(p.environment, p.setup), [p]);
   const restored = useRestored(() => simSaved(p, fresh, saved?.engineState));
   const [resumed, setResumed] = useState(restored !== undefined);
   const [sim, setSim] = useState<SimState>(restored?.sim ?? fresh);
-  const [log, setLog] = useState<SimLogEntry[]>(restored?.log ?? []);
   const simRef = useRef(sim);
   simRef.current = sim;
-  const logRef = useRef(log);
-  logRef.current = log;
   const r = useRun(p, restored?.run);
 
-  const save = (next: PracticeRun, s: SimState, l: SimLogEntry[]): void => {
-    onSave({ lessonId: sessionId, stepIndex: next.stepIndex, engineState: { sim: s, log: l, run: next } satisfies SimSaved, savedAt: nowIso() });
+  const save = (next: PracticeRun, s: SimState): void => {
+    onSave({ lessonId: sessionId, stepIndex: next.stepIndex, engineState: { sim: s, run: next } satisfies SimSaved, savedAt: nowIso() });
   };
 
-  const send = (line: string): void => {
-    const text = line.trim();
-    if (text === '') return;
-    const out = applyStatement(simRef.current, text);
-    const nextLog = [...logRef.current, { line: text, error: out.error }];
+  /** 画面の操作（ドラッグ・ボタン）を 1 つ受け取る。記録には、画面の名前で言い表した操作を残す */
+  const act = (a: SimAction): SimOutcome => {
+    const before = simRef.current;
+    const out = applyAction(before, a);
+    const said = describeAction(before, a);
     simRef.current = out.state;
-    logRef.current = nextLog;
     setSim(out.state);
-    setLog(nextLog);
-    const outcome = afterCommand(p, r.runRef.current, { line: text, stderr: out.error ?? '', sim: out.state, settled: out.error === null && isSettled(out.state) }, ERROR_GUIDES);
-    save(r.took(outcome, out.error ?? '', text), out.state, nextLog);
+    const outcome = afterCommand(p, r.runRef.current, { line: said, stderr: out.error ?? '', sim: out.state, settled: out.error === null && isSettled(out.state) }, ERROR_GUIDES);
+    save(r.took(outcome, out.error ?? '', said), out.state);
+    return out;
   };
 
   const reset = (): void => {
     simRef.current = fresh;
-    logRef.current = [];
     setSim(fresh);
-    setLog([]);
     setResumed(false);
-    save(r.restart(), fresh, []);
+    save(r.restart(), fresh);
   };
 
+  const step = currentStep(p, r.run);
   const kind = SIM_NAMES[sim.type];
   return (
     <>
       <PracticeLeft
-        p={p} run={r.run} kind={`${PRACTICE_NAMES[p.mode]}（${kind}）`} onHint={() => save(r.hint(), simRef.current, logRef.current)} danger={r.danger} onTerm={onTerm}
+        p={p} run={r.run} kind={`${PRACTICE_NAMES[p.mode]}（${kind}）`} onHint={() => save(r.hint(), simRef.current)} danger={r.danger} onTerm={onTerm}
         action={action} onBack={onBack} backLabel={backLabel} onFinish={() => onFinish(attemptOf(p, r.runRef.current))}
       />
       <Slot to={right}>
         <SimConsole
           sim={sim}
-          log={log}
-          verbs={SIM_VERBS[sim.type]}
-          send={send}
+          act={act}
+          expr={step?.check.kind === 'sim' ? step.check.expr : null}
           onReset={reset}
           restored={resumed}
           error={r.error ? <ErrorGuidePanel error={r.error} onTerm={onTerm} onClose={() => r.setError(null)} /> : null}

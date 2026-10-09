@@ -25,13 +25,8 @@ export interface TerminalSaved {
   shell: ShellSnapshotData;
   run: PracticeRun;
 }
-export interface SimLogEntry {
-  line: string;
-  error: string | null;
-}
 export interface SimSaved {
   sim: SimState;
-  log: SimLogEntry[];
   run: PracticeRun;
 }
 export interface SqlSaved {
@@ -153,7 +148,8 @@ export const simSaved = (p: Practice, fresh: SimState, raw: unknown): Restored<S
     raw,
     z.object({
       sim: simStateSchema(fresh),
-      log: z.array(z.object({ line: z.string(), error: z.string().nullable() }).strict()),
+      /** 前の版の、操作の文の記録（今は使わない。あっても読める） */
+      log: z.array(z.unknown()).optional(),
       run: runSchema(p),
     }).strict() as unknown as ZodType<SimSaved>,
   );

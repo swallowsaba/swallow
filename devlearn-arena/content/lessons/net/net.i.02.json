@@ -268,6 +268,22 @@
         ],
         "expectedErrors": [
           "net-nat-wrong"
+        ],
+        "actions": [
+          {
+            "op": "del",
+            "table": "forward",
+            "index": 1
+          },
+          {
+            "op": "add",
+            "table": "forward",
+            "row": {
+              "outport": "443",
+              "to": "192.168.1.10",
+              "toport": "443"
+            }
+          }
         ]
       },
       {
@@ -285,6 +301,13 @@
         ],
         "expectedErrors": [
           "net-nat-wrong"
+        ],
+        "actions": [
+          {
+            "op": "set",
+            "field": "fw443",
+            "value": "開ける"
+          }
         ]
       }
     ]

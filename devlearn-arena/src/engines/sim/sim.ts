@@ -1,15 +1,17 @@
 import { ipToInt, parseCidr } from '@/engines/net/subnet';
 import {
   assignSetupSchema, configSetupSchema, connectSetupSchema, orderSetupSchema, readSetupSchema,
-  type AssignState, type ConfigState, type ConnectState, type OrderState, type Panel, type ReadState, type SimOutcome, type SimState,
+  type AssignState, type ConfigState, type ConnectState, type OrderState, type Panel, type ReadState, type SimAction, type SimOutcome, type SimState,
 } from './types';
 
 /**
- * 画面で操作する模擬環境（模）（docs/content-spec.md 2.4.1、docs/decisions.md D-16）。純粋な計算。
+ * 画面で操作する模擬環境（模）（docs/content-spec.md 2.4.1、docs/decisions.md D-16、REWORK-PRACTICE.txt）。純粋な計算。
  *
- * - 状態は setup から作り、操作の文（connect A B など）を 1 つずつ与えて変える。画面の操作も同じ文を通る
+ * - 状態は setup から作り、操作（SimAction）を 1 つずつ与えて変える（applyAction）。
+ *   画面のドラッグ・ボタンと、最後のヒントの再生（テスト）が同じ関数を通る。文を打って操作する経路は無い
  * - 誤った操作は、状態を変えずにエラーの文を返す（エラーの解説が match で当たる）
  * - 達成条件は、式（link A B など）を今の状態で判定する（holds）
+ * - 動きで見せるための計算（送った荷物の道すじ・並べた流れの止まる所・置き違えた札）もここで行う
  */
 
 export const SIM_TYPES = {
@@ -24,10 +26,10 @@ export type SimEnvironmentId = keyof typeof SIM_TYPES;
 
 export const isSimEnvironment = (id: string): id is SimEnvironmentId => Object.hasOwn(SIM_TYPES, id);
 
-/** 型ごとの操作の名前（画面の「使える操作」と、誤りの文に出す） */
-export const SIM_VERBS: Record<SimState['type'], string[]> = {
+/** 型ごとに使える操作 */
+const OPS: Record<SimState['type'], readonly SimAction['op'][]> = {
   connect: ['connect', 'cut', 'start', 'send'],
-  order: ['order'],
+  order: ['arrange'],
   assign: ['put', 'take'],
   config: ['set', 'add', 'del'],
   read: ['answer'],
@@ -65,13 +67,17 @@ export function createSim(environment: string, setup: unknown): SimState {
       const s = assignSetupSchema.parse(setup);
       unique(s.items.map((i) => i.id), '札');
       const slots = unique(s.slots.map((x) => x.id), '枠');
-      for (const i of s.items) need(slots, Object.keys(i.time ?? {}), `${i.id} の time`);
-      let state: SimState = { type: 'assign', setup: s, placed: {} };
+      for (const i of s.items) {
+        need(slots, Object.keys(i.time ?? {}), `${i.id} の time`);
+        need(slots, Object.keys(i.refuse ?? {}), `${i.id} の refuse`);
+      }
+      // 初めの割り振りは、動かせない札（keep）も置く
+      let state: AssignState = { type: 'assign', setup: s, placed: {} };
       for (const [item, to] of Object.entries(s.initial ?? {})) {
         for (const slot of Array.isArray(to) ? to : [to]) {
-          const r = applyStatement(state, `put ${item} ${slot}`);
+          const r = assignOp(state, { op: 'put', item, slot }, true);
           if (r.error) throw new Error(`初めの割り振り: ${r.error}`);
-          state = r.state;
+          state = r.state as AssignState;
         }
       }
       checkPanels(state);
@@ -144,57 +150,60 @@ function need(ids: ReadonlySet<string>, refs: string[], where: string): void {
 const fail = (state: SimState, error: string): SimOutcome => ({ state, error });
 const ok = (state: SimState): SimOutcome => ({ state, error: null });
 
-/** 操作の文を 1 つ与える。空の行は何もしない */
-export function applyStatement(state: SimState, line: string): SimOutcome {
-  const words = line.trim().split(/\s+/).filter(Boolean);
-  const [verb, ...args] = words;
-  if (!verb) return ok(state);
-  if (!SIM_VERBS[state.type].includes(verb)) return fail(state, `使えない操作: ${verb}（ここで使える操作: ${SIM_VERBS[state.type].join('・')}）`);
+/** 操作を 1 つ与える。この型で使えない操作・無い物を指す操作は、状態を変えずにエラーの文を返す */
+export function applyAction(state: SimState, action: SimAction): SimOutcome {
+  if (!OPS[state.type].includes(action.op)) return fail(state, `この画面ではできない操作: ${action.op}`);
   switch (state.type) {
-    case 'connect': return connectOp(state, verb, args);
-    case 'order': return arrange(state, args.join(' '));
-    case 'assign': return assignOp(state, verb, args);
-    case 'config': return configOp(state, verb, args, line);
-    case 'read': return readOp(state, args);
+    case 'connect': return connectOp(state, action);
+    case 'order': return action.op === 'arrange' ? arrange(state, action.stages) : fail(state, `この画面ではできない操作: ${action.op}`);
+    case 'assign': return assignOp(state, action, false);
+    case 'config': return configOp(state, action);
+    case 'read': return action.op === 'answer' ? readOp(state, action.question, action.value) : fail(state, `この画面ではできない操作: ${action.op}`);
   }
 }
 
 /* つなぐ */
 
 const nodeOf = (s: ConnectState, id: string) => s.setup.nodes.find((n) => n.id === id);
+const nodeLabel = (s: ConnectState, id: string): string => nodeOf(s, id)?.label ?? id;
 const sameLink = (s: ConnectState, [a, b]: [string, string], x: string, y: string): boolean =>
   (a === x && b === y) || (!s.setup.directed && a === y && b === x);
 
 export const isUp = (s: ConnectState, id: string): boolean => !nodeOf(s, id)?.down || s.up.includes(id);
 
-function connectOp(s: ConnectState, verb: string, args: string[]): SimOutcome {
-  const want = verb === 'start' ? 1 : 2;
-  if (args.length !== want) return fail(s, verb === 'start' ? '書き方: start 機器' : `書き方: ${verb} 部品 部品（2 つの ID を空白で区切る）`);
-  for (const a of args) if (!nodeOf(s, a)) return fail(s, `「${a}」という部品は無い`);
-  if (verb === 'send') {
-    const [from = '', to = ''] = args;
-    if (!isUp(s, from)) return fail(s, `届かない: 送り元の「${from}」が止まっている`);
+/** 2 つの部品をつなげるか。つなげなければ、その理由の文（線を引く前に、ドラッグの途中で示す） */
+export function connectProblem(s: ConnectState, a: string, b: string): string | null {
+  if (!nodeOf(s, a) || !nodeOf(s, b)) return `「${!nodeOf(s, a) ? a : b}」という部品は無い`;
+  if (a === b) return '同じ部品どうしはつなげない';
+  if (s.links.some((l) => sameLink(s, l, a, b))) return `「${nodeLabel(s, a)}」と「${nodeLabel(s, b)}」は、もうつながっている`;
+  const forbid = s.setup.forbid?.find((f) => (f.a === a && f.b === b) || (f.a === b && f.b === a));
+  return forbid ? forbid.message : null;
+}
+
+function connectOp(s: ConnectState, action: SimAction): SimOutcome {
+  if (action.op === 'start') {
+    if (!nodeOf(s, action.node)) return fail(s, `「${action.node}」という部品は無い`);
+    if (isUp(s, action.node)) return fail(s, `「${nodeLabel(s, action.node)}」は、もう動いている`);
+    return ok({ ...s, up: [...s.up, action.node] });
+  }
+  if (action.op === 'send') {
+    const { from, to } = action;
+    for (const x of [from, to]) if (!nodeOf(s, x)) return fail(s, `「${x}」という部品は無い`);
+    if (!isUp(s, from)) return fail(s, `届かない: 送り元の「${nodeLabel(s, from)}」が止まっている`);
     if (!reaches(s, from, to)) {
       const far = reachable(s, from).filter((x) => x !== from);
-      return fail(s, `届かない: 「${from}」から届くのは ${far.length > 0 ? far.map((x) => `「${x}」`).join('・') : 'どこにも無い'}まで。「${to}」へ進めない`);
+      return fail(s, `届かない: 「${nodeLabel(s, from)}」から届くのは ${far.length > 0 ? far.map((x) => `「${nodeLabel(s, x)}」`).join('・') : 'どこにも無い'}まで。「${nodeLabel(s, to)}」へ進めない`);
     }
     return ok({ ...s, sent: [...s.sent.filter(([a, b]) => !(a === from && b === to)), [from, to]] });
   }
-  if (verb === 'start') {
-    const [a = ''] = args;
-    if (isUp(s, a)) return fail(s, `「${a}」は、もう動いている`);
-    return ok({ ...s, up: [...s.up, a] });
-  }
-  const [a = '', b = ''] = args;
-  if (a === b) return fail(s, '同じ部品どうしはつなげない');
-  const linked = s.links.some((l) => sameLink(s, l, a, b));
-  if (verb === 'cut') {
-    if (!linked) return fail(s, `「${a}」と「${b}」はつながっていない`);
+  if (action.op !== 'connect' && action.op !== 'cut') return fail(s, `この画面ではできない操作: ${action.op}`);
+  const { a, b } = action;
+  if (action.op === 'cut') {
+    if (!s.links.some((l) => sameLink(s, l, a, b))) return fail(s, `「${nodeLabel(s, a)}」と「${nodeLabel(s, b)}」はつながっていない`);
     return ok({ ...s, links: s.links.filter((l) => !sameLink(s, l, a, b)), sent: [] });
   }
-  if (linked) return fail(s, `「${a}」と「${b}」は、もうつながっている`);
-  const forbid = s.setup.forbid?.find((f) => (f.a === a && f.b === b) || (f.a === b && f.b === a));
-  if (forbid) return fail(s, forbid.message);
+  const problem = connectProblem(s, a, b);
+  if (problem) return fail(s, problem);
   // 線を足しても、届いた道は残る（届いた記録を消すのは、線を外した時だけ）
   return ok({ ...s, links: [...s.links, [a, b]] });
 }
@@ -206,9 +215,8 @@ export function reachable(s: ConnectState, from: string): string[] {
   const queue = [from];
   while (queue.length > 0) {
     const at = queue.shift() ?? '';
-    for (const [a, b] of s.links) {
-      const next = a === at ? b : !s.setup.directed && b === at ? a : null;
-      if (next === null || seen.has(next) || !isUp(s, next)) continue;
+    for (const next of neighbors(s, at)) {
+      if (seen.has(next) || !isUp(s, next)) continue;
       seen.add(next);
       queue.push(next);
     }
@@ -216,33 +224,76 @@ export function reachable(s: ConnectState, from: string): string[] {
   return [...seen];
 }
 
+function neighbors(s: ConnectState, at: string): string[] {
+  return s.links.flatMap(([a, b]) => (a === at ? [b] : !s.setup.directed && b === at ? [a] : []));
+}
+
 /** 線をたどって届くか（止まった機器は通れない） */
 export const reaches = (s: ConnectState, from: string, to: string): boolean => isUp(s, to) && reachable(s, from).includes(to);
 
+/** 動いている機器だけを通る、最も短い道（from から goal まで。届かなければ null） */
+function shortest(s: ConnectState, from: string, goal: string): string[] | null {
+  if (!isUp(s, from)) return null;
+  const prev = new Map<string, string | null>([[from, null]]);
+  const queue = [from];
+  while (queue.length > 0) {
+    const at = queue.shift() ?? '';
+    if (at === goal) break;
+    for (const next of neighbors(s, at)) {
+      if (prev.has(next) || !isUp(s, next)) continue;
+      prev.set(next, at);
+      queue.push(next);
+    }
+  }
+  if (!prev.has(goal)) return null;
+  const path: string[] = [];
+  for (let at: string | null = goal; at !== null; at = prev.get(at) ?? null) path.unshift(at);
+  return path;
+}
+
+/**
+ * 送った荷物の道すじ（画面で、荷物が線を進む動きに使う）。
+ * 届けば宛先までの道、届かなければ、届く所のうち宛先に最も近い（盤の上で）部品までの道と、そこで止まったこと
+ */
+export function sendRoute(s: ConnectState, from: string, to: string): { path: string[]; arrived: boolean } {
+  const direct = isUp(s, to) ? shortest(s, from, to) : null;
+  if (direct) return { path: direct, arrived: true };
+  const goal = nodeOf(s, to);
+  const near = reachable(s, from)
+    .map((id) => {
+      const n = nodeOf(s, id);
+      return { id, d: n && goal ? (n.x - goal.x) ** 2 + (n.y - goal.y) ** 2 : 0 };
+    })
+    .sort((p, q) => p.d - q.d)[0];
+  return { path: near ? (shortest(s, from, near.id) ?? [from]) : [from], arrived: false };
+}
+
 /* 並べる */
 
-function arrange(s: OrderState, text: string): SimOutcome {
-  const stages = text.trim() === '' ? [] : text.trim().split(/\s+/).map((g) => g.split(',').filter(Boolean));
+function arrange(s: OrderState, stages: readonly (readonly string[])[]): SimOutcome {
   const seen = new Set<string>();
-  for (const g of stages) {
+  const next = stages.map((g) => [...g]).filter((g) => g.length > 0);
+  for (const g of next) {
     if (g.length > 1 && !s.setup.parallel) return fail(s, '同じ段に 2 つは並べられない（1 つずつ順に並べる）');
     for (const i of g) {
       if (!s.setup.items.some((x) => x.id === i)) return fail(s, `「${i}」という札は無い`);
-      if (seen.has(i)) return fail(s, `「${i}」を 2 回並べた`);
+      if (seen.has(i)) return fail(s, `「${itemLabel(s, i)}」を 2 回並べた`);
       seen.add(i);
     }
   }
-  return ok({ ...s, stages });
+  return ok({ ...s, stages: next });
 }
 
-/** 並びを操作の文にする（画面の操作を文で残す） */
-export const orderStatement = (stages: string[][]): string => ['order', ...stages.filter((g) => g.length > 0).map((g) => g.join(','))].join(' ').trim();
+const itemLabel = (s: OrderState | AssignState, id: string): string => s.setup.items.find((i) => i.id === id)?.label ?? id;
 
 export const stageOf = (s: OrderState, id: string): number => s.stages.findIndex((g) => g.includes(id));
 
 /** 各段の最も長い時間の合計 */
 export const orderTime = (s: OrderState): number =>
-  s.stages.reduce((sum, g) => sum + Math.max(0, ...g.map((i) => s.setup.items.find((x) => x.id === i)?.minutes ?? 0)), 0);
+  s.stages.reduce((sum, g) => sum + stageTime(s, g), 0);
+
+/** 1 つの段の時間（同じ段の札は並行して進むので、最も長い札の時間） */
+export const stageTime = (s: OrderState, g: readonly string[]): number => Math.max(0, ...g.map((i) => s.setup.items.find((x) => x.id === i)?.minutes ?? 0));
 
 /** 先に要る物が、前の段に無い札 */
 export function unmetNeeds(s: OrderState): { item: string; needs: string }[] {
@@ -258,7 +309,30 @@ export function unmetNeeds(s: OrderState): { item: string; needs: string }[] {
   return out;
 }
 
-/* 割り振る */
+/**
+ * 並べた流れを上の段から流した時に、止まる所（画面で、上から順に処理が進む動きに使う）。
+ * 止まるのは、流れに入れると止まる札（stop）か、先に要る物がまだ済んでいない札のある段。止まらなければ null
+ */
+export function orderStop(s: OrderState): { stage: number; item: string; reason: string } | null {
+  for (const [at, g] of s.stages.entries()) {
+    for (const id of g) {
+      const item = s.setup.items.find((x) => x.id === id);
+      if (item?.stop) return { stage: at, item: id, reason: item.stop };
+      const missing = (item?.needs ?? []).find((n) => {
+        const before = stageOf(s, n);
+        return before < 0 || before >= at;
+      });
+      if (missing !== undefined) {
+        const where = stageOf(s, missing);
+        const why = where < 0 ? 'まだ流れに無い' : where === at ? '同じ段で、まだ終わっていない' : 'まだ後の段にある';
+        return { stage: at, item: id, reason: `「${itemLabel(s, id)}」には、先に「${itemLabel(s, missing)}」が要る（${why}）` };
+      }
+    }
+  }
+  return null;
+}
+
+/* 置く */
 
 export const usedOf = (s: AssignState, slot: string): number =>
   Object.entries(s.placed).reduce((sum, [item, slots]) => sum + (slots.includes(slot) ? (s.setup.items.find((i) => i.id === item)?.size ?? 0) : 0), 0);
@@ -269,85 +343,102 @@ export const assignTime = (s: AssignState): number =>
     return sum + slots.reduce((x, slot) => x + (t[slot] ?? 0), 0);
   }, 0);
 
-function assignOp(s: AssignState, verb: string, args: string[]): SimOutcome {
-  const [itemId = '', slotId] = args;
-  const item = s.setup.items.find((i) => i.id === itemId);
-  if (verb === 'take') {
-    if (args.length < 1 || args.length > 2) return fail(s, '書き方: take 札（枠を書くと、その枠からだけ出す）');
-    if (!item) return fail(s, `「${itemId}」という札は無い`);
-    const now = s.placed[itemId] ?? [];
-    if (now.length === 0 || (slotId !== undefined && !now.includes(slotId))) return fail(s, `「${itemId}」は${slotId ? `「${slotId}」に` : 'どの枠にも'}入っていない`);
-    const rest = slotId === undefined ? [] : now.filter((x) => x !== slotId);
-    const placed = { ...s.placed };
-    if (rest.length > 0) placed[itemId] = rest;
-    else delete placed[itemId];
-    return ok({ ...s, placed });
-  }
-  if (args.length !== 2 || slotId === undefined) return fail(s, '書き方: put 札 枠');
-  if (!item) return fail(s, `「${itemId}」という札は無い`);
-  const slot = s.setup.slots.find((x) => x.id === slotId);
-  if (!slot) return fail(s, `「${slotId}」という枠は無い`);
-  const now = s.placed[itemId] ?? [];
-  if (now.includes(slotId)) return fail(s, `「${itemId}」は、もう「${slotId}」に入っている`);
-  if (now.length > 0 && !item.multi) return fail(s, `「${itemId}」は、もう「${now.join('・')}」に入っている。1 つの札は 1 つの枠にだけ入る（先に take で出す）`);
-  if (slot.capacity !== undefined) {
-    const after = usedOf(s, slotId) + (item.size ?? 0);
-    if (after > slot.capacity && slot.full !== undefined) return fail(s, slot.full);
-    if (after > slot.capacity) return fail(s, `「${slotId}」に入りきらない（容量 ${String(slot.capacity)}${slot.unit ?? ''}、入れると ${String(after)}${slot.unit ?? ''}）`);
-  }
-  return ok({ ...s, placed: { ...s.placed, [itemId]: [...now, slotId] } });
+const slotLabel = (s: AssignState, id: string): string => s.setup.slots.find((x) => x.id === id)?.label ?? id;
+
+/** 札を出した後の割り振り（slot を書けば、その枠からだけ出す） */
+function without(placed: Record<string, string[]>, item: string, slot?: string): Record<string, string[]> {
+  const rest = slot === undefined ? [] : (placed[item] ?? []).filter((x) => x !== slot);
+  const next = { ...placed };
+  if (rest.length > 0) next[item] = rest;
+  else delete next[item];
+  return next;
 }
 
-/* 設定する */
+/** 置く・出す。札は 1 つの枠にだけ入る（multi の札を除く）ので、別の枠に入っている札を置くと、そこから移る */
+function assignOp(s: AssignState, action: SimAction, initial: boolean): SimOutcome {
+  if (action.op !== 'put' && action.op !== 'take') return fail(s, `この画面ではできない操作: ${action.op}`);
+  const item = s.setup.items.find((i) => i.id === action.item);
+  if (!item) return fail(s, `「${action.item}」という札は無い`);
+  const now = s.placed[item.id] ?? [];
+  if (action.op === 'take') {
+    if (now.length === 0 || (action.slot !== undefined && !now.includes(action.slot))) return fail(s, `「${item.label}」は${action.slot ? `「${slotLabel(s, action.slot)}」に` : 'どの枠にも'}入っていない`);
+    if (item.keep) return fail(s, item.keep);
+    return ok({ ...s, placed: without(s.placed, item.id, action.slot) });
+  }
+  const slot = s.setup.slots.find((x) => x.id === action.slot);
+  if (!slot) return fail(s, `「${action.slot}」という枠は無い`);
+  if (now.includes(slot.id)) return fail(s, `「${item.label}」は、もう「${slot.label}」に入っている`);
+  if (!initial && item.keep && now.length > 0) return fail(s, item.keep);
+  const refused = item.refuse?.[slot.id];
+  if (refused) return fail(s, refused);
+  // 移す札は、元の枠から出してから容量を数える
+  const base = item.multi || now.length === 0 ? s.placed : without(s.placed, item.id);
+  if (slot.capacity !== undefined) {
+    const after = usedOf({ ...s, placed: base }, slot.id) + (item.size ?? 0);
+    if (after > slot.capacity && slot.full !== undefined) return fail(s, slot.full);
+    if (after > slot.capacity) return fail(s, `「${slot.label}」に入りきらない（容量 ${String(slot.capacity)}${slot.unit ?? ''}、入れると ${String(after)}${slot.unit ?? ''}）`);
+  }
+  return ok({ ...s, placed: { ...base, [item.id]: [...(base[item.id] ?? []), slot.id] } });
+}
 
-function configOp(s: ConfigState, verb: string, args: string[], line: string): SimOutcome {
-  if (verb === 'set') {
-    const [fieldId = ''] = args;
-    // 値は空白を含んでよい（欄の ID の後ろ全て）
-    const value = line.trim().replace(/^set\s+\S+\s*/, '');
-    const field = s.setup.fields?.find((f) => f.id === fieldId);
-    if (!field) return fail(s, `「${fieldId}」という欄は無い`);
-    if (value === '') return fail(s, `書き方: set ${fieldId} 値`);
+/** 達成条件の in の式のうち、今は違う枠にある札（全て置いたのに合っていない時、その札を赤く示す） */
+export function misplaced(s: AssignState, expr: string): string[] {
+  const out: string[] = [];
+  for (const raw of expr.split('&&')) {
+    const [head = '', ...args] = raw.trim().split(/\s+/);
+    if (head !== 'in') continue;
+    for (const a of args) {
+      const at = a.indexOf('=');
+      const item = a.slice(0, at);
+      if (at > 0 && !(s.placed[item] ?? []).includes(a.slice(at + 1)) && !out.includes(item)) out.push(item);
+    }
+  }
+  return out;
+}
+
+/* 設定する（作り直しの間だけ） */
+
+function configOp(s: ConfigState, action: SimAction): SimOutcome {
+  if (action.op === 'set') {
+    const field = s.setup.fields?.find((f) => f.id === action.field);
+    if (!field) return fail(s, `「${action.field}」という欄は無い`);
+    const value = action.value.trim();
     const option = field.options?.find((o) => same(o, value));
-    if (field.options && !option) return fail(s, `「${fieldId}」に「${value}」は選べない（選べる値: ${field.options.join('・')}）`);
+    if (field.options && !option) return fail(s, `「${field.label}」に「${value}」は選べない（選べる値: ${field.options.join('・')}）`);
     const blocked = field.requires?.find((r) => same(r.value, value) && !holds(s, r.expr));
     if (blocked) return fail(s, blocked.message);
-    return ok({ ...s, fields: { ...s.fields, [fieldId]: option ?? value } });
+    return ok({ ...s, fields: { ...s.fields, [field.id]: option ?? value } });
   }
-  const [tableId = '', ...rest] = args;
-  const table = s.setup.tables?.find((t) => t.id === tableId);
-  if (!table) return fail(s, `「${tableId}」という表は無い`);
-  const rows = s.tables[tableId] ?? [];
-  if (verb === 'del') {
-    const n = Number(rest[0]);
-    if (rest.length !== 1 || !Number.isInteger(n) || n < 1 || n > rows.length) return fail(s, `書き方: del ${tableId} 行の番号（1〜${String(rows.length)}）`);
-    return ok({ ...s, tables: { ...s.tables, [tableId]: rows.filter((_, i) => i !== n - 1) } });
+  if (action.op !== 'add' && action.op !== 'del') return fail(s, `この画面ではできない操作: ${action.op}`);
+  const table = s.setup.tables?.find((t) => t.id === action.table);
+  if (!table) return fail(s, `「${action.table}」という表は無い`);
+  const rows = s.tables[table.id] ?? [];
+  if (action.op === 'del') {
+    if (action.index > rows.length) return fail(s, `「${table.label}」に ${String(action.index)} 行目は無い`);
+    return ok({ ...s, tables: { ...s.tables, [table.id]: rows.filter((_, i) => i !== action.index - 1) } });
   }
   const row: Record<string, string> = {};
-  for (const pair of rest) {
-    const at = pair.indexOf('=');
-    const col = table.columns.find((c) => c.id === pair.slice(0, at));
-    if (at < 1 || !col) return fail(s, `「${pair}」は書けない（列=値 の形。列: ${table.columns.map((c) => c.id).join('・')}）`);
-    const value = pair.slice(at + 1);
+  for (const [colId, raw] of Object.entries(action.row)) {
+    const col = table.columns.find((c) => c.id === colId);
+    if (!col) return fail(s, `「${table.label}」に列「${colId}」は無い`);
+    const value = raw.trim();
+    if (value === '') continue;
     const option = col.options?.find((o) => same(o, value));
-    if (col.options && !option) return fail(s, `列「${col.id}」に「${value}」は選べない（選べる値: ${col.options.join('・')}）`);
+    if (col.options && !option) return fail(s, `列「${col.label}」に「${value}」は選べない（選べる値: ${col.options.join('・')}）`);
     row[col.id] = option ?? value;
   }
-  if (Object.keys(row).length === 0) return fail(s, `書き方: add ${tableId} ${table.columns.map((c) => `${c.id}=値`).join(' ')}`);
-  return ok({ ...s, tables: { ...s.tables, [tableId]: [...rows, row] } });
+  if (Object.keys(row).length === 0) return fail(s, `「${table.label}」に足す行が空`);
+  return ok({ ...s, tables: { ...s.tables, [table.id]: [...rows, row] } });
 }
 
 /* 読み取って答える */
 
-function readOp(s: ReadState, args: string[]): SimOutcome {
-  const [qId = '', ...rest] = args;
+function readOp(s: ReadState, qId: string, raw: string): SimOutcome {
   const q = s.setup.questions.find((x) => x.id === qId);
   if (!q) return fail(s, `「${qId}」という問いは無い`);
-  const value = rest.join(' ');
-  if (value === '') return fail(s, `書き方: answer ${qId} 値`);
-  const option = q.options?.find((o) => same(o, value));
-  if (q.options && !option) return fail(s, `「${qId}」に「${value}」は選べない（選べる値: ${q.options.join('・')}）`);
-  return ok({ ...s, answers: { ...s.answers, [qId]: option ?? value } });
+  const option = q.options.find((o) => same(o, raw));
+  if (!option) return fail(s, `「${q.prompt}」に「${raw}」は選べない`);
+  return ok({ ...s, answers: { ...s.answers, [qId]: option } });
 }
 
 /**
@@ -366,6 +457,48 @@ export function isSettled(s: SimState): boolean {
     }
     case 'connect':
       return false;
+  }
+}
+
+/* ---------- 操作を日本語で言う（記録と、エラーの小窓の「何をしたか」） ---------- */
+
+/** 操作を、画面に出ている名前で言い表す（「予約のアプリ」を「箱」に入れた、など） */
+export function describeAction(s: SimState, action: SimAction): string {
+  const q = (t: string): string => `「${t}」`;
+  switch (action.op) {
+    case 'connect': return s.type === 'connect' ? `${q(nodeLabel(s, action.a))}から${q(nodeLabel(s, action.b))}へ線を引いた` : '線を引いた';
+    case 'cut': return s.type === 'connect' ? `${q(nodeLabel(s, action.a))}と${q(nodeLabel(s, action.b))}の線を外した` : '線を外した';
+    case 'start': return s.type === 'connect' ? `${q(nodeLabel(s, action.node))}を動かした` : '動かした';
+    case 'send': return s.type === 'connect' ? (s.setup.sends?.find((x) => x.from === action.from && x.to === action.to)?.label ?? `${q(nodeLabel(s, action.from))}から${q(nodeLabel(s, action.to))}へ送った`) : '送った';
+    case 'arrange': return s.type === 'order' ? `上から ${action.stages.map((g) => g.map((i) => q(itemLabel(s, i))).join('と')).join(' → ')} の順に並べた` : '並べた';
+    case 'put': return s.type === 'assign' ? `${q(itemLabel(s, action.item))}を${q(slotLabel(s, action.slot))}に入れた` : '入れた';
+    case 'take': return s.type === 'assign' ? `${q(itemLabel(s, action.item))}を置き場に戻した` : '戻した';
+    case 'answer': return s.type === 'read' ? `${q(s.setup.questions.find((x) => x.id === action.question)?.prompt ?? action.question)}に${q(action.value)}と答えた` : '答えた';
+    case 'set': return `${q(action.field)}を${q(action.value)}にした`;
+    case 'add': return `${q(action.table)}に行を足した`;
+    case 'del': return `${q(action.table)}の ${String(action.index)} 行目を消した`;
+  }
+}
+
+/**
+ * 操作に出てくる物の名前（最後のヒントの日本語に、これが全て書いてあるかを内容の検証で確かめる。
+ * 「何をどこへ置く・つなぐ・並べる」がヒントの文から分かるように）
+ */
+export function actionNames(s: SimState, action: SimAction): string[] {
+  switch (action.op) {
+    case 'connect':
+    case 'cut':
+      return s.type === 'connect' ? [nodeLabel(s, action.a), nodeLabel(s, action.b)] : [];
+    case 'start': return s.type === 'connect' ? [nodeLabel(s, action.node)] : [];
+    case 'send': return s.type === 'connect' ? [s.setup.sends?.find((x) => x.from === action.from && x.to === action.to)?.label ?? nodeLabel(s, action.to)] : [];
+    case 'arrange': return s.type === 'order' ? action.stages.flat().map((i) => itemLabel(s, i)) : [];
+    case 'put': return s.type === 'assign' ? [itemLabel(s, action.item), slotLabel(s, action.slot)] : [];
+    case 'take': return s.type === 'assign' ? [itemLabel(s, action.item)] : [];
+    case 'answer': return [action.value];
+    case 'set':
+    case 'add':
+    case 'del':
+      return [];
   }
 }
 

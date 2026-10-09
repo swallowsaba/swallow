@@ -106,6 +106,7 @@ interface PracticeStep {
   afterward: Rich;                     // 打った後に「何が起きたか」を表示
   hints: [Rich, Rich, Rich];           // 方向 → 具体 → そのまま通る答え
   expectedErrors?: string[];           // 想定エラーの ID（content/errors）
+  actions?: SimAction[];               // 画面で操作する実戦（模）だけ: 最後のヒントで通る操作（2.4.1）
 }
 type CheckSpec =
   | { kind: 'fs'; path: string; exists?: boolean; contains?: string; lacks?: string[]; mode?: string } // lacks: どれも含まない（秘密の値が残っていない）。mode: 権限。'600' ならその値、'u+x'・'go-rwx' ならその権限が有る・無い
@@ -130,32 +131,41 @@ type CheckSpec =
 - `k8s` の式は、クラスタの状態で判定する（`src/engines/k8s/check.ts`）: `種類/名前`（区画は `@区画` を後ろに付ける。省けば default）の後に、空白で区切った `欄 比べ方 値` を並べ、全てを満たせば達成（欄が無ければ、あるかどうか）。別の資源の条件は ` && ` でつなぐ。比べ方は `>=` `<=` `=`（語の欄は `=`）。比べ方と値を書かない欄は、値があるかどうか（例: `deployment/web from.DB_HOST`）。
   種類と欄: `deployment`（`replicas`・`readyReplicas`・`updatedReplicas`・`made`（その ReplicaSet が作った Pod の数。消された Pod を作り直したことを確かめる）・`env.名前`（Ready の Pod の全てが持つ、その環境変数の値。Pod を動かした時に引いた値で、Pod ごとに違えば `<mixed>`）・`from.名前`（その環境変数を、設計図の最初のコンテナが受け取る ConfigMap か Secret の名前。直接書いた env が勝つ時は無い）・`readyUpdated`（今の設計図の Pod のうち Ready の数。入れ替えが止まっている間も残る古い Pod の Ready は数えない）・`restarts`（今の設計図の Pod の、作り直した数の合計）・`early`（今の設計図の Pod が、アプリの読み込みの途中で Ready だった秒数の合計。readiness の確かめが無いと増える）・`rows.表`（Ready の Pod の DB（PostgreSQL のイメージ）の、その表の行の数。データを書く場所に PVC を付けていれば PV から、無ければ Pod の書き込みの層から読む）・`image`（今の設計図の最初のコンテナのイメージ。`=` だけ）・`tried`（その Deployment の世代（残っている ReplicaSet）が使ったイメージ。`=` で、その中にあるか。壊れた版を一度配ってから戻したことを確かめる））/ `service`（`endpoints`（札の合う Ready の Pod の数）・`port`）/ `pod`（`ready`（Ready のコンテナの数）・`restarts`・`status`（`kubectl get pods` の STATUS と同じ語。`=` だけ）） / `namespace`（区画がある） / `pvc`（`status`（`Bound`・`Pending`。`=` だけ）・`volume`（結ばれた PV の名前）） / `hpa`（`target`（目標の CPU 使用率 %）・`min`・`max`・`cpu`（今の使用率 %。要求が無いなど測れない間は無い）・`replicas`（最後に見た数。`get hpa` の REPLICAS））。
   クラスタを操作する機械（`k8s-cluster`）では、本物と同じく kubectl を打つたびに時間（2 秒）が流れて Pod の状態が進み、`kubectl get pods -w` は落ち着くまで状態の変化を 1 行ずつ見せる。取れるイメージは模擬の置き場にある物だけ（無ければ ErrImagePull）。setup の `cluster` には、Node の数（`nodes`）・制御の側（`controlPlane`）・止まった Node（`notReady`）・作ってからの日数（`ageDays`）・初めから在る区画（`namespaces`）・初めから在る物（`manifests`。マニフェストの YAML で、前から動いている形で置く）・少し前に入れた物（`recent`。1 分前に入れた形で置き、その間の動き（止まる・置けない）と知らせを残す）・入れてある入口の係（`ingress: { address }`。ingress-nginx が種類 nginx の Ingress を受け持ち、その住所に外の住所を書く）を書ける。Service の住所は名前から決め、窓口の `kubernetes` の Service は初めから在る。Deployment の Pod の名前は本物と同じ `名前-印-5 字` の形で、同じ操作からは同じ名前になる。`kubectl apply` は本物と同じく、無ければ created、書いた形が変われば configured、同じなら unchanged と言う。ConfigMap・Secret から受け取る環境変数は、Pod のコンテナを動かした時に引く（後から ConfigMap を変えても、Pod を作り直すまで変わらない）。参照先が無ければ CreateContainerConfigError で待つ。`kubectl rollout status` は入れ替えが終わるまで時間を進めて待ち、600 秒で終わらなければ期限を過ぎたと言う。Pod の中で書いた物は、本物と同じく PVC で付けた場所なら PV に残り、それ以外はコンテナの書き込みの層に入って Pod を作り直すと消える。予約の DB のイメージ（`city-db:1.0`）は、データを書く場所が空なら最初の表を作り、`kubectl exec … -- psql -U postgres -d 名前 -c "文"` で数え・足せる（文の形は Docker の模擬と同じ）。PVC は、大きさ・使い方・種類（`storageClassName`）の合う PV と結ばれ、合う物が無ければ Pending のままで、付けた Pod も置けない。PVC の中身は作った後に変えられない（本物と同じく断られる）。入口の係の住所（`/etc/hosts` で名前が指す住所か、住所そのもの）の 80 番に `curl` で頼むと、Ingress の規則（名前が合う物の中で Exact、次に一番長い道）で Service に振り分け、Ready の Pod のイメージが答える（置き場のイメージの `serves`）。合う規則が無ければ 404、宛先の Service が無い・Ready の Pod が無ければ 503、Pod がそのポートで待ち受けていなければ 502。`-H 'Host: 名前'` で名乗る名前を変えられる。置き場のイメージのうち、待ち受けるまでの秒数（`serves.warmup`）を持つアプリ（`city-guide:1.0`）は、本物の確かめ（`livenessProbe`・`readinessProbe` の `httpGet`）で見る: 確かめは `initialDelaySeconds` 後から `periodSeconds` ごとにその道とポートに頼み、`failureThreshold` 回続けて失敗すると、readiness は Ready を外し、liveness はコンテナを作り直す（続くと CrashLoopBackOff）。失敗は本物と同じ文で describe の Events に出る。`kubectl exec … -- kill -STOP 1` でアプリを止め（頼みに答えない）、`kill -CONT 1` で戻せる。`kubectl get pods -w` は、確かめの失敗が続く・止められた・作り直しを待つ Pod がある間は、変わるまで（180 秒まで）見続ける。Pod の CPU とメモリの使用量は、本物の metrics-server と同じく 15 秒ごとに測る（`kubectl top pods`。動き出してから一度も測っていない Pod は出ない）。置き場の `city-crowd:1.0`（環境変数 `TARGET_URL` の Service に頼みを送り続ける道具）が動いている間、その Service の Ready の Pod に CPU の仕事を等しく分ける。`kubectl autoscale` で作る HPA は、本物と同じく 15 秒ごとに使用率（使用量 ÷ 要求（requests））を目標と比べて数を決め（1 回に 2 倍か 4 つまで・min と max の間）、要求の無いコンテナがあれば計算できない（`get hpa` の TARGETS が `<unknown>`）。減らす時は、過去 5 分の計算の一番大きい数を保つ。`kubectl get hpa -w` は欄が変わるたびに 1 行足し、落ち着くまで（420 秒まで）見続ける。要求（requests）がどの Node の空き（Allocatable から、載っている Pod の要求を引いた量）にも入らない Pod は Pending のままで、本物と同じ文の FailedScheduling（`Insufficient cpu` など）を知らせる。メモリの上限（`limits.memory`）より多く使うアプリ（置き場のイメージのプロセスの量）は、本物と同じくカーネルに止められ（OOMKilled・終了コード 137）、作り直しは、すぐ・10 秒・20 秒…と延びる（CrashLoopBackOff）。`kubectl get events` は本物の欄で、`--field-selector type=Warning` などで絞れる。Deployment の入れ替え（RollingUpdate）は本物の deployment controller と同じ数え方をする: `maxSurge`・`maxUnavailable` は数か割合（既定はどちらも 25%。増やす側は切り上げ・減らす側は切り捨て）で、新しい側は全体が「あるべき数 + maxSurge」を超えない分だけ増やし、古い側は Ready の数が「あるべき数 − maxUnavailable」を割らない分だけ減らす（古い側の Ready でない Pod は先に減らす）。Ready にならない版では古い Pod を残して止まり、最後に進んでから 600 秒で期限を過ぎる（`rollout status` は本物の文で失敗し、describe の Progressing は ProgressDeadlineExceeded）。`kubectl set image` は変えた理由（change-cause）を書かない。`kubectl rollout history` は本物の形（`--revision=N` でその世代の Pod の雛形）、`kubectl rollout undo` は 2 番目に新しい世代（`--to-revision=N` で指定）の設計図を書き戻し、その ReplicaSet を使い直して番号を最大 + 1 に付け替える（今と同じなら skipped rollback）。同じ物・同じ理由・同じ文の知らせは、本物と同じく 1 つにまとめて回数を数える
+- **本物の道具を使う**（`docs/learning-design.md` 6 章の原則 1）。その分野に本物のコマンドや操作があるなら、実戦は端末（`terminal`）・設定の編集（`editor`）・ブラウザ内 SQL（`sql`）で作り、架空の文を作らない。
+  git の実戦には git、Kubernetes には kubectl、Docker には docker、Web には curl、ネットワークには ping・dig・ip・ss・traceroute、DB には SQL が出る。
+  画面で操作する模擬環境（`simulation`）は、打つコマンドが存在しない概念（コンピュータの仕組み・層への仕分け・構成図・流れの設計など）だけに使う
 - 最後のヒントは、そのまま入力すれば必ず通る（テストで確かめる）
   - 端末（`terminal`）: `` で囲んだコマンドを順に打つ
-  - 模擬環境（`simulation`）: `` で囲んだ操作の文（2.4.1）を順に与える
+  - 模擬環境（`simulation`）: 「何をどこへ置く・つなぐ・並べる」を日本語で書く（打つ文を書かない）。同じ意味の操作を手順の `actions` に書き、テストは画面の操作と同じ関数に与えて確かめる（2.4.1）
   - 設定の編集（`editor`）: `` で囲んだ中身を、そのまま保存する（ファイル全体）。2.4.2
   - ブラウザ内 SQL（`sql`）: `` で囲んだ SQL を順に実行する。判定は `sql`（確かめる問い合わせの結果が `equals` と一致する）か、取り出すだけで DB を変えない手順（SELECT）は `answer`（端末と同じく、最後の物が答え）
 
 ### 2.4.1 模擬環境（模）の型
 
-「模」の実戦は、5 つの型のどれかで作る（`docs/decisions.md` D-16）。`environment` に型を、`setup` に中身を書く。
-模擬は純粋な TS（`src/engines/sim`）で、画面の操作と操作の文は同じ関数を通る。画面は `docs/ui-design.md` 7.1。
+「模」の実戦は、打つコマンドが存在しない概念だけに使い（2.4）、次の 4 つの型のどれかで作る（`docs/decisions.md` D-16、`REWORK-PRACTICE.txt`）。
+`environment` に型を、`setup` に中身を書く。模擬は純粋な TS（`src/engines/sim`）で、画面の操作と最後のヒントの再生は同じ関数（`applyAction`）を通る。画面は `docs/ui-design.md` 7.1。
 
-| `environment` | 操作 | 操作の文 | `setup` の中身 | 判定の式（`sim`） |
+画面の操作は、**ドラッグして置く・ドラッグしてつなぐ・ドラッグして並べ替える** の 3 つだけ。押すだけで済む物（選ぶ・送る・動かす）はボタンでよいが、何をするボタンかが文字で分かること。
+**文を打つ入力欄は作らない**（文で操作する欄・操作の文の記録は無い）。
+
+| `environment` | 画面の操作 | 操作（`actions` に書く形） | `setup` の中身 | 判定の式（`sim`） |
 |---|---|---|---|---|
-| `sim-connect`（つなぐ） | 部品・機器・サービスを線でつなぐ・外す。止まった機器を動かす。荷物を送って届くかを見る | `connect A B` / `cut A B` / `start A` / `send A B` | `nodes`（ID・名前・位置・止まっているか）・`links`（初めの線）・`forbid`（引けない線と、その理由の文）・`sends`（送れる組） | `link A B`（直接つながる）/ `path A>B>C`（順につながる）/ `reach A B`（動いている機器をたどって届く）/ `sent A B`（送った荷物が届いた） |
-| `sim-order`（並べる） | 手順・段・層を並べる。同じ段に並べる（並行）。外す | `order A B,C D`（空白で次の段、`,` で同じ段） | `items`（ID・名前・かかる時間・先に要る物 `needs`・使わなくてよい物 `extra`）・`unit`（かかる時間の単位。無ければ分） | `seq A<B<C`（段の順）/ `with A B`（同じ段）/ `has A` / `deps`（先に要る物が前の段にある）/ `time<=N`（各段の最も長い時間の合計）/ `placed`（`extra` でない物を全て並べた） |
-| `sim-assign`（割り振る・仕分ける） | 札を枠に入れる・出す | `put 札 枠` / `take 札` | `slots`（ID・名前・容量・容量を超えた時のエラーの文 `full`）・`items`（ID・名前・大きさ・枠ごとの時間・複数の枠に入れられるか・`extra`） | `in 札=枠 …` / `count 枠<=N`（`=` `>=` も）/ `fits`（容量の内）/ `time<=N`（枠ごとの時間の合計）/ `placed` |
-| `sim-config`（設定する） | 欄に値を選ぶ・入れる。表に行を足す・消す | `set 欄 値` / `add 表 列=値 …` / `del 表 番号` | `fields`（ID・名前・選べる値・初めの値・値を選ぶ前に満たす条件 `requires`（値・式・満たさない時に断る文））・`tables`（ID・名前・列・初めの行）・`settle`（出来上がりの式。無ければ全ての欄を変えた時） | `field 欄=値 …` / `row 表 列=値 …`（その行がある）/ `rows 表<=N`（`=` `>=` も）/ `samenet 欄 …`（全て「アドレス/区切り」で同じ網にあり、重ならず、網そのもの・全体宛てでない。欄の代わりに決まったアドレスも書ける）/ `pool 始め 終わり in=網 size>=N avoid=a,b`（配る範囲が網の中で、数が足り、固定のアドレスを含まない） |
-| `sim-read`（読み取って答える） | 表・グラフ・ログ・情報を読み、問いに答える | `answer 問い 値` | `questions`（ID・問い・選べる値） | `answered 問い=値 …` |
+| `sim-connect`（つなぐ） | 点（部品・機器・サービス）から点へドラッグして線を引く。線を押すと外れる。止まった機器の「動かす」を押す。「送る」のボタンを押して届くかを見る | `{op:'connect',a,b}` / `{op:'cut',a,b}` / `{op:'start',node}` / `{op:'send',from,to}` | `nodes`（ID・名前・位置・止まっているか）・`links`（初めの線）・`forbid`（引けない線と、その理由の文）・`sends`（送れる組と、ボタンの文。確かめる本物の道具があれば、その名を書く: 「ping サーバ」） | `link A B`（直接つながる）/ `path A>B>C`（順につながる）/ `reach A B`（動いている機器をたどって届く）/ `sent A B`（送った荷物が届いた）/ `up A` |
+| `sim-order`（並べる） | 札をドラッグして、上から順に並べ替える。同じ段に落とすと並行（`parallel` の時）。置き場へドラッグすると外れる | `{op:'arrange',stages:[[A],[B,C],[D]]}`（並べ替えた後の並び。上の段から） | `items`（ID・名前・かかる時間・先に要る物 `needs`・流れに入れると止まる理由 `stop`・使わなくてよい物 `extra`）・`unit`（時間の単位。無ければ分）・`initial`（初めの並び） | `seq A<B<C`（段の順）/ `with A B`（同じ段）/ `has A` / `deps`（先に要る物が前の段にある）/ `time<=N`（各段の最も長い時間の合計）/ `stages<=N` / `placed`（`extra` でない物を全て並べた） |
+| `sim-assign`（置く・仕分ける） | 札を枠へドラッグして入れる。枠から別の枠へドラッグすると移り、置き場へドラッグすると戻る | `{op:'put',item,slot}` / `{op:'take',item}` | `slots`（ID・名前・容量・容量を超えた時の文 `full`）・`items`（ID・名前・大きさ・枠ごとの時間・複数の枠に入れられるか `multi`・入らない枠と理由 `refuse`・動かせない理由 `keep`・`extra`）・`initial` | `in 札=枠 …` / `count 枠<=N`（`=` `>=` も）/ `fits`（容量の内）/ `time<=N`（枠ごとの時間の合計）/ `placed` |
+| `sim-read`（読み取って答える） | 表・グラフ・ログ・情報を読み、問いの答えを押して選ぶ。読む所を押すと、その部分が拡大・強調される | `{op:'answer',question,value}` | `questions`（ID・問い・選べる答え 2 つ以上） | `answered 問い=値 …` |
 
 - 全ての型で、`setup.panels` に画面に示す情報（表・グラフ・ログ・項目と値・文）を置ける（`sim-read` は必須）。
-  情報に `when`（判定の式）を書くと、その式を満たす時だけ示す（操作の結果を見せる。例: 正しい文字コードを選ぶと本文が読める）
-- 札を全て並べた・入れた、問いに全て答えた、欄を全て初めの値から変えた（設定するは `settle` の式を満たした）（出来上がり）のに達成条件を満たさない時は、
-  「答えが合っていない」として、手順の想定エラー（`match` が「答えが合っていない」に当たる物）の原因候補を出す
+  情報に `when`（判定の式）を書くと、その式を満たす時だけ示す（操作の結果を見せる。例: 荷物が届くとサーバの返事が出る）
+- **操作の結果は動きで見せる**（`docs/ui-design.md` 7.1）。そのために、並べるの札には先に要る物（`needs`）か止まる理由（`stop`）を書き、
+  順が違う時に流れが止まる段と理由が出るようにする。置くの札には、入らない枠の理由（`refuse`）を書いてよい
+- 札を全て並べた・入れた、問いに全て答えた（出来上がり）のに達成条件を満たさない時は、
+  「答えが合っていない」として、手順の想定エラー（`match` が「答えが合っていない」に当たる物）の原因候補を出す。置くは、置き違えた札（達成条件の `in` と違う枠にある札）を赤く示す
 - 式は ` && ` でつなげる。先頭に `!` を付けると否定（例: `!reach 外 db`）。値の比べ方は、前後の空白と英字の大小を無視する
-- 操作の誤り（無い ID・容量を超える・引けない線・もう別の枠に入っている札など）は、エラーの文として返す。エラーの解説（2.5）が `match` で当たり、端末と同じ「エラー → 内容 → 原因候補 → ヒント」を出す
-- ID は空白を含まない語（日本語でよい）。画面には名前を出し、操作の文には ID を書く
+- 操作の誤り（容量を超える・入らない枠・引けない線・届かない荷物など）は、画面の名前で言い表したエラーの文として返す。エラーの解説（2.5）が `match` で当たり、端末と同じ「エラー → 内容 → 原因候補 → ヒント」を出す
+- ID は空白を含まない語（日本語でよい）。式と `actions` に書く。画面には名前だけを出す（ID は出さない）
+- **左の目的と右の画面を結び付ける**（`docs/learning-design.md` 6 章の原則 5）。目的・手順の文に出てくる物の名前は、画面の名前（`label`）とそのまま同じにする
+- 最後のヒントは「「予約のアプリ」を「箱（イメージ）」へドラッグして入れる」のように、画面の名前を「」で囲んで書く。`actions` に出てくる物の名前（つなぐ・置く物と枠の名前、並べる札の名前、送るボタンの文、選ぶ答え）が全て書いてあることを検証で確かめる
 
 ### 2.4.2 設定の編集（編）
 
@@ -261,5 +271,5 @@ interface Mission {
 - 誤答の選択肢すべてに `whyNot` がある
 - 推奨前提・関連・次の ID が存在する。推奨前提の辺に循環が無い
 - 本文に出る用語がすべて用語集にある
-- 全実戦の最後のヒントを模擬環境で実行すると、達成条件を満たす
+- 全実戦の最後のヒントを模擬環境で実行すると、達成条件を満たす（画面で操作する実戦は、手順の `actions` を画面と同じ関数に与える。最後のヒントに打つ文が無く、`actions` の物の名前が全て書いてある）
 - `docs/curriculum.md` の表にあるレッスン ID と、`docs/lessons/` の設計と、`content/lessons/` のファイルが一致する（公開範囲のもの）

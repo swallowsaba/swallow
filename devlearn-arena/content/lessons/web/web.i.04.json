@@ -268,6 +268,13 @@
         ],
         "expectedErrors": [
           "web-cache-mismatch"
+        ],
+        "actions": [
+          {
+            "op": "set",
+            "field": "html",
+            "value": "no-cache"
+          }
         ]
       },
       {
@@ -285,6 +292,13 @@
         ],
         "expectedErrors": [
           "web-cache-mismatch"
+        ],
+        "actions": [
+          {
+            "op": "set",
+            "field": "image",
+            "value": "max-age=31536000"
+          }
         ]
       }
     ]

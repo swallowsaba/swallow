@@ -6,16 +6,39 @@
   "title": "VM との違い",
   "goal": "カーネルの共有と重さの違いを説明できる",
   "minutes": 15,
-  "prerequisites": ["found.i.03", "ctr.b.01"],
-  "related": ["found.i.03", "cloud.b.01"],
-  "next": ["ctr.b.03"],
-  "terms": ["vm", "os", "kernel", "container", "app", "server", "web", "memory", "linux", "windows", "library", "internet"],
+  "prerequisites": [
+    "found.i.03",
+    "ctr.b.01"
+  ],
+  "related": [
+    "found.i.03",
+    "cloud.b.01"
+  ],
+  "next": [
+    "ctr.b.03"
+  ],
+  "terms": [
+    "vm",
+    "os",
+    "kernel",
+    "container",
+    "app",
+    "server",
+    "web",
+    "memory",
+    "linux",
+    "windows",
+    "library",
+    "internet"
+  ],
   "explain": {
     "what": "{{term:vm}}は、1 台の機械の中に作った別の機械で、それぞれが自分の{{term:os}}（{{term:kernel}}を含む）を持つ。{{term:container}}は、機械の 1 つのカーネルを共有し、{{term:app}}と要る物だけを区切って動かす。",
     "why": "分ける所が違うので、得意な事が違う。仮想マシンは別の OS も動かせ、分け方が強いが、重く起動も遅い。コンテナは軽く 1 秒ほどで起動し、たくさん並べられるが、同じカーネルの上でしか動かない。",
     "use": "動かす物を決める時の使い分け。別の OS が要る・分け方を強くしたいなら仮想マシン、同じ OS で数と速さが要るならコンテナ。仮想マシンの中でコンテナを動かすこともよくある。",
     "when": "1 台の{{term:server}}で、小さな {{term:web}} のアプリを 50 個動かしたい。50 個の仮想マシンでは、OS だけで{{term:memory}}が足りなくなる。",
-    "figures": ["ctr-b02-vm"]
+    "figures": [
+      "ctr-b02-vm"
+    ]
   },
   "understand": [
     {
@@ -41,9 +64,23 @@
       "kind": "situation",
       "prompt": "{{term:linux}} のサーバの上で、{{term:windows}} 用の古い会計ソフトを動かしたい。どちらを使うか。",
       "choices": [
-        { "id": "a", "text": "仮想マシン（Windows を丸ごと動かす）", "correct": true },
-        { "id": "b", "text": "コンテナ（Linux のカーネルを共有する）", "correct": false, "whyNot": "コンテナは機械のカーネルを共有する。Linux のカーネルの上では、Windows 用のソフトは動かない。" },
-        { "id": "c", "text": "どちらでも同じ", "correct": false, "whyNot": "別の OS が要るかどうかで、使える物が変わる。カーネルを共有するコンテナでは、別の OS は動かない。" }
+        {
+          "id": "a",
+          "text": "仮想マシン（Windows を丸ごと動かす）",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "コンテナ（Linux のカーネルを共有する）",
+          "correct": false,
+          "whyNot": "コンテナは機械のカーネルを共有する。Linux のカーネルの上では、Windows 用のソフトは動かない。"
+        },
+        {
+          "id": "c",
+          "text": "どちらでも同じ",
+          "correct": false,
+          "whyNot": "別の OS が要るかどうかで、使える物が変わる。カーネルを共有するコンテナでは、別の OS は動かない。"
+        }
       ],
       "explanation": "別の OS が要るなら、OS ごと持つ仮想マシン。コンテナは同じカーネルの上でしか動かない。"
     },
@@ -52,9 +89,23 @@
       "kind": "situation",
       "prompt": "同じ Linux の上で、小さな Web のアプリを 50 個動かしたい。どちらが向くか。",
       "choices": [
-        { "id": "a", "text": "コンテナ（軽く、たくさん並べられる）", "correct": true },
-        { "id": "b", "text": "仮想マシンを 50 台", "correct": false, "whyNot": "50 台それぞれが OS を持つので、OS だけでメモリと起動の時間を使う。" },
-        { "id": "c", "text": "1 つの仮想マシンに、50 個を混ぜて入れる", "correct": false, "whyNot": "{{term:library}}の版がぶつかり、1 つの更新がほかを壊す。アプリごとに区切れない。" }
+        {
+          "id": "a",
+          "text": "コンテナ（軽く、たくさん並べられる）",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "仮想マシンを 50 台",
+          "correct": false,
+          "whyNot": "50 台それぞれが OS を持つので、OS だけでメモリと起動の時間を使う。"
+        },
+        {
+          "id": "c",
+          "text": "1 つの仮想マシンに、50 個を混ぜて入れる",
+          "correct": false,
+          "whyNot": "{{term:library}}の版がぶつかり、1 つの更新がほかを壊す。アプリごとに区切れない。"
+        }
       ],
       "explanation": "同じ OS で数が要るならコンテナ。1 つのカーネルを共有するので、軽く並べられる。"
     },
@@ -63,9 +114,23 @@
       "kind": "predict",
       "prompt": "機械のカーネルに欠陥が見つかった。その上のコンテナはどうなり得るか。",
       "choices": [
-        { "id": "a", "text": "全てのコンテナに影響し得る", "correct": true },
-        { "id": "b", "text": "コンテナはそれぞれ自分のカーネルを持つので、影響しない", "correct": false, "whyNot": "コンテナはカーネルを持たず、機械のカーネルを共有する。" },
-        { "id": "c", "text": "最初に作ったコンテナだけに影響する", "correct": false, "whyNot": "全てのコンテナが、同じ 1 つのカーネルの上で動いている。作った順は関係ない。" }
+        {
+          "id": "a",
+          "text": "全てのコンテナに影響し得る",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "コンテナはそれぞれ自分のカーネルを持つので、影響しない",
+          "correct": false,
+          "whyNot": "コンテナはカーネルを持たず、機械のカーネルを共有する。"
+        },
+        {
+          "id": "c",
+          "text": "最初に作ったコンテナだけに影響する",
+          "correct": false,
+          "whyNot": "全てのコンテナが、同じ 1 つのカーネルの上で動いている。作った順は関係ない。"
+        }
       ],
       "explanation": "カーネルを共有するので、カーネルの欠陥は全てのコンテナに響き得る。分け方の強さは仮想マシンの方が上。"
     },
@@ -74,9 +139,23 @@
       "kind": "term",
       "prompt": "{{term:vm}}とは何か。",
       "choices": [
-        { "id": "a", "text": "1 台の機械の中に作った、OS ごと分かれた別の機械", "correct": true },
-        { "id": "b", "text": "カーネルを共有して、アプリだけを区切る仕組み", "correct": false, "whyNot": "それはコンテナ。仮想マシンは、カーネルを含む OS ごと分ける。" },
-        { "id": "c", "text": "{{term:internet}}の向こうにある、借りた本物の機械", "correct": false, "whyNot": "借りる場所の話ではない。仮想マシンは、機械の中にソフトウェアで作る機械。" }
+        {
+          "id": "a",
+          "text": "1 台の機械の中に作った、OS ごと分かれた別の機械",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "カーネルを共有して、アプリだけを区切る仕組み",
+          "correct": false,
+          "whyNot": "それはコンテナ。仮想マシンは、カーネルを含む OS ごと分ける。"
+        },
+        {
+          "id": "c",
+          "text": "{{term:internet}}の向こうにある、借りた本物の機械",
+          "correct": false,
+          "whyNot": "借りる場所の話ではない。仮想マシンは、機械の中にソフトウェアで作る機械。"
+        }
       ],
       "explanation": "仮想マシンは、カーネルを含む OS ごと持つ別の機械。その分、重いが、分け方は強い。"
     }
@@ -87,22 +166,82 @@
     "environment": "sim-read",
     "setup": {
       "questions": [
-        { "id": "win", "prompt": "Linux のサーバで、Windows 用の古い会計ソフトを動かす", "options": ["VM・別のOSが要る", "VM・強く分ける", "コンテナ・軽く多数", "コンテナ・数秒で起動"] },
-        { "id": "many", "prompt": "同じ Linux で、小さな Web のアプリを 50 個動かす", "options": ["VM・別のOSが要る", "VM・強く分ける", "コンテナ・軽く多数", "コンテナ・数秒で起動"] },
-        { "id": "tenant", "prompt": "知らない会社どうしのプログラムを、1 台で預かる（隣を覗かれたくない）", "options": ["VM・別のOSが要る", "VM・強く分ける", "コンテナ・軽く多数", "コンテナ・数秒で起動"] },
-        { "id": "test", "prompt": "変更のたびに、検査用の環境を作ってすぐ捨てる", "options": ["VM・別のOSが要る", "VM・強く分ける", "コンテナ・軽く多数", "コンテナ・数秒で起動"] }
+        {
+          "id": "win",
+          "prompt": "Linux のサーバで、Windows 用の古い会計ソフトを動かす",
+          "options": [
+            "VM・別のOSが要る",
+            "VM・強く分ける",
+            "コンテナ・軽く多数",
+            "コンテナ・数秒で起動"
+          ]
+        },
+        {
+          "id": "many",
+          "prompt": "同じ Linux で、小さな Web のアプリを 50 個動かす",
+          "options": [
+            "VM・別のOSが要る",
+            "VM・強く分ける",
+            "コンテナ・軽く多数",
+            "コンテナ・数秒で起動"
+          ]
+        },
+        {
+          "id": "tenant",
+          "prompt": "知らない会社どうしのプログラムを、1 台で預かる（隣を覗かれたくない）",
+          "options": [
+            "VM・別のOSが要る",
+            "VM・強く分ける",
+            "コンテナ・軽く多数",
+            "コンテナ・数秒で起動"
+          ]
+        },
+        {
+          "id": "test",
+          "prompt": "変更のたびに、検査用の環境を作ってすぐ捨てる",
+          "options": [
+            "VM・別のOSが要る",
+            "VM・強く分ける",
+            "コンテナ・軽く多数",
+            "コンテナ・数秒で起動"
+          ]
+        }
       ],
       "panels": [
         {
           "kind": "table",
           "title": "仮想マシン（VM）とコンテナ",
-          "columns": ["比べる所", "仮想マシン", "コンテナ"],
+          "columns": [
+            "比べる所",
+            "仮想マシン",
+            "コンテナ"
+          ],
           "rows": [
-            ["持つ OS", "それぞれが自分の OS", "機械のカーネルを共有"],
-            ["起動", "数十秒〜数分", "1 秒ほど"],
-            ["1 台に並べる数", "数個〜十数個", "数十〜数百"],
-            ["分け方の強さ", "強い（カーネルも別）", "VM より弱い"],
-            ["別の OS", "動かせる", "動かせない"]
+            [
+              "持つ OS",
+              "それぞれが自分の OS",
+              "機械のカーネルを共有"
+            ],
+            [
+              "起動",
+              "数十秒〜数分",
+              "1 秒ほど"
+            ],
+            [
+              "1 台に並べる数",
+              "数個〜十数個",
+              "数十〜数百"
+            ],
+            [
+              "分け方の強さ",
+              "強い（カーネルも別）",
+              "VM より弱い"
+            ],
+            [
+              "別の OS",
+              "動かせる",
+              "動かせない"
+            ]
           ]
         }
       ]
@@ -111,26 +250,60 @@
       {
         "id": "os",
         "purpose": "会計ソフトと、50 個の Web のアプリについて、表の「持つ OS」「1 台に並べる数」を見て選ぶ。",
-        "check": { "kind": "sim", "expr": "answered win=VM・別のOSが要る many=コンテナ・軽く多数" },
+        "check": {
+          "kind": "sim",
+          "expr": "answered win=VM・別のOSが要る many=コンテナ・軽く多数"
+        },
         "afterward": "Windows 用のソフトは、Linux のカーネルを共有するコンテナでは動かないので仮想マシン。同じ OS で数が要るアプリはコンテナ。",
         "hints": [
           "会計ソフトは別の OS（Windows）が要る。コンテナは機械のカーネルを共有する。",
           "別の OS が要るなら仮想マシン。同じ OS でたくさん並べるならコンテナ。",
-          "`answer win VM・別のOSが要る` `answer many コンテナ・軽く多数` の順に入れる。"
+          "「Linux のサーバで、Windows 用の古い会計ソフトを動かす」は「VM・別のOSが要る」を押す、「同じ Linux で、小さな Web のアプリを 50 個動かす」は「コンテナ・軽く多数」を押す。"
         ],
-        "expectedErrors": ["ctr-vm-mix"]
+        "expectedErrors": [
+          "ctr-vm-mix"
+        ],
+        "actions": [
+          {
+            "op": "answer",
+            "question": "win",
+            "value": "VM・別のOSが要る"
+          },
+          {
+            "op": "answer",
+            "question": "many",
+            "value": "コンテナ・軽く多数"
+          }
+        ]
       },
       {
         "id": "isolate",
         "purpose": "知らない会社どうしの預かりと、すぐ捨てる検査の環境について、表の「分け方の強さ」「起動」を見て選ぶ。",
-        "check": { "kind": "sim", "expr": "answered tenant=VM・強く分ける test=コンテナ・数秒で起動" },
+        "check": {
+          "kind": "sim",
+          "expr": "answered tenant=VM・強く分ける test=コンテナ・数秒で起動"
+        },
         "afterward": "知らない相手どうしは、カーネルまで分ける仮想マシンで強く分ける。作ってすぐ捨てる検査の環境は、すぐ起動するコンテナ。",
         "hints": [
           "隣を覗かれたくない相手どうしなら、分け方の強さを重く見る。すぐ捨てる環境なら、起動の速さ。",
           "カーネルまで分けるのは仮想マシン。1 秒ほどで起動するのはコンテナ。",
-          "`answer tenant VM・強く分ける` `answer test コンテナ・数秒で起動` の順に入れる。"
+          "「知らない会社どうしのプログラムを、1 台で預かる（隣を覗かれたくない）」は「VM・強く分ける」を押す、「変更のたびに、検査用の環境を作ってすぐ捨てる」は「コンテナ・数秒で起動」を押す。"
         ],
-        "expectedErrors": ["ctr-vm-mix"]
+        "expectedErrors": [
+          "ctr-vm-mix"
+        ],
+        "actions": [
+          {
+            "op": "answer",
+            "question": "tenant",
+            "value": "VM・強く分ける"
+          },
+          {
+            "op": "answer",
+            "question": "test",
+            "value": "コンテナ・数秒で起動"
+          }
+        ]
       }
     ]
   },
@@ -140,8 +313,18 @@
     "retry": "まだ要件と選んだ物が合っていない。表の「持つ OS」と「分け方の強さ」の行を見直そう。"
   },
   "summary": {
-    "points": ["仮想マシンは OS ごと", "コンテナはカーネルを共有", "要件で選ぶ"],
-    "next": ["ctr.b.03"],
-    "terms": ["vm", "container", "kernel"]
+    "points": [
+      "仮想マシンは OS ごと",
+      "コンテナはカーネルを共有",
+      "要件で選ぶ"
+    ],
+    "next": [
+      "ctr.b.03"
+    ],
+    "terms": [
+      "vm",
+      "container",
+      "kernel"
+    ]
   }
 }

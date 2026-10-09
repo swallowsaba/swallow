@@ -6,16 +6,34 @@
   "title": "成果物（artifact）",
   "goal": "作った物を次の段に渡す仕組みを説明できる",
   "minutes": 15,
-  "prerequisites": ["cicd.b.03"],
-  "related": ["docker.i.05", "ctr.b.05"],
-  "next": ["cicd.b.05"],
-  "terms": ["artifact", "pipeline", "file", "container", "image", "directory", "repository", "log"],
+  "prerequisites": [
+    "cicd.b.03"
+  ],
+  "related": [
+    "docker.i.05",
+    "ctr.b.05"
+  ],
+  "next": [
+    "cicd.b.05"
+  ],
+  "terms": [
+    "artifact",
+    "pipeline",
+    "file",
+    "container",
+    "image",
+    "directory",
+    "repository",
+    "log"
+  ],
   "explain": {
     "what": "{{term:artifact}}は、{{term:pipeline}}の段が作り、保存して次の段に渡す物。組み立てた{{term:file}}、{{term:container}}の{{term:image}}、検査の報告書など。次の段は、作り直さずにそれを受け取る。",
     "why": "検査した物と同じ物を配るため。段ごとに組み立て直すと、取ってくる部品の版が変わり、検査していない物が本番に出ることがある。作り直さない分、速くもなる。",
     "use": "配る物・コンテナのイメージ・検査の報告書の受け渡し。後から「どの版を配ったか」を確かめる時にも使う。",
     "when": "検査では成功したのに、本番では予約の日付が 1 日ずれた。配布の段で組み立て直していて、その間に部品の新しい版が出ていた。",
-    "figures": ["cicd-b04-artifact"]
+    "figures": [
+      "cicd-b04-artifact"
+    ]
   },
   "understand": [
     {
@@ -41,9 +59,23 @@
       "kind": "situation",
       "prompt": "検査を通った物を、そのまま本番に配りたい。どうするか。",
       "choices": [
-        { "id": "a", "text": "組み立ての段で成果物を保存し、配布の段はそれを受け取る", "correct": true },
-        { "id": "b", "text": "配布の段で、同じ手順でもう一度組み立てる", "correct": false, "whyNot": "手順が同じでも、取ってくる部品の版や時刻で、違う物になることがある。" },
-        { "id": "c", "text": "検査の段の中で、そのまま本番に置く", "correct": false, "whyNot": "ほかの検査が終わる前に配ってしまう。全ての検査の後に、配布の段で同じ物を配る。" }
+        {
+          "id": "a",
+          "text": "組み立ての段で成果物を保存し、配布の段はそれを受け取る",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "配布の段で、同じ手順でもう一度組み立てる",
+          "correct": false,
+          "whyNot": "手順が同じでも、取ってくる部品の版や時刻で、違う物になることがある。"
+        },
+        {
+          "id": "c",
+          "text": "検査の段の中で、そのまま本番に置く",
+          "correct": false,
+          "whyNot": "ほかの検査が終わる前に配ってしまう。全ての検査の後に、配布の段で同じ物を配る。"
+        }
       ],
       "explanation": "作るのは 1 回だけ。その成果物を、検査の段も配布の段も受け取る。"
     },
@@ -52,9 +84,23 @@
       "kind": "choice",
       "prompt": "成果物の例として、正しいものはどれか。",
       "choices": [
-        { "id": "a", "text": "組み立てた実行するファイルや、コンテナのイメージ", "correct": true },
-        { "id": "b", "text": "パイプラインの設定を書いたファイル", "correct": false, "whyNot": "設定は流れを決める物で、{{term:repository}}に置く。段が作って次に渡す物ではない。" },
-        { "id": "c", "text": "変更を書いた人の名前", "correct": false, "whyNot": "それは記録の情報。成果物は、段が作り出したファイルなどの物。" }
+        {
+          "id": "a",
+          "text": "組み立てた実行するファイルや、コンテナのイメージ",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "パイプラインの設定を書いたファイル",
+          "correct": false,
+          "whyNot": "設定は流れを決める物で、{{term:repository}}に置く。段が作って次に渡す物ではない。"
+        },
+        {
+          "id": "c",
+          "text": "変更を書いた人の名前",
+          "correct": false,
+          "whyNot": "それは記録の情報。成果物は、段が作り出したファイルなどの物。"
+        }
       ],
       "explanation": "成果物は、段が作り出して次の段に渡す物。実行するファイル・コンテナのイメージ・検査の報告書など。"
     },
@@ -63,9 +109,23 @@
       "kind": "cause",
       "prompt": "検査では全て成功したのに、本番では動かない。配布の段の{{term:log}}に「組み立て中…」とあった。原因は？",
       "choices": [
-        { "id": "a", "text": "配布の段で組み立て直し、検査していない物を配った", "correct": true },
-        { "id": "b", "text": "検査の数が少なすぎた", "correct": false, "whyNot": "検査した物は動いていた。違うのは、配った物が検査した物と同じでないこと。" },
-        { "id": "c", "text": "成果物を保存したから", "correct": false, "whyNot": "成果物を受け取って配れば、検査した物と同じ物が届く。保存したことは原因ではない。" }
+        {
+          "id": "a",
+          "text": "配布の段で組み立て直し、検査していない物を配った",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "検査の数が少なすぎた",
+          "correct": false,
+          "whyNot": "検査した物は動いていた。違うのは、配った物が検査した物と同じでないこと。"
+        },
+        {
+          "id": "c",
+          "text": "成果物を保存したから",
+          "correct": false,
+          "whyNot": "成果物を受け取って配れば、検査した物と同じ物が届く。保存したことは原因ではない。"
+        }
       ],
       "explanation": "検査と本番で動きが違う時は、まず「同じ物か」を疑う。作り直していれば、違う物になりうる。"
     }
@@ -76,19 +136,57 @@
     "environment": "sim-config",
     "setup": {
       "fields": [
-        { "id": "保存", "label": "組み立ての段: 作った dist/ を", "options": ["保存しない", "成果物appとして保存"], "value": "保存しない" },
         {
-          "id": "検査", "label": "検査の段: 検査する物", "options": ["組み立て直す", "成果物appを受け取る", "成果物distを受け取る"], "value": "組み立て直す",
+          "id": "保存",
+          "label": "組み立ての段: 作った dist/ を",
+          "options": [
+            "保存しない",
+            "成果物appとして保存"
+          ],
+          "value": "保存しない"
+        },
+        {
+          "id": "検査",
+          "label": "検査の段: 検査する物",
+          "options": [
+            "組み立て直す",
+            "成果物appを受け取る",
+            "成果物distを受け取る"
+          ],
+          "value": "組み立て直す",
           "requires": [
-            { "value": "成果物appを受け取る", "expr": "field 保存=成果物appとして保存", "message": "Error: Unable to download artifact(s): Artifact not found for name: app（組み立ての段で、まだ保存していない）" },
-            { "value": "成果物distを受け取る", "expr": "field 保存=成果物distとして保存", "message": "Error: Unable to download artifact(s): Artifact not found for name: dist（その名前の成果物は無い。dist/ は中身のディレクトリの名前）" }
+            {
+              "value": "成果物appを受け取る",
+              "expr": "field 保存=成果物appとして保存",
+              "message": "Error: Unable to download artifact(s): Artifact not found for name: app（組み立ての段で、まだ保存していない）"
+            },
+            {
+              "value": "成果物distを受け取る",
+              "expr": "field 保存=成果物distとして保存",
+              "message": "Error: Unable to download artifact(s): Artifact not found for name: dist（その名前の成果物は無い。dist/ は中身のディレクトリの名前）"
+            }
           ]
         },
         {
-          "id": "配布", "label": "配布の段: 配る物", "options": ["組み立て直す", "成果物appを受け取る", "成果物distを受け取る"], "value": "組み立て直す",
+          "id": "配布",
+          "label": "配布の段: 配る物",
+          "options": [
+            "組み立て直す",
+            "成果物appを受け取る",
+            "成果物distを受け取る"
+          ],
+          "value": "組み立て直す",
           "requires": [
-            { "value": "成果物appを受け取る", "expr": "field 保存=成果物appとして保存", "message": "Error: Unable to download artifact(s): Artifact not found for name: app（組み立ての段で、まだ保存していない）" },
-            { "value": "成果物distを受け取る", "expr": "field 保存=成果物distとして保存", "message": "Error: Unable to download artifact(s): Artifact not found for name: dist（その名前の成果物は無い。dist/ は中身のディレクトリの名前）" }
+            {
+              "value": "成果物appを受け取る",
+              "expr": "field 保存=成果物appとして保存",
+              "message": "Error: Unable to download artifact(s): Artifact not found for name: app（組み立ての段で、まだ保存していない）"
+            },
+            {
+              "value": "成果物distを受け取る",
+              "expr": "field 保存=成果物distとして保存",
+              "message": "Error: Unable to download artifact(s): Artifact not found for name: dist（その名前の成果物は無い。dist/ は中身のディレクトリの名前）"
+            }
           ]
         }
       ],
@@ -108,7 +206,9 @@
           "kind": "log",
           "title": "成果物の置き場",
           "when": "field 保存=成果物appとして保存",
-          "lines": ["app（中身: dist/、指紋 3f9a…、部品 date-lib 2.3.0）"]
+          "lines": [
+            "app（中身: dist/、指紋 3f9a…、部品 date-lib 2.3.0）"
+          ]
         },
         {
           "kind": "log",
@@ -127,26 +227,55 @@
       {
         "id": "save",
         "purpose": "組み立ての段で作った `dist/` を、成果物として保存する。",
-        "check": { "kind": "sim", "expr": "field 保存=成果物appとして保存" },
+        "check": {
+          "kind": "sim",
+          "expr": "field 保存=成果物appとして保存"
+        },
         "afterward": "`dist/` が成果物 app として保存された。後の段は、この app を名前で受け取れる。",
         "hints": [
           "後の段に渡すには、まず組み立ての段で保存する。",
           "「組み立ての段」の欄で、成果物として保存する方を選ぶ。名前は app。",
           "`set 保存 成果物appとして保存` と入れる。"
         ],
-        "expectedErrors": ["cicd-artifact-missing"]
+        "expectedErrors": [
+          "cicd-artifact-missing"
+        ],
+        "actions": [
+          {
+            "op": "set",
+            "field": "保存",
+            "value": "成果物appとして保存"
+          }
+        ]
       },
       {
         "id": "pass",
         "purpose": "検査の段と配布の段が、組み立て直さずに、同じ成果物を受け取るようにする。",
-        "check": { "kind": "sim", "expr": "field 検査=成果物appを受け取る 配布=成果物appを受け取る" },
+        "check": {
+          "kind": "sim",
+          "expr": "field 検査=成果物appを受け取る 配布=成果物appを受け取る"
+        },
         "afterward": "検査も配布も、同じ成果物 app を受け取った。指紋が同じなので、検査した物がそのまま本番に届いた。",
         "hints": [
           "検査した物と同じ物を配りたい。前回の結果では、配布で組み立て直した時に部品の版が変わっていた。",
           "受け取る名前は、保存した成果物の名前の app。dist は中身の{{term:directory}}の名前で、成果物の名前ではない。",
           "`set 検査 成果物appを受け取る` `set 配布 成果物appを受け取る` の順に入れる。"
         ],
-        "expectedErrors": ["cicd-artifact-missing"]
+        "expectedErrors": [
+          "cicd-artifact-missing"
+        ],
+        "actions": [
+          {
+            "op": "set",
+            "field": "検査",
+            "value": "成果物appを受け取る"
+          },
+          {
+            "op": "set",
+            "field": "配布",
+            "value": "成果物appを受け取る"
+          }
+        ]
       }
     ]
   },
@@ -156,8 +285,17 @@
     "retry": "まだ、検査した物と配る物が同じになっていない。前回の結果で、どの段が組み立て直しているかを見よう。"
   },
   "summary": {
-    "points": ["成果物を保存", "同じ物を検査して配る", "作り直さない"],
-    "next": ["cicd.b.05", "docker.i.05"],
-    "terms": ["artifact"]
+    "points": [
+      "成果物を保存",
+      "同じ物を検査して配る",
+      "作り直さない"
+    ],
+    "next": [
+      "cicd.b.05",
+      "docker.i.05"
+    ],
+    "terms": [
+      "artifact"
+    ]
   }
 }

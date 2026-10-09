@@ -410,6 +410,18 @@
         ],
         "expectedErrors": [
           "trouble-skip"
+        ],
+        "actions": [
+          {
+            "op": "set",
+            "field": "症状",
+            "value": "画面の文といつからを聞く"
+          },
+          {
+            "op": "set",
+            "field": "範囲",
+            "value": "ほかの人とほかのページを比べる"
+          }
         ]
       },
       {
@@ -428,6 +440,18 @@
         "expectedErrors": [
           "trouble-skip",
           "trouble-cause-misread"
+        ],
+        "actions": [
+          {
+            "op": "set",
+            "field": "仮説",
+            "value": "後ろの予約アプリが止まっている"
+          },
+          {
+            "op": "set",
+            "field": "確認",
+            "value": "予約アプリの状態とログを見る"
+          }
         ]
       },
       {
@@ -446,6 +470,18 @@
         "expectedErrors": [
           "trouble-skip",
           "trouble-fix-misread"
+        ],
+        "actions": [
+          {
+            "op": "set",
+            "field": "対処",
+            "value": "予約アプリを動かし直す"
+          },
+          {
+            "op": "set",
+            "field": "再確認",
+            "value": "開き直して窓口に知らせる"
+          }
         ]
       }
     ]

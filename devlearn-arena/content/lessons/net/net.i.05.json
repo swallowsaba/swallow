@@ -264,6 +264,26 @@
         ],
         "expectedErrors": [
           "net-dns-records"
+        ],
+        "actions": [
+          {
+            "op": "add",
+            "table": "zone",
+            "row": {
+              "name": "www",
+              "type": "CNAME",
+              "value": "shop.example."
+            }
+          },
+          {
+            "op": "add",
+            "table": "zone",
+            "row": {
+              "name": "@",
+              "type": "MX",
+              "value": "mail.shop.example."
+            }
+          }
         ]
       }
     ]

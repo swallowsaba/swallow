@@ -7,7 +7,7 @@ import { createClock } from '@/engines/kernel/clock';
 import { createDefaultRegistry } from '@/engines/kernel/commands';
 import { snapshotShell } from '@/engines/kernel/session';
 import { execute } from '@/engines/kernel/shell';
-import { applyStatement, createSim } from '@/engines/sim/sim';
+import { applyAction, createSim } from '@/engines/sim/sim';
 import { answerOf, editOf, saveEdit, startRun } from '@/learning/practice';
 import { editorSaved, simSaved, sqlSaved, terminalSaved } from './savedPractice';
 
@@ -34,14 +34,9 @@ describe('途中の実戦の記録', () => {
       if (p.mode === 'simulation') {
         let sim = createSim(p.environment, p.setup);
         const fresh = sim;
-        const log: { line: string; error: string | null }[] = [];
         for (const step of [null, ...p.steps]) {
-          for (const line of step ? answerOf(step) : []) {
-            const out = applyStatement(sim, line);
-            sim = out.state;
-            log.push({ line, error: out.error });
-          }
-          expect(simSaved(p, fresh, json({ sim, log, run })).kind, id).toBe('ok');
+          for (const a of step?.actions ?? []) sim = applyAction(sim, a).state;
+          expect(simSaved(p, fresh, json({ sim, run })).kind, id).toBe('ok');
         }
       } else if (p.mode === 'sql') {
         expect(sqlSaved(p, json({ statements: ['SELECT 1'], log: [{ statement: 'SELECT 1', results: [{ columns: ['1'], rows: [[1]] }], changes: 0, error: null }], run })).kind, id).toBe('ok');
@@ -75,10 +70,12 @@ describe('途中の実戦の記録', () => {
     expect(terminalSaved(terminal, { shell: { ...shell, cwd: 3 }, run: startRun() }).kind).toBe('broken');
 
     const fresh = createSim(connect.environment, connect.setup);
-    expect(simSaved(connect, fresh, { sim: fresh, log: [], run: startRun() }).kind).toBe('ok');
+    expect(simSaved(connect, fresh, { sim: fresh, run: startRun() }).kind).toBe('ok');
+    // 前の版の記録（操作の文の記録 log がある）も読める
+    expect(simSaved(connect, fresh, { sim: fresh, log: [{ line: 'connect a b', error: null }], run: startRun() }).kind).toBe('ok');
     // 設定に無い点をつなぐ・違う型の状態
-    expect(simSaved(connect, fresh, { sim: { ...fresh, links: [['nowhere', 'x']] }, log: [], run: startRun() }).kind).toBe('broken');
-    expect(simSaved(connect, fresh, { sim: { type: 'order', stages: [] }, log: [], run: startRun() }).kind).toBe('broken');
+    expect(simSaved(connect, fresh, { sim: { ...fresh, links: [['nowhere', 'x']] }, run: startRun() }).kind).toBe('broken');
+    expect(simSaved(connect, fresh, { sim: { type: 'order', stages: [] }, run: startRun() }).kind).toBe('broken');
   });
 
   it('模擬環境の設定は、保存した物でなく中身のデータから作った物を使う', async () => {
@@ -86,7 +83,7 @@ describe('途中の実戦の記録', () => {
     const connect = all.find(([, p]) => p.mode === 'simulation' && createSim(p.environment, p.setup).type === 'connect')?.[1];
     if (!connect) throw new Error('見本の実戦が無い');
     const fresh = createSim(connect.environment, connect.setup);
-    const restored = simSaved(connect, fresh, { sim: { ...fresh, setup: { nodes: [] } }, log: [], run: startRun() });
+    const restored = simSaved(connect, fresh, { sim: { ...fresh, setup: { nodes: [] } }, run: startRun() });
     expect(restored.kind === 'ok' && restored.value.sim.setup).toEqual(fresh.setup);
   });
 });

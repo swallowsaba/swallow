@@ -165,7 +165,11 @@
           "extra": true
         }
       ],
-      "initial": "leaf",
+      "initial": [
+        [
+          "leaf"
+        ]
+      ],
       "panels": [
         {
           "kind": "kv",
@@ -203,10 +207,23 @@
         "hints": [
           "各証明書の「発行者」が、次に並べる証明書の名前になる。shop.example の発行者を探す。",
           "サーバの証明書の発行者は `Minato Issuing CA`（中間証明書）。サーバの証明書を先頭に、その後ろに中間証明書を並べる。",
-          "`order leaf inter` と並べる。"
+          "上から 「サーバの証明書」 → 「中間証明書」 の順に、札をドラッグして並べる。"
         ],
         "expectedErrors": [
           "sec-chain-order"
+        ],
+        "actions": [
+          {
+            "op": "arrange",
+            "stages": [
+              [
+                "leaf"
+              ],
+              [
+                "inter"
+              ]
+            ]
+          }
         ]
       }
     ]

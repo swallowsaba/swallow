@@ -2,10 +2,11 @@ import { z } from 'zod';
 
 /**
  * 画面で操作する模擬環境（模）の初期状態の形（docs/content-spec.md 2.4.1、docs/decisions.md D-16）。
- * 5 つの型（つなぐ・並べる・割り振る・設定する・読み取って答える）ごとに setup の形を決め、zod で検証する。
+ * 型（つなぐ・並べる・置く・読み取って答える）ごとに setup の形を決め、zod で検証する。
+ * 画面の操作は、ドラッグして置く・つなぐ・並べ替える の 3 つと、押すだけの選択（REWORK-PRACTICE.txt 原則 3）。
  */
 
-/** ID は空白を含まない語（日本語でよい）。操作の文に書く */
+/** ID は空白を含まない語（日本語でよい）。判定の式に書く。画面には出さない（画面には名前を出す） */
 const id = z.string().regex(/^[^\s,=<>&!]+$/, 'ID は空白と , = < > & ! を含まない語');
 
 /* ---------- 画面に示す情報（全ての型で置ける） ---------- */
@@ -55,7 +56,7 @@ export const connectSetupSchema = z.object({
   directed: z.boolean().optional(),
   /** 引けない線と、引こうとした時のエラーの文 */
   forbid: z.array(z.object({ a: id, b: id, message: z.string().min(1) }).strict()).optional(),
-  /** 荷物を送れる組（画面に「送る」の操作が出る） */
+  /** 荷物を送れる組（画面に、何を送るかが文字で分かるボタンが出る。label は「ping サーバ」のような、押すと何が起きるかの文） */
   sends: z.array(z.object({ from: id, to: id, label: z.string().min(1) }).strict()).optional(),
   ...panels,
 }).strict();
@@ -72,24 +73,26 @@ export const orderSetupSchema = z.object({
     needs: z.array(id).optional(),
     /** 並べなくてよい物（紛れ込ませた札） */
     extra: z.boolean().optional(),
+    /** 流れに入れると、そこで処理が止まる札の、止まる理由（並べ終えて流した時に、その段が赤くなって出る） */
+    stop: z.string().min(1).optional(),
     note: z.string().optional(),
   }).strict()).min(2),
   /** 同じ段に並べられる（並行）か */
   parallel: z.boolean().optional(),
   /** かかる時間の単位（画面に出す。無ければ分）。チームの手順の待ちなど、分で数えない時に書く */
   unit: z.string().min(1).optional(),
-  /** 初めの並び（操作の文の order の後ろと同じ形） */
-  initial: z.string().optional(),
+  /** 初めの並び（上の段から。段ごとに、その段に並べる札の ID） */
+  initial: z.array(z.array(id).min(1)).optional(),
   ...panels,
 }).strict();
 
-/* ---------- 割り振る ---------- */
+/* ---------- 置く（割り振る・仕分ける） ---------- */
 
 export const assignSetupSchema = z.object({
   slots: z.array(z.object({
     id,
     label: z.string().min(1),
-    /** 容量（札の大きさの合計の上限）。超える put はエラー */
+    /** 容量（札の大きさの合計の上限）。超える札は入らない */
     capacity: z.number().min(0).optional(),
     /** 容量の単位（画面に出す） */
     unit: z.string().optional(),
@@ -106,6 +109,10 @@ export const assignSetupSchema = z.object({
     /** 複数の枠に入れられる（役割に権限を配る、など） */
     multi: z.boolean().optional(),
     extra: z.boolean().optional(),
+    /** その枠には入らない理由（枠の ID → 文）。入れようとすると枠が赤く光り、その文が出る */
+    refuse: z.record(id, z.string().min(1)).optional(),
+    /** 動かせない理由（初めに入っている所から動かそうとすると、この文で断る。ほかのアプリが使っているメモリなど） */
+    keep: z.string().min(1).optional(),
     note: z.string().optional(),
   }).strict()).min(1),
   /** 初めの割り振り（札 → 枠） */
@@ -113,7 +120,7 @@ export const assignSetupSchema = z.object({
   ...panels,
 }).strict();
 
-/* ---------- 設定する ---------- */
+/* ---------- 設定する（作り直しの間だけ残す。全ての実戦を作り直したら消す。REWORK-PRACTICE.txt (2)） ---------- */
 
 export const configSetupSchema = z.object({
   fields: z.array(z.object({
@@ -143,7 +150,8 @@ export const readSetupSchema = z.object({
   questions: z.array(z.object({
     id,
     prompt: z.string().min(1),
-    options: z.array(z.string().min(1)).optional(),
+    /** 選べる答え（押して選ぶ。文を打つ欄は作らない） */
+    options: z.array(z.string().min(1)).min(2),
   }).strict()).min(1),
   panels: z.array(panelSchema).min(1).max(8),
 }).strict();
@@ -164,6 +172,38 @@ export interface ConfigState { type: 'config'; setup: ConfigSetup; fields: Recor
 export interface ReadState { type: 'read'; setup: ReadSetup; answers: Record<string, string> }
 
 export type SimState = ConnectState | OrderState | AssignState | ConfigState | ReadState;
+
+/* ---------- 操作（画面の操作と、最後のヒントの再生が同じ形を通る） ---------- */
+
+const node = id;
+/**
+ * 1 つの操作。画面のドラッグ・ボタンは、この形にして模擬に渡す（src/engines/sim/sim.ts の applyAction）。
+ * 実戦の手順の answer（最後のヒントで通る操作）も、この形で書く（docs/content-spec.md 2.4.1）
+ */
+export const simActionSchema = z.discriminatedUnion('op', [
+  /** つなぐ: 点から点へドラッグして線を引く */
+  z.object({ op: z.literal('connect'), a: node, b: node }).strict(),
+  /** つなぐ: 線を押して外す */
+  z.object({ op: z.literal('cut'), a: node, b: node }).strict(),
+  /** つなぐ: 止まった機器の「動かす」を押す */
+  z.object({ op: z.literal('start'), node }).strict(),
+  /** つなぐ: 「送る」のボタンを押す */
+  z.object({ op: z.literal('send'), from: node, to: node }).strict(),
+  /** 並べる: ドラッグして並べ替えた後の並び（上の段から） */
+  z.object({ op: z.literal('arrange'), stages: z.array(z.array(id).min(1)) }).strict(),
+  /** 置く: 札を枠へドラッグして入れる（別の枠に入っている札は、その枠から移る） */
+  z.object({ op: z.literal('put'), item: id, slot: id }).strict(),
+  /** 置く: 枠の札を置き場へドラッグして戻す */
+  z.object({ op: z.literal('take'), item: id, slot: id.optional() }).strict(),
+  /** 読み取って答える: 答えを押して選ぶ */
+  z.object({ op: z.literal('answer'), question: id, value: z.string().min(1) }).strict(),
+  /** 設定する（作り直しの間だけ） */
+  z.object({ op: z.literal('set'), field: id, value: z.string().min(1) }).strict(),
+  z.object({ op: z.literal('add'), table: id, row: z.record(id, z.string()) }).strict(),
+  z.object({ op: z.literal('del'), table: id, index: z.number().int().min(1) }).strict(),
+]);
+
+export type SimAction = z.infer<typeof simActionSchema>;
 
 /** 1 つの操作の結果。誤りなら error に文を入れ、状態はそのまま */
 export interface SimOutcome {

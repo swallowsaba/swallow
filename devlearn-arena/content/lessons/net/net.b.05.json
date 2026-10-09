@@ -246,10 +246,32 @@
         "hints": [
           "表の「一部が欠けたら」と「遅れたら」の、どちらが困るかを見る。",
           "ファイルと Web は欠けると困るので TCP。音声は遅れると困るので UDP。DNS は問いも答えも小さく、欠けたら問い直せば済むので UDP。",
-          "`answer file TCP・欠けると困る` `answer voice UDP・遅れると困る` `answer web TCP・欠けると困る` `answer dns UDP・短い問いで済む` の順に入れる。"
+          "「ファイルの転送（設計書を送る）」は「TCP・欠けると困る」を押す、「生の音声通話」は「UDP・遅れると困る」を押す、「Web のページ」は「TCP・欠けると困る」を押す、「DNS の問い合わせ（名前を引く）」は「UDP・短い問いで済む」を押す。"
         ],
         "expectedErrors": [
           "net-proto-mix"
+        ],
+        "actions": [
+          {
+            "op": "answer",
+            "question": "file",
+            "value": "TCP・欠けると困る"
+          },
+          {
+            "op": "answer",
+            "question": "voice",
+            "value": "UDP・遅れると困る"
+          },
+          {
+            "op": "answer",
+            "question": "web",
+            "value": "TCP・欠けると困る"
+          },
+          {
+            "op": "answer",
+            "question": "dns",
+            "value": "UDP・短い問いで済む"
+          }
         ]
       }
     ]

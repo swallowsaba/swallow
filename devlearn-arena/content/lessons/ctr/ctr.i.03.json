@@ -6,16 +6,35 @@
   "title": "コンテナのネットワーク",
   "goal": "コンテナどうし・外との通信の仕組みを説明できる",
   "minutes": 20,
-  "prerequisites": ["ctr.b.03", "net.b.04"],
-  "related": ["docker.i.04", "net.b.04"],
-  "next": ["ctr.i.05", "docker.i.04"],
-  "terms": ["container", "network", "port-publish", "web", "db", "port", "app"],
+  "prerequisites": [
+    "ctr.b.03",
+    "net.b.04"
+  ],
+  "related": [
+    "docker.i.04",
+    "net.b.04"
+  ],
+  "next": [
+    "ctr.i.05",
+    "docker.i.04"
+  ],
+  "terms": [
+    "container",
+    "network",
+    "port-publish",
+    "web",
+    "db",
+    "port",
+    "app"
+  ],
   "explain": {
     "what": "{{term:container}}は、仮想の{{term:network}}（網）につながる。同じ網のコンテナどうしは、相手のコンテナの名前で届く。外から届かせるには、機械の{{term:port}}をコンテナのポートにつなぐ{{term:port-publish}}をする。",
     "why": "コンテナは閉じた箱で、つなぎ方を決めないと、ほかのコンテナにも外にも届かない。逆に、公開しなければ外からは届かないので、守りたい物（{{term:db}}）を隠せる。",
     "use": "{{term:web}}の{{term:app}}と DB をつなぐ・Web だけを外に公開する。コンテナの中の localhost は、そのコンテナ自身を指す。",
     "when": "Web のコンテナから DB につながらない。設定には localhost:5432 と書いてある。同じ機械で動いているのに、なぜ届かないのか。",
-    "figures": ["ctr-i03-network"]
+    "figures": [
+      "ctr-i03-network"
+    ]
   },
   "understand": [
     {
@@ -31,9 +50,23 @@
       "kind": "situation",
       "prompt": "web のコンテナが 80 番で待っているのに、外のブラウザから届かない。どんな状態か。",
       "choices": [
-        { "id": "a", "text": "ポートを公開していない（機械のポートと、コンテナの 80 番がつながっていない）", "correct": true },
-        { "id": "b", "text": "web と db が同じ網にいる", "correct": false, "whyNot": "同じ網かどうかは、コンテナどうしの話。外から届くかは、ポートの公開で決まる。" },
-        { "id": "c", "text": "コンテナの名前が長すぎる", "correct": false, "whyNot": "名前の長さは関係ない。外から届かせるには、機械のポートを公開してつなぐ。" }
+        {
+          "id": "a",
+          "text": "ポートを公開していない（機械のポートと、コンテナの 80 番がつながっていない）",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "web と db が同じ網にいる",
+          "correct": false,
+          "whyNot": "同じ網かどうかは、コンテナどうしの話。外から届くかは、ポートの公開で決まる。"
+        },
+        {
+          "id": "c",
+          "text": "コンテナの名前が長すぎる",
+          "correct": false,
+          "whyNot": "名前の長さは関係ない。外から届かせるには、機械のポートを公開してつなぐ。"
+        }
       ],
       "see": "what"
     }
@@ -44,9 +77,23 @@
       "kind": "cause",
       "prompt": "web から名前 db で DB に届かない。web は front-net、db は back-net にいる。原因は？",
       "choices": [
-        { "id": "a", "text": "2 つが別の網にいる", "correct": true },
-        { "id": "b", "text": "DB を外に公開していない", "correct": false, "whyNot": "公開は外からの話。コンテナどうしは、同じ網にいれば公開しなくても届く。" },
-        { "id": "c", "text": "db の名前を、大文字で書く必要がある", "correct": false, "whyNot": "大文字かどうかではない。別の網にいると、名前も引けず、届かない。" }
+        {
+          "id": "a",
+          "text": "2 つが別の網にいる",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "DB を外に公開していない",
+          "correct": false,
+          "whyNot": "公開は外からの話。コンテナどうしは、同じ網にいれば公開しなくても届く。"
+        },
+        {
+          "id": "c",
+          "text": "db の名前を、大文字で書く必要がある",
+          "correct": false,
+          "whyNot": "大文字かどうかではない。別の網にいると、名前も引けず、届かない。"
+        }
       ],
       "explanation": "コンテナどうしが届くかは、同じ網にいるかで決まる。同じ網なら、名前で届く。"
     },
@@ -55,9 +102,23 @@
       "kind": "situation",
       "prompt": "DB のコンテナのポートを、外に公開するか。",
       "choices": [
-        { "id": "a", "text": "しない。web から届けば足りる", "correct": true },
-        { "id": "b", "text": "する。どこからでも届く方が便利", "correct": false, "whyNot": "外から DB に直接届くと、中身を狙われる。DB に用があるのは web だけ。" },
-        { "id": "c", "text": "web より先に公開する", "correct": false, "whyNot": "順番の話ではない。DB は外に出さず、同じ網の web からだけ届かせる。" }
+        {
+          "id": "a",
+          "text": "しない。web から届けば足りる",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "する。どこからでも届く方が便利",
+          "correct": false,
+          "whyNot": "外から DB に直接届くと、中身を狙われる。DB に用があるのは web だけ。"
+        },
+        {
+          "id": "c",
+          "text": "web より先に公開する",
+          "correct": false,
+          "whyNot": "順番の話ではない。DB は外に出さず、同じ網の web からだけ届かせる。"
+        }
       ],
       "explanation": "外に公開するのは、外から使う物（web）だけ。DB は網の中に隠す。"
     },
@@ -66,9 +127,23 @@
       "kind": "predict",
       "prompt": "web のコンテナの中で、localhost:5432 につなぐ。どこにつながろうとする？",
       "choices": [
-        { "id": "a", "text": "web のコンテナ自身の 5432 番", "correct": true },
-        { "id": "b", "text": "同じ機械で動いている db のコンテナ", "correct": false, "whyNot": "コンテナには自分の網がある。中の localhost は、そのコンテナ自身を指す。" },
-        { "id": "c", "text": "機械の外のどこかの DB", "correct": false, "whyNot": "localhost は、外ではなく自分自身を指す名前。" }
+        {
+          "id": "a",
+          "text": "web のコンテナ自身の 5432 番",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "同じ機械で動いている db のコンテナ",
+          "correct": false,
+          "whyNot": "コンテナには自分の網がある。中の localhost は、そのコンテナ自身を指す。"
+        },
+        {
+          "id": "c",
+          "text": "機械の外のどこかの DB",
+          "correct": false,
+          "whyNot": "localhost は、外ではなく自分自身を指す名前。"
+        }
       ],
       "explanation": "コンテナの中の localhost は、そのコンテナ自身。別のコンテナは、名前で指す。"
     }
@@ -79,10 +154,43 @@
     "environment": "sim-config",
     "setup": {
       "fields": [
-        { "id": "db網", "label": "db がいる網", "options": ["back-net", "front-net"], "value": "back-net" },
-        { "id": "宛先", "label": "web が DB を指す宛先", "options": ["localhost:5432", "172.18.0.3:5432", "db:5432"], "value": "localhost:5432" },
-        { "id": "web公開", "label": "web の公開", "options": ["しない", "8080:80"], "value": "しない" },
-        { "id": "db公開", "label": "db の公開", "options": ["5432:5432", "しない"], "value": "5432:5432" }
+        {
+          "id": "db網",
+          "label": "db がいる網",
+          "options": [
+            "back-net",
+            "front-net"
+          ],
+          "value": "back-net"
+        },
+        {
+          "id": "宛先",
+          "label": "web が DB を指す宛先",
+          "options": [
+            "localhost:5432",
+            "172.18.0.3:5432",
+            "db:5432"
+          ],
+          "value": "localhost:5432"
+        },
+        {
+          "id": "web公開",
+          "label": "web の公開",
+          "options": [
+            "しない",
+            "8080:80"
+          ],
+          "value": "しない"
+        },
+        {
+          "id": "db公開",
+          "label": "db の公開",
+          "options": [
+            "5432:5432",
+            "しない"
+          ],
+          "value": "5432:5432"
+        }
       ],
       "settle": "!field db網=back-net && !field web公開=しない && !field db公開=5432:5432",
       "panels": [
@@ -90,43 +198,60 @@
           "kind": "log",
           "title": "web → DB",
           "when": "field db網=back-net",
-          "lines": ["届かない（web は front-net、db は back-net。別の網）"]
+          "lines": [
+            "届かない（web は front-net、db は back-net。別の網）"
+          ]
         },
         {
           "kind": "log",
           "title": "web → DB",
           "when": "field db網=front-net && field 宛先=localhost:5432",
-          "lines": ["localhost:5432: Connection refused", "（localhost は web のコンテナ自身。web の中に DB は無い）"]
+          "lines": [
+            "localhost:5432: Connection refused",
+            "（localhost は web のコンテナ自身。web の中に DB は無い）"
+          ]
         },
         {
           "kind": "log",
           "title": "web → DB",
           "when": "field db網=front-net && field 宛先=172.18.0.3:5432",
-          "lines": ["172.18.0.3:5432: 今はつながった", "（db を作り直すとアドレスが変わり、届かなくなる）"]
+          "lines": [
+            "172.18.0.3:5432: 今はつながった",
+            "（db を作り直すとアドレスが変わり、届かなくなる）"
+          ]
         },
         {
           "kind": "log",
           "title": "web → DB",
           "when": "field db網=front-net && field 宛先=db:5432",
-          "lines": ["db:5432: つながった（同じ網の中で、名前 db が引けた）"]
+          "lines": [
+            "db:5432: つながった（同じ網の中で、名前 db が引けた）"
+          ]
         },
         {
           "kind": "log",
           "title": "外 → db",
           "when": "field db公開=5432:5432",
-          "lines": ["外から 5432 番で DB に届いてしまう"]
+          "lines": [
+            "外から 5432 番で DB に届いてしまう"
+          ]
         },
         {
           "kind": "log",
           "title": "外 → web",
           "when": "field web公開=しない",
-          "lines": ["届かない（web を公開していない）"]
+          "lines": [
+            "届かない（web を公開していない）"
+          ]
         },
         {
           "kind": "log",
           "title": "外から",
           "when": "field web公開=8080:80 && field db公開=しない",
-          "lines": ["8080 番: web に届いた", "5432 番: 届かない（DB は網の中に隠れた）"]
+          "lines": [
+            "8080 番: web に届いた",
+            "5432 番: 届かない（DB は網の中に隠れた）"
+          ]
         }
       ]
     },
@@ -134,26 +259,60 @@
       {
         "id": "reach",
         "purpose": "web から DB に届くようにする。db を web と同じ網に入れ、web から DB を指す宛先を直す。",
-        "check": { "kind": "sim", "expr": "field db網=front-net 宛先=db:5432" },
+        "check": {
+          "kind": "sim",
+          "expr": "field db網=front-net 宛先=db:5432"
+        },
         "afterward": "db が front-net に入り、web から名前 db で届いた。名前で指すので、db を作り直しても届く。",
         "hints": [
           "web と db が別の網にいる。同じ網にいれば、相手の名前で届く。",
           "web の中の localhost は web 自身。アドレスは作り直すと変わる。DB はコンテナの名前で指す。",
           "`set db網 front-net` `set 宛先 db:5432` の順に入れる。"
         ],
-        "expectedErrors": ["ctr-net-wrong"]
+        "expectedErrors": [
+          "ctr-net-wrong"
+        ],
+        "actions": [
+          {
+            "op": "set",
+            "field": "db網",
+            "value": "front-net"
+          },
+          {
+            "op": "set",
+            "field": "宛先",
+            "value": "db:5432"
+          }
+        ]
       },
       {
         "id": "publish",
         "purpose": "外からは web だけに届くように、公開を決める。",
-        "check": { "kind": "sim", "expr": "field db網=front-net 宛先=db:5432 web公開=8080:80 db公開=しない" },
+        "check": {
+          "kind": "sim",
+          "expr": "field db網=front-net 宛先=db:5432 web公開=8080:80 db公開=しない"
+        },
         "afterward": "外からは 8080 番で web に届き、DB には届かない。DB に用があるのは、同じ網の web だけ。",
         "hints": [
           "外から使うのは web。DB は web から届けば足りる。",
           "web の 80 番を機械の 8080 番で公開する。db の公開はやめる。",
           "`set web公開 8080:80` `set db公開 しない` の順に入れる。"
         ],
-        "expectedErrors": ["ctr-net-wrong"]
+        "expectedErrors": [
+          "ctr-net-wrong"
+        ],
+        "actions": [
+          {
+            "op": "set",
+            "field": "web公開",
+            "value": "8080:80"
+          },
+          {
+            "op": "set",
+            "field": "db公開",
+            "value": "しない"
+          }
+        ]
       }
     ]
   },
@@ -163,8 +322,18 @@
     "retry": "まだ web から DB に届かないか、外から DB に届いてしまう。web → DB と外からの記録を見よう。"
   },
   "summary": {
-    "points": ["同じ網なら名前で届く", "外へは公開が必要", "localhost は自分"],
-    "next": ["docker.i.04", "ctr.i.05"],
-    "terms": ["network", "port-publish"]
+    "points": [
+      "同じ網なら名前で届く",
+      "外へは公開が必要",
+      "localhost は自分"
+    ],
+    "next": [
+      "docker.i.04",
+      "ctr.i.05"
+    ],
+    "terms": [
+      "network",
+      "port-publish"
+    ]
   }
 }

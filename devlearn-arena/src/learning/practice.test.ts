@@ -8,7 +8,8 @@ import type { ShellState } from '@/engines/kernel/registry';
 import { createShellState } from '@/engines/kernel/session';
 import { execute } from '@/engines/kernel/shell';
 import { initialShell, shellOptions } from '@/engines/environments';
-import { applyStatement, createSim } from '@/engines/sim/sim';
+import { applyAction, createSim, describeAction } from '@/engines/sim/sim';
+import type { SimAction } from '@/engines/sim/types';
 import {
   afterCommand, answerOf, attemptOf, checkState, commandCandidates, currentStep, findGuide, GENERIC_GUIDE, hintsUsed, isFinished,
   editedText, editOf, openHint, replayAnswers, replaySqlAnswers, resultKind, saveEdit, startRun, type PracticeRun,
@@ -266,41 +267,53 @@ describe('模擬環境（模）の実戦（docs/content-spec.md 2.4.1、docs/dec
       ],
     },
     steps: [
-      { id: 'in', purpose: '入力を処理へ', check: { kind: 'sim', expr: 'link 入力 処理' }, afterward: 'つながった', hints: ['向き', '入力から', '`connect 入力 処理` と入れる。'] },
-      { id: 'out', purpose: '処理を出力へ', check: { kind: 'sim', expr: 'path 入力>処理>出力' }, afterward: '画面に出た', hints: ['向き', '処理から', '`connect 処理 出力` と入れる。'] },
+      {
+        id: 'in', purpose: '入力を処理へ', check: { kind: 'sim', expr: 'link 入力 処理' }, afterward: 'つながった',
+        hints: ['向き', '入力から', '「キーボード」から「CPU」へドラッグして線を引く。'], actions: [{ op: 'connect', a: '入力', b: '処理' }],
+      },
+      {
+        id: 'out', purpose: '処理を出力へ', check: { kind: 'sim', expr: 'path 入力>処理>出力' }, afterward: '画面に出た',
+        hints: ['向き', '処理から', '「CPU」から「画面」へドラッグして線を引く。'], actions: [{ op: 'connect', a: '処理', b: '出力' }],
+      },
     ],
   };
 
-  it('操作の文を与えるたびに、模擬の状態で手順を判定する。誤った操作はエラーの解説を出し、ゲームオーバーにしない', () => {
+  it('画面の操作を与えるたびに、模擬の状態で手順を判定する。誤った操作はエラーの解説を出し、ゲームオーバーにしない', () => {
     let sim = createSim(practice.environment, practice.setup);
     let run = startRun();
-    const send = (line: string) => {
-      const out = applyStatement(sim, line);
+    const send = (a: SimAction) => {
+      const out = applyAction(sim, a);
+      const r = afterCommand(practice, run, { line: describeAction(sim, a), stderr: out.error ?? '', sim: out.state }, ERROR_GUIDES);
       sim = out.state;
-      const r = afterCommand(practice, run, { line, stderr: out.error ?? '', sim }, ERROR_GUIDES);
       run = r.run;
       return r;
     };
-    const wrong = send('connect 入力 マウス');
+    const wrong = send({ op: 'connect', a: '入力', b: 'マウス' });
     expect(wrong.error).not.toBeNull();
     expect(wrong.done).toEqual([]);
-    expect(send('connect 入力 処理').done.map((s) => s.id)).toEqual(['in']);
-    expect(send('connect 処理 出力').done.map((s) => s.id)).toEqual(['out']);
+    expect(send({ op: 'connect', a: '入力', b: '処理' }).done.map((s) => s.id)).toEqual(['in']);
+    expect(send({ op: 'connect', a: '処理', b: '出力' }).done.map((s) => s.id)).toEqual(['out']);
+    // 記録には、画面の名前で言い表した操作が残る
+    expect(run.commands).toContain('「キーボード」から「CPU」へ線を引いた');
     expect(isFinished(practice, run)).toBe(true);
     // エラーの後、ヒントを開かずに通した
     expect(attemptOf(practice, run).recoveredFromError).toBe(true);
   });
 
-  it('最後のヒントの文で通るかを確かめ、通らない答えを見つける', () => {
+  it('最後のヒントの操作（actions）を画面と同じ関数に与えて通るかを確かめ、通らない答えを見つける', () => {
     expect(replayAnswers(practice)).toEqual([]);
     const broken = structuredClone(practice);
     const step = broken.steps[1];
-    if (step) step.hints = [step.hints[0], step.hints[1], '`connect 入力 出力` と入れる。'];
-    expect(replayAnswers(broken).join()).toContain('最後のヒントを与えても達成条件を満たさない');
+    if (step) step.actions = [{ op: 'connect', a: '入力', b: '出力' }];
+    expect(replayAnswers(broken).join()).toContain('最後のヒントの操作をしても達成条件を満たさない');
     const typo = structuredClone(practice);
     const first = typo.steps[0];
-    if (first) first.hints = [first.hints[0], first.hints[1], '`connect 入力 処里` と入れる。'];
+    if (first) first.actions = [{ op: 'connect', a: '入力', b: '処里' }];
     expect(replayAnswers(typo).join()).toContain('「処里」という部品は無い');
+    const none = structuredClone(practice);
+    const noActions = none.steps[0];
+    if (noActions) delete noActions.actions;
+    expect(replayAnswers(none).join()).toContain('最後のヒントで通る操作（actions）が無い');
   });
 
   it('模擬の状態が無ければ、模擬の判定は満たさない', () => {

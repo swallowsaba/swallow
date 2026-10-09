@@ -234,6 +234,13 @@
         ],
         "expectedErrors": [
           "found-mojibake"
+        ],
+        "actions": [
+          {
+            "op": "set",
+            "field": "enc",
+            "value": "UTF-8"
+          }
         ]
       }
     ]

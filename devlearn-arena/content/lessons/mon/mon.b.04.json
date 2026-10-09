@@ -285,6 +285,18 @@
           "mon-alert-condition",
           "sim-no-such",
           "sim-usage"
+        ],
+        "actions": [
+          {
+            "op": "set",
+            "field": "しきい値",
+            "value": "5%"
+          },
+          {
+            "op": "set",
+            "field": "継続",
+            "value": "5分"
+          }
         ]
       },
       {
@@ -304,6 +316,18 @@
           "mon-alert-nobody",
           "sim-no-such",
           "sim-usage"
+        ],
+        "actions": [
+          {
+            "op": "set",
+            "field": "通知先",
+            "value": "当番の電話"
+          },
+          {
+            "op": "set",
+            "field": "手順",
+            "value": "付ける"
+          }
         ]
       }
     ]

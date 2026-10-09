@@ -220,6 +220,18 @@
         ],
         "expectedErrors": [
           "net-dhcp-range"
+        ],
+        "actions": [
+          {
+            "op": "set",
+            "field": "start",
+            "value": "192.168.1.100"
+          },
+          {
+            "op": "set",
+            "field": "end",
+            "value": "192.168.1.150"
+          }
         ]
       }
     ]

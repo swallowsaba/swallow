@@ -6,25 +6,56 @@
   "title": "データベースとは",
   "goal": "ファイルではなく DB を使う理由を説明できる",
   "minutes": 15,
-  "prerequisites": ["found.b.04"],
-  "related": ["found.b.04", "web.i.02"],
-  "next": ["db.b.02"],
-  "terms": ["database", "db", "dbms", "sql", "consistency", "file", "app"],
+  "prerequisites": [
+    "found.b.04"
+  ],
+  "related": [
+    "found.b.04",
+    "web.i.02"
+  ],
+  "next": [
+    "db.b.02"
+  ],
+  "terms": [
+    "database",
+    "db",
+    "dbms",
+    "sql",
+    "consistency",
+    "file",
+    "app"
+  ],
   "explain": {
     "what": "{{term:database}}（{{term:db}}）は、大量のデータを整理し、速く・正しく出し入れするための仕組み。データを預かって管理するのは{{term:dbms}}で、{{term:app}}は{{term:sql}}という言葉で「取り出して」「変えて」と頼む。",
     "why": "{{term:file}}は、2 人が同時に直すと、後から保存した方が前の変更を消してしまう。DBMS は同時に来た更新を 1 つずつ順に処理し、データの{{term:consistency}}を守る。大量のデータから探すのも速い。",
     "use": "会員の名簿・注文・在庫・予約。たくさんの人が同時に読み書きし、数が食い違うと困るデータ。",
     "when": "コンサートのチケットの残りを、表計算のファイルで管理していた。2 つの窓口が同時に開いて 1 枚ずつ売り、保存した。売ったのは 2 枚なのに、残りは 1 枚しか減っていなかった。",
-    "figures": ["db-b01-file-vs-db"]
+    "figures": [
+      "db-b01-file-vs-db"
+    ]
   },
   "understand": [
     {
       "kind": "situation",
       "prompt": "共有のファイルで管理していて、困りやすいのはどの場面か。",
       "choices": [
-        { "id": "a", "text": "何人もの係が、同じ表を同時に直す", "correct": true },
-        { "id": "b", "text": "1 人で、自分の予定を書き留める", "correct": false, "whyNot": "書く人が 1 人なら、同時の更新は起きない。小さなメモならファイルで十分。" },
-        { "id": "c", "text": "できあがった資料を、読むだけで配る", "correct": false, "whyNot": "読むだけなら、書き換えの食い違いは起きない。" }
+        {
+          "id": "a",
+          "text": "何人もの係が、同じ表を同時に直す",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "1 人で、自分の予定を書き留める",
+          "correct": false,
+          "whyNot": "書く人が 1 人なら、同時の更新は起きない。小さなメモならファイルで十分。"
+        },
+        {
+          "id": "c",
+          "text": "できあがった資料を、読むだけで配る",
+          "correct": false,
+          "whyNot": "読むだけなら、書き換えの食い違いは起きない。"
+        }
       ],
       "see": "why"
     },
@@ -32,9 +63,18 @@
       "kind": "match",
       "prompt": "言葉と説明を結ぶ。",
       "pairs": [
-        ["DB", "整理して預けたデータの集まり"],
-        ["DBMS", "データを預かって管理する仕組み"],
-        ["SQL", "DB に頼むための言葉"]
+        [
+          "DB",
+          "整理して預けたデータの集まり"
+        ],
+        [
+          "DBMS",
+          "データを預かって管理する仕組み"
+        ],
+        [
+          "SQL",
+          "DB に頼むための言葉"
+        ]
       ],
       "see": "what"
     }
@@ -45,9 +85,23 @@
       "kind": "choice",
       "prompt": "ファイルではなく DB を使う一番の理由は？",
       "choices": [
-        { "id": "a", "text": "何人もが同時に出し入れしても、データが食い違わない", "correct": true },
-        { "id": "b", "text": "ファイルより見た目がきれいに表示できる", "correct": false, "whyNot": "見た目は表示する画面の仕事。DB の価値は、データの正しさと速さ。" },
-        { "id": "c", "text": "保存する場所を取らない", "correct": false, "whyNot": "DB も保存の場所は使う。場所の節約が目的ではない。" }
+        {
+          "id": "a",
+          "text": "何人もが同時に出し入れしても、データが食い違わない",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "ファイルより見た目がきれいに表示できる",
+          "correct": false,
+          "whyNot": "見た目は表示する画面の仕事。DB の価値は、データの正しさと速さ。"
+        },
+        {
+          "id": "c",
+          "text": "保存する場所を取らない",
+          "correct": false,
+          "whyNot": "DB も保存の場所は使う。場所の節約が目的ではない。"
+        }
       ],
       "explanation": "DBMS は同時に来た更新を順に処理して、整合性を守る。大量のデータから素早く探すこともできる。"
     },
@@ -56,9 +110,23 @@
       "kind": "term",
       "prompt": "{{term:sql}}とは何か。",
       "choices": [
-        { "id": "a", "text": "DB に「取り出して」「入れて」「変えて」と頼むための言葉", "correct": true },
-        { "id": "b", "text": "DB の中身を保存するファイルの名前", "correct": false, "whyNot": "SQL は頼むための言葉。保存の形のことではない。" },
-        { "id": "c", "text": "DB を動かす機械の名前", "correct": false, "whyNot": "動かして管理するのは DBMS（ソフトウェア）。SQL は、それに話しかける言葉。" }
+        {
+          "id": "a",
+          "text": "DB に「取り出して」「入れて」「変えて」と頼むための言葉",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "DB の中身を保存するファイルの名前",
+          "correct": false,
+          "whyNot": "SQL は頼むための言葉。保存の形のことではない。"
+        },
+        {
+          "id": "c",
+          "text": "DB を動かす機械の名前",
+          "correct": false,
+          "whyNot": "動かして管理するのは DBMS（ソフトウェア）。SQL は、それに話しかける言葉。"
+        }
       ],
       "explanation": "SQL は DB に頼む共通の言葉。多くの DBMS で、ほぼ同じ書き方が使える。"
     },
@@ -67,9 +135,23 @@
       "kind": "situation",
       "prompt": "ネットの店で、注文を受けるたびに在庫を 1 つ減らす。注文は同時にいくつも来る。何で管理するか。",
       "choices": [
-        { "id": "a", "text": "DB（同時の更新を順に処理できる）", "correct": true },
-        { "id": "b", "text": "店長のパソコンの表計算のファイル", "correct": false, "whyNot": "同時に来た注文で、後の保存が前を消し、在庫が食い違う。売り切れても注文を受けてしまう。" },
-        { "id": "c", "text": "注文ごとに、新しいテキストのファイルを作る", "correct": false, "whyNot": "在庫の数を出すたびに全てのファイルを数え直す。遅く、数え間違いも起きる。" }
+        {
+          "id": "a",
+          "text": "DB（同時の更新を順に処理できる）",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "店長のパソコンの表計算のファイル",
+          "correct": false,
+          "whyNot": "同時に来た注文で、後の保存が前を消し、在庫が食い違う。売り切れても注文を受けてしまう。"
+        },
+        {
+          "id": "c",
+          "text": "注文ごとに、新しいテキストのファイルを作る",
+          "correct": false,
+          "whyNot": "在庫の数を出すたびに全てのファイルを数え直す。遅く、数え間違いも起きる。"
+        }
       ],
       "explanation": "同時に来る注文と在庫の更新は、DB の得意な仕事。1 つずつ順に処理して、数を合わせる。"
     }
@@ -80,17 +162,57 @@
     "environment": "sim-config",
     "setup": {
       "fields": [
-        { "id": "窓口1", "label": "窓口 1 の記録先", "options": ["共有のファイル", "DB", "ファイルとDBの両方"], "value": "共有のファイル" },
-        { "id": "窓口2", "label": "窓口 2 の記録先", "options": ["共有のファイル", "DB", "ファイルとDBの両方"], "value": "共有のファイル" },
-        { "id": "残り", "label": "売った後の残り（結果を読む）", "options": ["まだ", "5", "4", "3"], "value": "まだ" }
+        {
+          "id": "窓口1",
+          "label": "窓口 1 の記録先",
+          "options": [
+            "共有のファイル",
+            "DB",
+            "ファイルとDBの両方"
+          ],
+          "value": "共有のファイル"
+        },
+        {
+          "id": "窓口2",
+          "label": "窓口 2 の記録先",
+          "options": [
+            "共有のファイル",
+            "DB",
+            "ファイルとDBの両方"
+          ],
+          "value": "共有のファイル"
+        },
+        {
+          "id": "残り",
+          "label": "売った後の残り（結果を読む）",
+          "options": [
+            "まだ",
+            "5",
+            "4",
+            "3"
+          ],
+          "value": "まだ"
+        }
       ],
       "settle": "!field 窓口1=共有のファイル && !field 窓口2=共有のファイル",
       "panels": [
         {
           "kind": "table",
           "title": "10:00 に起きたこと",
-          "columns": ["窓口", "したこと"],
-          "rows": [["窓口 1", "残り 5 を見て、1 枚売った"], ["窓口 2", "同じ時に残り 5 を見て、1 枚売った"]]
+          "columns": [
+            "窓口",
+            "したこと"
+          ],
+          "rows": [
+            [
+              "窓口 1",
+              "残り 5 を見て、1 枚売った"
+            ],
+            [
+              "窓口 2",
+              "同じ時に残り 5 を見て、1 枚売った"
+            ]
+          ]
         },
         {
           "kind": "log",
@@ -142,26 +264,55 @@
       {
         "id": "move",
         "purpose": "2 つの窓口の記録先を、同時の更新を順に処理できる所に移す。",
-        "check": { "kind": "sim", "expr": "field 窓口1=DB && field 窓口2=DB" },
+        "check": {
+          "kind": "sim",
+          "expr": "field 窓口1=DB && field 窓口2=DB"
+        },
         "afterward": "2 つの窓口が同じ DB に頼むようになった。同時に来た「1 枚減らす」を、DB が 1 つずつ順に処理した。",
         "hints": [
           "食い違ったのは、2 人が同じ数（5）から計算して、後の保存が前を消したから。",
           "同時の更新を順に処理するのは DB の仕事。ファイルにも書くと、記録が 2 つになって食い違う。",
           "`set 窓口1 DB` と `set 窓口2 DB` を順に入れる。"
         ],
-        "expectedErrors": ["db-file-still"]
+        "expectedErrors": [
+          "db-file-still"
+        ],
+        "actions": [
+          {
+            "op": "set",
+            "field": "窓口1",
+            "value": "DB"
+          },
+          {
+            "op": "set",
+            "field": "窓口2",
+            "value": "DB"
+          }
+        ]
       },
       {
         "id": "read",
         "purpose": "DB で記録した結果を読み、2 枚売った後の残りの数を選ぶ。",
-        "check": { "kind": "sim", "expr": "field 残り=3" },
+        "check": {
+          "kind": "sim",
+          "expr": "field 残り=3"
+        },
         "afterward": "残りは 3。5 枚から 2 枚売った数と合う。DB はデータの整合性を守った。",
         "hints": [
           "「DB で記録した結果」の記録を、上から順に読む。",
           "DB は 2 つの更新を順に処理した。5 から 1 減って 4、さらに 1 減って何になるか。",
           "`set 残り 3` と入れる。"
         ],
-        "expectedErrors": ["db-remain-misread"]
+        "expectedErrors": [
+          "db-remain-misread"
+        ],
+        "actions": [
+          {
+            "op": "set",
+            "field": "残り",
+            "value": "3"
+          }
+        ]
       }
     ]
   },
@@ -171,8 +322,19 @@
     "retry": "まだ数が食い違っている。共有のファイルで記録した結果を読み、2 つの保存がどう重なったかを見よう。"
   },
   "summary": {
-    "points": ["DB は整理と整合性", "SQL で頼む", "同時の出し入れに強い"],
-    "next": ["db.b.02"],
-    "terms": ["database", "dbms", "sql", "consistency"]
+    "points": [
+      "DB は整理と整合性",
+      "SQL で頼む",
+      "同時の出し入れに強い"
+    ],
+    "next": [
+      "db.b.02"
+    ],
+    "terms": [
+      "database",
+      "dbms",
+      "sql",
+      "consistency"
+    ]
   }
 }

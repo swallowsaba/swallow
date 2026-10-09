@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { simActionSchema } from '@/engines/sim/types';
 
 /**
  * コンテンツのデータの形（docs/content-spec.md）。content/ の JSON を読み込む時に、この形で検証する。
@@ -126,6 +127,11 @@ export const practiceStepSchema = z.object({
   afterward: rich,
   hints: z.tuple([rich, rich, rich]),
   expectedErrors: z.array(z.string().min(1)).optional(),
+  /**
+   * 画面で操作する実戦（模）の、最後のヒントで通る操作（画面の操作と同じ形。docs/content-spec.md 2.4.1）。
+   * 最後のヒントは「何をどこへ置く・つなぐ・並べる」を日本語で書き、テストはこの操作を画面と同じ関数に与えて確かめる
+   */
+  actions: z.array(simActionSchema).min(1).optional(),
 }).strict();
 
 export const practiceSchema = z.object({

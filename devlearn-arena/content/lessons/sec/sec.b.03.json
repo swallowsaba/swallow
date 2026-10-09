@@ -255,6 +255,18 @@
         "expectedErrors": [
           "sec-mfa-no-factor",
           "sec-mfa-weak"
+        ],
+        "actions": [
+          {
+            "op": "set",
+            "field": "二つ目",
+            "value": "スマホのアプリの確認コード"
+          },
+          {
+            "op": "set",
+            "field": "多要素",
+            "value": "全員に必須"
+          }
         ]
       },
       {
@@ -273,6 +285,23 @@
         "expectedErrors": [
           "sec-mfa-weak",
           "sec-password-weak"
+        ],
+        "actions": [
+          {
+            "op": "set",
+            "field": "長さ",
+            "value": "十二文字以上"
+          },
+          {
+            "op": "set",
+            "field": "照合",
+            "value": "する（一覧にある物は使えない）"
+          },
+          {
+            "op": "set",
+            "field": "失敗",
+            "value": "五回で十五分止める"
+          }
         ]
       }
     ]

@@ -1,5 +1,6 @@
 import { ENVIRONMENTS, isEnvironmentId, resolveSetup } from '@/engines/environments';
-import { createSim, exprProblems, isSimEnvironment } from '@/engines/sim/sim';
+import { actionNames, createSim, exprProblems, isSimEnvironment } from '@/engines/sim/sim';
+import type { SimState } from '@/engines/sim/types';
 import { replayAnswers } from '@/learning/practice';
 import { parseRich, termsIn } from './rich';
 import type { CatalogEntry, ErrorGuide, Lesson, Mission, Practice, Term } from './schema';
@@ -56,10 +57,12 @@ export function richInOrder(l: Lesson): { where: string; text: string }[] {
     add(w, q.explanation);
   }
   add('実戦.目的', l.practice.purpose);
+  const names = l.practice.mode === 'simulation' ? screenNames(l.practice.setup) : [];
   for (const s of l.practice.steps) {
     const w = `実戦 ${s.id}`;
     add(w, s.purpose);
-    s.hints.forEach((h) => add(w, h));
+    // 画面で操作する実戦の最後のヒントは、画面の名前をそのまま「」で書く（用語の印の規則は、画面の名前には掛けない）
+    s.hints.forEach((h, i) => add(w, i === 2 ? maskNames(h, names) : h));
     add(w, s.afterward);
   }
   add('結果', l.result.success);
@@ -68,6 +71,26 @@ export function richInOrder(l: Lesson): { where: string; text: string }[] {
   for (const point of l.summary.points) add('まとめ', point);
   return out;
 }
+
+/** 画面で操作する実戦の setup に出る、画面の名前（部品・札・枠の名前、送るボタンの文、答えの値）。長い物から */
+function screenNames(setup: unknown): string[] {
+  const out = new Set<string>();
+  const s = (setup ?? {}) as Record<string, unknown>;
+  for (const key of ['nodes', 'items', 'slots', 'sends', 'fields']) {
+    for (const x of (Array.isArray(s[key]) ? s[key] : []) as { label?: unknown; options?: unknown }[]) {
+      if (typeof x.label === 'string') out.add(x.label);
+      if (Array.isArray(x.options)) for (const o of x.options) if (typeof o === 'string') out.add(o);
+    }
+  }
+  for (const x of (Array.isArray(s.questions) ? s.questions : []) as { prompt?: unknown; options?: unknown }[]) {
+    if (typeof x.prompt === 'string') out.add(x.prompt);
+    if (Array.isArray(x.options)) for (const o of x.options) if (typeof o === 'string') out.add(o);
+  }
+  return [...out].sort((a, b) => b.length - a.length);
+}
+
+/** 「画面の名前」を「」にする */
+const maskNames = (text: string, names: readonly string[]): string => names.reduce((t, n) => t.split(`「${n}」`).join('「」'), text);
 
 const KIND_FAMILY: Record<string, string> = { choice: 'choice', multi: 'choice' };
 const CHOICE_KINDS = new Set(['choice', 'multi', 'situation', 'cause', 'predict', 'term']);
@@ -146,12 +169,14 @@ function practiceProblems(practice: Practice, ctx: Pick<ValidateContext, 'errors
     try {
       const initial = createSim(practice.environment, practice.setup);
       for (const s of practice.steps) if (s.check.kind === 'sim') for (const e of exprProblems(initial, s.check.expr)) p.push(`実戦 ${s.id}: ${e}`);
+      p.push(...simAnswerProblems(practice, initial));
       p.push(...replayAnswers(practice, ctx.guides));
     } catch (e) {
       p.push(`実戦: 初期状態（setup）の形が違う: ${e instanceof Error ? e.message : String(e)}`);
     }
     return p;
   }
+  for (const s of practice.steps) if (s.actions) p.push(`実戦 ${s.id}: 操作（actions）は画面で操作する実戦（模）だけに書く`);
   if (!isEnvironmentId(practice.environment)) p.push(`実戦: 模擬環境 ${practice.environment} が無い（src/engines/environments.ts）`);
   else if ((practice.mode === 'sql') !== (practice.environment === 'sql-sqlite') || (practice.mode !== 'sql' && !ENVIRONMENTS[practice.environment].shell)) {
     p.push(`実戦: 形 ${practice.mode} に、模擬環境 ${practice.environment} は使えない`);
@@ -162,6 +187,24 @@ function practiceProblems(practice: Practice, ctx: Pick<ValidateContext, 'errors
       p.push(...replayAnswers(practice, ctx.guides));
     } catch (e) {
       p.push(`実戦: 初期状態（setup）の形が違う: ${e instanceof Error ? e.message : String(e)}`);
+    }
+  }
+  return p;
+}
+
+/**
+ * 画面で操作する実戦の最後のヒント（REWORK-PRACTICE.txt (2)）: 打つ文（`...`）を書かず、
+ * 「何をどこへ置く・つなぐ・並べる」を日本語で書く。操作（actions）に出てくる物の名前が、画面と同じ名前で全て書いてある
+ */
+function simAnswerProblems(practice: Practice, initial: SimState): string[] {
+  const p: string[] = [];
+  // 設定する（sim-config）は作り直しの間だけ残す型。最後のヒントは前の形のまま（作り直す時に、この型ごと消す）
+  if (initial.type === 'config') return p;
+  for (const s of practice.steps) {
+    const last = s.hints[2];
+    if (parseRich(last).some((x) => x.kind === 'code')) p.push(`実戦 ${s.id}: 最後のヒントに打つ文（\`...\`）を書いている（画面の操作は、何をどこへ置く・つなぐ・並べるを日本語で書く）`);
+    for (const a of s.actions ?? []) {
+      for (const name of actionNames(initial, a)) if (!last.includes(name)) p.push(`実戦 ${s.id}: 最後のヒントに、操作に出てくる「${name}」が書いていない`);
     }
   }
   return p;

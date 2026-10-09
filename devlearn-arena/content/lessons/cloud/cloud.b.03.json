@@ -293,10 +293,27 @@
         "hints": [
           "網から考える。外から入れるのは、出口がつながった網に置いた機械だけ。",
           "出口から外側の網へ、外側の網から Web の機械へ、入ってくる向きにつなぐ。つないだら、出口から Web に送ってみる。",
-          "`connect gw pub` `connect pub web` `send gw web` の順に入れる。"
+          "「出口」から「外側の網」へドラッグして線を引く、「外側の網」から「Web の機械」へドラッグして線を引く、「外から Web に頼む」を押す。"
         ],
         "expectedErrors": [
           "cloud-not-public"
+        ],
+        "actions": [
+          {
+            "op": "connect",
+            "a": "gw",
+            "b": "pub"
+          },
+          {
+            "op": "connect",
+            "a": "pub",
+            "b": "web"
+          },
+          {
+            "op": "send",
+            "from": "gw",
+            "to": "web"
+          }
         ]
       },
       {
@@ -310,10 +327,17 @@
         "hints": [
           "DB は外から直接使われない。頼むのは Web だけ。",
           "出口への道が無い網に置く。",
-          "`connect priv db` と入れる。"
+          "「内側の網」から「DB の機械」へドラッグして線を引く。"
         ],
         "expectedErrors": [
           "cloud-db-exposed"
+        ],
+        "actions": [
+          {
+            "op": "connect",
+            "a": "priv",
+            "b": "db"
+          }
         ]
       },
       {
@@ -327,10 +351,17 @@
         "hints": [
           "画像の置き場を使うのは誰か。外の利用者に直接見せる物ではない。",
           "使う Web の機械から、置き場へつなぐ。",
-          "`connect web store` と入れる。"
+          "「Web の機械」から「画像の置き場」へドラッグして線を引く。"
         ],
         "expectedErrors": [
           "cloud-storage-wrong"
+        ],
+        "actions": [
+          {
+            "op": "connect",
+            "a": "web",
+            "b": "store"
+          }
         ]
       }
     ]

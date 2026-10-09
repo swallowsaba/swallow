@@ -259,6 +259,24 @@
         ],
         "expectedErrors": [
           "devops-rare-picked"
+        ],
+        "actions": [
+          {
+            "op": "add",
+            "table": "auto",
+            "row": {
+              "作業": "検査",
+              "手順": "見直してから写す"
+            }
+          },
+          {
+            "op": "add",
+            "table": "auto",
+            "row": {
+              "作業": "配布",
+              "手順": "見直してから写す"
+            }
+          }
         ]
       },
       {
@@ -276,6 +294,16 @@
         ],
         "expectedErrors": [
           "devops-rare-picked"
+        ],
+        "actions": [
+          {
+            "op": "add",
+            "table": "auto",
+            "row": {
+              "作業": "朝の確認",
+              "手順": "見直してから写す"
+            }
+          }
         ]
       }
     ]

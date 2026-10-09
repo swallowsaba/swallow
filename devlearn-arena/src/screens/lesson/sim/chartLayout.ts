@@ -25,3 +25,7 @@ export function chartLayout(measured: number, xs: readonly string[]): ChartLayou
     labels: xs.map((text, i) => ({ x: CHART.left + step * i, text: i % every === 0 ? text : null })),
   };
 }
+
+/** 英数字と記号だけの値（アドレス・番号・コマンド）は等幅で、日本語の文は本文の字で出す。短い物は途中で折らない */
+const CODE = /^[ -~]+$/;
+export const codeClass = (v: string): string | undefined => (CODE.test(v) ? (v.length <= 20 ? 'is-code is-whole' : 'is-code') : undefined);

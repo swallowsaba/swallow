@@ -308,10 +308,17 @@
         "hints": [
           "つながらない時は、近い所（自分の LAN の中）から確かめる。",
           "「支店のプリンタへ送る」を押す。",
-          "`send pc printer` と入れる。"
+          "「支店のプリンタへ送る」を押す。"
         ],
         "expectedErrors": [
           "net-lan-only"
+        ],
+        "actions": [
+          {
+            "op": "send",
+            "from": "pc",
+            "to": "printer"
+          }
         ]
       },
       {
@@ -325,11 +332,28 @@
         "hints": [
           "送ると、どこまで届いたかが知らせに出る。LAN の外へ出る出口はどれかを見よう。",
           "支店のスイッチと支店のルータ、本社のスイッチと本社のルータが、つながっていない。両方の LAN をルータにつなぐ。",
-          "`connect sw-b r-b` `connect sw-h r-h` `send pc srv` の順に入れる。"
+          "「スイッチ」から「ルータ」へドラッグして線を引く、「スイッチ」から「ルータ」へドラッグして線を引く、「本社のサーバへ送る」を押す。"
         ],
         "expectedErrors": [
           "net-lan-only",
           "sim-forbidden"
+        ],
+        "actions": [
+          {
+            "op": "connect",
+            "a": "sw-b",
+            "b": "r-b"
+          },
+          {
+            "op": "connect",
+            "a": "sw-h",
+            "b": "r-h"
+          },
+          {
+            "op": "send",
+            "from": "pc",
+            "to": "srv"
+          }
         ]
       }
     ]

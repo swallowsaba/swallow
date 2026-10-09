@@ -637,31 +637,48 @@ describe('見本の 2 本を最後まで通せる（docs/development-plan.md Pha
     expect(session.city.getState().city.funds - funds0).toBe(session.progress.getState().progress.xp);
   });
 
-  it('found.b.01（模擬環境）: ヒントを開いても「中断した所から」と言わない。操作の文を入れて手順を満たし、結果に「入れた操作の文」を $ を付けずに並べる', async () => {
+  it('found.b.01（模擬環境）: ヒントを開いても「中断した所から」と言わない。ドラッグと押す操作で手順を満たし、結果に「画面でした操作」を $ を付けずに並べる', async () => {
     const session = createSession(1);
     const id = 'found.b.01';
     const l = await lesson(id);
     const opened = await toPractice(session, id, l);
     const { host } = opened;
-    const statement = (line: string): void => {
-      const input = host.querySelector<HTMLInputElement>('[data-testid="sim-command"]');
-      if (!input) throw new Error('文の入力欄が無い');
+    /** 部品から部品へドラッグして線を引く（jsdom は座標から要素を引けないので、放した所の下を to にする） */
+    const wire = (from: string, to: string): void => {
+      const target = $(host, `[data-node="${to}"]`);
+      const before = Object.getOwnPropertyDescriptor(document, 'elementFromPoint');
+      Object.defineProperty(document, 'elementFromPoint', { value: () => target, configurable: true });
       act(() => {
-        Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')?.set?.call(input, line);
-        input.dispatchEvent(new Event('input', { bubbles: true }));
+        $(host, `[data-node="${from}"]`).dispatchEvent(new MouseEvent('pointerdown', { bubbles: true, button: 0, clientX: 0, clientY: 0 }));
       });
-      act(() => input.form?.requestSubmit());
+      act(() => {
+        window.dispatchEvent(new MouseEvent('pointermove', { clientX: 40, clientY: 40 }));
+      });
+      act(() => {
+        window.dispatchEvent(new MouseEvent('pointerup', { clientX: 40, clientY: 40 }));
+      });
+      if (before) Object.defineProperty(document, 'elementFromPoint', before);
+      else delete (document as { elementFromPoint?: unknown }).elementFromPoint;
     };
     // ヒントを開くと進みを保存するが、中断していないので「中断した所から続ける」とは言わない
     click($(host, '[data-testid="practice-hint"]'));
     expect($(host, '[data-testid="sim-console"]').textContent).not.toContain('中断した所から続ける');
-    for (const line of ['connect kb cpu', 'connect cpu screen', 'send kb screen', 'connect cpu disk', 'send cpu disk']) statement(line);
+    // 文を打つ欄は無い
+    expect(host.querySelector('[data-testid="sim-console"] input')).toBeNull();
+    wire('kb', 'cpu');
+    wire('cpu', 'screen');
+    click($(host, '[data-send="kb>screen"]'));
+    wire('cpu', 'disk');
+    click($(host, '[data-send="cpu>disk"]'));
     // 線を足しても、先に画面へ出た答えは消えない
     expect($(host, '[data-testid="sim-console"]').textContent).toContain('2+3 = 5');
     next(host);
     expect($(host, '[data-testid="stage-result"]').dataset.result).toBe('partial');
-    expect($(host, '[data-testid="stage-result"]').textContent).toContain('入れた操作の文');
-    expect($(host, '[data-testid="result-commands"]').textContent).toBe(['connect kb cpu', 'connect cpu screen', 'send kb screen', 'connect cpu disk', 'send cpu disk'].join('\n'));
+    expect($(host, '[data-testid="stage-result"]').textContent).toContain('画面でした操作');
+    const lines = $(host, '[data-testid="result-commands"]').textContent ?? '';
+    expect(lines.split('\n')).toHaveLength(5);
+    expect(lines).toContain('「キーボード」から「CPU」へ線を引いた');
+    expect(lines).not.toContain('$');
     throughEnd(opened, session, id, l);
   });
 

@@ -210,6 +210,28 @@
         ],
         "expectedErrors": [
           "net-wrong-net"
+        ],
+        "actions": [
+          {
+            "op": "set",
+            "field": "pc1",
+            "value": "192.168.10.11/24"
+          },
+          {
+            "op": "set",
+            "field": "pc2",
+            "value": "192.168.10.12/24"
+          },
+          {
+            "op": "set",
+            "field": "pc3",
+            "value": "192.168.10.13/24"
+          },
+          {
+            "op": "set",
+            "field": "pc4",
+            "value": "192.168.10.14/24"
+          }
         ]
       }
     ]

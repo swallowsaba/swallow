@@ -16,7 +16,7 @@ import { exists, isDir, metaOf, readFile, writeFile } from '@/engines/kernel/vfs
 import { initialShell, resolveSetup } from '@/engines/environments';
 import { request } from '@/engines/http/http';
 import { resolveName, roundTrip } from '@/engines/net/probe';
-import { applyStatement, createSim, holds } from '@/engines/sim/sim';
+import { applyAction, createSim, describeAction, holds } from '@/engines/sim/sim';
 import type { SimState } from '@/engines/sim/types';
 import { verify } from '@/engines/tls/tls';
 import type { PracticeAttempt } from '@/game/types';
@@ -26,7 +26,8 @@ import type { PracticeAttempt } from '@/game/types';
  *
  * - 判定は出力の文字列ではなく、模擬環境の状態で行う（checkState）
  * - 1 つの操作で手順を続けて満たしてもよい（満たした手順は先へ進む）
- * - ヒントは手順ごとに 3 段（方向 → 具体 → そのまま打てば通る答え）。使っても失敗にはしない
+ * - ヒントは手順ごとに 3 段（方向 → 具体 → そのまま通る答え）。使っても失敗にはしない。
+ *   画面で操作する実戦の答えは「何をどこへ置く・つなぐ・並べる」の日本語と、同じ意味の操作（actions）
  * - エラーが出たら、エラーの解説（errorGuides）を探して「内容 → 原因候補 → ヒント」を示す。ゲームオーバーにしない
  * - エラーの後にヒント無しで成功したら「エラーから自力で回復した」と記録する（トラブルシューティング）
  */
@@ -419,7 +420,10 @@ function replayEditor(practice: Practice, guides: readonly ErrorGuide[]): string
   return problems;
 }
 
-/** 模擬環境（模）の実戦: 最後のヒントの操作の文を順に与え、全ての手順を満たすか */
+/**
+ * 模擬環境（模）の実戦: 各手順の最後のヒントの操作（actions）を、画面の操作と同じ関数（applyAction）に順に与え、全ての手順を満たすか。
+ * 文を打って操作する経路は無い（REWORK-PRACTICE.txt (2)）
+ */
 function replaySim(practice: Practice, guides: readonly ErrorGuide[]): string[] {
   const problems: string[] = [];
   let sim = createSim(practice.environment, practice.setup);
@@ -428,16 +432,16 @@ function replaySim(practice: Practice, guides: readonly ErrorGuide[]): string[] 
       problems.push(`実戦 ${step.id}: 判定の形 ${step.check.kind} は模擬環境の実戦で使えない`);
       continue;
     }
-    const lines = answerOf(step);
-    if (lines.length === 0) problems.push(`実戦 ${step.id}: 最後のヒントに操作の文（\`...\`）が無い`);
-    for (const line of lines) {
-      const out = applyStatement(sim, line);
-      sim = out.state;
+    const actions = step.actions ?? [];
+    if (actions.length === 0) problems.push(`実戦 ${step.id}: 最後のヒントで通る操作（actions）が無い`);
+    for (const action of actions) {
+      const out = applyAction(sim, action);
       const expected = out.error !== null && (step.expectedErrors ?? []).some((id) => guides.some((g) => g.id === id && guideMatches(g, out.error ?? '')));
-      if (out.error !== null && !expected) problems.push(`実戦 ${step.id}: 答え「${line}」でエラー: ${out.error}`);
+      if (out.error !== null && !expected) problems.push(`実戦 ${step.id}: 操作「${describeAction(sim, action)}」でエラー: ${out.error}`);
+      sim = out.state;
     }
     try {
-      if (!checkState(step.check, { sim })) problems.push(`実戦 ${step.id}: 最後のヒントを与えても達成条件を満たさない`);
+      if (!checkState(step.check, { sim })) problems.push(`実戦 ${step.id}: 最後のヒントの操作をしても達成条件を満たさない`);
     } catch (e) {
       problems.push(`実戦 ${step.id}: ${e instanceof Error ? e.message : String(e)}`);
     }

@@ -338,6 +338,23 @@
         "expectedErrors": [
           "git-pr-same-branch",
           "git-pr-misread"
+        ],
+        "actions": [
+          {
+            "op": "set",
+            "field": "取り込み先",
+            "value": "main"
+          },
+          {
+            "op": "set",
+            "field": "説明",
+            "value": "何を・なぜ・確かめ方を書く"
+          },
+          {
+            "op": "set",
+            "field": "依頼",
+            "value": "出す"
+          }
         ]
       },
       {
@@ -355,6 +372,13 @@
         ],
         "expectedErrors": [
           "git-pr-not-open"
+        ],
+        "actions": [
+          {
+            "op": "set",
+            "field": "対応",
+            "value": "比べ方を直して記録し、送る"
+          }
         ]
       },
       {
@@ -373,6 +397,18 @@
         "expectedErrors": [
           "git-pr-blocked",
           "git-pr-not-fixed"
+        ],
+        "actions": [
+          {
+            "op": "set",
+            "field": "再依頼",
+            "value": "頼む"
+          },
+          {
+            "op": "set",
+            "field": "取り込み",
+            "value": "取り込む"
+          }
         ]
       }
     ]

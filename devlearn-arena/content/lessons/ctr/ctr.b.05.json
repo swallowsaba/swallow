@@ -6,23 +6,42 @@
   "title": "レジストリ",
   "goal": "イメージを置いて配る場所と、名前とタグを読める",
   "minutes": 15,
-  "prerequisites": ["ctr.b.03"],
-  "related": ["docker.i.05", "cicd.b.04"],
-  "next": ["docker.i.05"],
-  "terms": ["registry", "image", "image-tag", "server", "memory", "authentication", "app"],
+  "prerequisites": [
+    "ctr.b.03"
+  ],
+  "related": [
+    "docker.i.05",
+    "cicd.b.04"
+  ],
+  "next": [
+    "docker.i.05"
+  ],
+  "terms": [
+    "registry",
+    "image",
+    "image-tag",
+    "server",
+    "memory",
+    "authentication",
+    "app"
+  ],
   "explain": {
     "what": "{{term:registry}}は、{{term:image}}を置いて配る場所。イメージは「レジストリの場所/イメージの名前:タグ」の形の名前で指す。{{term:image-tag}}は版の名札で、タグを省くと latest という名札の物を取る。",
     "why": "作った機械がレジストリに置けば、どの機械からも、同じ名前で同じイメージを取ってこられる。名札で版を指すので、どの版を動かすかを決められる。",
     "use": "イメージの配布と共有。作る機械が置き（push）、本番の{{term:server}}たちが取ってくる（pull）。",
     "when": "本番のサーバを 3 台に増やす。どの台にも、検証で確かめた版と同じイメージを届けたい。",
-    "figures": ["ctr-b05-registry"]
+    "figures": [
+      "ctr-b05-registry"
+    ]
   },
   "understand": [
     {
       "kind": "figure-pick",
       "figure": "ctr-b05-registry",
       "prompt": "図の名前 registry.example/shop/web:1.2 で、版を示す部分を押す。",
-      "answer": ["tag"],
+      "answer": [
+        "tag"
+      ],
       "see": "what"
     },
     {
@@ -39,9 +58,23 @@
       "kind": "term",
       "prompt": "イメージの名前の後ろの「:1.2」のような{{term:image-tag}}とは何か。",
       "choices": [
-        { "id": "a", "text": "イメージの版を示す名札", "correct": true },
-        { "id": "b", "text": "イメージを置いたレジストリの場所", "correct": false, "whyNot": "場所は名前の先頭（registry.example）。タグは名前の後ろに : で付く版の名札。" },
-        { "id": "c", "text": "イメージの大きさ", "correct": false, "whyNot": "大きさは名前に含まれない。タグは、どの版かを指すための名札。" }
+        {
+          "id": "a",
+          "text": "イメージの版を示す名札",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "イメージを置いたレジストリの場所",
+          "correct": false,
+          "whyNot": "場所は名前の先頭（registry.example）。タグは名前の後ろに : で付く版の名札。"
+        },
+        {
+          "id": "c",
+          "text": "イメージの大きさ",
+          "correct": false,
+          "whyNot": "大きさは名前に含まれない。タグは、どの版かを指すための名札。"
+        }
       ],
       "explanation": "名前は「場所/名前:タグ」。タグで版を指す。"
     },
@@ -50,9 +83,23 @@
       "kind": "cause",
       "prompt": "イメージを取ろうとしたら「manifest unknown」と言われた。考えられる原因は？",
       "choices": [
-        { "id": "a", "text": "名前かタグの綴りが違い、その版がレジストリに無い", "correct": true },
-        { "id": "b", "text": "取ってくる機械の{{term:memory}}が足りない", "correct": false, "whyNot": "これはレジストリの返事。指した名前とタグのイメージが無い、と言っている。" },
-        { "id": "c", "text": "イメージが大きすぎる", "correct": false, "whyNot": "大きさの問題なら、この返事にはならない。まず、名前とタグを 1 字ずつ見比べる。" }
+        {
+          "id": "a",
+          "text": "名前かタグの綴りが違い、その版がレジストリに無い",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "取ってくる機械の{{term:memory}}が足りない",
+          "correct": false,
+          "whyNot": "これはレジストリの返事。指した名前とタグのイメージが無い、と言っている。"
+        },
+        {
+          "id": "c",
+          "text": "イメージが大きすぎる",
+          "correct": false,
+          "whyNot": "大きさの問題なら、この返事にはならない。まず、名前とタグを 1 字ずつ見比べる。"
+        }
       ],
       "explanation": "取れない時は、名前とタグの綴り、それから{{term:authentication}}（ログインが要る場所か）を疑う。"
     },
@@ -61,9 +108,23 @@
       "kind": "situation",
       "prompt": "本番で動かすイメージの指定は、どう書くか。",
       "choices": [
-        { "id": "a", "text": "確かめた版のタグを書いて、固定する（web:1.2）", "correct": true },
-        { "id": "b", "text": "タグを省く（いつも latest を取る）", "correct": false, "whyNot": "latest がいつ付け替えられるか分からない。試験中の版が本番に入ることがある。" },
-        { "id": "c", "text": "名前だけ書き、取ってきた物を毎回確かめる", "correct": false, "whyNot": "台ごとに取った時刻で版が変わり、3 台がそろわないことがある。" }
+        {
+          "id": "a",
+          "text": "確かめた版のタグを書いて、固定する（web:1.2）",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "タグを省く（いつも latest を取る）",
+          "correct": false,
+          "whyNot": "latest がいつ付け替えられるか分からない。試験中の版が本番に入ることがある。"
+        },
+        {
+          "id": "c",
+          "text": "名前だけ書き、取ってきた物を毎回確かめる",
+          "correct": false,
+          "whyNot": "台ごとに取った時刻で版が変わり、3 台がそろわないことがある。"
+        }
       ],
       "explanation": "本番は版を固定する。どの台も同じ版になり、戻す時もどの版に戻すかがはっきりする。"
     }
@@ -74,14 +135,38 @@
     "environment": "sim-config",
     "setup": {
       "fields": [
-        { "id": "今の版", "label": "本番で今動いている版（表を読む）", "options": ["まだ", "1.1", "1.2", "1.3-rc1"], "value": "まだ" },
         {
-          "id": "指定", "label": "本番で動かすイメージ",
-          "options": ["registry.example/shop/web", "registry.example/shop/web:v1.2", "registry.example/shop/wbe:1.2", "registry.example/shop/web:1.2"],
+          "id": "今の版",
+          "label": "本番で今動いている版（表を読む）",
+          "options": [
+            "まだ",
+            "1.1",
+            "1.2",
+            "1.3-rc1"
+          ],
+          "value": "まだ"
+        },
+        {
+          "id": "指定",
+          "label": "本番で動かすイメージ",
+          "options": [
+            "registry.example/shop/web",
+            "registry.example/shop/web:v1.2",
+            "registry.example/shop/wbe:1.2",
+            "registry.example/shop/web:1.2"
+          ],
           "value": "registry.example/shop/web",
           "requires": [
-            { "value": "registry.example/shop/web:v1.2", "expr": "field 指定=registry.example/shop/web:v1.2", "message": "Error response from daemon: manifest for registry.example/shop/web:v1.2 not found: manifest unknown: manifest unknown" },
-            { "value": "registry.example/shop/wbe:1.2", "expr": "field 指定=registry.example/shop/wbe:1.2", "message": "Error response from daemon: pull access denied for registry.example/shop/wbe, repository does not exist or may require 'docker login'" }
+            {
+              "value": "registry.example/shop/web:v1.2",
+              "expr": "field 指定=registry.example/shop/web:v1.2",
+              "message": "Error response from daemon: manifest for registry.example/shop/web:v1.2 not found: manifest unknown: manifest unknown"
+            },
+            {
+              "value": "registry.example/shop/wbe:1.2",
+              "expr": "field 指定=registry.example/shop/wbe:1.2",
+              "message": "Error response from daemon: pull access denied for registry.example/shop/wbe, repository does not exist or may require 'docker login'"
+            }
           ]
         }
       ],
@@ -89,25 +174,52 @@
         {
           "kind": "table",
           "title": "レジストリにある shop/web のタグ",
-          "columns": ["タグ", "置いた日", "中身"],
+          "columns": [
+            "タグ",
+            "置いた日",
+            "中身"
+          ],
           "rows": [
-            ["1.1", "08-01", "前の版"],
-            ["1.2", "09-10", "検証で確かめた版"],
-            ["1.3-rc1", "10-05", "試験中（確定ボタンを作り直している）"],
-            ["latest", "10-05", "1.3-rc1 と同じ物（10-05 に付け替えた）"]
+            [
+              "1.1",
+              "08-01",
+              "前の版"
+            ],
+            [
+              "1.2",
+              "09-10",
+              "検証で確かめた版"
+            ],
+            [
+              "1.3-rc1",
+              "10-05",
+              "試験中（確定ボタンを作り直している）"
+            ],
+            [
+              "latest",
+              "10-05",
+              "1.3-rc1 と同じ物（10-05 に付け替えた）"
+            ]
           ]
         },
         {
           "kind": "log",
           "title": "本番で起きたこと",
           "when": "field 指定=registry.example/shop/web",
-          "lines": ["タグを書かずに取った → latest の付いた物を取った", "予約のページ: 確定ボタンが出ない"]
+          "lines": [
+            "タグを書かずに取った → latest の付いた物を取った",
+            "予約のページ: 確定ボタンが出ない"
+          ]
         },
         {
           "kind": "log",
           "title": "本番で起きたこと",
           "when": "field 指定=registry.example/shop/web:1.2",
-          "lines": ["registry.example/shop/web:1.2 を取った", "動いた版: 1.2。予約のページに確定ボタンが出る", "3 台とも同じ 1.2"]
+          "lines": [
+            "registry.example/shop/web:1.2 を取った",
+            "動いた版: 1.2。予約のページに確定ボタンが出る",
+            "3 台とも同じ 1.2"
+          ]
         }
       ]
     },
@@ -115,26 +227,51 @@
       {
         "id": "now",
         "purpose": "イメージの指定とタグの表を読み、本番で今動いている版を答える。",
-        "check": { "kind": "sim", "expr": "field 今の版=1.3-rc1" },
+        "check": {
+          "kind": "sim",
+          "expr": "field 今の版=1.3-rc1"
+        },
         "afterward": "指定にタグが無いので latest を取っていた。latest は 10-05 に 1.3-rc1（試験中）へ付け替えられていた。",
         "hints": [
           "今の指定には、: の後ろのタグが無い。タグを省くと、どの名札の物を取るか。",
           "表の latest の行を見る。latest は、どの版と同じ物か。",
           "`set 今の版 1.3-rc1` と入れる。"
         ],
-        "expectedErrors": ["ctr-latest"]
+        "expectedErrors": [
+          "ctr-latest"
+        ],
+        "actions": [
+          {
+            "op": "set",
+            "field": "今の版",
+            "value": "1.3-rc1"
+          }
+        ]
       },
       {
         "id": "pin",
         "purpose": "本番で動かすイメージを、検証で確かめた版に固定する。",
-        "check": { "kind": "sim", "expr": "field 指定=registry.example/shop/web:1.2" },
+        "check": {
+          "kind": "sim",
+          "expr": "field 指定=registry.example/shop/web:1.2"
+        },
         "afterward": "タグ 1.2 を書いて固定した。3 台とも同じ 1.2 が動き、確定ボタンが戻った。",
         "hints": [
           "検証で確かめたのは、表のどのタグか。",
           "名前の後ろに : を付けて、表にあるとおりのタグを書く。v は付かない。",
           "`set 指定 registry.example/shop/web:1.2` と入れる。"
         ],
-        "expectedErrors": ["ctr-pull-not-found", "ctr-latest"]
+        "expectedErrors": [
+          "ctr-pull-not-found",
+          "ctr-latest"
+        ],
+        "actions": [
+          {
+            "op": "set",
+            "field": "指定",
+            "value": "registry.example/shop/web:1.2"
+          }
+        ]
       }
     ]
   },
@@ -144,8 +281,18 @@
     "retry": "まだ確かめた版が動いていない。タグの表と、指定に書いたタグを 1 字ずつ見比べよう。"
   },
   "summary": {
-    "points": ["レジストリはイメージの置き場", "名前:タグで指す", "本番は版を固定"],
-    "next": ["docker.i.05", "cicd.b.04"],
-    "terms": ["registry", "image-tag"]
+    "points": [
+      "レジストリはイメージの置き場",
+      "名前:タグで指す",
+      "本番は版を固定"
+    ],
+    "next": [
+      "docker.i.05",
+      "cicd.b.04"
+    ],
+    "terms": [
+      "registry",
+      "image-tag"
+    ]
   }
 }

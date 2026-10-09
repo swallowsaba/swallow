@@ -244,10 +244,27 @@
         "hints": [
           "表の「入っている物」を上から順にたどる。道具は高い層に、高い層は低い層に頼む。",
           "Docker は containerd に、containerd は runc に、runc はカーネルの機能に頼む。",
-          "`connect docker containerd` `connect containerd runc` `connect runc kernel` の順に入れる。"
+          "「Docker」から「containerd」へドラッグして線を引く、「containerd」から「runc」へドラッグして線を引く、「runc」から「カーネル」へドラッグして線を引く。"
         ],
         "expectedErrors": [
           "ctr-runtime-path"
+        ],
+        "actions": [
+          {
+            "op": "connect",
+            "a": "docker",
+            "b": "containerd"
+          },
+          {
+            "op": "connect",
+            "a": "containerd",
+            "b": "runc"
+          },
+          {
+            "op": "connect",
+            "a": "runc",
+            "b": "kernel"
+          }
         ]
       },
       {
@@ -261,10 +278,17 @@
         "hints": [
           "本番には Docker が入っていない。kubelet は CRI という決まりで、ランタイムに直接頼む。",
           "kubelet の頼む先は、開発でも使っていた高い層のランタイム。",
-          "`connect kubelet containerd` と入れる。"
+          "「kubelet」から「containerd」へドラッグして線を引く。"
         ],
         "expectedErrors": [
           "ctr-runtime-path"
+        ],
+        "actions": [
+          {
+            "op": "connect",
+            "a": "kubelet",
+            "b": "containerd"
+          }
         ]
       },
       {
@@ -278,10 +302,17 @@
         "hints": [
           "表の検証の「入っている物」には、containerd が無い。",
           "Podman は低い層のランタイムを直接使う。",
-          "`connect podman runc` と入れる。"
+          "「Podman」から「runc」へドラッグして線を引く。"
         ],
         "expectedErrors": [
           "ctr-runtime-path"
+        ],
+        "actions": [
+          {
+            "op": "connect",
+            "a": "podman",
+            "b": "runc"
+          }
         ]
       }
     ]

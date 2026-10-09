@@ -118,7 +118,8 @@ describe('保存データ（docs/data-model.md 7 章）', () => {
 
   it('版 1 の保存データは今の版に移る（市長に introSeen を足す。もう遊んだ人なので、初回の操作説明は出さない）', () => {
     const current = toSaveData(played(), '2026-10-04T12:00:00+09:00', '2026-10-04');
-    const { minimap: _minimap, ...settings2 } = current.player.settings;
+    const settings2: Partial<typeof current.player.settings> = { ...current.player.settings };
+    delete settings2.minimap;
     const player1 = { ...Object.fromEntries(Object.entries(current.player).filter(([k]) => k !== 'introSeen')), settings: settings2 };
     const v1 = { ...current, version: 1, player: player1 };
     const migrated = readSave(JSON.stringify(v1));
@@ -132,7 +133,8 @@ describe('保存データ（docs/data-model.md 7 章）', () => {
     const current = toSaveData(played(), '2026-10-04T12:00:00+09:00', '2026-10-04');
     expect(current.version).toBe(3);
     // 版 2 で、音を鳴らし文字を大きくしていた人の記録
-    const { minimap: _minimap, ...settings2 } = { ...current.player.settings, sound: true, fontScale: 1.3 as const };
+    const settings2: Partial<typeof current.player.settings> = { ...current.player.settings, sound: true, fontScale: 1.3 as const };
+    delete settings2.minimap;
     const v2 = { ...current, version: 2, player: { ...current.player, settings: settings2 } };
     const migrated = readSave(JSON.stringify(v2));
     expect(migrated).toMatchObject({ ok: true, migratedFrom: 2 });

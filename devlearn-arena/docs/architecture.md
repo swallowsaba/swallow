@@ -57,8 +57,8 @@ devlearn-arena/
       docker/                Docker の CLI（container の上に作る）
       http/                  HTTP と Web サーバ
       tls/                   証明書の連鎖と検証
-      sim/                   画面で操作する模擬（つなぐ・並べる・割り振る・設定する・読み取って答える。docs/decisions.md D-16）
-      cicd/                  （将来）パイプラインの専用の模擬。初回は sim の型で作る（D-16）
+      sim/                   画面で操作する模擬（つなぐ・並べる・置く・読み取って答える。docs/decisions.md D-16・D-19）
+      cicd/                  （将来）パイプラインの専用の模擬。初回は github のワークフローの評価と sim の型で作る（D-16・D-19）
       monitor/               （将来）ログ・メトリクス・トレースの専用の模擬。初回は sim の型で作る（D-16）
       db/                    sql.js の包み
     content/                 コンテンツの読み込みと検証

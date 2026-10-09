@@ -311,6 +311,13 @@
         ],
         "expectedErrors": [
           "git-wrong-version"
+        ],
+        "actions": [
+          {
+            "op": "set",
+            "field": "version",
+            "value": "e19a5c3"
+          }
         ]
       }
     ]

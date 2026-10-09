@@ -230,6 +230,13 @@
         ],
         "expectedErrors": [
           "web-cors-origin"
+        ],
+        "actions": [
+          {
+            "op": "set",
+            "field": "allow",
+            "value": "https://shop.example"
+          }
         ]
       }
     ]

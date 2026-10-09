@@ -192,7 +192,17 @@
           ]
         }
       ],
-      "initial": "code localtest handoff",
+      "initial": [
+        [
+          "code"
+        ],
+        [
+          "localtest"
+        ],
+        [
+          "handoff"
+        ]
+      ],
       "panels": [
         {
           "kind": "kv",
@@ -254,10 +264,26 @@
         "hints": [
           "待ちの場所を探す。札の日数で、一番長いのはどれか。",
           "申請書の手渡しを外し、一緒に作った手順で自動で配る札を、検査の後に置く。",
-          "`order code localtest deploy` と入れる。"
+          "上から 「変更を書く（開発）」 → 「開発の手元だけで検査」 → 「一緒に作った手順で、自動で配る」 の順に、札をドラッグして並べる。"
         ],
         "expectedErrors": [
           "devops-handoff-left"
+        ],
+        "actions": [
+          {
+            "op": "arrange",
+            "stages": [
+              [
+                "code"
+              ],
+              [
+                "localtest"
+              ],
+              [
+                "deploy"
+              ]
+            ]
+          }
         ]
       },
       {
@@ -271,10 +297,26 @@
         "hints": [
           "共有する物を考える。開発の手元と本番で形が違うと、本番だけで動かない。",
           "手元だけの検査を、本番と同じ形で一緒に作った検査に替え、配る前に置く。",
-          "`order code sharedtest deploy` と入れる。"
+          "上から 「変更を書く（開発）」 → 「本番と同じ形で、一緒に作った検査」 → 「一緒に作った手順で、自動で配る」 の順に、札をドラッグして並べる。"
         ],
         "expectedErrors": [
           "devops-handoff-left"
+        ],
+        "actions": [
+          {
+            "op": "arrange",
+            "stages": [
+              [
+                "code"
+              ],
+              [
+                "sharedtest"
+              ],
+              [
+                "deploy"
+              ]
+            ]
+          }
         ]
       }
     ]

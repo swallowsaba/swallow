@@ -6,23 +6,43 @@
   "title": "パイプラインの形",
   "goal": "ステージとジョブの流れを読める",
   "minutes": 15,
-  "prerequisites": ["cicd.b.01"],
-  "related": ["linux.b.05", "devops.b.03"],
-  "next": ["cicd.b.03", "cicd.i.01"],
-  "terms": ["pipeline", "stage", "job", "ci", "config-file"],
+  "prerequisites": [
+    "cicd.b.01"
+  ],
+  "related": [
+    "linux.b.05",
+    "devops.b.03"
+  ],
+  "next": [
+    "cicd.b.03",
+    "cicd.i.01"
+  ],
+  "terms": [
+    "pipeline",
+    "stage",
+    "job",
+    "ci",
+    "config-file"
+  ],
   "explain": {
     "what": "{{term:pipeline}}は、組み立て・検査・配布などの仕事を流す道筋。段を{{term:stage}}、段の中の 1 つ 1 つの仕事を{{term:job}}という。ステージは順に進み、同じステージのジョブは並んで動く。",
     "why": "全てを 1 列に並べると、関係ない仕事まで順に待ち、結果が出るまで長い。並べて動かせる物を同じステージに置けば速くなる。前のステージが失敗すれば、後のステージは動かず、壊れた物を先へ進めない。",
     "use": "自動の流れを設計する時。{{term:ci}}の{{term:config-file}}には、ステージとジョブの並びと、先に要る物を書く。",
     "when": "検査を 1 つずつ順に動かしていて、変更を送ってから結果が出るまで 16 分かかる。待っている間、次の作業が進まない。",
-    "figures": ["cicd-b02-pipeline"]
+    "figures": [
+      "cicd-b02-pipeline"
+    ]
   },
   "understand": [
     {
       "kind": "figure-pick",
       "figure": "cicd-b02-pipeline",
       "prompt": "図で、同じステージに並べて、同時に動かせるジョブを全て押す。",
-      "answer": ["unit", "lint", "e2e"],
+      "answer": [
+        "unit",
+        "lint",
+        "e2e"
+      ],
       "see": "what"
     },
     {
@@ -41,9 +61,23 @@
       "kind": "predict",
       "prompt": "検査のステージで、3 つのジョブのうち書き方の検査だけが失敗した。次の配布のステージはどうなる？",
       "choices": [
-        { "id": "a", "text": "動かない（前のステージが全て成功していない）", "correct": true },
-        { "id": "b", "text": "ほかの 2 つが成功したので、配布する", "correct": false, "whyNot": "次のステージへ進むのは、前のステージのジョブが全て成功した時だけ。1 つでも失敗すれば止まる。" },
-        { "id": "c", "text": "失敗した検査だけを飛ばして、配布する", "correct": false, "whyNot": "失敗を飛ばして進めば、壊れた物が届く。パイプラインは、失敗したら止めるために使う。" }
+        {
+          "id": "a",
+          "text": "動かない（前のステージが全て成功していない）",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "ほかの 2 つが成功したので、配布する",
+          "correct": false,
+          "whyNot": "次のステージへ進むのは、前のステージのジョブが全て成功した時だけ。1 つでも失敗すれば止まる。"
+        },
+        {
+          "id": "c",
+          "text": "失敗した検査だけを飛ばして、配布する",
+          "correct": false,
+          "whyNot": "失敗を飛ばして進めば、壊れた物が届く。パイプラインは、失敗したら止めるために使う。"
+        }
       ],
       "explanation": "前のステージが 1 つでも失敗すると、後のステージは動かない。壊れた物を先へ進めないための仕組み。"
     },
@@ -52,9 +86,23 @@
       "kind": "situation",
       "prompt": "単体の検査と画面の検査は、どちらも組み立てた物だけを使い、互いの結果は使わない。どう並べる？",
       "choices": [
-        { "id": "a", "text": "同じステージに並べて、同時に動かす", "correct": true },
-        { "id": "b", "text": "別々のステージにして、1 つずつ順に動かす", "correct": false, "whyNot": "互いの結果を使わないのに順に待つと、その分だけ遅くなる。" },
-        { "id": "c", "text": "組み立てと同じステージに並べる", "correct": false, "whyNot": "検査には組み立てた物が要る。同じステージで同時に動かすと、組み立てた物がまだ無い。" }
+        {
+          "id": "a",
+          "text": "同じステージに並べて、同時に動かす",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "別々のステージにして、1 つずつ順に動かす",
+          "correct": false,
+          "whyNot": "互いの結果を使わないのに順に待つと、その分だけ遅くなる。"
+        },
+        {
+          "id": "c",
+          "text": "組み立てと同じステージに並べる",
+          "correct": false,
+          "whyNot": "検査には組み立てた物が要る。同じステージで同時に動かすと、組み立てた物がまだ無い。"
+        }
       ],
       "explanation": "互いに関係ない仕事は、同じステージに並べて同時に動かす。先に要る物がある仕事は、後のステージに置く。"
     },
@@ -63,9 +111,23 @@
       "kind": "term",
       "prompt": "{{term:job}}とは何か。",
       "choices": [
-        { "id": "a", "text": "パイプラインの中の 1 つの仕事", "correct": true },
-        { "id": "b", "text": "パイプラインの全ての流れ", "correct": false, "whyNot": "流れ全体はパイプライン。ジョブは、その中の 1 つの仕事。" },
-        { "id": "c", "text": "仕事を動かす順番の段", "correct": false, "whyNot": "段はステージ。ジョブは、ステージの中に入る 1 つ 1 つの仕事。" }
+        {
+          "id": "a",
+          "text": "パイプラインの中の 1 つの仕事",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "パイプラインの全ての流れ",
+          "correct": false,
+          "whyNot": "流れ全体はパイプライン。ジョブは、その中の 1 つの仕事。"
+        },
+        {
+          "id": "c",
+          "text": "仕事を動かす順番の段",
+          "correct": false,
+          "whyNot": "段はステージ。ジョブは、ステージの中に入る 1 つ 1 つの仕事。"
+        }
       ],
       "explanation": "パイプラインはステージの並び、ステージはジョブの集まり。結果はジョブごとに出る。"
     }
@@ -76,44 +138,122 @@
     "environment": "sim-order",
     "setup": {
       "items": [
-        { "id": "build", "label": "組み立て", "minutes": 4 },
-        { "id": "unit", "label": "単体の検査", "minutes": 3, "needs": ["build"] },
-        { "id": "lint", "label": "書き方の検査", "minutes": 1, "needs": ["build"] },
-        { "id": "e2e", "label": "画面の検査", "minutes": 6, "needs": ["build"] },
-        { "id": "deploy", "label": "配布", "minutes": 2, "needs": ["unit", "lint", "e2e"] }
+        {
+          "id": "build",
+          "label": "組み立て",
+          "minutes": 4
+        },
+        {
+          "id": "unit",
+          "label": "単体の検査",
+          "minutes": 3,
+          "needs": [
+            "build"
+          ]
+        },
+        {
+          "id": "lint",
+          "label": "書き方の検査",
+          "minutes": 1,
+          "needs": [
+            "build"
+          ]
+        },
+        {
+          "id": "e2e",
+          "label": "画面の検査",
+          "minutes": 6,
+          "needs": [
+            "build"
+          ]
+        },
+        {
+          "id": "deploy",
+          "label": "配布",
+          "minutes": 2,
+          "needs": [
+            "unit",
+            "lint",
+            "e2e"
+          ]
+        }
       ],
       "parallel": true,
-      "initial": "build unit lint e2e deploy",
+      "initial": [
+        [
+          "build"
+        ],
+        [
+          "unit"
+        ],
+        [
+          "lint"
+        ],
+        [
+          "e2e"
+        ],
+        [
+          "deploy"
+        ]
+      ],
       "panels": [
         {
           "kind": "table",
           "title": "ジョブと、先に要る物",
-          "columns": ["ジョブ", "先に要る物"],
+          "columns": [
+            "ジョブ",
+            "先に要る物"
+          ],
           "rows": [
-            ["組み立て", "無し（最新の変更だけ）"],
-            ["単体の検査", "組み立てた物"],
-            ["書き方の検査", "組み立てた物"],
-            ["画面の検査", "組み立てた物"],
-            ["配布", "3 つの検査の全ての成功"]
+            [
+              "組み立て",
+              "無し（最新の変更だけ）"
+            ],
+            [
+              "単体の検査",
+              "組み立てた物"
+            ],
+            [
+              "書き方の検査",
+              "組み立てた物"
+            ],
+            [
+              "画面の検査",
+              "組み立てた物"
+            ],
+            [
+              "配布",
+              "3 つの検査の全ての成功"
+            ]
           ]
         },
         {
           "kind": "log",
           "title": "流した結果",
           "when": "!deps",
-          "lines": ["先に要る物が無いまま動いたジョブがある: 失敗", "（組み立てた物がまだ無いのに検査した・検査の結果を待たずに配った）"]
+          "lines": [
+            "先に要る物が無いまま動いたジョブがある: 失敗",
+            "（組み立てた物がまだ無いのに検査した・検査の結果を待たずに配った）"
+          ]
         },
         {
           "kind": "log",
           "title": "流した結果",
           "when": "deps && placed && time>=13",
-          "lines": ["全てのステージが成功した", "ただし時間がかかる。互いに関係ない検査を、順に待っている"]
+          "lines": [
+            "全てのステージが成功した",
+            "ただし時間がかかる。互いに関係ない検査を、順に待っている"
+          ]
         },
         {
           "kind": "log",
           "title": "流した結果",
           "when": "deps && placed && time<=12",
-          "lines": ["ステージ 1: 組み立て 成功", "ステージ 2: 3 つの検査が同時に動いて 成功", "ステージ 3: 配布 成功。12 分で配り終えた"]
+          "lines": [
+            "ステージ 1: 組み立て 成功",
+            "ステージ 2: 3 つの検査が同時に動いて 成功",
+            "ステージ 3: 配布 成功。12 分で配り終えた"
+          ]
         }
       ]
     },
@@ -121,26 +261,69 @@
       {
         "id": "parallel",
         "purpose": "3 つの検査は、どれも組み立てた物だけを使い、互いの結果は使わない。組み立てを先に置き、3 つの検査を同じステージに並べる。",
-        "check": { "kind": "sim", "expr": "deps && has build && with unit lint e2e" },
+        "check": {
+          "kind": "sim",
+          "expr": "deps && has build && with unit lint e2e"
+        },
         "afterward": "組み立ての後のステージで、3 つの検査が同時に動くようになった。このステージの時間は、一番長い画面の検査の 6 分。",
         "hints": [
           "表の「先に要る物」を見る。3 つの検査が要るのは、組み立てた物だけ。",
           "組み立てを 1 段目に置く。3 つの検査は `,` でつないで、2 段目に並べる。",
-          "`order build unit,lint,e2e` と入れる。"
+          "上から 「組み立て」 → 「単体の検査」と「書き方の検査」と「画面の検査」（同じ段） の順に、札をドラッグして並べる。"
         ],
-        "expectedErrors": ["cicd-deps"]
+        "expectedErrors": [
+          "cicd-deps"
+        ],
+        "actions": [
+          {
+            "op": "arrange",
+            "stages": [
+              [
+                "build"
+              ],
+              [
+                "unit",
+                "lint",
+                "e2e"
+              ]
+            ]
+          }
+        ]
       },
       {
         "id": "deploy",
         "purpose": "配布を加えて、全体が 12 分以内に終わる流れにする。",
-        "check": { "kind": "sim", "expr": "deps && placed && time<=12" },
+        "check": {
+          "kind": "sim",
+          "expr": "deps && placed && time<=12"
+        },
         "afterward": "4 + 6 + 2 = 12 分で配り終える流れになった。検査が 1 つでも失敗すれば、配布のステージは動かない。",
         "hints": [
           "配布に要るのは、3 つの検査の全ての成功。",
           "配布は、検査のステージの後に、1 つだけのステージとして置く。",
-          "`order build unit,lint,e2e deploy` と入れる。"
+          "上から 「組み立て」 → 「単体の検査」と「書き方の検査」と「画面の検査」（同じ段） → 「配布」 の順に、札をドラッグして並べる。"
         ],
-        "expectedErrors": ["cicd-deps"]
+        "expectedErrors": [
+          "cicd-deps"
+        ],
+        "actions": [
+          {
+            "op": "arrange",
+            "stages": [
+              [
+                "build"
+              ],
+              [
+                "unit",
+                "lint",
+                "e2e"
+              ],
+              [
+                "deploy"
+              ]
+            ]
+          }
+        ]
       }
     ]
   },
@@ -150,8 +333,19 @@
     "retry": "まだ流れが合っていない。表の「先に要る物」と、流した結果の記録を見比べよう。"
   },
   "summary": {
-    "points": ["ステージとジョブ", "失敗で止まる", "関係ない物は並行"],
-    "next": ["cicd.b.03", "cicd.i.01"],
-    "terms": ["pipeline", "stage", "job"]
+    "points": [
+      "ステージとジョブ",
+      "失敗で止まる",
+      "関係ない物は並行"
+    ],
+    "next": [
+      "cicd.b.03",
+      "cicd.i.01"
+    ],
+    "terms": [
+      "pipeline",
+      "stage",
+      "job"
+    ]
   }
 }

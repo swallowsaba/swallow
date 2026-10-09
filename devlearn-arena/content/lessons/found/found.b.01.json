@@ -247,11 +247,28 @@
         "hints": [
           "情報は、入力から出力へ流れる。キーボードの次に通るのは、どの部品だろう。",
           "キーボードは CPU へ、CPU は画面へつなぐ。つないだら「「2+3」を打つ」を押す。",
-          "`connect kb cpu` `connect cpu screen` `send kb screen` の順に入れる。"
+          "「キーボード」から「CPU」へドラッグして線を引く、「CPU」から「画面」へドラッグして線を引く、「「2+3」を打つ」を押す。"
         ],
         "expectedErrors": [
           "found-no-output",
           "sim-forbidden"
+        ],
+        "actions": [
+          {
+            "op": "connect",
+            "a": "kb",
+            "b": "cpu"
+          },
+          {
+            "op": "connect",
+            "a": "cpu",
+            "b": "screen"
+          },
+          {
+            "op": "send",
+            "from": "kb",
+            "to": "screen"
+          }
         ]
       },
       {
@@ -265,11 +282,23 @@
         "hints": [
           "結果を残すのは記憶の役目。記憶とやり取りするのは、どの部品だろう。",
           "CPU とストレージをつなぐ。つないだら「結果を記憶に残す」を押す。",
-          "`connect cpu disk` `send cpu disk` の順に入れる。"
+          "「CPU」から「ストレージ」へドラッグして線を引く、「結果を記憶に残す」を押す。"
         ],
         "expectedErrors": [
           "found-no-output",
           "sim-forbidden"
+        ],
+        "actions": [
+          {
+            "op": "connect",
+            "a": "cpu",
+            "b": "disk"
+          },
+          {
+            "op": "send",
+            "from": "cpu",
+            "to": "disk"
+          }
         ]
       }
     ]

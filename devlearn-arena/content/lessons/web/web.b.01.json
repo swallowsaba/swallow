@@ -267,6 +267,33 @@
         ],
         "expectedErrors": [
           "web-url-parts"
+        ],
+        "actions": [
+          {
+            "op": "set",
+            "field": "scheme",
+            "value": "https"
+          },
+          {
+            "op": "set",
+            "field": "host",
+            "value": "shop.example"
+          },
+          {
+            "op": "set",
+            "field": "port",
+            "value": "8443"
+          },
+          {
+            "op": "set",
+            "field": "path",
+            "value": "/items"
+          },
+          {
+            "op": "set",
+            "field": "query",
+            "value": "id=3"
+          }
         ]
       },
       {
@@ -284,6 +311,13 @@
         ],
         "expectedErrors": [
           "web-url-separator"
+        ],
+        "actions": [
+          {
+            "op": "set",
+            "field": "url",
+            "value": "https://shop.example:8443/items?id=3"
+          }
         ]
       }
     ]

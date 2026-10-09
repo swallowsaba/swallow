@@ -254,6 +254,13 @@
         ],
         "expectedErrors": [
           "web-cookie-scope"
+        ],
+        "actions": [
+          {
+            "op": "set",
+            "field": "path",
+            "value": "/"
+          }
         ]
       },
       {
@@ -271,6 +278,13 @@
         ],
         "expectedErrors": [
           "web-cookie-flags"
+        ],
+        "actions": [
+          {
+            "op": "set",
+            "field": "flags",
+            "value": "Secure+HttpOnly"
+          }
         ]
       }
     ]

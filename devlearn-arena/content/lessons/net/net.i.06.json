@@ -276,6 +276,18 @@
         ],
         "expectedErrors": [
           "net-seg-same"
+        ],
+        "actions": [
+          {
+            "op": "set",
+            "field": "files",
+            "value": "サーバ（VLAN20）"
+          },
+          {
+            "op": "set",
+            "field": "guest",
+            "value": "来客（VLAN30）"
+          }
         ]
       },
       {
@@ -293,6 +305,18 @@
         ],
         "expectedErrors": [
           "net-seg-same"
+        ],
+        "actions": [
+          {
+            "op": "set",
+            "field": "g2o",
+            "value": "止める"
+          },
+          {
+            "op": "set",
+            "field": "g2s",
+            "value": "止める"
+          }
         ]
       }
     ]

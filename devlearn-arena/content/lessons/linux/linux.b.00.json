@@ -234,10 +234,27 @@
         "hints": [
           "「OS」の行と「配布物」の行を読もう。カーネルの行は、配布物とは別の物。",
           "配布物の行は、名前（Ubuntu）の後ろに版の番号（24.04）が続く。2 つに分けて答える。",
-          "`answer os Linux` `answer distro Ubuntu` `answer version 24.04` の順に入れる。"
+          "「このサーバの OS は？」は「Linux」を押す、「ディストリビューション（配布物）は？」は「Ubuntu」を押す、「ディストリビューションの版は？」は「24.04」を押す。"
         ],
         "expectedErrors": [
           "linux-version-mixup"
+        ],
+        "actions": [
+          {
+            "op": "answer",
+            "question": "os",
+            "value": "Linux"
+          },
+          {
+            "op": "answer",
+            "question": "distro",
+            "value": "Ubuntu"
+          },
+          {
+            "op": "answer",
+            "question": "version",
+            "value": "24.04"
+          }
         ]
       }
     ]

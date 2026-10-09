@@ -5,6 +5,7 @@
 //
 // レッスンの中身（content/lessons）を読んで正しく答え、7 段を通す: 解説 → 理解 → クイズ → 実戦 → 結果 → まとめ → XP / スキル。
 // 実戦は、各手順の最初に 1 度わざと誤った文（コマンド）を入れてエラーの小窓を撮り、最後のヒントの答えを入れて進める。
+// 画面で操作する実戦（模）は、手順の actions をマウスのドラッグと押す操作で行う（tools/scenarios/simDrive.mjs）。わざと誤る操作も画面で行う。
 // FIRST='docker logs web' を付けると、わざと誤る代わりにその行を入れる（出力に当てる想定エラーの小窓を撮る）。
 // 2 つ以上の欄を選んで出来上がる誤りは、FIRST='set a 1 ;; set b 2' のように ` ;; ` で区切って順に入れる。
 // RESET=1 を付けると、エラーの小窓を撮った後に「初めに戻す」を押してから答える。
@@ -12,6 +13,8 @@
 // 答える手順で FIRST を端末に打つ時は FIRST_TERM=1 を付ける。
 // HINTS=1 を付けると、最初の手順のヒント 3 段を開いた画面（-hints）も撮る。
 // 撮る物: p10-<分野>-explain・-understand・-quiz・-practice・-error・-afterward・-result・-summary・-done（-1280 も）
+import { perform, wrongAction } from './simDrive.mjs';
+
 const text = (page, sel) => page.evaluate((s) => document.querySelector(s)?.innerText.replace(/\s+/g, ' ') ?? null, sel);
 const next = (page) => page.click('[data-testid="lesson-next"]');
 const wait = (page, ms = 300) => page.waitForTimeout(ms);
@@ -144,9 +147,6 @@ export default async function domain(page, shot) {
       // 設定の編集: 中身をファイル全体として書き、保存して確かめる
       await page.fill('[data-testid="editor-text"]', line);
       await page.click('[data-testid="editor-save"]');
-    } else if (sim) {
-      await page.fill('#sim-command', line);
-      await page.press('#sim-command', 'Enter');
     } else if (answerStep) {
       await page.fill('#practice-answer', line);
       await page.press('#practice-answer', 'Enter');
@@ -161,7 +161,26 @@ export default async function domain(page, shot) {
     }
     await wait(page, 400);
   };
-  for (const [i, step] of lesson.practice.steps.entries()) {
+  if (sim) {
+    // 画面で操作する実戦: わざと誤る操作 → エラーの小窓 → 各手順の actions をドラッグで行う
+    const setup = lesson.practice.setup;
+    for (const [i, step] of lesson.practice.steps.entries()) {
+      if (i > 0 && (await page.getAttribute(`[data-step="${step.id}"]`, 'data-done')) === 'true') continue;
+      if (step.id === (process.env.FIRST_STEP ?? lesson.practice.steps[0].id)) {
+        const bad = wrongAction(setup, step);
+        if (bad) {
+          await perform(page, bad, setup);
+          console.log('エラー', await page.getAttribute('[data-testid="practice-error"]', 'data-guide'), await text(page, '[data-testid="practice-error"]'));
+          await shot(`${tag}-error`);
+          await page.click('[data-testid="practice-reset"]');
+          await wait(page);
+        }
+      }
+      for (const a of step.actions ?? []) await perform(page, a, setup);
+      console.log(`手順 ${step.id}`, await text(page, '[data-testid="practice-afterward"]'));
+    }
+  }
+  for (const [i, step] of (sim ? [] : lesson.practice.steps).entries()) {
     // 前の手順の操作で、もう満たした手順（設定の編集は 1 回の保存で全てを満たすことがある）
     if (i > 0 && (await page.getAttribute(`[data-step="${step.id}"]`, 'data-done')) === 'true') continue;
     const lines = answersOf(step);
@@ -173,7 +192,7 @@ export default async function domain(page, shot) {
       const wrong = editor ? (bad ? lines[0].replace(good ?? '', bad) : lines[0].replace(/;(\s*\n\s*\})/, '$1')) : null;
       // ブラウザ内 SQL は、最初の語の綴りを誤った文（syntax error）
       const sqlWrong = sql && !answerStep ? lines[0].replace(/^(\w+)\w/, '$1') : null;
-      const firsts = process.env.FIRST?.split(' ;; ') ?? [wrong ?? sqlWrong ?? (sim ? `${lines[0].split(' ')[0]} no-such-thing` : answerStep ? 'わからない' : 'cd /no-such-dir')];
+      const firsts = process.env.FIRST?.split(' ;; ') ?? [wrong ?? sqlWrong ?? (answerStep ? 'わからない' : 'cd /no-such-dir')];
       for (const f of firsts) await enter(f, answerStep && process.env.FIRST_TERM === undefined);
       console.log('エラー', await page.getAttribute('[data-testid="practice-error"]', 'data-guide'), await text(page, '[data-testid="practice-error"]'));
       await shot(`${tag}-error`);

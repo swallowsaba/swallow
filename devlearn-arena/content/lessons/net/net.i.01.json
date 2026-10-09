@@ -282,6 +282,24 @@
         ],
         "expectedErrors": [
           "net-one-way"
+        ],
+        "actions": [
+          {
+            "op": "add",
+            "table": "r1",
+            "row": {
+              "dest": "10.0.3.0/24",
+              "via": "10.0.2.2"
+            }
+          },
+          {
+            "op": "add",
+            "table": "r2",
+            "row": {
+              "dest": "10.0.1.0/24",
+              "via": "10.0.2.1"
+            }
+          }
         ]
       }
     ]

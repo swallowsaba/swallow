@@ -246,11 +246,28 @@
         "hints": [
           "既定の番号を思い出す。1 つの扉には 1 つしか入らないので、間違えて入っている物を先に出す。",
           "HTTP は 80、HTTPS は 443、SSH は 22。443 番の Web（HTTP）を出してから、80 番に入れ直す。",
-          "`take web` `put web p80` `put https p443` `put ssh p22` の順に入れる。"
+          "「Web（HTTP）」を「80 番」へドラッグして入れる、「Web（HTTPS）」を「443 番」へドラッグして入れる、「SSH（管理）」を「22 番」へドラッグして入れる。"
         ],
         "expectedErrors": [
           "net-port-in-use",
           "net-port-default"
+        ],
+        "actions": [
+          {
+            "op": "put",
+            "item": "web",
+            "slot": "p80"
+          },
+          {
+            "op": "put",
+            "item": "https",
+            "slot": "p443"
+          },
+          {
+            "op": "put",
+            "item": "ssh",
+            "slot": "p22"
+          }
         ]
       }
     ]

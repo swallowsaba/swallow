@@ -324,6 +324,33 @@
         ],
         "expectedErrors": [
           "sec-cia-mixup"
+        ],
+        "actions": [
+          {
+            "op": "set",
+            "field": "事故_名簿",
+            "value": "機密性"
+          },
+          {
+            "op": "set",
+            "field": "事故_料金表",
+            "value": "完全性"
+          },
+          {
+            "op": "set",
+            "field": "事故_押し寄せ",
+            "value": "可用性"
+          },
+          {
+            "op": "set",
+            "field": "事故_盗み見",
+            "value": "機密性"
+          },
+          {
+            "op": "set",
+            "field": "事故_故障",
+            "value": "可用性"
+          }
         ]
       },
       {
@@ -342,6 +369,23 @@
         "expectedErrors": [
           "sec-cia-mixup",
           "sec-protect-mixup"
+        ],
+        "actions": [
+          {
+            "op": "set",
+            "field": "機密性の守り",
+            "value": "読める人を絞り、通信を暗号化する"
+          },
+          {
+            "op": "set",
+            "field": "完全性の守り",
+            "value": "変更の記録を残し、署名で確かめる"
+          },
+          {
+            "op": "set",
+            "field": "可用性の守り",
+            "value": "予備の機械を置き、通信の量を制限する"
+          }
         ]
       }
     ]
