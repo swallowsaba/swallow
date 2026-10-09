@@ -13,6 +13,7 @@ import { useSaveStatus } from './screens/saveStatus';
 import { applySettings } from './screens/settingsContext';
 import { attachSounds } from './screens/sound';
 import { sfx } from './lib/sfx';
+import { finishBoot } from './ui/boot';
 import './ui/fonts';
 import './ui/global.css';
 
@@ -87,4 +88,6 @@ void openSession(backend, { now: nowIso, newId: () => crypto.randomUUID() }).the
       <App session={opened.session} saves={saves} />
     </StrictMode>,
   );
+  // 読み込み中の演出は都市が描けたら消える。描けないまま長く掛かっても、画面を覆い続けない
+  window.setTimeout(() => finishBoot(), 10_000);
 });

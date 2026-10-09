@@ -21,7 +21,7 @@ test('どのレッスンでも、上下の帯と窓が画面の幅に収まる',
     }, id);
     await expect(page.getByTestId('stage-explain')).toBeVisible();
     // 開く時の動き（少し大きい所から縮む）が終わってから測る
-    await page.evaluate(() => Promise.all(document.getAnimations().map((a) => a.finished)));
+    await page.evaluate(() => Promise.all(document.getAnimations().map((a) => a.finished.catch(() => undefined))));
     const out = await page.evaluate(() => {
       const vw = document.documentElement.clientWidth;
       return ['.lesson-bar', '.lesson-body', '.lesson-foot', '.lesson-exit', '.lesson-next']

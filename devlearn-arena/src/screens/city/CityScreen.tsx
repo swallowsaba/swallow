@@ -10,6 +10,7 @@ import { CityRenderer } from '@/city/render/CityRenderer';
 import { RANK_NAMES, rankOf } from '@/game/rank';
 import { STAGE_NAMES } from '@/game/stage';
 import { TopBar, type EntryId } from '@/ui/TopBar';
+import { finishBoot } from '@/ui/boot';
 import { BuildMenu } from './BuildMenu';
 import { attachBuildControls } from './buildControls';
 import { CityNotice, DemolishConfirm, PlacementHint } from './CityOverlays';
@@ -92,6 +93,8 @@ export function CityScreen({ session, active = true, current, disabled = [], onE
     if (!canvas) return;
     const renderer = new CityRenderer(canvas, store.getState().city, () => {
       document.body.dataset.cityReady = '1';
+      // 読み込み中の演出（index.html）を薄れさせる
+      finishBoot();
     });
     rendererRef.current = renderer;
     const fit = (): void => renderer.resize(window.innerWidth, window.innerHeight);
