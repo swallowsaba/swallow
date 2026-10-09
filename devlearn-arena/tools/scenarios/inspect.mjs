@@ -23,7 +23,7 @@ async function labelReport(page) {
 /** 都市の上に重ねた UI の面積の割合（重なりは数えない。2 画素の格子で数える） */
 async function uiShare(page) {
   return page.evaluate(() => {
-    const rects = [...document.querySelectorAll('[data-testid="topbar"], [data-testid="build-menu"], [data-testid="overlay-toggle"], [data-testid="info-panel"], .city-notice')]
+    const rects = [...document.querySelectorAll('[data-testid="topbar"], [data-testid="build-menu"], [data-testid="overlay-toggle"], [data-testid="recommend"], [data-testid="info-panel"], .city-notice')]
       .map((el) => el.getBoundingClientRect());
     const W = window.innerWidth;
     const H = window.innerHeight;
