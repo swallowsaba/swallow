@@ -39,7 +39,7 @@ import './LessonStages.css';
 const SPLIT_MIN = 30;
 const SPLIT_MAX = 70;
 
-export function LessonScreen({ session, lessonId, onExit, onLesson, onGlossary }: {
+export function LessonScreen({ session, lessonId, onExit, onLesson, onGlossary, onReload = () => window.location.reload() }: {
   session: Session;
   lessonId: string;
   /** 中断して都市へ（進みは保存されている） */
@@ -47,6 +47,11 @@ export function LessonScreen({ session, lessonId, onExit, onLesson, onGlossary }
   /** 推奨前提・関連・次のレッスンの入口の札へ */
   onLesson: (id: string) => void;
   onGlossary: (termId: string) => void;
+  /**
+   * 中身を読めなかった時の「もう一度読む」。読み損ねた中身はブラウザが覚えていて、同じページのままでは読み直せないので、
+   * ページを開き直す（ハッシュでこのレッスンが開き、進みは保存されている）
+   */
+  onReload?: () => void;
 }) {
   const entry = entryOf(lessonId);
   const authored = AUTHORED.has(lessonId);
@@ -68,16 +73,21 @@ export function LessonScreen({ session, lessonId, onExit, onLesson, onGlossary }
   exitRef.current = onExit;
 
   // 開いたら、そのレッスンを始める（学習中なら続きから）。中身が書き起こされていないレッスンは記録しない
+  // 中身を読めなかった（回線が無く、まだ読んでいないレッスン）
+  const [loadFailed, setLoadFailed] = useState(false);
   useEffect(() => {
     setLesson(null);
     setView(null);
+    setLoadFailed(false);
     if (!authored) return;
     let alive = true;
     session.progress.getState().start(lessonId, nowIso());
-    void loadLesson(lessonId).then((l) => {
+    loadLesson(lessonId).then((l) => {
       if (!alive || !l) return;
       setLesson(l);
       setView(resumeStage(session.progress.getState().progress.lessons[lessonId]));
+    }, () => {
+      if (alive) setLoadFailed(true);
     });
     return () => {
       alive = false;
@@ -186,6 +196,12 @@ export function LessonScreen({ session, lessonId, onExit, onLesson, onGlossary }
                 <h2 className="stage-heading">このレッスンは準備中</h2>
                 <p className="stage-text">到達目標: {entry.goal}</p>
                 <p className="stage-text is-sub">中身はまだ書き起こしていない。下の推奨前提・関連・次に学ぶとよいレッスンから、ほかのレッスンを選べる。</p>
+              </section>
+            ) : loadFailed ? (
+              <section className="stage lesson-load-error" role="alert" data-testid="lesson-load-error">
+                <p className="stage-text"><Icon name="alert" size={16} />レッスンの中身を読み込めなかった（回線につながっていないかもしれない）。</p>
+                <p className="stage-text is-sub">回線につないでから「もう一度読む」を押す。一度開いたレッスンは、回線が無くても開ける。</p>
+                <button type="button" className="stage-check" onClick={onReload} data-testid="lesson-load-retry">もう一度読む</button>
               </section>
             ) : !lesson || !view ? (
               <p className="stage-text is-sub">読み込み中</p>

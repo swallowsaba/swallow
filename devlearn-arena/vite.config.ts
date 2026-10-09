@@ -15,6 +15,8 @@ const bootScreen = (): Plugin => ({
 // ローカル開発と user-pages(<user>.github.io) では '/' のままで動く。
 export default defineConfig({
   base: process.env.VITE_BASE ?? '/',
+  // Service Worker の版。build ごとに変わり、保持した古い版の物を消す（src/offline/policy.ts）
+  define: { __BUILD_ID__: JSON.stringify(Date.now().toString(36)) },
   plugins: [react(), bootScreen()],
   resolve: {
     alias: { '@': fileURLToPath(new URL('./src', import.meta.url)) },
@@ -24,7 +26,10 @@ export default defineConfig({
     sourcemap: true,
     chunkSizeWarningLimit: 1000,
     rollupOptions: {
+      // 本体と、オフラインの Service Worker（dist/sw.js。名前を変えずに置き、配信の場所を scope にする）
+      input: { index: fileURLToPath(new URL('./index.html', import.meta.url)), sw: fileURLToPath(new URL('./src/offline/sw.ts', import.meta.url)) },
       output: {
+        entryFileNames: (chunk) => (chunk.name === 'sw' ? 'sw.js' : 'assets/[name]-[hash].js'),
         manualChunks: {
           'vendor-react': ['react', 'react-dom'],
           // 端末はページを開いてから読めばよい。初回に載せない

@@ -39,6 +39,12 @@ vi.mock('@xterm/xterm', () => ({
     dispose(): void {}
   },
 }));
+// 中身の読み込みに失敗させる（回線が無く、まだ読んでいないレッスン）
+const failLoad = vi.hoisted(() => ({ on: false }));
+vi.mock('@/content/lessons', async (importOriginal) => {
+  const real = await importOriginal<{ loadLesson: typeof loadLesson }>();
+  return { ...real, loadLesson: (id: string) => (failLoad.on ? Promise.reject(new Error('Failed to fetch dynamically imported module')) : real.loadLesson(id)) };
+});
 vi.mock('@xterm/addon-fit', () => ({
   FitAddon: class {
     fit(): void {}
@@ -72,6 +78,7 @@ afterEach(() => {
   act(() => roots.forEach((r) => r.unmount()));
   roots = [];
   document.body.innerHTML = '';
+  failLoad.on = false;
 });
 
 interface Opened {
@@ -83,7 +90,7 @@ interface Opened {
 }
 
 /** レッスン画面を開き、中身の読み込みを待つ */
-async function open(session: Session, lessonId: string): Promise<Opened> {
+async function open(session: Session, lessonId: string, extra: { onReload?: () => void } = {}): Promise<Opened> {
   const host = document.createElement('div');
   document.body.append(host);
   const root = createRoot(host);
@@ -94,7 +101,7 @@ async function open(session: Session, lessonId: string): Promise<Opened> {
   act(() => {
     root.render(
       <SettingsContext.Provider value={session.settings}>
-        <LessonScreen session={session} lessonId={lessonId} onExit={onExit} onLesson={onLesson} onGlossary={onGlossary} />
+        <LessonScreen session={session} lessonId={lessonId} onExit={onExit} onLesson={onLesson} onGlossary={onGlossary} {...extra} />
       </SettingsContext.Provider>,
     );
   });
@@ -190,6 +197,25 @@ describe('レッスン画面の枠（docs/ui-design.md 7 章）', () => {
     expect(host.querySelector('[data-testid="lesson-preparing"]')).not.toBeNull();
     expect(session.progress.getState().progress.lessons['k8s.a.04']).toBeUndefined();
     expect($(host, '[data-testid="lesson-backdrop"]').dataset.facility).toBe('cluster');
+  });
+
+  it('中身を読み込めない時（回線が無いなど）は、何が起きたか・どうすればよいかを 1 行ずつ出し、「もう一度読む」でページを開き直す', async () => {
+    failLoad.on = true;
+    const onReload = vi.fn();
+    const { host } = await open(createSession(1), 'found.b.04', { onReload });
+    for (let i = 0; i < 20 && !host.querySelector('[data-testid="lesson-load-error"]'); i += 1) {
+      await act(async () => {
+        await new Promise((r) => setTimeout(r, 10));
+      });
+    }
+    const lines = [...$(host, '[data-testid="lesson-load-error"]').querySelectorAll('p')].map((p) => p.textContent);
+    expect(lines).toEqual([
+      'レッスンの中身を読み込めなかった（回線につながっていないかもしれない）。',
+      '回線につないでから「もう一度読む」を押す。一度開いたレッスンは、回線が無くても開ける。',
+    ]);
+    expect(host.querySelector('.stage-text.is-sub')?.textContent).not.toBe('読み込み中');
+    click($(host, '[data-testid="lesson-load-retry"]'));
+    expect(onReload).toHaveBeenCalledTimes(1);
   });
 
   it('Esc と「中断して都市へ」で都市へ戻る', async () => {

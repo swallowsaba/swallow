@@ -980,3 +980,14 @@
     padding: 0 9px 0 8px;
   }
 }
+
+/* 中身を読めなかった（何が起きたか・どうすればよいか。docs/ui-design.md 9 章） */
+.lesson-load-error {
+  padding-left: 14px;
+  border-left: 3px solid var(--bad);
+}
+.lesson-load-error svg {
+  margin-right: 8px;
+  vertical-align: -2px;
+  color: var(--bad);
+}

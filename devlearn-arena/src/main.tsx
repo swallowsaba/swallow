@@ -14,8 +14,12 @@ import { applySettings } from './screens/settingsContext';
 import { attachSounds } from './screens/sound';
 import { sfx } from './lib/sfx';
 import { finishBoot } from './ui/boot';
+import { registerOffline } from './offline/register';
 import './ui/fonts';
 import './ui/global.css';
+
+// 一度開いた後は、回線が無くても続けられるように（build したものだけ。docs/architecture.md 4 章）
+if (import.meta.env.PROD) registerOffline(import.meta.env.BASE_URL);
 
 const el = document.getElementById('root');
 if (!el) throw new Error('#root が見つかりません');
