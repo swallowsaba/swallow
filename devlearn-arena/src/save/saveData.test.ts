@@ -116,16 +116,32 @@ describe('保存データ（docs/data-model.md 7 章）', () => {
     expect(migrated.ok && migrated.data).toEqual({ ...current, player: { ...current.player, settings: DEFAULT_SETTINGS, introSeen: true } });
   });
 
-  it('版 1 の保存データは版 2 に移る（市長に introSeen を足す。もう遊んだ人なので、初回の操作説明は出さない）', () => {
+  it('版 1 の保存データは今の版に移る（市長に introSeen を足す。もう遊んだ人なので、初回の操作説明は出さない）', () => {
     const current = toSaveData(played(), '2026-10-04T12:00:00+09:00', '2026-10-04');
-    expect(current.version).toBe(2);
-    const player1 = Object.fromEntries(Object.entries(current.player).filter(([k]) => k !== 'introSeen'));
+    const { minimap: _minimap, ...settings2 } = current.player.settings;
+    const player1 = { ...Object.fromEntries(Object.entries(current.player).filter(([k]) => k !== 'introSeen')), settings: settings2 };
     const v1 = { ...current, version: 1, player: player1 };
     const migrated = readSave(JSON.stringify(v1));
     expect(migrated).toMatchObject({ ok: true, migratedFrom: 1 });
     expect(migrated.ok && migrated.data).toEqual({ ...current, player: { ...current.player, introSeen: true } });
     // 移行は受け取った物を変えない
     expect(v1.player).not.toHaveProperty('introSeen');
+  });
+
+  it('版 2 の保存データは版 3 に移る（設定に minimap を足す。ミニマップを出す。docs/decisions.md D-18）', () => {
+    const current = toSaveData(played(), '2026-10-04T12:00:00+09:00', '2026-10-04');
+    expect(current.version).toBe(3);
+    // 版 2 で、音を鳴らし文字を大きくしていた人の記録
+    const { minimap: _minimap, ...settings2 } = { ...current.player.settings, sound: true, fontScale: 1.3 as const };
+    const v2 = { ...current, version: 2, player: { ...current.player, settings: settings2 } };
+    const migrated = readSave(JSON.stringify(v2));
+    expect(migrated).toMatchObject({ ok: true, migratedFrom: 2 });
+    expect(migrated.ok && migrated.data.player.settings).toEqual({ ...current.player.settings, sound: true, fontScale: 1.3, minimap: true });
+    expect(migrated.ok && migrated.data).toEqual({ ...current, player: { ...current.player, settings: { ...current.player.settings, sound: true, fontScale: 1.3, minimap: true } } });
+    // 移行は受け取った物を変えない
+    expect(v2.player.settings).not.toHaveProperty('minimap');
+    // 版 2 のまま minimap の無い設定は、今の版としては読めない（移行を通す）
+    expect(readSave({ ...v2, version: 3 })).toMatchObject({ ok: false, reason: 'invalid' });
   });
 
   it('書き出すファイルの名前は devlearn-save-<日付>.json', () => {

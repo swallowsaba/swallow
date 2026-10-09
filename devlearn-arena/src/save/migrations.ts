@@ -12,6 +12,11 @@ export type Migration = (old: Record<string, unknown>) => Record<string, unknown
 export const MIGRATIONS: Readonly<Record<number, Migration>> = {
   /** 版 1 → 2: 市長に introSeen を足す。版 1 の記録はもう遊んだ人の物なので、初回の操作説明は出さない */
   1: (old) => ({ ...old, player: { ...(old.player as Record<string, unknown>), introSeen: true } }),
+  /** 版 2 → 3: 設定に minimap を足す。既定と同じく、ミニマップを出す（docs/decisions.md D-18） */
+  2: (old) => {
+    const player = old.player as Record<string, unknown>;
+    return { ...old, player: { ...player, settings: { ...(player.settings as Record<string, unknown>), minimap: true } } };
+  },
 };
 
 export type ReadFailure =

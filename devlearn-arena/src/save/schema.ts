@@ -8,8 +8,8 @@ import { DOMAIN_IDS } from '@/content/schema';
  * 版が上がったら SAVE_VERSION を上げ、src/save/migrations.ts に前の版からの移行を足す。
  */
 
-/** 版 2: 市長に、初回の操作説明を見終えたか（introSeen）を足した */
-export const SAVE_VERSION = 2;
+/** 版 2: 市長に、初回の操作説明を見終えたか（introSeen）を足した。版 3: 設定にミニマップ（minimap）を足した */
+export const SAVE_VERSION = 3;
 
 const domainId = z.enum(DOMAIN_IDS);
 const at = z.string().min(1);
@@ -22,11 +22,13 @@ export const settingsSchema = z.object({
   quality: z.enum(['low', 'standard', 'high']),
   furigana: z.boolean(),
   commandHints: z.boolean(),
+  /** 都市画面のミニマップを出す（docs/decisions.md D-18） */
+  minimap: z.boolean(),
 }).strict();
 export type Settings = z.infer<typeof settingsSchema>;
 
-/** 設定の既定（音は消す。docs/decisions.md Q-03） */
-export const DEFAULT_SETTINGS: Settings = { sound: false, reduceMotion: false, fontScale: 1, quality: 'standard', furigana: false, commandHints: true };
+/** 設定の既定（音は消す。docs/decisions.md Q-03。ミニマップは出す。D-18） */
+export const DEFAULT_SETTINGS: Settings = { sound: false, reduceMotion: false, fontScale: 1, quality: 'standard', furigana: false, commandHints: true, minimap: true };
 
 const skillStateSchema = z.object({
   domain: domainId,

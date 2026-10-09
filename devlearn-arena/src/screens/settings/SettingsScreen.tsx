@@ -10,7 +10,7 @@ import './SettingsScreen.css';
 
 /**
  * 設定（docs/ui-design.md 2 章: 上の帯の「設定」から。docs/product-spec.md 4 章）。
- * 左: 音・動きを減らす・文字の大きさ・表示品質・ふりがな・コマンドの候補。選ぶとすぐ効き、自動で保存する。
+ * 左: 音・動きを減らす・文字の大きさ・表示品質・ふりがな・コマンドの候補・ミニマップ。選ぶとすぐ効き、自動で保存する。
  * 右: 保存。自動保存の様子・書き出す・読み込む・最初からやり直す（docs/data-model.md 7 章）。
  * 読み込みとやり直しは、今の記録を置き換えるので、中身を示して確かめてから行う。
  */
@@ -43,6 +43,7 @@ const CHOICES: readonly AnyChoice[] = [
   { key: 'quality', label: '表示品質', note: '低くすると都市の描き方を軽くする（動きが重い時に）', options: [{ value: 'low', label: '低' }, { value: 'standard', label: '標準' }, { value: 'high', label: '高' }] },
   { key: 'furigana', label: 'ふりがな', note: '漢字の専門用語に読みを添える', options: [{ value: false, label: '付けない' }, { value: true, label: '付ける' }] },
   { key: 'commandHints', label: 'コマンドの候補', note: '実戦の端末の下に、今打てるコマンドの候補を出す', options: [{ value: true, label: '出す' }, { value: false, label: '出さない' }] },
+  { key: 'minimap', label: 'ミニマップ', note: '都市画面の左下に、都市の全体と今見ている所を出す', options: [{ value: true, label: '出す' }, { value: false, label: '出さない' }] },
 ];
 
 function Prefs({ session }: { session: Session }) {

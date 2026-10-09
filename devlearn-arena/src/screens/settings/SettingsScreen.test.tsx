@@ -157,8 +157,8 @@ describe('設定の保存（書き出し・読み込み・最初からやり直�
   });
 });
 
-describe('設定の項目（音・動き・文字・画質・ふりがな・コマンドの候補）', () => {
-  it('選ぶと設定が変わり、選んでいる物が分かる。既定は音を消し、動き・文字・画質は標準、ふりがなは無し、コマンドの候補は出す', () => {
+describe('設定の項目（音・動き・文字・画質・ふりがな・コマンドの候補・ミニマップ）', () => {
+  it('選ぶと設定が変わり、選んでいる物が分かる。既定は音を消し、動き・文字・画質は標準、ふりがなは無し、コマンドの候補とミニマップは出す', () => {
     const session = createSession();
     const host = mount(controls(), session);
     const choice = (group: string, label: string): HTMLButtonElement => {
@@ -168,7 +168,7 @@ describe('設定の項目（音・動き・文字・画質・ふりがな・コ�
       return b;
     };
     const pressed = (group: string): string[] => [...(host.querySelector(`[data-setting="${group}"]`)?.querySelectorAll('button[aria-pressed="true"]') ?? [])].map((b) => b.textContent ?? '');
-    expect(['sound', 'reduceMotion', 'fontScale', 'quality', 'furigana', 'commandHints'].map(pressed)).toEqual([['鳴らさない'], ['減らさない'], ['標準'], ['標準'], ['付けない'], ['出す']]);
+    expect(['sound', 'reduceMotion', 'fontScale', 'quality', 'furigana', 'commandHints', 'minimap'].map(pressed)).toEqual([['鳴らさない'], ['減らさない'], ['標準'], ['標準'], ['付けない'], ['出す'], ['出す']]);
 
     act(() => choice('sound', '鳴らす').click());
     act(() => choice('reduceMotion', '減らす').click());
@@ -176,7 +176,8 @@ describe('設定の項目（音・動き・文字・画質・ふりがな・コ�
     act(() => choice('quality', '低').click());
     act(() => choice('furigana', '付ける').click());
     act(() => choice('commandHints', '出さない').click());
-    expect(session.settings.getState().settings).toEqual({ sound: true, reduceMotion: true, fontScale: 1.3, quality: 'low', furigana: true, commandHints: false });
+    act(() => choice('minimap', '出さない').click());
+    expect(session.settings.getState().settings).toEqual({ sound: true, reduceMotion: true, fontScale: 1.3, quality: 'low', furigana: true, commandHints: false, minimap: false });
     expect(pressed('fontScale')).toEqual(['特大']);
   });
 });
