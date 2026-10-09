@@ -150,7 +150,7 @@ lab は複数分野の組み合わせ
 
 | ID | 難易度 | テーマ | レッスン | 到達目標 | 実戦 | 推奨前提 | 関連 | 次に学ぶとよい |
 |---|---|---|---|---|---|---|---|---|
-| linux.b.00 | 初級 | Linux 基礎 | Linux とは | OS としての Linux・カーネルとディストリビューション・サーバで使われる理由を説明できる | 模 | found.b.03 | found.b.03, ctr.b.02 | linux.b.01 |
+| linux.b.00 | 初級 | Linux 基礎 | Linux とは | OS としての Linux・カーネルとディストリビューション・サーバで使われる理由を説明できる | 端 | found.b.03 | found.b.03, ctr.b.02 | linux.b.01 |
 | linux.b.01 | 初級 | CLI | 端末とシェル | CLI とは何かを説明し、プロンプト・コマンド・引数・オプションを読める | 端 | linux.b.00, found.b.04 | found.b.04, git.b.02 | linux.b.02, linux.b.03 |
 | linux.b.02 | 初級 | ファイル操作 | 作る・写す・移す・消す | mkdir/cp/mv/rm を安全に使える | 端 | linux.b.01 | found.b.04, git.b.02 | web.b.07, git.b.01 |
 | linux.b.03 | 初級 | テキスト | 中身を見る | cat/less/head/tail を使い分けられる | 端 | linux.b.01 | trouble.b.03, mon.b.02 | linux.b.04 |

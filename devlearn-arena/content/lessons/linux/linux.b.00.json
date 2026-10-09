@@ -31,7 +31,9 @@
     "cli",
     "terminal",
     "network",
-    "service"
+    "service",
+    "command",
+    "file"
   ],
   "explain": {
     "what": "{{term:linux}}は、{{term:server}}で最も使われている{{term:os}}。中心の部分を{{term:kernel}}と呼ぶ。カーネルに道具一式を組み合わせて配る物が{{term:distribution}}で、{{term:ubuntu}}はその 1 つ。",
@@ -147,122 +149,74 @@
     }
   ],
   "practice": {
-    "mode": "simulation",
-    "purpose": "借りたサーバの情報画面を読み、OS・ディストリビューション・その版を答える。",
-    "environment": "sim-read",
+    "mode": "terminal",
+    "purpose": "借りた{{term:server}} `port-web-01` に入った。この機械の{{term:os}}・{{term:distribution}}（配布物）・その版を、本物の{{term:command}}で調べて答える。{{term:kernel}}の版と、配布物の版を取り違えないようにする。",
+    "environment": "linux-basic",
     "setup": {
-      "questions": [
-        {
-          "id": "os",
-          "prompt": "このサーバの OS は？",
-          "options": [
-            "Windows",
-            "Linux",
-            "macOS"
-          ]
-        },
-        {
-          "id": "distro",
-          "prompt": "ディストリビューション（配布物）は？",
-          "options": [
-            "Ubuntu",
-            "Debian",
-            "Fedora"
-          ]
-        },
-        {
-          "id": "version",
-          "prompt": "ディストリビューションの版は？",
-          "options": [
-            "24.04",
-            "6.8.0",
-            "4"
-          ]
-        }
-      ],
-      "panels": [
-        {
-          "kind": "kv",
-          "title": "サーバの情報",
-          "rows": [
-            [
-              "機械の名前",
-              "port-web-01"
-            ],
-            [
-              "OS",
-              "Linux"
-            ],
-            [
-              "カーネル",
-              "6.8.0-45-generic"
-            ],
-            [
-              "配布物",
-              "Ubuntu 24.04 LTS"
-            ],
-            [
-              "CPU",
-              "2 コア"
-            ],
-            [
-              "メモリ",
-              "4 GB"
-            ]
-          ]
-        },
-        {
-          "kind": "log",
-          "title": "/etc/os-release",
-          "lines": [
-            "NAME=\"Ubuntu\"",
-            "VERSION=\"24.04 LTS (Noble Numbat)\"",
-            "ID=ubuntu"
-          ]
-        }
-      ]
+      "hostname": "port-web-01",
+      "files": {
+        "/etc/os-release": "PRETTY_NAME=\"Ubuntu 24.04.1 LTS\"\nNAME=\"Ubuntu\"\nVERSION_ID=\"24.04\"\nVERSION=\"24.04.1 LTS (Noble Numbat)\"\nVERSION_CODENAME=noble\nID=ubuntu\nID_LIKE=debian\nHOME_URL=\"https://www.ubuntu.com/\"\nSUPPORT_URL=\"https://help.ubuntu.com/\"\nUBUNTU_CODENAME=noble\n",
+        "/proc/sys/kernel/osrelease": "6.8.0-45-generic\n"
+      }
     },
     "steps": [
       {
-        "id": "read",
-        "purpose": "サーバの情報から、OS・ディストリビューション・ディストリビューションの版の 3 つを答える。",
+        "id": "os",
+        "purpose": "`uname` で、この機械の OS（の中心のカーネル）の名前を調べて答える。",
         "check": {
-          "kind": "sim",
-          "expr": "answered os=Linux distro=Ubuntu version=24.04"
+          "kind": "answer",
+          "equals": "Linux"
         },
-        "afterward": "OS は Linux、配布物は Ubuntu の 24.04。6.8.0 はカーネルの版で、配布物の版とは別の番号。",
+        "afterward": "`uname` は、動いているカーネルの名前 `Linux` を出す。`uname -r` を打つと、カーネルの版 `6.8.0-45-generic` が出る。これはカーネルの版で、配布物の版ではない。",
         "hints": [
-          "「OS」の行と「配布物」の行を読もう。カーネルの行は、配布物とは別の物。",
-          "配布物の行は、名前（Ubuntu）の後ろに版の番号（24.04）が続く。2 つに分けて答える。",
-          "「このサーバの OS は？」は「Linux」を押す、「ディストリビューション（配布物）は？」は「Ubuntu」を押す、「ディストリビューションの版は？」は「24.04」を押す。"
+          "`uname` は、動いているカーネルの名前を出すコマンド。",
+          "何も付けずに `uname` を打つと、名前が 1 語で出る。`-r` を付けるとカーネルの版、`-a` を付けると全てが出る。",
+          "`uname` を打ち、`Linux` と答える。"
         ],
         "expectedErrors": [
           "linux-version-mixup"
+        ]
+      },
+      {
+        "id": "distro",
+        "purpose": "配布物の名前と版は、`/etc/os-release` という{{term:file}}に書いてある。中身を見て、配布物の名前を答える。",
+        "check": {
+          "kind": "answer",
+          "equals": "Ubuntu"
+        },
+        "afterward": "`NAME=\"Ubuntu\"`。同じカーネル（Linux）を使う配布物には、Ubuntu のほかにも `Debian`・`Fedora` などがある。`ID_LIKE=debian` は、Ubuntu が `Debian` をもとにした配布物だという印。",
+        "hints": [
+          "ファイルの中身を見るのは `cat`。",
+          "`cat /etc/os-release` の `NAME=` の行が、配布物の名前。",
+          "`cat /etc/os-release` を打ち、`Ubuntu` と答える。"
         ],
-        "actions": [
-          {
-            "op": "answer",
-            "question": "os",
-            "value": "Linux"
-          },
-          {
-            "op": "answer",
-            "question": "distro",
-            "value": "Ubuntu"
-          },
-          {
-            "op": "answer",
-            "question": "version",
-            "value": "24.04"
-          }
+        "expectedErrors": [
+          "linux-version-mixup"
+        ]
+      },
+      {
+        "id": "version",
+        "purpose": "同じ `/etc/os-release` から、配布物の版（`VERSION_ID`）を答える。`uname -r` の版と比べ、別の番号であることを確かめる。",
+        "check": {
+          "kind": "answer",
+          "equals": "24.04"
+        },
+        "afterward": "配布物の版は `24.04`（2024 年 4 月に出た版。`LTS` は長く手入れされる版）。カーネルの版 `6.8.0-45-generic` とは別の番号。配布物は、カーネルに道具やサービスを足して、まとめて配る物だから。",
+        "hints": [
+          "配布物の版は `/etc/os-release`、カーネルの版は `uname -r`。2 つは別の物。",
+          "`VERSION_ID=` の行の、引用符の中が配布物の版。",
+          "`uname -r` と `cat /etc/os-release` を打ち、`24.04` と答える。"
+        ],
+        "expectedErrors": [
+          "linux-version-mixup"
         ]
       }
     ]
   },
   "result": {
-    "success": "情報画面から OS・配布物・版を読み分けられた。カーネルと配布物の違いが分かった。",
-    "partial": "ヒントを使って読み分けられた。次は、カーネルの版と配布物の版がなぜ違うのかを考えてみよう。",
-    "retry": "まだ合っていない所がある。図の 3 つの層（カーネル・配布物・サービス）に、情報画面の行を当てはめてみよう。"
+    "success": "`uname` と `/etc/os-release` で、OS（カーネル）・配布物・その版を読み分けられた。カーネルの版と配布物の版の違いが分かった。",
+    "partial": "ヒントを使って読み分けられた。次は、カーネルの版と配布物の版がなぜ違うのかを説明してみよう。",
+    "retry": "まだ合っていない所がある。`uname -r` はカーネルの版、`/etc/os-release` は配布物の名前と版。2 つを見比べよう。"
   },
   "summary": {
     "points": [

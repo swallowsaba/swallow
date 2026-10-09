@@ -472,7 +472,7 @@
       "title": "Linux とは",
       "goal": "OS としての Linux・カーネルとディストリビューション・サーバで使われる理由を説明できる",
       "practice": [
-        "simulation"
+        "terminal"
       ],
       "prerequisites": [
         "found.b.03"

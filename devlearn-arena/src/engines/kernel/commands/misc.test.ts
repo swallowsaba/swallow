@@ -60,3 +60,20 @@ describe('補助コマンド', () => {
     expect(run('basename /a/b/c.txt')).toBe('c.txt\n');
   });
 });
+
+describe('uname', () => {
+  it('引数無しは OS の名前（Linux）。-r はカーネルの版、-n は機械の名前、-a は全て', () => {
+    session = createSession({
+      files: { '/home/learner': null, '/proc/sys/kernel/osrelease': '6.8.0-45-generic\n' },
+      vars: { HOSTNAME: 'port-web-01' },
+    });
+    expect(run('uname')).toBe('Linux\n');
+    expect(run('uname -s')).toBe('Linux\n');
+    expect(run('uname -r')).toBe('6.8.0-45-generic\n');
+    expect(run('uname -n')).toBe('port-web-01\n');
+    expect(run('uname -m')).toBe('x86_64\n');
+    expect(run('uname -sr')).toBe('Linux 6.8.0-45-generic\n');
+    expect(run('uname -a')).toMatch(/^Linux port-web-01 6\.8\.0-45-generic #\S+ SMP .+ x86_64 x86_64 x86_64 GNU\/Linux\n$/);
+    expect(run('uname -x')).toContain("uname: invalid option -- 'x'");
+  });
+});

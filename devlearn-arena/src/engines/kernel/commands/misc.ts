@@ -1,6 +1,9 @@
 import { displayPath } from '../path';
 import type { CommandSpec, ShellState } from '../registry';
+import { exists, readFile } from '../vfs';
 import { fromLines } from './args';
+
+const OSRELEASE = '/proc/sys/kernel/osrelease';
 
 /** 環境変数の一覧。__ で始まる物は、模擬の機械の中の設定（ディスクの大きさ・アドレス）で、環境変数ではないので出さない */
 function envText(shell: ShellState): string {
@@ -81,6 +84,28 @@ export const miscCommands: CommandSpec[] = [
     name: 'whoami',
     summary: '現在のユーザ名を表示する',
     handler: ({ shell }) => ({ stdout: `${shell.vars.get('USER') ?? 'learner'}\n` }),
+  },
+  {
+    name: 'uname',
+    summary: 'OS・カーネルの版・機械の名前を表示する',
+    handler: ({ argv, shell }) => {
+      // カーネルの版は、本物と同じく /proc/sys/kernel/osrelease から読む（無ければ模擬の既定）
+      const release = (exists(shell.vfs, OSRELEASE) ? readFile(shell.vfs, OSRELEASE) : '6.8.0-45-generic').trim();
+      const fields: Record<string, string> = {
+        s: 'Linux', n: shell.vars.get('HOSTNAME') ?? 'arena', r: release,
+        v: '#45-Ubuntu SMP PREEMPT_DYNAMIC Fri Aug 30 12:02:04 UTC 2024', m: 'x86_64', p: 'x86_64', i: 'x86_64', o: 'GNU/Linux',
+      };
+      let wanted = '';
+      for (const a of argv.slice(1)) {
+        if (a === '--all') wanted += 'a';
+        else if (/^-[a-z]+$/.test(a)) wanted += a.slice(1);
+        else return { stderr: `uname: extra operand '${a}'\n`, code: 1 };
+      }
+      const bad = [...wanted].find((c) => c !== 'a' && fields[c] === undefined);
+      if (bad !== undefined) return { stderr: `uname: invalid option -- '${bad}'\nTry 'uname --help' for more information.\n`, code: 1 };
+      const order = wanted.includes('a') ? 'snrvmpio' : wanted === '' ? 's' : 'snrvmpio'.split('').filter((c) => wanted.includes(c)).join('');
+      return { stdout: `${[...order].map((c) => fields[c]).join(' ')}\n` };
+    },
   },
   {
     name: 'uptime',

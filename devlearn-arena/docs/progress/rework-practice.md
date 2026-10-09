@@ -255,3 +255,25 @@
 - 原則 3・4 は画面の操作の決まりなので、端末だけの docker の分野には当たらない
 
 検査: `npm run typecheck`・`npm run lint`・`npm run test`（162 ファイル・1767 件）・`npm run content:check` が通った。
+
+## linux（2026-10-10）
+
+17 本の実戦が全て端末で、本物の Linux のコマンドで行う。
+
+| レッスン | 直す前 | 直した後 | 打つ物 |
+|---|---|---|---|
+| linux.b.00 Linux とは | sim-read（サーバの情報画面を読んで押して答える） | terminal | 借りたサーバ `port-web-01` で、`uname`（Linux）→ `cat /etc/os-release` の `NAME`（Ubuntu）→ `uname -r`（カーネルの版 6.8.0）と `VERSION_ID`（配布物の版 24.04）を比べて答える |
+| ほかの 16 本 | terminal | そのまま | 本物の Linux のコマンド |
+
+模擬に足した物（単体テストあり。`misc.test.ts`）:
+
+- `uname`（`-s`・`-n`・`-r`・`-v`・`-m`・`-p`・`-i`・`-o`・`-a`。並べて書ける）: カーネルの版は、本物と同じく `/proc/sys/kernel/osrelease` から読む。機械の名前は HOSTNAME
+
+内容: エラーの案内 `linux-version-mixup` を、`uname -r` と `/etc/os-release` の取り違えに合わせた。`docs/lessons/linux.md` の実戦の設計、`docs/curriculum.md` の記号（模 → 端）、目録を直した。
+
+画面の確かめ（`tools/scenarios/rework.mjs`、1920×1080）:
+
+- `rw-linux.b.00-start` / `-done`: 原則 1（`uname`・`uname -r`・`cat /etc/os-release` の本物の中身）・原則 5（目的の `port-web-01` がプロンプトに、`VERSION_ID`・`NAME` が端末の行に同じ名前で出る）を満たす。3 つの段が全て達成になる
+- 原則 3・4 は画面の操作の決まりなので、端末だけの linux の分野には当たらない
+
+検査: `npm run typecheck`・`npm run lint`・`npm run test`（162 ファイル・1768 件）・`npm run content:check` が通った。
