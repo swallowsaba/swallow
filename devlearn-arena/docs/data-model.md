@@ -158,6 +158,7 @@ interface SaveData {
 interface Settings {
   sound: boolean; reduceMotion: boolean; fontScale: 1 | 1.15 | 1.3;
   quality: 'low' | 'standard' | 'high'; furigana: boolean; commandHints: boolean;
+  minimap: boolean;              // 都市画面のミニマップを出す（既定は出す。版 3 で足した。版 2 からの移行では true。docs/decisions.md D-18）
 }
 ```
 
