@@ -24,7 +24,9 @@
     "program",
     "git",
     "repository",
-    "commit"
+    "commit",
+    "git-restore",
+    "git-head"
   ],
   "explain": {
     "what": "{{term:version-control}}は、{{term:file}}の変更を版ごとに残し、いつでも前の版に戻れるようにする仕組み。版ごとに、日付・変えた人・何をなぜ変えたかの説明が付く。",
@@ -157,175 +159,81 @@
     }
   ],
   "practice": {
-    "mode": "simulation",
-    "purpose": "公園の設計図は、3 回書き直されている。依頼主の電話を読み、履歴の中から、依頼主の言う版に今の設計図を戻す。",
-    "environment": "sim-config",
+    "mode": "terminal",
+    "purpose": "公園の設計図 `plan.txt` は、{{term:repository}}に 4 つの版の履歴が残っている。依頼主（市の公園課）から電話が来た。「9 月の終わりに見せてもらった、入口が北側の案がいちばん良かった。公園と駐車場は、その時のままでよい。今の設計図を、その版に戻してほしい」。履歴から依頼主の言う版を探し、今の `plan.txt` をその版に戻す。",
+    "environment": "linux-basic",
     "setup": {
-      "fields": [
-        {
-          "id": "version",
-          "label": "今の設計図にする版",
-          "options": [
-            "7c2e4a1",
-            "4b81d07",
-            "e19a5c3",
-            "0d3f6b8"
-          ],
-          "value": "7c2e4a1",
-          "note": "選ぶと、その版の設計図が出る"
-        }
+      "hostname": "dev-office",
+      "cwd": "/home/learner/park",
+      "dirs": [
+        "/home/learner/park"
       ],
-      "panels": [
-        {
-          "kind": "kv",
-          "title": "今の設計図（7c2e4a1 の版）",
-          "rows": [
-            [
-              "入口",
-              "北側"
-            ],
-            [
-              "駐車場",
-              "50 台"
-            ],
-            [
-              "公園",
-              "広い"
-            ]
-          ],
-          "when": "field version=7c2e4a1"
-        },
-        {
-          "kind": "kv",
-          "title": "今の設計図（4b81d07 の版）",
-          "rows": [
-            [
-              "入口",
-              "北側"
-            ],
-            [
-              "駐車場",
-              "30 台"
-            ],
-            [
-              "公園",
-              "広い"
-            ]
-          ],
-          "when": "field version=4b81d07"
-        },
-        {
-          "kind": "kv",
-          "title": "今の設計図（e19a5c3 の版）",
-          "rows": [
-            [
-              "入口",
-              "北側"
-            ],
-            [
-              "駐車場",
-              "40 台"
-            ],
-            [
-              "公園",
-              "小さい"
-            ]
-          ],
-          "when": "field version=e19a5c3"
-        },
-        {
-          "kind": "kv",
-          "title": "今の設計図（0d3f6b8 の版）",
-          "rows": [
-            [
-              "入口",
-              "南側"
-            ],
-            [
-              "駐車場",
-              "40 台"
-            ],
-            [
-              "公園",
-              "小さい"
-            ]
-          ],
-          "when": "field version=0d3f6b8"
-        },
-        {
-          "kind": "text",
-          "title": "依頼主（市の公園課）からの電話",
-          "body": "9 月の終わりに見せてもらった、入口が北側の案がいちばん良かった。公園と駐車場は、その時のままでよい。今の設計図を、その版に戻してほしい。"
-        },
-        {
-          "kind": "table",
-          "title": "設計図の履歴（新しい順）",
-          "columns": [
-            "記録",
-            "日付",
-            "変えた人",
-            "説明"
-          ],
-          "rows": [
-            [
-              "7c2e4a1",
-              "10/03",
-              "佐藤",
-              "駐車場を 50 台に増やす"
-            ],
-            [
-              "4b81d07",
-              "10/01",
-              "佐藤",
-              "公園を広げ、駐車場を 30 台に減らす"
-            ],
-            [
-              "e19a5c3",
-              "9/29",
-              "田中",
-              "入口を北側に移す"
-            ],
-            [
-              "0d3f6b8",
-              "9/27",
-              "田中",
-              "最初の案"
-            ]
-          ]
-        }
+      "run": [
+        "cd /home/learner/park",
+        "git init -q",
+        "export GIT_AUTHOR_NAME=Tanaka GIT_AUTHOR_EMAIL=tanaka@city.example GIT_AUTHOR_DATE=\"2026-09-27 10:00\"",
+        "echo '入口: 南側' > plan.txt",
+        "echo '駐車場: 40 台' >> plan.txt",
+        "echo '公園: 小さい' >> plan.txt",
+        "git add plan.txt",
+        "git commit -q -m \"最初の案\"",
+        "export GIT_AUTHOR_DATE=\"2026-09-29 15:00\"",
+        "echo '入口: 北側' > plan.txt",
+        "echo '駐車場: 40 台' >> plan.txt",
+        "echo '公園: 小さい' >> plan.txt",
+        "git commit -q -am \"入口を北側に移す\"",
+        "export GIT_AUTHOR_NAME=Sato GIT_AUTHOR_EMAIL=sato@city.example GIT_AUTHOR_DATE=\"2026-10-01 11:00\"",
+        "echo '入口: 北側' > plan.txt",
+        "echo '駐車場: 30 台' >> plan.txt",
+        "echo '公園: 広い' >> plan.txt",
+        "git commit -q -am \"公園を広げ、駐車場を 30 台に減らす\"",
+        "export GIT_AUTHOR_DATE=\"2026-10-03 09:30\"",
+        "echo '入口: 北側' > plan.txt",
+        "echo '駐車場: 50 台' >> plan.txt",
+        "echo '公園: 広い' >> plan.txt",
+        "git commit -q -am \"駐車場を 50 台に増やす\"",
+        "unset GIT_AUTHOR_NAME GIT_AUTHOR_EMAIL GIT_AUTHOR_DATE"
       ]
     },
     "steps": [
       {
-        "id": "restore",
-        "purpose": "依頼主の言う版を、履歴の日付と説明から探し、今の設計図をその版に戻す。",
+        "id": "find",
+        "purpose": "履歴（記録の一覧）を見て、依頼主の言う版を探す。手がかりは「9 月の終わり」と「入口が北側」。その版の{{term:commit}}の説明を答える。",
         "check": {
-          "kind": "sim",
-          "expr": "field version=e19a5c3"
+          "kind": "answer",
+          "equals": "入口を北側に移す"
         },
-        "afterward": "9/29 の版（入口を北側に移す）に戻した。その後の 2 つの版も履歴に残っているので、気が変わればまた戻れる。",
+        "afterward": "9/29 に田中さんが記録した「入口を北側に移す」の版だった。履歴には、日付・変えた人・説明が、新しい順に並んでいる。上書きだけで保存していたら、この版はもう残っていなかった。",
         "hints": [
-          "依頼の手がかりは 2 つ。「9 月の終わり」と「入口が北側」。履歴の日付と説明を、新しい順に読む。",
-          "9 月の版は 2 つ。そのうち入口を北側にしたのは、田中さんの 9/29 の版。",
-          "`set version e19a5c3` と入れる。"
+          "履歴には、記録ごとに日付・変えた人・説明が残っている。新しい物から順に読み、9 月の記録を探す。",
+          "`git log` は、記録を新しい順に並べる。`Date:` の行が日付、字下げした行が説明。9 月の記録は 2 つある。",
+          "`git log` を打ち、`入口を北側に移す` と答える。"
         ],
         "expectedErrors": [
           "git-wrong-version"
-        ],
-        "actions": [
-          {
-            "op": "set",
-            "field": "version",
-            "value": "e19a5c3"
-          }
+        ]
+      },
+      {
+        "id": "restore",
+        "purpose": "見つけた版の設計図を、記録から取り出して、今の `plan.txt` に書き戻す。履歴は消さずに残す。",
+        "check": {
+          "kind": "fs",
+          "path": "/home/learner/park/plan.txt",
+          "contains": "入口: 北側\n駐車場: 40 台\n公園: 小さい"
+        },
+        "afterward": "`plan.txt` が 9/29 の版（入口: 北側・駐車場: 40 台・公園: 小さい）に戻った。`git log` の履歴は 4 つのまま残っているので、気が変われば、また別の版に戻せる。",
+        "hints": [
+          "前の版の中身は、記録の中に残っている。記録を指して、そのファイルだけを取り出す。",
+          "`git restore --source=記録 ファイル` は、その記録の版のファイルを、今の作業の場所に書き戻す。記録は `git log --oneline` の先頭の 7 桁の番号で指す（今から 2 つ前なら `HEAD~2` でも指せる）。",
+          "`git restore --source=11da075 plan.txt` を打つ。"
         ]
       }
     ]
   },
   "result": {
-    "success": "日付と説明の付いた履歴から、依頼主の言う版を見つけて戻せた。上書きだけなら、この版はもう無かった。",
+    "success": "`git log` の日付と説明から依頼主の言う版を見つけ、`git restore` でその版に戻せた。上書きだけなら、この版はもう無かった。",
     "partial": "ヒントを使って、版を戻せた。次は、履歴が無かったら何が起きたかを説明してみよう。",
-    "retry": "まだ依頼主の言う版になっていない。依頼の手がかり（日付と入口の向き）を、履歴の行に 1 つずつ当てよう。"
+    "retry": "まだ依頼主の言う版になっていない。依頼の手がかり（日付と入口の向き）を、`git log` の行に 1 つずつ当てよう。"
   },
   "summary": {
     "points": [

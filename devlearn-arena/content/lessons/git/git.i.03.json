@@ -28,7 +28,9 @@
     "commit",
     "github",
     "gitlab",
-    "file"
+    "file",
+    "repository",
+    "log"
   ],
   "explain": {
     "what": "{{term:pull-request}}は、自分の{{term:branch}}の変更を、main などに{{term:merge}}する前に、ほかの人に見てもらう依頼。{{term:github}}ではプルリクエスト、{{term:gitlab}}ではマージリクエストと呼ぶ。",
@@ -152,271 +154,153 @@
     }
   ],
   "practice": {
-    "mode": "simulation",
-    "purpose": "予約システムで、1 人が予約できる枠を 2 つまでにする変更を、`limit` の枝で記録して送った。main に入れるため、依頼を作り、検査とレビューの指摘を直し、承認を得て取り込む。",
-    "environment": "sim-config",
+    "mode": "terminal",
+    "purpose": "予約システムの{{term:repository}}。1 人が予約できる枠を 2 つまでにする変更を、`limit` の{{term:branch}}で記録し、{{term:remote}}に送ってある。`main` に入れるため、{{term:pull-request}}を作って田中さん（`tanaka`）に{{term:review}}を頼み、自動の{{term:test}}とレビューの指摘を直し、承認を得て取り込む。",
+    "environment": "linux-basic",
     "setup": {
-      "fields": [
-        {
-          "id": "取り込み先",
-          "label": "取り込み先の枝（base）",
-          "options": [
-            "main",
-            "limit"
-          ],
-          "note": "取り込む枝は limit（あなたの枝）"
-        },
-        {
-          "id": "説明",
-          "label": "依頼の説明",
-          "options": [
-            "直しました",
-            "変えたファイルの名前だけ",
-            "何を・なぜ・確かめ方を書く"
-          ]
-        },
-        {
-          "id": "依頼",
-          "label": "依頼（プルリクエスト）",
-          "options": [
-            "出さない",
-            "出す"
-          ],
-          "value": "出さない",
-          "requires": [
-            {
-              "value": "出す",
-              "expr": "field 取り込み先=main",
-              "message": "依頼を出せない: 取り込み先と取り込む枝が同じ（limit と limit）。比べる物が無い"
-            }
-          ]
-        },
-        {
-          "id": "対応",
-          "label": "指摘への対応",
-          "options": [
-            "まだ",
-            "比べ方を直して記録し、送る",
-            "指摘を閉じて、そのまま"
-          ],
-          "value": "まだ",
-          "requires": [
-            {
-              "value": "比べ方を直して記録し、送る",
-              "expr": "field 依頼=出す",
-              "message": "まだ依頼を出していない（検査の結果も指摘も無い）"
-            },
-            {
-              "value": "指摘を閉じて、そのまま",
-              "expr": "field 依頼=出す",
-              "message": "まだ依頼を出していない（検査の結果も指摘も無い）"
-            }
-          ]
-        },
-        {
-          "id": "再依頼",
-          "label": "もう一度見てもらう",
-          "options": [
-            "まだ",
-            "頼む"
-          ],
-          "value": "まだ",
-          "requires": [
-            {
-              "value": "頼む",
-              "expr": "field 対応=比べ方を直して記録し、送る",
-              "message": "まだ指摘を直していない。直して送ってから、もう一度見てもらう"
-            }
-          ]
-        },
-        {
-          "id": "取り込み",
-          "label": "取り込み（merge）",
-          "options": [
-            "まだ",
-            "取り込む"
-          ],
-          "value": "まだ",
-          "requires": [
-            {
-              "value": "取り込む",
-              "expr": "field 対応=比べ方を直して記録し、送る && field 再依頼=頼む",
-              "message": "取り込めない（Merging is blocked）: 必須の検査が失敗しているか、承認が足りない"
-            }
-          ]
-        }
+      "hostname": "dev-office",
+      "cwd": "/home/learner/reserve",
+      "dirs": [
+        "/home/learner/reserve"
       ],
-      "panels": [
+      "run": [
+        "cd /home/learner",
+        "git clone -q https://git.city.example/city/reserve.git reserve",
+        "cd reserve",
+        "export GIT_AUTHOR_NAME=Learner GIT_AUTHOR_EMAIL=learner@example.com GIT_AUTHOR_DATE=\"2026-10-08 10:00\"",
+        "git switch -q -c limit",
+        "echo '// 1 人が予約できる枠は 2 つまで' > reserve.js",
+        "echo 'function canReserve(count) {' >> reserve.js",
+        "echo '  if (count > 2) return false;' >> reserve.js",
+        "echo '  return true;' >> reserve.js",
+        "echo '}' >> reserve.js",
+        "git commit -q -am \"予約は 1 人 2 枠までにする\"",
+        "git push -q -u origin limit",
+        "unset GIT_AUTHOR_NAME GIT_AUTHOR_EMAIL GIT_AUTHOR_DATE"
+      ],
+      "gitServers": [
         {
-          "kind": "kv",
-          "title": "あなたの枝",
-          "rows": [
-            [
-              "枝",
-              "limit（リモートに送った）"
-            ],
-            [
-              "記録",
-              "予約は 1 人 2 枠までにする"
-            ],
-            [
-              "変えたファイル",
-              "reserve.js"
-            ]
-          ]
-        },
-        {
-          "kind": "text",
-          "title": "依頼の説明（見る人に届く文）",
-          "body": "何を: 1 人が予約できる枠を 2 つまでにした。なぜ: 1 人で週末の枠を全て取る人がいた。確かめ方: 2 枠目まで予約できることを試した。",
-          "when": "field 説明=何を・なぜ・確かめ方を書く"
-        },
-        {
-          "kind": "text",
-          "title": "レビュー（田中さん）: 質問",
-          "body": "説明だけでは、何をなぜ変えたのかが分からない。何を・なぜ変えたか、どう確かめたかを書いてほしい。",
-          "when": "field 依頼=出す && !field 説明=何を・なぜ・確かめ方を書く"
-        },
-        {
-          "kind": "log",
-          "title": "自動の検査（テスト）: 失敗",
-          "lines": [
-            "test/limit.test.js",
-            "  1 枠目は受け付ける ... 成功",
-            "  2 枠目は受け付ける ... 成功",
-            "  3 枠目は断る ... 失敗（3 枠目も受け付けた）",
-            "1 failing"
+          "url": "https://git.city.example/city/reserve.git",
+          "run": [
+            "export GIT_AUTHOR_NAME=Tanaka GIT_AUTHOR_EMAIL=tanaka@city.example GIT_AUTHOR_DATE=\"2026-10-01 10:00\"",
+            "echo '// 予約を受け付けるか' > reserve.js",
+            "echo 'function canReserve(count) {' >> reserve.js",
+            "echo '  return true;' >> reserve.js",
+            "echo '}' >> reserve.js",
+            "git add reserve.js",
+            "git commit -q -m \"予約を受け付ける\""
           ],
-          "when": "field 依頼=出す && !field 対応=比べ方を直して記録し、送る"
-        },
-        {
-          "kind": "text",
-          "title": "レビュー（田中さん）: 変更を求める",
-          "body": "reserve.js の 12 行目、上限の比べ方が「予約の数 <= 2」なので、2 枠持っている人の 3 枠目も通る。「予約の数 < 2」に直して、検査が通るのを確かめてください。",
-          "when": "field 依頼=出す && field 説明=何を・なぜ・確かめ方を書く && !field 再依頼=頼む"
-        },
-        {
-          "kind": "log",
-          "title": "自動の検査（テスト）: 成功",
-          "lines": [
-            "test/limit.test.js",
-            "  1 枠目は受け付ける ... 成功",
-            "  2 枠目は受け付ける ... 成功",
-            "  3 枠目は断る ... 成功",
-            "all checks have passed"
-          ],
-          "when": "field 対応=比べ方を直して記録し、送る"
-        },
-        {
-          "kind": "text",
-          "title": "レビュー（田中さん）: 承認",
-          "body": "直っていること、検査が通ったことを確かめた。取り込んでよい。",
-          "when": "field 再依頼=頼む"
-        },
-        {
-          "kind": "text",
-          "title": "取り込み",
-          "body": "limit が main に取り込まれた（Merge pull request #12 from park/limit）。依頼は閉じた。",
-          "when": "field 取り込み=取り込む"
+          "forge": {
+            "repo": "city/reserve",
+            "checks": [
+              {
+                "name": "test",
+                "path": "reserve.js",
+                "pass": [
+                  "count >= 2",
+                  "count>=2",
+                  "count > 1",
+                  "count>1"
+                ],
+                "failLog": [
+                  "test/limit.test.js",
+                  "  1 枠目は受け付ける ... ok",
+                  "  2 枠目は受け付ける ... ok",
+                  "  3 枠目は断る ... not ok（3 枠目も受け付けた: canReserve(2) が true）",
+                  "1 failing"
+                ],
+                "passLog": [
+                  "test/limit.test.js",
+                  "  1 枠目は受け付ける ... ok",
+                  "  2 枠目は受け付ける ... ok",
+                  "  3 枠目は断る ... ok",
+                  "all passing"
+                ]
+              }
+            ],
+            "reviewers": [
+              {
+                "login": "tanaka",
+                "describe": [
+                  "何を",
+                  "なぜ",
+                  "確かめ"
+                ],
+                "question": "説明だけでは、何をなぜ変えたのかが分からない。何を・なぜ変えたか、どう確かめたかを書いてほしい。",
+                "changes": "test が落ちている。count は今までに予約した数なので、2 つ予約した人（count が 2）の 3 つ目も通ってしまう。比べ方を直してほしい。",
+                "approve": "直っている。説明も分かりやすい。取り込んでよい。"
+              }
+            ],
+            "protect": {
+              "branch": "main",
+              "approvals": 1,
+              "checks": [
+                "test"
+              ]
+            }
+          }
         }
       ]
     },
     "steps": [
       {
         "id": "open",
-        "purpose": "依頼を作る。取り込み先の枝を選び、見る人が判断できる説明を付けて出す。",
+        "purpose": "`limit` を `main` に取り込む依頼を作り、田中さんに見てもらう。見る人が判断できるよう、説明（本文）には何を・なぜ変えたか、どう確かめたかを書く。",
         "check": {
-          "kind": "sim",
-          "expr": "field 取り込み先=main && field 説明=何を・なぜ・確かめ方を書く && field 依頼=出す"
+          "kind": "git",
+          "expr": "pr:limit>main"
         },
-        "afterward": "limit から main への依頼ができた。すぐに自動の検査が走り、田中さんがレビューを始めた。",
+        "afterward": "`limit` から `main` への依頼 #1 ができた。依頼を作るとすぐに自動の検査（test）が走り、頼んだ田中さんがレビューを返した。",
         "hints": [
-          "取り込み先は、変更を入れたい枝。説明は、見る人が読んで正しいかを判断できるように書く。",
-          "「直しました」やファイルの名前だけでは、何をなぜ変えたのか分からない。何を・なぜ・どう確かめたかを書く。",
-          "`set 取り込み先 main` と `set 説明 何を・なぜ・確かめ方を書く` と `set 依頼 出す` を順に入れる。"
+          "依頼は、取り込む枝（`--head`）・取り込み先（`--base`）・題・説明で作る。取り込み先は、変更を入れたい枝。",
+          "`gh pr create` に、`--base main` `--head limit` `--title \"題\"` `--body \"説明\"` と、見る人の `--reviewer tanaka` を付ける。",
+          "`gh pr create --base main --head limit --title \"予約は 1 人 2 枠までにする\" --body \"何を: 1 人が予約できる枠を 2 つまでにした。なぜ: 1 人で週末の枠を全て取る人がいた。確かめ方: test/limit.test.js で 3 枠目を断ることを確かめる。\" --reviewer tanaka` を打つ。"
         ],
         "expectedErrors": [
           "git-pr-same-branch",
-          "git-pr-misread"
-        ],
-        "actions": [
-          {
-            "op": "set",
-            "field": "取り込み先",
-            "value": "main"
-          },
-          {
-            "op": "set",
-            "field": "説明",
-            "value": "何を・なぜ・確かめ方を書く"
-          },
-          {
-            "op": "set",
-            "field": "依頼",
-            "value": "出す"
-          }
+          "git-pr-not-pushed"
         ]
       },
       {
         "id": "fix",
-        "purpose": "検査の結果と、レビューの指摘を読み、指摘に対応する。",
+        "purpose": "自動の検査の結果と失敗した{{term:log}}、田中さんのレビューを読み、指摘された誤りを `reserve.js` で直す。直したら記録して、同じ枝に送る（送ると、依頼の検査がやり直される）。",
         "check": {
-          "kind": "sim",
-          "expr": "field 対応=比べ方を直して記録し、送る"
+          "kind": "git",
+          "expr": "pr-checks:limit pushed:limit"
         },
-        "afterward": "比べ方を「予約の数 < 2」に直して記録し、同じ枝に送った。依頼は送った記録を自動で含み、検査が走り直して全て通った。",
+        "afterward": "比べ方を `count >= 2` に直して記録し、`limit` に送った。依頼は送った記録を自動で含み、検査がやり直されて通った。",
         "hints": [
-          "検査の失敗した行と、田中さんの指摘は、同じ誤りを指している。",
-          "指摘を閉じても、誤りは残り、検査も失敗のまま。直した記録を同じ枝に送れば、依頼に加わる。",
-          "`set 対応 比べ方を直して記録し、送る` と入れる。"
+          "検査の結果は `gh pr checks`、失敗したログは `gh run view`、レビューは `gh pr view` で読む。ログの「3 枠目も受け付けた」が手がかり。",
+          "`count` は今までに予約した数。2 つ予約した人（`count` が 2）を断るには、`count > 2` を `count >= 2` にする。直したら `git commit -am \"説明\"` で記録し、`git push` で送る。",
+          "`gh pr checks 1` `gh run view 162983 --log-failed` `sed -i 's/count > 2/count >= 2/' reserve.js` `git commit -am \"3 枠目を断るように比べ方を直す\"` `git push` を順に打つ。"
         ],
         "expectedErrors": [
-          "git-pr-not-open"
-        ],
-        "actions": [
-          {
-            "op": "set",
-            "field": "対応",
-            "value": "比べ方を直して記録し、送る"
-          }
+          "git-pr-blocked"
         ]
       },
       {
         "id": "merge",
-        "purpose": "直したことを伝えて、もう一度見てもらう。承認を得たら取り込む。",
+        "purpose": "直したことを伝えて、田中さんにもう一度見てもらう。承認を得たら、依頼を `main` に取り込む。",
         "check": {
-          "kind": "sim",
-          "expr": "field 再依頼=頼む && field 取り込み=取り込む"
+          "kind": "git",
+          "expr": "pr-approved:limit remote-merged:limit>main"
         },
-        "afterward": "田中さんの承認を得て、検査も通ったので、limit を main に取り込めた。",
+        "afterward": "田中さんの承認を得て、検査も通ったので、依頼 #1 を `main` に取り込めた。`main` に「`Merge pull request #1`」の記録が足された。",
         "hints": [
-          "取り込みは、検査が通り、承認がある時だけできる。",
-          "直した後に、もう一度見てもらう（再レビュー）と、承認が付く。",
-          "`set 再依頼 頼む` と `set 取り込み 取り込む` を順に入れる。"
+          "`main` は、必須の検査（test）が通り、承認が 1 つある時だけ取り込める決まり（保護）になっている。直した後は、もう一度見てもらう。",
+          "`gh pr edit` の `--add-reviewer` で、もう一度レビューを頼む。承認されたら `gh pr merge` で取り込む。",
+          "`gh pr edit 1 --add-reviewer tanaka` `gh pr merge 1 --merge` を順に打つ。"
         ],
         "expectedErrors": [
-          "git-pr-blocked",
-          "git-pr-not-fixed"
-        ],
-        "actions": [
-          {
-            "op": "set",
-            "field": "再依頼",
-            "value": "頼む"
-          },
-          {
-            "op": "set",
-            "field": "取り込み",
-            "value": "取り込む"
-          }
+          "git-pr-blocked"
         ]
       }
     ]
   },
   "result": {
-    "success": "依頼を作り、検査とレビューの指摘を直し、承認を得て取り込めた。レビューの流れを通せた。",
+    "success": "`gh` で依頼を作り、検査とレビューの指摘を直して送り、承認を得て取り込めた。レビューの流れを、本物の道具で通せた。",
     "partial": "ヒントを使って、取り込めた。次は、取り込みを止める 2 つの理由（検査の失敗と承認の不足）を説明してみよう。",
-    "retry": "まだ取り込めていない。情報の欄で、検査とレビューのどちらで止まっているかを見よう。"
+    "retry": "まだ取り込めていない。`gh pr checks` と `gh pr view` で、検査とレビューのどちらで止まっているかを見よう。"
   },
   "summary": {
     "points": [

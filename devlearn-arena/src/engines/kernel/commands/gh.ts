@@ -2,6 +2,7 @@ import type { CommandResult, CommandSpec, ShellState } from '../registry';
 import { parseArgs } from './args';
 import { issueSubcommands } from './ghIssue';
 import { prSubcommands } from './ghPr';
+import { forgeServer, ghPrForge, ghRunForge } from './ghForge';
 import { NO_REPO, type GhContext, type GhHandler } from './ghShared';
 
 /**
@@ -47,8 +48,12 @@ export const ghCommands: CommandSpec[] = [
     name: 'gh',
     summary: 'GitHub を操作する（pr / issue / project / protect / workflow ほか）',
     complete: ({ prefix }) => NAMES.filter((s) => s.startsWith(prefix)),
-    handler: ({ argv, shell }) => {
+    handler: (ctx) => {
+      const { argv, shell } = ctx;
       const sub = argv[1];
+      // 今いるリポジトリの origin に Pull Request の置き場があれば、そこへ向けて打つ（本物の gh と同じ）
+      const server = sub === 'pr' || sub === 'run' ? forgeServer(shell) : null;
+      if (server) return sub === 'pr' ? ghPrForge(ctx, server) : ghRunForge(ctx, server);
       if (sub === undefined) {
         return {
           stdout:

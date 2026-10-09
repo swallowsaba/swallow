@@ -173,3 +173,33 @@
 - 結果の段の「入れた操作の文」を「画面でした操作」（画面の名前で言い表した物）にした
 - 撮影: `tools/scenarios/simDrive.mjs`（手順の actions を本物のマウスのドラッグで行う）と `tools/scenarios/rework.mjs`（実戦の画面を、開いた所・ドラッグの途中・誤った後・終えた後で撮る）
 - sim-config は分野ごとに作り直すまで残す（最後のヒントは前の形のまま、操作は actions で通す）。全ての分野を終えたら型ごと消す
+
+## git（2026-10-10）
+
+12 本の実戦が全て端末になり、どれも本物の git（git.i.03 は gh も）で行う。最後のヒントには、どれも git か gh のコマンドがある。
+
+| レッスン | 直す前 | 直した後 | 打つ物 |
+|---|---|---|---|
+| git.b.01 バージョン管理とは | sim-config（版を選ぶ欄） | terminal | `git log` で日付と説明から版を探して答え、`git restore --source=<記録> plan.txt` で戻す（履歴は残る） |
+| git.i.03 GitHub / GitLab とプルリクエスト | sim-config（6 つの欄） | terminal | `gh pr create --base main --head limit --reviewer tanaka` → `gh pr checks`・`gh run view --log-failed` → 直して `git commit`・`git push` → `gh pr edit --add-reviewer`・`gh pr merge` |
+| ほかの 10 本 | terminal | terminal（そのまま） | 本物の git |
+
+模擬に足した物（単体テストあり）:
+
+- `git restore --source`（`-s`）: 作業ツリーのファイルを、指した記録の版に戻す。インデックスと履歴は変えない（`git.test.ts`）
+- `git merge --no-ff` と `-m`: 早送りできる時も合わせる記録を作る（`gitHistory.test.ts`）
+- Pull Request の置き場（`src/engines/github/forge.ts`）: setup の `gitServers[].forge` に、自動の検査（ファイルの中身で成否が決まり、push すると次に見た時に検査し直す）・見る人（説明と検査の結果で、質問・変更を求める・承認を返す）・枝の保護（必須の検査と承認の数）を書ける。依頼と返事は保存から戻しても残る
+- `gh pr create / view / checks / edit / merge / list / status` と `gh run view`（`src/engines/kernel/commands/ghForge.ts`）: 今いるリポジトリの origin に置き場がある時は、そこへ向けて打つ（本物の gh と同じ）。取り込みは、サーバの控えで `git merge --no-ff` と `git push` をして、サーバの main に `Merge pull request #N from <枝>` の記録を作る（`ghForge.test.ts`）
+- 達成条件 `pr:<枝>><枝>`・`pr-checks:<枝>`・`pr-approved:<枝>`・`remote-merged:<枝>><枝>`（`src/engines/git/check.ts`）
+- 直した不具合: 共通の祖先（`mergeBase`）が、合わせる記録の 1 つ目の親から辿って最初に当たった古い祖先を返し、取り込んだ枝の先を見落としていた。共通の祖先のうち、ほかの共通の祖先の祖先ではない物を返すようにした。`isAncestor` は辿れるかで決める（先に失敗するテストを `gitHistory.test.ts` に書いた）
+
+内容: エラーの案内（`content/errors/git.json`）を本物の出力（`is the same as base branch`・`you must first push the current branch`・`is not mergeable`）に合わせ、画面の欄にしか無かった 2 つ（`git-pr-not-fixed`・`git-pr-misread`）を消した。`docs/lessons/git.md` の 2 本の実戦の設計、`docs/curriculum.md` の記号（模 → 端）、目録（`npm run catalog`）を直した。
+
+画面の確かめ（`tools/scenarios/rework.mjs`、1920×1080。最後のヒントのコマンドを本物のキー入力で打った）:
+
+- `rw-git.b.01-start` / `-done`: 原則 1（`git log` の Author・Date・説明と `git restore` が端末に出る）・原則 5（目的の `plan.txt` と端末のファイル名が同じ）を満たす。2 つの段が順に「何が起きたか」付きで達成になる
+- `rw-git.i.03-start` / `-done`: 原則 1（`gh pr create`・`gh pr checks` の失敗の行と実行の URL・`gh run view --log-failed` のログ・`git push` の送った範囲・`Merged pull request`）・原則 5（目的の `limit`・`main`・`tanaka`・`reserve.js` が端末に同じ名前で出る）を満たす。3 つの段が全て達成になる
+- 原則 3・4 は画面の操作の決まりなので、端末だけの git の分野には当たらない
+- 気付いた事（今回は直さない）: 端末の幅を超える長い 1 行（`gh pr create … --body …`）を打つと、折り返しの描き直しで打った行が 2 回見える。前からある端末の表示の癖で、打った中身と結果は正しい
+
+検査: `npm run typecheck`・`npm run lint`・`npm run test`（161 ファイル・1761 件）・`npm run content:check` が通った。

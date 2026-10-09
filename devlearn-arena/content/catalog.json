@@ -2031,7 +2031,7 @@
       "title": "バージョン管理とは",
       "goal": "履歴を残す理由と、無いと困る場面を説明できる",
       "practice": [
-        "simulation"
+        "terminal"
       ],
       "prerequisites": [
         "linux.b.02"
@@ -2203,7 +2203,7 @@
       "title": "GitHub / GitLab とプルリクエスト",
       "goal": "プルリクエストを作り、レビューを受けて統合できる",
       "practice": [
-        "simulation"
+        "terminal"
       ],
       "prerequisites": [
         "git.i.02"

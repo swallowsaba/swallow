@@ -213,6 +213,25 @@ describe('diff / restore / reset', () => {
     expect(run('cat a.txt').out).toBe('A\n');
   });
 
+  it('restore --source で、作業ツリーのファイルを前の記録の版に戻せる（インデックスと履歴は変えない）', () => {
+    run('echo second > a.txt');
+    run('git commit -am "second"');
+    run('echo third > a.txt');
+    run('git commit -am "third"');
+    run('git restore --source=HEAD~2 a.txt');
+    expect(run('cat a.txt').out).toBe('A\n');
+    expect(run('git status').out).toContain('modified:   a.txt');
+    expect(run('git diff --staged').out).toBe('');
+    expect(run('git log --oneline').out.trim().split('\n')).toHaveLength(3);
+    // -s でも同じ。記録の番号でも指せる
+    const second = run('git log --oneline').out.trim().split('\n')[1]?.split(' ')[0] ?? '';
+    run(`git restore -s ${second} a.txt`);
+    expect(run('cat a.txt').out).toBe('second\n');
+    // 無い記録・その記録に無いファイルは断る
+    expect(run('git restore --source=HEAD~9 a.txt').err).toContain('could not resolve');
+    expect(run('git restore --source=HEAD nothing.txt').err).toContain('did not match any file');
+  });
+
   it('reset --hard で1つ前に戻る', () => {
     run('echo second > b.txt');
     run('git add b.txt');

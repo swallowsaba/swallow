@@ -15,6 +15,7 @@ import { createVfs, type VfsNode, type VfsState } from './vfs';
 import type { Service, ServiceTable } from './services';
 import type { ContainerHost } from '@/engines/container/container';
 import type { GitServer, SshHost, WebWorld } from './registry';
+import type { Forge } from '@/engines/github/forge';
 
 export interface SessionOptions {
   /** 保存から復元する場合の初期状態 */
@@ -115,7 +116,7 @@ export interface ShellSnapshotData {
   containers?: ContainerHost | null;
   web?: WebWorld | null;
   /** 古い保存には無い */
-  gitServers?: { url: string; ssh?: string; keys: string[]; state: GitSnapshot }[];
+  gitServers?: { url: string; ssh?: string; keys: string[]; state: GitSnapshot; forge?: Forge }[];
   /** 古い保存には無い */
   sshHosts?: SshHost[];
 }
@@ -148,7 +149,7 @@ export function snapshotShell(state: ShellState): ShellSnapshotData {
     services: state.services === null ? null : { services: [...state.services.services.values()], tick: state.services.tick },
     containers: state.containers,
     web: state.web,
-    ...(state.gitServers ? { gitServers: [...state.gitServers.values()].map((g) => ({ url: g.url, ...(g.ssh !== undefined ? { ssh: g.ssh } : {}), keys: [...g.keys], state: snapshotGit(g.state) })) } : {}),
+    ...(state.gitServers ? { gitServers: [...state.gitServers.values()].map((g) => ({ url: g.url, ...(g.ssh !== undefined ? { ssh: g.ssh } : {}), keys: [...g.keys], state: snapshotGit(g.state), ...(g.forge ? { forge: g.forge } : {}) })) } : {}),
     ...(state.sshHosts ? { sshHosts: [...state.sshHosts.values()] } : {}),
   };
 }

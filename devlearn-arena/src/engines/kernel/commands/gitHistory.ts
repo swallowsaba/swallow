@@ -40,10 +40,11 @@ export const historySubcommands: Record<string, GitHandler> = {
     return { patch: { git: result.git, vfs }, stdout: mode === 'hard' ? `HEAD is now at ${short(resolved)} ${subjectOf(git, resolved)}\n` : '' };
   },
   merge: ({ git, shell, rest, nowSeconds }) => {
-    const { operands } = parseArgs(['merge', ...rest]);
+    const { operands, flags, values } = parseArgs(['merge', ...rest], { withValue: ['m'] });
     const name = operands[0];
     if (name === undefined) return { stderr: 'fatal: マージ元を指定してください\n', code: 128 };
-    return mergeWith(git, shell, name, nowSeconds);
+    // --no-ff: 早送りできる時も、合わせる記録を作る（GitHub の「Create a merge commit」と同じ）。-m で合わせる記録の説明
+    return mergeWith(git, shell, name, nowSeconds, values.get('m'), flags.has('no-ff'));
   },
   'cherry-pick': ({ git, shell, rest, nowSeconds }) => {
     const { operands } = parseArgs(['cherry-pick', ...rest]);
@@ -126,10 +127,19 @@ export const historySubcommands: Record<string, GitHandler> = {
  * 今いる枝に name（枝・origin/main など）を取り込む。早送り・合わせる記録・衝突のどれかになる。
  * label は合わせる記録の説明（無ければ Merge branch 'name'。git pull は Merge branch 'main' of URL）
  */
-export function mergeWith(git: GitState, shell: ShellState, name: string, nowSeconds: number, label?: string): CommandResult {
+export function mergeWith(git: GitState, shell: ShellState, name: string, nowSeconds: number, label?: string, noFastForward = false): CommandResult {
   const plan = planMerge(git, name);
   if ('error' in plan) return { stderr: `${plan.error}\n`, code: 128 };
 
+  if (plan.fastForward !== null && noFastForward) {
+    // 早送りできるが、取り込んだ先の中身で、親を 2 つ持つ合わせる記録を作る
+    const vfs = checkoutWorktree(shell.vfs, git, headCommit(git), plan.fastForward);
+    const into = currentBranch(git);
+    const message = `${label ?? `Merge branch '${name}'`}${label !== undefined || into === null || into === 'main' || into === 'master' ? '' : ` into ${into}`}`;
+    const result = commitMerge(indexOf(git, plan.fastForward), plan.fastForward, message, nowSeconds);
+    const stats = diffstat(changeStats(result.git, headCommit(git), result.hash));
+    return { stdout: `Merge made by the 'ort' strategy.\n${stats}`, patch: { git: result.git, vfs } };
+  }
   if (plan.fastForward !== null) {
     const moved = fastForwardTo(git, plan.fastForward);
     const vfs = checkoutWorktree(shell.vfs, moved, headCommit(git), plan.fastForward);

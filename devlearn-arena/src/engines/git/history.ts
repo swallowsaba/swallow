@@ -15,38 +15,35 @@ import type { GitState, IndexEntry } from './types';
  * 元のコミットは消さないので、参照さえ分かれば必ず戻せる。
  */
 
-/** 共通の祖先を探す（LCA） */
-export function mergeBase(git: GitState, a: string, b: string): string | null {
-  const ancestors = (start: string): Set<string> => {
-    const seen = new Set<string>();
-    const queue = [start];
-    while (queue.length > 0) {
-      const hash = queue.shift();
-      if (hash === undefined || seen.has(hash)) continue;
-      seen.add(hash);
-      const object = git.objects.read(hash);
-      if (!object) continue;
-      queue.push(...parseCommit(object.body).parents);
-    }
-    return seen;
-  };
-  const left = ancestors(a);
-  const queue = [b];
+/** start から辿れる記録（start 自身を含む）を、近い順に */
+function ancestorsOf(git: GitState, start: string): string[] {
   const seen = new Set<string>();
+  const queue = [start];
   while (queue.length > 0) {
     const hash = queue.shift();
     if (hash === undefined || seen.has(hash)) continue;
     seen.add(hash);
-    if (left.has(hash)) return hash;
     const object = git.objects.read(hash);
     if (!object) continue;
     queue.push(...parseCommit(object.body).parents);
   }
-  return null;
+  return [...seen];
+}
+
+/**
+ * 共通の祖先を探す（LCA）。共通の祖先のうち、ほかの共通の祖先の祖先ではない物（いちばん新しい物）を返す。
+ * 合わせる記録の 1 つ目の親を先に辿ると古い祖先に先に当たるので、最初に当たった物では足りない
+ */
+export function mergeBase(git: GitState, a: string, b: string): string | null {
+  const left = new Set(ancestorsOf(git, a));
+  const common = ancestorsOf(git, b).filter((h) => left.has(h));
+  const older = new Set<string>();
+  for (const h of common) for (const x of ancestorsOf(git, h)) if (x !== h) older.add(x);
+  return common.find((h) => !older.has(h)) ?? null;
 }
 
 export function isAncestor(git: GitState, maybeAncestor: string, hash: string): boolean {
-  return mergeBase(git, maybeAncestor, hash) === maybeAncestor;
+  return ancestorsOf(git, hash).includes(maybeAncestor);
 }
 
 export interface MergePlan {

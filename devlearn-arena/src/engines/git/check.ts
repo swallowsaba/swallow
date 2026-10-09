@@ -5,6 +5,7 @@ import { parseCommit } from './objects';
 import { ignoreRules, ignoredBy } from './ignore';
 import { currentBranch, materialize, status, walkWorktree } from './repository';
 import type { GitState } from './types';
+import { checksOf, latestReviews, type Forge } from '@/engines/github/forge';
 
 /**
  * 実戦の達成条件 `{ kind: 'git', expr }`（docs/content-spec.md 2.4）を、リポジトリの状態で判定する。純粋な関数。
@@ -24,6 +25,10 @@ import type { GitState } from './types';
  *   tag:<名前>                   そのタグが、今の枝の先の記録を指している（注釈付きのタグは剥がして比べる）
  *   ignored:<パス>               そのパスが .gitignore の決まりに当たる（追跡しているかは問わない）
  *   history:<文字列>             今の枝の履歴のどこかの記録に、その文字列を含むファイルがある（消して記録し直しても、前の記録に残る）
+ *   pr:<枝>><枝>                 origin のサーバの置き場（forge）に、前の枝を後の枝へ取り込む依頼（Pull Request）がある
+ *   pr-checks:<枝>               その枝の依頼の自動の検査が、今の先の記録で全て通る
+ *   pr-approved:<枝>             その枝の依頼に、見る人の承認があり、変更を求める返事が残っていない
+ *   remote-merged:<枝>><枝>      origin のサーバで、前の枝の先の記録が、後の枝に取り込まれている
  */
 
 const MARKERS = /^(<{7}|={7}|>{7})( |$)/m;
@@ -32,11 +37,25 @@ function tip(git: GitState, branch: string): string | undefined {
   return git.refs.get(`refs/heads/${branch}`) ?? git.refs.get(`refs/remotes/${branch}`);
 }
 
-/** サーバのリポジトリ（URL・SSH の場所 → 履歴） */
+/** サーバのリポジトリ（URL・SSH の場所 → 履歴と、Pull Request の置き場） */
 export interface ServerRepo {
   url: string;
   ssh?: string;
   state: GitState;
+  forge?: Forge;
+}
+
+/** 今いるリポジトリの origin のサーバ */
+function originServer(git: GitState, servers: ReadonlyMap<string, ServerRepo> | undefined): ServerRepo | undefined {
+  const url = git.remotes.get('origin')?.url.replace(/\/+$/, '');
+  return [...(servers?.values() ?? [])].find((g) => g.url === url || g.ssh === url);
+}
+
+/** origin の置き場の、その枝の依頼（新しい物） */
+function pullOf(git: GitState, servers: ReadonlyMap<string, ServerRepo> | undefined, head: string, base?: string) {
+  const server = originServer(git, servers);
+  const pull = [...(server?.forge?.pulls ?? [])].reverse().find((p) => p.head === head && (base === undefined || p.base === base) && p.state !== 'CLOSED');
+  return server?.forge && pull ? { server, forge: server.forge, pull } : undefined;
 }
 
 /** 手元のその枝の先が、origin のサーバの同じ枝から辿れるか */
@@ -131,6 +150,27 @@ export function gitHolds(git: GitState | null, vfs: VfsState, expr: string, serv
     if (key === 'history') {
       const head = git.refs.get(`refs/heads/${currentBranch(git) ?? ''}`);
       return head !== undefined && value !== '' && inHistory(git, head, value);
+    }
+    if (key === 'pr') {
+      const [head = '', base = ''] = value.split('>');
+      return pullOf(git, servers, head, base) !== undefined;
+    }
+    if (key === 'pr-checks') {
+      const hit = pullOf(git, servers, value);
+      const checks = hit ? checksOf(hit.forge, hit.server.state, hit.pull) : [];
+      return checks.length > 0 && checks.every((c) => c.ok);
+    }
+    if (key === 'pr-approved') {
+      const hit = pullOf(git, servers, value);
+      const latest = hit ? latestReviews(hit.pull) : [];
+      return latest.some((r) => r.state === 'APPROVED') && !latest.some((r) => r.state === 'CHANGES_REQUESTED');
+    }
+    if (key === 'remote-merged') {
+      const [head = '', base = ''] = value.split('>');
+      const server = originServer(git, servers);
+      const from = server?.state.refs.get(`refs/heads/${head}`);
+      const into = server?.state.refs.get(`refs/heads/${base}`);
+      return server !== undefined && from !== undefined && into !== undefined && isAncestor(server.state, from, into);
     }
     if (key === 'commits') {
       const m = /^([^>=<]+)>=(\d+)$/.exec(value);

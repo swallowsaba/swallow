@@ -52,6 +52,18 @@ describe('履歴の作り直し', () => {
     expect(run('git rebase main').out).toContain('up to date');
   });
 
+  it('merge --no-ff の後、取り込んだ枝の先は今の枝から辿れる（1 つ目の親の先の祖先に惑わされない）', () => {
+    run('git switch -c topic');
+    run('echo t > t.txt');
+    run('git add t.txt');
+    run('git commit -m "topic work"');
+    run('git switch main');
+    expect(run('git merge --no-ff topic -m "Merge topic"').out).toContain("Merge made by the 'ort' strategy.");
+    // topic は main に含まれるので、取り込み直しは何もしない
+    expect(run('git merge topic').out).toContain('Already up to date');
+    expect(run('git log --oneline').out.trim().split('\n')).toHaveLength(3);
+  });
+
   it('cherry-pick で別ブランチの1つを取り込める', () => {
     run('git switch -c topic');
     run('echo t > t.txt');

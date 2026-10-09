@@ -18,6 +18,7 @@ import { exists, remove, setSize } from './kernel/vfs';
 import { withZones } from './kernel/dnsZones';
 import { buildNetwork, networkSetupSchema } from './net/spec';
 import { DEMO_ROOT } from './tls/tls';
+import { createForge, forgeSetupSchema } from './github/forge';
 
 /**
  * 実戦の模擬環境の初期状態（docs/content-spec.md 2.4 の environment と setup）。
@@ -173,6 +174,8 @@ export const setupSchema = z.object({
     keys: z.array(z.string()).optional(),
     run: z.array(z.string().min(1)),
     after: z.array(z.string().min(1)).optional(),
+    /** Pull Request の置き場（gh pr の相手。依頼・自動の検査・見る人・枝の保護。src/engines/github/forge.ts） */
+    forge: forgeSetupSchema.optional(),
   }).strict()).optional(),
   /** SSH で入るサーバ（ssh-keygen・ssh-copy-id・ssh の相手。src/engines/kernel/commands/ssh.ts） */
   sshHosts: z.array(z.object({
@@ -403,7 +406,7 @@ function buildGitServers(list: readonly GitServerSetup[]): Map<string, GitServer
   for (const g of list) {
     const shell = runLines(createShellState({ files: { '/srv/repo': null }, cwd: '/srv/repo' }), ['git init', ...g.run], `gitServers（${g.url}）の run`);
     if (shell.git === null) throw new Error(`gitServers（${g.url}）にリポジトリができない`);
-    servers.set(g.url, { url: g.url, ...(g.ssh !== undefined ? { ssh: g.ssh } : {}), keys: g.keys ?? [], state: shell.git });
+    servers.set(g.url, { url: g.url, ...(g.ssh !== undefined ? { ssh: g.ssh } : {}), keys: g.keys ?? [], state: shell.git, ...(g.forge ? { forge: createForge(g.forge) } : {}) });
   }
   return servers;
 }

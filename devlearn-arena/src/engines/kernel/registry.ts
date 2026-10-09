@@ -1,5 +1,6 @@
 import type { GitState } from '@/engines/git/types';
 import type { ClusterState } from '@/engines/k8s/types';
+import type { Forge } from '@/engines/github/forge';
 import type { Repo } from '@/engines/github/types';
 import type { Topology } from '@/engines/net/types';
 import type { MutableClock } from './clock';
@@ -45,6 +46,8 @@ export interface GitServer {
   /** 登録された公開鍵（~/.ssh/id_*.pub の中身の 1 行） */
   keys: readonly string[];
   state: GitState;
+  /** Pull Request の置き場（gh pr が使う。src/engines/github/forge.ts）。無ければ undefined */
+  forge?: Forge;
 }
 
 /** SSH で入るサーバ（setup の sshHosts）。登録された公開鍵と、鍵で入った記録だけを持つ */

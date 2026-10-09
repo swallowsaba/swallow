@@ -1,5 +1,5 @@
 import {
-  addPaths, branches, commit, createBranch, currentBranch, headCommit, log, stageTracked, status as statusOf, switchBranch, walkWorktree,
+  addPaths, branches, commit, createBranch, currentBranch, headCommit, log, materialize, stageTracked, status as statusOf, switchBranch, walkWorktree,
 } from '@/engines/git/repository';
 import { ignoreRules, ignoredBy } from '@/engines/git/ignore';
 import { changedInIndex, changedInWorktree, diffCommits, diffStaged, diffWorktree, unstage } from '@/engines/git/diff';
@@ -280,9 +280,23 @@ export const basicSubcommands: Record<string, GitHandler> = {
     return { stdout: out, code: 0 };
   },
   restore: ({ git, shell, rest }) => {
-    const { flags, operands } = parseArgs(['restore', ...rest]);
+    const { flags, operands, values } = parseArgs(['restore', ...rest], { withValue: ['source', 's'] });
     if (operands.length === 0) {
       return { stderr: 'fatal: 対象のパスを指定してください\n', code: 128 };
+    }
+    // --source（-s）: 作業ツリーのファイルを、その記録の版に戻す（本物と同じく、インデックスは変えない）
+    const source = values.get('source') ?? values.get('s');
+    if (source !== undefined) {
+      const at = resolveRef(git, source);
+      if (at === undefined) return { stderr: `fatal: could not resolve ${source}\n`, code: 128 };
+      const files = materialize(git, at);
+      let vfs = shell.vfs;
+      for (const path of operands) {
+        const content = files.get(path);
+        if (content === undefined) return { stderr: `error: pathspec '${path}' did not match any file(s) known to git\n`, code: 1 };
+        vfs = writeFile(vfs, resolve(git.root, path), content, true);
+      }
+      return { patch: { vfs } };
     }
     if (flags.has('staged') || rest.includes('--staged')) {
       return { patch: { git: unstage(git, operands) } };

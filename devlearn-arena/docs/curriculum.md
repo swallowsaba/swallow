@@ -252,7 +252,7 @@ lab は複数分野の組み合わせ
 
 | ID | 難易度 | テーマ | レッスン | 到達目標 | 実戦 | 推奨前提 | 関連 | 次に学ぶとよい |
 |---|---|---|---|---|---|---|---|---|
-| git.b.01 | 初級 | 考え方 | バージョン管理とは | 履歴を残す理由と、無いと困る場面を説明できる | 模 | linux.b.02 | found.b.04, devops.b.01 | git.b.02 |
+| git.b.01 | 初級 | 考え方 | バージョン管理とは | 履歴を残す理由と、無いと困る場面を説明できる | 端 | linux.b.02 | found.b.04, devops.b.01 | git.b.02 |
 | git.b.02 | 初級 | commit | 最初の記録 | init/status/add/commit で変更を記録できる | 端 | git.b.01 | linux.b.02, cicd.b.01 | git.b.03, git.b.04, git.i.06 |
 | git.b.03 | 初級 | 履歴 | 差分と履歴を見る | diff/log で何がいつ変わったかを読める | 端 | git.b.02 | linux.b.03, trouble.b.03 | git.i.01, git.i.04 |
 | git.b.04 | 初級 | branch | 枝を分ける | branch/switch で作業を分けられる | 端 | git.b.02 | cicd.i.05, git.a.02 | git.b.05 |
@@ -260,7 +260,7 @@ lab は複数分野の組み合わせ
 | git.b.06 | 初級 | conflict | 衝突を解く | 衝突の印を読み、正しく解消できる | 端 | git.b.05 | trouble.b.01, git.i.05 | git.i.01 |
 | git.i.01 | 中級 | remote | リモートと複製 | clone/remote を理解できる | 端 | git.b.03 | net.b.06, web.b.01 | git.i.02 |
 | git.i.02 | 中級 | 同期 | push と pull | 手元と遠くの履歴を同期できる。fetch との違いを説明できる | 端 | git.i.01 | sec.b.04, cicd.b.01 | git.i.03 |
-| git.i.03 | 中級 | 共同作業 | GitHub / GitLab とプルリクエスト | プルリクエストを作り、レビューを受けて統合できる | 模 | git.i.02 | cicd.i.02, devops.b.03 | git.a.02, lab.i.02 |
+| git.i.03 | 中級 | 共同作業 | GitHub / GitLab とプルリクエスト | プルリクエストを作り、レビューを受けて統合できる | 端 | git.i.02 | cicd.i.02, devops.b.03 | git.a.02, lab.i.02 |
 | git.i.04 | 中級 | 取り消し | 変更を取り消す | restore/revert/reset を場面で使い分けられる | 端 | git.b.03 | db.i.04, trouble.b.01 | git.a.01, git.a.03 |
 | git.i.05 | 中級 | 履歴 | rebase の考え方 | merge との違いと、使ってはいけない場面を説明できる | 端 | git.b.05 | git.b.05, git.a.02 | git.i.06 |
 | git.i.06 | 中級 | 設定 | .gitignore とタグ | 管理しない物を決め、版に名前を付けられる | 端 | git.b.02 | cicd.b.04, sec.b.05 | git.a.01 |
