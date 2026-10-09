@@ -8,7 +8,7 @@
 - 図: 「3 つ動かす」と宣言 → Kubernetes が配置し、落ちたら作り直す
 - 理解: [関係性] 宣言と実現 → あるべき形を伝えると、仕組みが合わせる ／ [状況説明] 手作業の限界を選ぶ
 - クイズ: [用語] 宣言的 → あるべき形を伝える ／ [状況判断] 落ちたら自動で → Kubernetes ／ [結果予測] サーバが 1 台止まる → 他のサーバで作り直される
-- 実戦（模）: 目的=手で配置する場合と、宣言して任せる場合を比べる ／ 達成=障害の模擬で、宣言した側だけ数が保たれる ／ ヒント=①手で配置 ②宣言 ③比べた結果 ／ エラー=数が保てない→原因候補「手が追いつかない」
+- 実戦（端）: 目的=3 台の Node に手で置いた Pod（web-1〜3）と、web を 3 つと宣言した Deployment で、node-2 を空けた（kubectl drain）時の web の数を比べる ／ 達成=①node-2 が空く ②残った web の数（2）を答える ③uncordon して Deployment を作り、もう一度 drain しても web が 3 つ Ready ／ ヒント=①get pods -o wide と drain ②持ち主の無い Pod には --force が要る ③kubectl drain node-2 --force、kubectl uncordon node-2、kubectl create deployment web --image=nginx --replicas=3、kubectl drain node-2 ／ エラー=cannot delete Pods that declare no controller→原因候補「手で置いた Pod で、持ち主がいない」
 - 結果: 成功=必要性を体感 ／ 未達=比較の結果を示す
 - まとめ: ①あるべき形を宣言する ②仕組みが合わせ続ける ③コンテナを束ねる仕組み ／ 次: k8s.b.02
 
@@ -17,7 +17,7 @@
 - 図: クラスタ ⊃ Node ⊃ Pod ⊃ コンテナ
 - 理解: [図] 4 つを入れ子に並べる ／ [はい・いいえ] Pod には必ずコンテナが 1 つだけ → いいえ（複数入れられる）
 - クイズ: [用語] Pod → コンテナを入れる最小の単位 ／ [選択] Node → コンテナを動かす機械 ／ [結果予測] Node が止まる → その上の Pod が止まる
-- 実戦（模）: 目的=構成図を完成させる ／ 達成=正しい入れ子 ／ ヒント=①大きい順 ②それぞれの役割 ③配置 ／ エラー=取り違え→原因候補「Pod と Node を逆に」
+- 実戦（端）: 目的=city-cluster の入れ子（クラスタ ⊃ Node ⊃ Pod ⊃ コンテナ）を外側から kubectl で読む ／ 達成=①Node の数（2） ②web の Pod の Node（node-1） ③Pod の中のログを集めるコンテナの名前（log-agent）を答える ／ ヒント=①kubectl get nodes ②kubectl get pods -o wide の NODE ③kubectl describe pod web の Containers ／ エラー=取り違え→原因候補「Pod や Node の名前を答えた」
 - 結果: 成功=包含関係を理解 ／ 未達=図を示す
 - まとめ: ①クラスタ・Node・Pod・コンテナ ②Pod が最小の単位 ③Node は機械 ／ 次: k8s.b.03
 

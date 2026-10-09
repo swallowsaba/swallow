@@ -217,6 +217,8 @@ export const REGISTRY: readonly Image[] = [
   },
   { ref: 'nginx:1.27', id: '3b25b682ea82', size: '192MB', files: NGINX_FILES, command: "/docker-entrypoint.sh nginx -g 'daemon off;'", serves: { port: 80, body: '<!DOCTYPE html>\n<html><head><title>Welcome to nginx!</title></head><body><h1>Welcome to nginx!</h1></body></html>' }, startLog: ['/docker-entrypoint.sh: Configuration complete; ready for start up', 'nginx: start worker processes'] },
   { ref: 'httpd:2.4', id: '9cfd0d8c7a1e', size: '148MB', command: 'httpd-foreground', serves: { port: 80, body: '<html><body><h1>It works!</h1></body></html>' }, startLog: ['AH00558: httpd: Could not reliably determine the server\'s fully qualified domain name', 'Apache/2.4 configured -- resuming normal operations'] },
+  // ログを集めて送る付き添い（サイドカー）のコンテナ。待ち受けない（k8s.b.02 の Pod の 2 つ目のコンテナ）
+  { ref: 'fluent/fluent-bit:3.1', id: '8e4b1f0c6a27', size: '86.2MB', command: '/fluent-bit/bin/fluent-bit -c /fluent-bit/etc/fluent-bit.conf', startLog: ['Fluent Bit v3.1.9', '[engine] started (pid=1)', '[input:tail:tail.0] initializing', '[output:stdout:stdout.0] worker #0 started'], procs: [{ command: '/fluent-bit/bin/fluent-bit -c /fluent-bit/etc/fluent-bit.conf', memory: 14.8 }] },
   { ref: 'city-board:1.0', id: '5c1e7b2a9d40', size: '41MB', command: "/docker-entrypoint.sh nginx -g 'daemon off;'", serves: { port: 80, body: '', root: '/usr/share/nginx/html' }, startLog: ['city-board: serving /usr/share/nginx/html on port 80'] },
   {
     ref: 'city-report:1.0', id: '6d0f3a7c21b8', size: '182MB', tools: true, command: 'node /app/report.js',

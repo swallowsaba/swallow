@@ -203,3 +203,30 @@
 - 気付いた事（今回は直さない）: 端末の幅を超える長い 1 行（`gh pr create … --body …`）を打つと、折り返しの描き直しで打った行が 2 回見える。前からある端末の表示の癖で、打った中身と結果は正しい
 
 検査: `npm run typecheck`・`npm run lint`・`npm run test`（161 ファイル・1761 件）・`npm run content:check` が通った。
+
+## k8s（2026-10-10）
+
+15 本の実戦が全て本物の kubectl になった（端末 9 本・設定の編集 6 本）。設定の編集の 6 本は、本物の書式のマニフェストを書き、保存すると `setup.edit.apply` の `kubectl apply -f`・`kubectl rollout status`・`kubectl exec` などが本物の書き方で走る（直していない）。
+
+| レッスン | 直す前 | 直した後 | 打つ物 |
+|---|---|---|---|
+| k8s.b.01 Kubernetes とは・なぜ必要か | sim-config（面倒の見方・数・出来事の欄） | terminal | 手で置いた Pod（web-1〜3）の `node-2` を `kubectl drain`（持ち主が無いと断られ、`--force` で空けると web-2 は戻らない）→ 残りの数 2 を答える → `kubectl uncordon`・`kubectl create deployment web --replicas=3`・もう一度 `kubectl drain` で 3 つが保たれる |
+| k8s.b.02 コンテナとの関係 | sim-assign（入れ子の札を置く） | terminal | `kubectl get nodes`（2 台）→ `kubectl get pods -o wide` の NODE（node-1）→ `kubectl describe pod web` の Containers（log-agent）。外側から入れ子を読む |
+| ほかの 13 本 | terminal・editor | そのまま | 本物の kubectl・マニフェスト |
+
+模擬に足した物・直した物（単体テストあり）:
+
+- `kubectl drain` を本物の振る舞いにした: 持ち主（controller）の無い Pod があると `cannot delete Pods that declare no controller (use --force to override)`、DaemonSet の Pod があると `--ignore-daemonsets` を求めて止まる（cordon は残る。本物と同じく `node/… cordoned` の行の後に断る）。`--force` で持ち主の無い Pod を消し（誰も作り直さない）、`pod/… evicted` の行を出す（`kubectlOps.test.ts`）。前は、持ち主の無い Pod を警告だけで残して drained と言っていた
+- `kubectl get pods -o wide -w` で、見続ける時も IP と NODE の欄を出す（前は `-w` を付けると欄が消えた。`kubectlOps.test.ts`）
+- 達成条件 `node/<名前>`: `cordoned`（Pod を置かない印）・`pods`（その Node の上の Pod の数）（`check.test.ts`）
+- 模擬の置き場に `fluent/fluent-bit:3.1`（ログを集める付き添いのコンテナ。待ち受けない）を足した
+
+内容: エラーの案内 `k8s-no-controller` を本物の drain の文言に、`k8s-count-not-kept`・`k8s-nesting-mixed` を答えの段に合わせた。`docs/lessons/k8s.md` の 2 本の実戦の設計、`docs/curriculum.md` の記号（模 → 端）、目録を直した。
+
+画面の確かめ（`tools/scenarios/rework.mjs`、1920×1080）:
+
+- `rw-k8s.b.01-start` / `-done`: 原則 1（`kubectl drain` の断り・`--force` の警告・`evicting pod`・`get pods -o wide -w` の NODE の欄・Deployment の Pod が別の Node に作り直される様子が端末に出る）・原則 5（目的の `node-1`〜`node-3`・`web-1`〜`web-3`・`web` が端末に同じ名前で出る）を満たす。3 つの段が全て達成になる
+- `rw-k8s.b.02-start` / `-done`: 原則 1（`kubectl get nodes`・`get pods -o wide`・`describe pod web` の Containers の下の `nginx` と `log-agent`）・原則 5（`city-cluster`・`node-1`・`web`・`log-agent`）を満たす。3 つの段が全て達成になる
+- 原則 3・4 は画面の操作の決まりなので、端末だけの k8s の分野には当たらない
+
+検査: `npm run typecheck`・`npm run lint`・`npm run test`（161 ファイル・1764 件）・`npm run content:check` が通った。

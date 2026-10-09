@@ -36,12 +36,15 @@ function findOne(
  */
 export const TYPING_TICKS = 2;
 
-/** get pods -w: 状態が変わるたびに 1 行ずつ足す（本物は Ctrl-C まで続く。模擬は落ち着いたら終える） */
-function watchPods(cluster: ClusterState, namespace: string, name: string | undefined): { stdout: string; cluster: ClusterState } {
+/** get pods -w: 状態が変わるたびに 1 行ずつ足す（本物は Ctrl-C まで続く。模擬は落ち着いたら終える）。-o wide なら IP と NODE も出す */
+function watchPods(cluster: ClusterState, namespace: string, name: string | undefined, wide = false): { stdout: string; cluster: ClusterState } {
   const pick = (c: ClusterState): Pod[] => (listOf(c, 'pods', namespace) as Pod[]).filter((p) => name === undefined || p.metadata.name === name);
-  const cells = (c: ClusterState, p: Pod): string[] => [p.metadata.name, podReady(p), podStatus(p), restartsText(p, c.tick), age(c.tick, p.metadata.createdAt)];
+  const cells = (c: ClusterState, p: Pod): string[] => [
+    p.metadata.name, podReady(p), podStatus(p), restartsText(p, c.tick), age(c.tick, p.metadata.createdAt),
+    ...(wide ? [p.status.podIP ?? '<none>', p.status.nodeName ?? '<none>'] : []),
+  ];
   const seen = new Map<string, string>();
-  const rows = [['NAME', 'READY', 'STATUS', 'RESTARTS', 'AGE']];
+  const rows = [['NAME', 'READY', 'STATUS', 'RESTARTS', 'AGE', ...(wide ? ['IP', 'NODE'] : [])]];
   const note = (c: ClusterState): boolean => {
     let changed = false;
     for (const p of pick(c)) {
@@ -190,7 +193,7 @@ const coreSubcommands: Record<string, KubectlHandler> = {
 
     if (format.kind !== 'table') return { stdout: renderResources(items, format) };
     if (kind === 'pods' && (flags.has('w') || flags.has('watch'))) {
-      const watched = watchPods(cluster, namespace, name);
+      const watched = watchPods(cluster, namespace, name, format.wide);
       return { stdout: watched.stdout, patch: { cluster: watched.cluster } };
     }
     if (kind === 'horizontalpodautoscalers' && (flags.has('w') || flags.has('watch'))) {

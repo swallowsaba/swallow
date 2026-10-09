@@ -425,41 +425,62 @@ export const opsSubcommands: Record<string, KubectlHandler> = {
     return { stderr: 'usage: kubectl rollout <status|history|undo|restart> deployment/<name>\n', code: 1 };
   },
 
-  drain: ({ cluster, operands }) => {
+  drain: ({ cluster, operands, flags }) => {
     const name = operands[0];
     const node = name === undefined ? undefined : cluster.nodes.get(name);
     if (node === undefined || name === undefined) return notFound('nodes', name ?? '');
 
-    // cordon してから、そのノードの Pod を落とす。所有者がいる Pod は作り直される
+    // 本物と同じく、まず cordon する（止まっても、cordon は残る）
     const nodes = new Map(cluster.nodes);
     nodes.set(name, { ...node, spec: { ...node.spec, unschedulable: true } });
+    const cordoned = { ...cluster, nodes };
 
+    const onNode = [...cluster.pods].filter(([, pod]) => pod.status.nodeName === name);
+    const ref = ([, pod]: (typeof onNode)[number]): string => `${pod.metadata.namespace}/${pod.metadata.name}`;
+    const daemons = onNode.filter(([, pod]) => pod.metadata.ownerReferences[0]?.kind === 'DaemonSet');
+    // 持ち主（controller）の無い Pod は、追い出すと誰も作り直さない。本物は --force を求める
+    const bare = onNode.filter(([, pod]) => pod.metadata.ownerReferences[0] === undefined);
+
+    const problems: string[] = [];
+    if (bare.length > 0 && !flags.has('force')) {
+      problems.push(`cannot delete Pods that declare no controller (use --force to override): ${bare.map(ref).join(', ')}`);
+    }
+    if (daemons.length > 0 && !flags.has('ignore-daemonsets')) {
+      problems.push(`cannot delete DaemonSet-managed Pods (use --ignore-daemonsets to ignore): ${daemons.map(ref).join(', ')}`);
+    }
+    if (problems.length > 0) {
+      return {
+        stdout: `node/${name} cordoned\n`,
+        stderr: fromLines([
+          `error: unable to drain node "${name}" due to error: ${problems.join(', ')}, continuing command...`,
+          'There are pending nodes to be drained:',
+          ` ${name}`,
+          ...problems,
+        ]),
+        code: 1,
+        // 本物と同じく、cordoned の行の後に断る
+        stderrLast: true,
+        patch: { cluster: cordoned },
+      };
+    }
+
+    // 追い出す。持ち主のいる Pod は、持ち主が別のノードに作り直す
     const pods = new Map(cluster.pods);
-    const evicted: string[] = [];
-    const kept: string[] = [];
-    for (const [id, pod] of cluster.pods) {
-      if (pod.status.nodeName !== name) continue;
-      const owner = pod.metadata.ownerReferences[0];
-      if (owner?.kind === 'DaemonSet') {
-        kept.push(pod.metadata.name);
-        continue;
-      }
-      if (owner === undefined) {
-        // 所有者がいない Pod は作り直されない。本物も --force を求める
-        kept.push(pod.metadata.name);
-        continue;
-      }
-      pods.delete(id);
-      evicted.push(pod.metadata.name);
-    }
-
-    const lines = [`node/${name} cordoned`];
-    for (const pod of evicted) lines.push(`evicting pod default/${pod}`);
-    for (const pod of kept) {
-      lines.push(`warning: ignoring pod default/${pod}（DaemonSet 管理か、所有者のいない Pod）`);
-    }
-    lines.push(`node/${name} drained`);
-    return { stdout: fromLines(lines), patch: { cluster: { ...cluster, nodes, pods } } };
+    const evicted = onNode.filter(([, pod]) => pod.metadata.ownerReferences[0]?.kind !== 'DaemonSet');
+    for (const [id] of evicted) pods.delete(id);
+    const warnings = [
+      ...(daemons.length > 0 ? [`Warning: ignoring DaemonSet-managed Pods: ${daemons.map(ref).join(', ')}`] : []),
+      ...(bare.length > 0 ? [`Warning: deleting Pods that declare no controller: ${bare.map(ref).join(', ')}`] : []),
+    ];
+    // 警告は、本物の画面と同じく cordoned の行のすぐ後に見えるよう、同じ流れに並べる
+    const lines = [
+      `node/${name} cordoned`,
+      ...warnings,
+      ...evicted.map((p) => `evicting pod ${ref(p)}`),
+      ...evicted.map(([, pod]) => `pod/${pod.metadata.name} evicted`),
+      `node/${name} drained`,
+    ];
+    return { stdout: fromLines(lines), patch: { cluster: { ...cordoned, pods } } };
   },
 
   auth: ({ cluster, rest, namespace, operands, values }) => {

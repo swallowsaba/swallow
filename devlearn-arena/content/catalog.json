@@ -3668,7 +3668,7 @@
       "title": "Kubernetes とは・なぜ必要か",
       "goal": "多数のコンテナを手で面倒を見る限界と、宣言して任せる考え方を説明できる",
       "practice": [
-        "simulation"
+        "terminal"
       ],
       "prerequisites": [
         "ctr.b.03"
@@ -3689,7 +3689,7 @@
       "title": "コンテナとの関係",
       "goal": "コンテナ・Pod・Node の包含関係を説明できる",
       "practice": [
-        "simulation"
+        "terminal"
       ],
       "prerequisites": [
         "k8s.b.01"

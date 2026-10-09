@@ -18,6 +18,7 @@ import { key, type ClusterState, type Deployment, type Pod } from './types';
  *   deployment/guide readyUpdated=2 restarts>=1 early=0
  *   hpa/web min=2 max=10 target=50
  *   deployment/web image=city-shop:1.1 readyUpdated=4 tried=city-shop:1.2
+ *   node/node-2 cordoned pods=0
  * 比べ方は >= <= =（status・env・from は = で語を比べる）。比べ方を書かない欄は、値があるかどうか。区画を省けば default。` && ` で別の資源の条件をつなぐ
  */
 
@@ -29,12 +30,13 @@ function readyPodsOf(cluster: ClusterState, d: Deployment): Pod[] {
   return [...cluster.pods.values()].filter((p) => p.metadata.namespace === d.metadata.namespace && p.metadata.ownerReferences.some((o) => o.kind === 'ReplicaSet' && sets.has(o.name)) && isReady(p));
 }
 
-type Kind = 'deployment' | 'service' | 'pod' | 'namespace' | 'pvc' | 'hpa';
+type Kind = 'deployment' | 'service' | 'pod' | 'namespace' | 'pvc' | 'hpa' | 'node';
 
-const KINDS: readonly Kind[] = ['deployment', 'service', 'pod', 'namespace', 'pvc', 'hpa'];
+const KINDS: readonly Kind[] = ['deployment', 'service', 'pod', 'namespace', 'pvc', 'hpa', 'node'];
 
 function exists(cluster: ClusterState, kind: Kind, ns: string, name: string): boolean {
   const id = key(ns, name);
+  if (kind === 'node') return cluster.nodes.has(name);
   if (kind === 'namespace') return cluster.namespaces?.some((n) => n.name === name) ?? false;
   if (kind === 'pvc') return cluster.persistentVolumeClaims.has(id);
   if (kind === 'hpa') return cluster.autoscalers.has(id);
@@ -100,6 +102,12 @@ function fieldOf(cluster: ClusterState, kind: Kind, ns: string, name: string, fi
       const sets = new Set([...cluster.replicaSets.values()].filter((rs) => rs.metadata.namespace === ns && rs.metadata.ownerReferences.some((o) => o.kind === 'Deployment' && o.name === name)).map((rs) => `replicaset/${rs.metadata.name}`));
       return cluster.events.filter((e) => e.reason === 'SuccessfulCreate' && sets.has(e.object)).length;
     }
+  } else if (kind === 'node') {
+    const n = cluster.nodes.get(name);
+    if (!n) return undefined;
+    // cordoned: Pod を置かない印（cordon・drain）がある時だけ値がある。pods: その Node の上の Pod の数（区画を問わない）
+    if (field === 'cordoned') return n.spec.unschedulable ? 1 : undefined;
+    if (field === 'pods') return [...cluster.pods.values()].filter((p) => p.status.nodeName === name).length;
   } else if (kind === 'pvc') {
     const c = cluster.persistentVolumeClaims.get(id);
     if (!c) return undefined;

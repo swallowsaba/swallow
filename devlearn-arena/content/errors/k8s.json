@@ -32,38 +32,44 @@
     },
     {
       "id": "k8s-no-controller",
-      "match": "あるべき数を伝える先が無い",
-      "meaning": "手で置く方式には、あるべき数を受け取って守る仕組みが無い。数を決めても、守るのは人の手になる。",
+      "match": "cannot delete Pods that declare no controller",
+      "meaning": "`kubectl drain` が、持ち主（controller）の無い Pod があるので止まった。手で置いた Pod は、消すと誰も作り直さない。Node は Pod を置かない印（cordon）が付いたまま。",
       "causes": [
-        "面倒の見方を変える前に、宣言する数を選んだ。",
-        "手で置く方式でも、数を決めれば守られると考えた。"
+        "Pod を `kubectl run` やマニフェストで手で置き、Deployment などの持ち主に任せていない。",
+        "その Pod が消えて困らないかを確かめずに、Node を空けようとした。"
       ],
-      "hint": "先に面倒の見方を「宣言して任せる」に変えてから、宣言する数を選ぶ。",
-      "terms": []
+      "hint": "`kubectl get pods -o wide` で、その Node の上の Pod を見る。消えてよいなら `--force` を付けて空ける。数を保ちたいなら、Deployment で動かす。",
+      "terms": [
+        "pod",
+        "deployment",
+        "k8s-node"
+      ]
     },
     {
       "id": "k8s-count-not-kept",
       "match": "答えが合っていない",
-      "meaning": "サーバ 2 を止めた時に、web の数が 3 つに保たれる形になっていない。",
+      "meaning": "答えは受け取ったが、今動いている web の Pod の数ではない。",
       "causes": [
-        "手で置く方式のまま。人が起きて置き直すまで、手が追いつかない。",
-        "宣言する数が、必要な数（3）と違う。仕組みは宣言した数に合わせる。"
+        "必要な数（3）を答えた。手で置いた Pod は、消えると戻らない。",
+        "`kubectl get pods` を見ずに数えた。"
       ],
-      "hint": "面倒の見方と、宣言する数の 2 つの欄を確かめる。仕組みが守るのは、宣言した形。",
-      "terms": []
+      "hint": "`kubectl get pods` の行を数える。消えた Pod は一覧に出ない。",
+      "terms": [
+        "pod"
+      ]
     },
     {
       "id": "k8s-nesting-mixed",
       "match": "答えが合っていない",
-      "meaning": "全ての札を置いたが、入れ子の場所が合っていない。",
+      "meaning": "答えは受け取ったが、web の Pod の中の、ログを集めるコンテナの名前ではない。",
       "causes": [
-        "Pod と Node を逆にした。Node は機械、Pod はその上で動く包み。",
-        "コンテナを Node やクラスタに直に置いた。コンテナは必ず Pod の中に入る。"
+        "Pod の名前（web）や Node の名前（node-1）を答えた。コンテナは、Pod のさらに内側。",
+        "本体のコンテナ（nginx）を答えた。"
       ],
-      "hint": "外側から順に確かめる: クラスタの中に機械（Node）、Node の上に Pod、Pod の中にコンテナ。間違えた札は押して置き場に戻せる。",
+      "hint": "`kubectl describe pod web` の `Containers:` の下を見る。字下げした名前が、Pod の中のコンテナ。",
       "terms": [
         "pod",
-        "k8s-node"
+        "container"
       ]
     },
     {

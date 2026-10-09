@@ -172,6 +172,17 @@ describe('rollout', () => {
   });
 });
 
+describe('get pods -o wide -w', () => {
+  it('見続ける時も、IP と NODE の欄を出す', () => {
+    run('kubectl delete pod --all');
+    const out = run('kubectl get pods -o wide -w').out;
+    const [header = '', ...rows] = out.trimEnd().split('\n');
+    expect(header).toMatch(/^NAME\s+READY\s+STATUS\s+RESTARTS\s+AGE\s+IP\s+NODE$/);
+    expect(rows.length).toBeGreaterThan(0);
+    for (const row of rows) expect(row).toMatch(/\s(n1|n2|<none>)$/);
+  });
+});
+
 describe('drain', () => {
   it('cordon して Pod を追い出す', () => {
     const out = run('kubectl drain n1').out;
@@ -208,7 +219,36 @@ describe('drain', () => {
       ].join('\n'),
     );
     run('kubectl wait 8');
-    expect(run('kubectl drain n1').out).toContain('ignoring pod default/agent-n1');
+    // 本物と同じく、DaemonSet の Pod があると --ignore-daemonsets を求めて止まる（cordon はされる）
+    const refused = run('kubectl drain n1');
+    expect(refused.code).toBe(1);
+    expect(refused.err).toContain('cannot delete DaemonSet-managed Pods (use --ignore-daemonsets to ignore): default/agent-n1');
+    expect(run('kubectl get nodes').out).toContain('SchedulingDisabled');
+    const r = run('kubectl drain n1 --ignore-daemonsets');
+    expect(r.code).toBe(0);
+    expect(r.out).toContain('Warning: ignoring DaemonSet-managed Pods: default/agent-n1');
+    expect(r.out).toContain('node/n1 drained');
+  });
+
+  it('持ち主の無い Pod があると --force を求めて止まり、--force で消すと作り直されない', () => {
+    run('kubectl run solo --image=nginx');
+    run('kubectl wait 10');
+    const where = run('kubectl get pod solo -o wide').out;
+    const nodeName = /\b(n[12])\b/.exec(where)?.[1] ?? '';
+    const refused = run(`kubectl drain ${nodeName}`);
+    expect(refused.code).toBe(1);
+    expect(refused.err).toContain(`error: unable to drain node "${nodeName}"`);
+    expect(refused.err).toContain('cannot delete Pods that declare no controller (use --force to override): default/solo');
+    // 止まった時は、何も追い出さない
+    expect(run('kubectl get pod solo').out).toContain('solo');
+
+    const forced = run(`kubectl drain ${nodeName} --force`);
+    expect(forced.code).toBe(0);
+    // 本物の画面と同じく、cordoned の行のすぐ後に警告が見える
+    expect(forced.out).toContain(`node/${nodeName} cordoned\nWarning: deleting Pods that declare no controller: default/solo\n`);
+    expect(forced.out).toContain('pod/solo evicted');
+    run('kubectl wait 20');
+    expect(run('kubectl get pods').out).not.toContain('solo');
   });
 });
 

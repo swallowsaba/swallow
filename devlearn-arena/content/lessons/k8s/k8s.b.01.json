@@ -23,7 +23,12 @@
     "server",
     "app",
     "declarative",
-    "cluster"
+    "cluster",
+    "pod",
+    "deployment",
+    "k8s-node",
+    "kubectl",
+    "image"
   ],
   "explain": {
     "what": "{{term:kubernetes}}は、何台もの機械の上で、たくさんの{{term:container}}を「決めた形のまま」動かし続ける仕組み。どの機械で動かすかを決め、止まった物があれば作り直す。",
@@ -148,236 +153,76 @@
     }
   ],
   "practice": {
-    "mode": "simulation",
-    "purpose": "予約の窓口（web）を、3 台のサーバに 1 つずつ、合わせて 3 つ動かしている。サーバ 2 が夜中に止まる場面を試し、手で面倒を見る場合と、あるべき数を宣言して任せる場合で、何が違うかを比べる。",
-    "environment": "sim-config",
+    "mode": "terminal",
+    "purpose": "予約の窓口（web）を、3 台の{{term:k8s-node}}（`node-1`〜`node-3`）に 1 つずつ、手で置いた{{term:pod}}（`web-1`・`web-2`・`web-3`）で動かしている。今夜、`node-2` を整備のために空ける。手で置いた Pod と、あるべき数を宣言した{{term:deployment}}で、Node を空けた時に web の数がどうなるかを比べる。",
+    "environment": "k8s-cluster",
     "setup": {
-      "fields": [
-        {
-          "id": "方式",
-          "label": "面倒の見方",
-          "options": [
-            "手で置く",
-            "宣言して任せる"
-          ],
-          "value": "手で置く"
-        },
-        {
-          "id": "あるべき数",
-          "label": "宣言する web の数",
-          "options": [
-            "決めていない",
-            "1",
-            "3"
-          ],
-          "value": "決めていない",
-          "requires": [
-            {
-              "value": "1",
-              "expr": "field 方式=宣言して任せる",
-              "message": "手で置く方式には、あるべき数を伝える先が無い。先に面倒の見方を変える"
-            },
-            {
-              "value": "3",
-              "expr": "field 方式=宣言して任せる",
-              "message": "手で置く方式には、あるべき数を伝える先が無い。先に面倒の見方を変える"
-            }
-          ]
-        },
-        {
-          "id": "試す",
-          "label": "試す出来事",
-          "options": [
-            "何もしない",
-            "サーバ2を止める"
-          ],
-          "value": "何もしない"
-        }
-      ],
-      "settle": "field 試す=サーバ2を止める",
-      "panels": [
-        {
-          "kind": "kv",
-          "title": "予約の窓口（web）",
-          "rows": [
-            [
-              "必要な数",
-              "いつも 3 つ"
-            ],
-            [
-              "サーバ",
-              "3 台（空きあり）"
-            ],
-            [
-              "置き方",
-              "1 台に 1 つ"
-            ]
-          ]
-        },
-        {
-          "kind": "chart",
-          "title": "動いている web の数（手で置く）",
-          "unit": "つ",
-          "when": "field 試す=サーバ2を止める && field 方式=手で置く",
-          "x": [
-            "01:50",
-            "02:00",
-            "02:10",
-            "02:20",
-            "02:30",
-            "02:40",
-            "02:50"
-          ],
-          "series": [
-            {
-              "label": "手で置く",
-              "values": [
-                3,
-                2,
-                2,
-                2,
-                2,
-                3,
-                3
-              ]
-            }
-          ]
-        },
-        {
-          "kind": "log",
-          "title": "夜の記録（手で置く）",
-          "when": "field 試す=サーバ2を止める && field 方式=手で置く",
-          "lines": [
-            "02:00 サーバ 2 が止まった。上の web も止まった（2 / 3）",
-            "02:25 見張りの知らせで当番が起きた",
-            "02:40 当番がサーバ 3 に web を手で置き直した（3 / 3）",
-            "40 分の間、web は 2 つだった"
-          ]
-        },
-        {
-          "kind": "chart",
-          "title": "動いている web の数（比べる）",
-          "unit": "つ",
-          "when": "field 試す=サーバ2を止める && field 方式=宣言して任せる && field あるべき数=3",
-          "x": [
-            "01:50",
-            "02:00",
-            "02:10",
-            "02:20",
-            "02:30",
-            "02:40",
-            "02:50"
-          ],
-          "series": [
-            {
-              "label": "宣言して任せる",
-              "values": [
-                3,
-                3,
-                3,
-                3,
-                3,
-                3,
-                3
-              ]
-            },
-            {
-              "label": "手で置く（前の結果）",
-              "values": [
-                3,
-                2,
-                2,
-                2,
-                2,
-                3,
-                3
-              ]
-            }
-          ]
-        },
-        {
-          "kind": "log",
-          "title": "夜の記録（宣言して任せる）",
-          "when": "field 試す=サーバ2を止める && field 方式=宣言して任せる && field あるべき数=3",
-          "lines": [
-            "02:00:00 サーバ 2 が止まった。上の web も止まった（2 / 3）",
-            "02:00:05 仕組みが、あるべき 3 と今の 2 の差に気づいた",
-            "02:00:20 サーバ 3 に web を作り直した（3 / 3）",
-            "人は誰も起きていない"
-          ]
-        },
-        {
-          "kind": "log",
-          "title": "夜の記録（宣言して任せる）",
-          "when": "field 方式=宣言して任せる && field あるべき数=1",
-          "lines": [
-            "仕組みは、あるべき数 1 に合わせて、web を 3 つから 1 つに減らした",
-            "サーバ 2 が止まると、その 1 つが止まり、仕組みは 1 つを作り直す"
-          ]
-        }
-      ]
+      "hostname": "console",
+      "cluster": {
+        "nodes": 3,
+        "ageDays": 30,
+        "manifests": "apiVersion: v1\nkind: Pod\nmetadata:\n  name: web-1\n  labels:\n    run: web-1\nspec:\n  nodeName: node-1\n  containers:\n  - name: web-1\n    image: nginx\n---\napiVersion: v1\nkind: Pod\nmetadata:\n  name: web-2\n  labels:\n    run: web-2\nspec:\n  nodeName: node-2\n  containers:\n  - name: web-2\n    image: nginx\n---\napiVersion: v1\nkind: Pod\nmetadata:\n  name: web-3\n  labels:\n    run: web-3\nspec:\n  nodeName: node-3\n  containers:\n  - name: web-3\n    image: nginx"
+      }
     },
     "steps": [
       {
         "id": "manual",
-        "purpose": "手で置く方式のまま、サーバ 2 を止めてみる。web の数がどう動き、元に戻るまでに何が要るかを見る。",
+        "purpose": "`kubectl get pods -o wide` で、どの Pod がどの Node で動いているかを見てから、`node-2` を整備のために空ける（`kubectl drain`）。",
         "check": {
-          "kind": "sim",
-          "expr": "field 方式=手で置く 試す=サーバ2を止める"
+          "kind": "k8s",
+          "expr": "node/node-2 cordoned pods=0"
         },
-        "afterward": "サーバ 2 の web が止まり、当番が起きて手で置き直すまで 40 分、web は 2 つだった。台数が増えれば、手はもっと追いつかない。",
+        "afterward": "`node-2` は空いたが、`web-2` は消えただけで、どこにも作り直されない。手で置いた Pod には、あるべき数を覚えて守る持ち主（controller）がいないから。`kubectl drain` が初めに断ったのは、そのことの警告だった。",
         "hints": [
-          "まずは今の方式（手で置く）のまま、出来事を試す。",
-          "試す出来事の欄で、サーバ 2 を止める方を選ぶ。結果の記録とグラフが出る。",
-          "`set 試す サーバ2を止める` と入れる。"
+          "{{term:kubectl}}の `get pods -o wide` は、Pod の一覧に、動いている Node（`NODE` の欄）を足して出す。Node を空けるのは `kubectl drain Node の名前`。",
+          "`kubectl drain node-2` は「持ち主の無い Pod は消すと戻らない」と断る。それでも空けるなら `--force` を付ける。",
+          "`kubectl get pods -o wide` `kubectl drain node-2` `kubectl drain node-2 --force` を順に打つ。"
+        ],
+        "expectedErrors": [
+          "k8s-no-controller"
+        ]
+      },
+      {
+        "id": "count",
+        "purpose": "整備の後、動いている web の Pod はいくつか。`kubectl get pods` で数えて答える（必要な数は 3）。",
+        "check": {
+          "kind": "answer",
+          "equals": "2"
+        },
+        "afterward": "`web-1` と `web-3` の 2 つだけ。人が気づいて、`web-2` をほかの Node に置き直すまで、窓口は 1 つ足りないまま。",
+        "hints": [
+          "一覧の行が、今ある Pod。消えた Pod は一覧に出ない。",
+          "`kubectl get pods` の行は `web-1` と `web-3`。",
+          "`kubectl get pods` を打ち、`2` と答える。"
         ],
         "expectedErrors": [
           "k8s-count-not-kept"
-        ],
-        "actions": [
-          {
-            "op": "set",
-            "field": "試す",
-            "value": "サーバ2を止める"
-          }
         ]
       },
       {
         "id": "declare",
-        "purpose": "面倒の見方を、あるべき数を宣言して任せる方式に変え、web を 3 つと宣言する。同じようにサーバ 2 が止まった時、数が保たれるかを比べる。",
+        "purpose": "整備が終わった `node-2` を戻し（`kubectl uncordon`）、web を 3 つと宣言した Deployment（名前 `web`、{{term:image}} `nginx`）を作る。もう一度 `node-2` を空けて、web が 3 つのまま保たれるかを比べる。",
         "check": {
-          "kind": "sim",
-          "expr": "field 方式=宣言して任せる あるべき数=3 試す=サーバ2を止める"
+          "kind": "k8s",
+          "expr": "deployment/web readyReplicas=3 && node/node-2 cordoned pods=0"
         },
-        "afterward": "サーバ 2 が止まっても、仕組みが 20 秒でサーバ 3 に作り直し、web は 3 つのままだった。人は何もしていない。これが Kubernetes の考え方。",
+        "afterward": "今度は `kubectl drain node-2` が断らずに通り、`node-2` から追い出された Pod は、Deployment がほかの Node に作り直した。web は 3 つのまま。人は数を戻す手順を打っていない。これが、あるべき形を宣言して任せる Kubernetes の考え方。",
         "hints": [
-          "仕組みに任せるには、あるべき形（数）を伝える。",
-          "面倒の見方を「宣言して任せる」に変え、宣言する数を、必要な数と同じ 3 にする。",
-          "`set 方式 宣言して任せる` `set あるべき数 3` と入れる。"
+          "`kubectl uncordon` で Node を戻す。あるべき数は、Deployment を作る時に `--replicas` で伝える。",
+          "`kubectl create deployment web --image=nginx --replicas=3` で作り、`kubectl get pods -o wide` で 3 つが動き出して、どれかが `node-2` に置かれたのを見てから、`kubectl drain node-2` を打つ。",
+          "`kubectl uncordon node-2` `kubectl create deployment web --image=nginx --replicas=3` `kubectl get pods -o wide -w` `kubectl drain node-2` `kubectl get pods -o wide -w` を順に打つ。"
         ],
         "expectedErrors": [
-          "k8s-no-controller",
-          "k8s-count-not-kept"
-        ],
-        "actions": [
-          {
-            "op": "set",
-            "field": "方式",
-            "value": "宣言して任せる"
-          },
-          {
-            "op": "set",
-            "field": "あるべき数",
-            "value": "3"
-          }
+          "k8s-exists",
+          "k8s-no-connection"
         ]
       }
     ]
   },
   "result": {
-    "success": "手で面倒を見ると数が足りない時間ができ、あるべき数を宣言して任せると数が保たれることを、比べて確かめた。",
-    "partial": "ヒントを使って比べられた。次は、なぜ宣言した側だけ数が保たれたのかを、自分の言葉で説明してみよう。",
-    "retry": "まだ宣言して任せる場合を試せていない。面倒の見方と、宣言する数を確かめよう。"
+    "success": "手で置いた Pod は Node を空けると消えて戻らず、あるべき数を宣言した Deployment は別の Node に作り直して数を保つことを、`kubectl` で比べて確かめた。",
+    "partial": "ヒントを使って比べられた。次は、なぜ Deployment の側だけ数が保たれたのかを、自分の言葉で説明してみよう。",
+    "retry": "まだ比べ終えていない。`kubectl get pods -o wide` で、どの Pod がどの Node にあるかを見直そう。"
   },
   "summary": {
     "points": [

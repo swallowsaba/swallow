@@ -54,6 +54,23 @@ describe('Kubernetes の達成条件（クラスタの状態で判定する）',
   });
 });
 
+describe('Node の達成条件', () => {
+  it('cordoned は Pod を置かない印がある時、pods はその Node の上の Pod の数', () => {
+    const c = cluster();
+    c.run('kubectl create deployment web --image=nginx:1.27 --replicas=4');
+    c.run('kubectl wait --for=condition=available deployment/web');
+    expect(c.holds('node/node-1')).toBe(true);
+    expect(c.holds('node/node-9')).toBe(false);
+    expect(c.holds('node/node-1 cordoned')).toBe(false);
+    expect(c.holds('node/node-1 pods>=1')).toBe(true);
+    c.run('kubectl drain node-1');
+    expect(c.holds('node/node-1 cordoned pods=0')).toBe(true);
+    expect(c.holds('node/node-2 pods>=1')).toBe(true);
+    c.run('kubectl uncordon node-1');
+    expect(c.holds('node/node-1 cordoned')).toBe(false);
+  });
+});
+
 describe('Kubernetes の達成条件を && でつなぐ', () => {
   it('別の資源の条件を並べ、全てを満たした時だけ達成', () => {
     const c = cluster();
