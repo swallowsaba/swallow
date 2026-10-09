@@ -29,7 +29,9 @@
     "dns",
     "ip-address",
     "https",
-    "http"
+    "http",
+    "curl",
+    "terminal"
   ],
   "explain": {
     "what": "{{term:url}} は、{{term:web}} の上の資源（ページ・画像・データ）の住所。{{term:scheme}}・{{term:host}}・{{term:port}}・{{term:path}}・{{term:query}} の部品を、決まった区切りの記号でつないで 1 行にしたもの。",
@@ -138,194 +140,99 @@
     }
   ],
   "practice": {
-    "mode": "simulation",
-    "purpose": "港の店の担当から「在庫の一覧から、3 番の商品を見る URL を作って」と頼まれた。依頼文から部品を選び、完成した URL で商品を取り出す。",
-    "environment": "sim-config",
+    "mode": "terminal",
+    "purpose": "港の店の担当から「在庫の一覧から、3 番の商品を見る {{term:url}} を作って」と頼まれた。依頼文は、店の名前 `shop.example`（`https` で話す）・待っている番号 `8443`（既定の 443 ではない）・資源 `/items`（在庫の一覧）・条件「`id` が 3 の商品だけ（項目=値 の形）」。部品を区切りの記号でつないで URL を作り、`curl` で取り出す。",
+    "environment": "web-client",
     "setup": {
-      "fields": [
+      "sites": [
         {
-          "id": "scheme",
-          "label": "スキーム",
-          "options": [
-            "http",
-            "https"
-          ]
-        },
-        {
-          "id": "host",
-          "label": "ホスト",
-          "options": [
-            "shop.example",
-            "www.example",
-            "example.shop"
-          ]
-        },
-        {
-          "id": "port",
-          "label": "ポート",
-          "options": [
-            "80",
-            "443",
-            "8443"
-          ]
-        },
-        {
-          "id": "path",
-          "label": "パス",
-          "options": [
-            "/items",
-            "/items/3",
-            "/stock"
-          ]
-        },
-        {
-          "id": "query",
-          "label": "クエリ",
-          "options": [
-            "id=3",
-            "3",
-            "id:3"
-          ]
-        },
-        {
-          "id": "url",
-          "label": "完成した URL",
-          "value": "",
-          "note": "部品と区切りの記号を、左から順につなぐ"
-        }
-      ],
-      "panels": [
-        {
-          "kind": "kv",
-          "title": "依頼文",
-          "rows": [
-            [
-              "店の名前",
-              "shop.example（https で話す）"
-            ],
-            [
-              "待っている番号",
-              "8443 番（既定の 443 ではない）"
-            ],
-            [
-              "資源",
-              "在庫の一覧（/items）"
-            ],
-            [
-              "条件",
-              "id が 3 の商品だけ（項目=値 の形）"
-            ]
-          ]
-        },
-        {
-          "kind": "table",
-          "title": "区切りの記号",
-          "columns": [
-            "場所",
-            "記号"
+          "host": "shop.example",
+          "port": 8443,
+          "chain": [
+            {
+              "id": "leaf-shop.example",
+              "subject": "shop.example",
+              "issuer": "Minato Issuing CA",
+              "sans": [
+                "shop.example"
+              ],
+              "notBefore": "2026-01-01",
+              "notAfter": "2027-01-01",
+              "ca": false
+            },
+            {
+              "id": "inter",
+              "subject": "Minato Issuing CA",
+              "issuer": "Minato Root CA",
+              "sans": [],
+              "notBefore": "2024-01-01",
+              "notAfter": "2030-01-01",
+              "ca": true
+            }
           ],
-          "rows": [
-            [
-              "スキームの後ろ",
-              "://"
-            ],
-            [
-              "ホストとポートの間",
-              ":"
-            ],
-            [
-              "パスの頭",
-              "/"
-            ],
-            [
-              "クエリの前",
-              "?"
-            ]
-          ]
-        },
-        {
-          "kind": "text",
-          "title": "取れた資源",
-          "body": "200 OK　3 番の商品: 灯台の模型（在庫 2）",
-          "when": "field url=https://shop.example:8443/items?id=3"
+          "routes": {
+            "/": {
+              "status": 200,
+              "body": "<html><body><h1>港町の店</h1><p>在庫の一覧は /items</p></body></html>"
+            },
+            "/items": {
+              "status": 200,
+              "body": "[{\"id\":1,\"name\":\"港の地図\",\"stock\":12},{\"id\":2,\"name\":\"船の絵はがき\",\"stock\":30},{\"id\":3,\"name\":\"灯台の模型\",\"stock\":2},{\"id\":4,\"name\":\"貝の置物\",\"stock\":7}]"
+            },
+            "/items?id=3": {
+              "status": 200,
+              "body": "[{\"id\":3,\"name\":\"灯台の模型\",\"stock\":2}]"
+            }
+          }
         }
       ]
     },
     "steps": [
       {
-        "id": "parts",
-        "purpose": "依頼文を読み、スキーム・ホスト・ポート・パス・クエリの欄に、それぞれ当たる部品を選ぶ。",
+        "id": "list",
+        "purpose": "まず、スキーム・{{term:host}}・{{term:port}}・{{term:path}}をつないで、在庫の一覧の URL を作り、`curl` で取り出す。一覧に並ぶ商品の数を答える。",
         "check": {
-          "kind": "sim",
-          "expr": "field scheme=https host=shop.example port=8443 path=/items query=id=3"
+          "kind": "answer",
+          "equals": "4"
         },
-        "afterward": "依頼文の 4 行が、5 つの部品に分かれた。店の名前はホスト、話し方はスキーム、待っている番号はポート、一覧はパス、条件はクエリ。",
+        "afterward": "`https://shop.example:8443/items` で一覧が取れた。スキームの後ろは `://`、ホストとポートの間は `:`、パスは `/` で始まる。ポートを書かないと、https の既定の 443 番に頼んでしまい、つながらない。",
         "hints": [
-          "依頼文を 1 行ずつ、どの部品に当たるかを考える。話し方・相手の名前・待っている番号・資源の場所・条件の順。",
-          "スキームは https、ポートは既定の 443 ではなく 8443。パスは一覧の /items で、3 番の指定は「項目=値」の形のクエリにする。",
-          "`set scheme https` `set host shop.example` `set port 8443` `set path /items` `set query id=3` の順に選ぶ。"
+          "URL は「スキーム `://` ホスト `:` ポート パス」の順につなぐ。資源を取り出すのは `curl URL`。",
+          "スキームは `https`、ホストは `shop.example`、ポートは既定の 443 ではないので `:8443` と書く。パスは `/items`。返ってきた一覧の `id` を数える。",
+          "`curl https://shop.example:8443/items` を打ち、`4` と答える。"
         ],
         "expectedErrors": [
+          "web-url-port",
+          "web-url-scheme",
+          "web-404",
+          "web-resolve",
           "web-url-parts"
-        ],
-        "actions": [
-          {
-            "op": "set",
-            "field": "scheme",
-            "value": "https"
-          },
-          {
-            "op": "set",
-            "field": "host",
-            "value": "shop.example"
-          },
-          {
-            "op": "set",
-            "field": "port",
-            "value": "8443"
-          },
-          {
-            "op": "set",
-            "field": "path",
-            "value": "/items"
-          },
-          {
-            "op": "set",
-            "field": "query",
-            "value": "id=3"
-          }
         ]
       },
       {
-        "id": "url",
-        "purpose": "選んだ部品を区切りの記号でつなぎ、完成した URL を入れて、3 番の商品を取り出す。",
+        "id": "query",
+        "purpose": "一覧の URL の後ろに、条件の{{term:query}}（`?` の後ろに `項目=値`）を付けて、3 番の商品だけを取り出す。取れた商品の名前を答える。",
         "check": {
-          "kind": "sim",
-          "expr": "field url=https://shop.example:8443/items?id=3"
+          "kind": "answer",
+          "equals": "灯台の模型"
         },
-        "afterward": "完成した URL で、3 番の商品が取れた（`200 OK`）。ポートが既定でないので :8443 を省けない。クエリは ? の後ろに置く。",
+        "afterward": "`https://shop.example:8443/items?id=3` で、3 番の商品「灯台の模型」（在庫 2）だけが返ってきた。クエリは、同じ資源（`/items`）の中から条件で絞る時に使う。`?` は端末では特別な記号なので、URL は引用符で囲んで渡す。",
         "hints": [
-          "部品を左から順に並べ、間に区切りの記号を入れる。",
-          "スキームの後ろに ://、ホストとポートの間に :、クエリの前に ? を置く。パスは / で始まる。",
-          "`set url https://shop.example:8443/items?id=3` と入れる。"
+          "クエリは、パスの後ろに `?` を置き、`項目=値` の形で書く。",
+          "条件は `id=3`。URL の全体は `https://shop.example:8443/items?id=3`。`?` は{{term:terminal}}の特別な記号なので、引用符で囲む。",
+          "`curl \"https://shop.example:8443/items?id=3\"` を打ち、`灯台の模型` と答える。"
         ],
         "expectedErrors": [
-          "web-url-separator"
-        ],
-        "actions": [
-          {
-            "op": "set",
-            "field": "url",
-            "value": "https://shop.example:8443/items?id=3"
-          }
+          "web-404",
+          "web-url-parts"
         ]
       }
     ]
   },
   "result": {
-    "success": "依頼文を部品に分け、区切りの記号でつないで、正しい URL を組み立てられた。",
-    "partial": "ヒントを使って URL を組み立てられた。次は、ポートを省いてよい時と、省けない時の違いを説明してみよう。",
-    "retry": "まだ商品が取れていない。部品の欄と依頼文を見比べ、区切りの記号の表のとおりにつないでいるかを確かめよう。"
+    "success": "依頼文を部品に分け、区切りの記号でつないだ URL を `curl` に渡して、3 番の商品を取り出せた。",
+    "partial": "ヒントを使って取り出せた。次は、URL の 5 つの部品が、依頼文のどこに当たったかを説明してみよう。",
+    "retry": "まだ取り出せていない。スキーム・ホスト・ポート・パス・クエリを、区切りの記号（`://`・`:`・`/`・`?`）で順につなごう。"
   },
   "summary": {
     "points": [

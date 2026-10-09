@@ -1311,7 +1311,7 @@
       "title": "URL の組み立て",
       "goal": "スキーム・ホスト・ポート・パス・クエリを読める",
       "practice": [
-        "simulation"
+        "terminal"
       ],
       "prerequisites": [
         "net.b.06"
