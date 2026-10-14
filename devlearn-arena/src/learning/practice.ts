@@ -141,7 +141,8 @@ export function checkState(check: CheckSpec, input: CheckInput): boolean {
 
 /**
  * 網の判定の式（端末の機械から見て）。` && ` でつなぎ、先頭の `!` で否定。
- * `reach 名前[:ポート]`（行きも帰りも通る。ポートを書けば、そこで待ち受けている）/ `resolve 名前=アドレス`（名前の答え）/
+ * `reach 名前[:ポート] [from 機器]`（行きも帰りも通る。ポートを書けば、そこで待ち受けている。from を書けば、その機器から）/
+ * `route 機器 宛先の網 via 次のアドレス`（その機器の経路表に、その行がある）/ `resolve 名前=アドレス`（名前の答え）/
  * `ssh 利用者@名前`（手元の秘密鍵で入った記録があり、今も鍵で入れて、サーバに秘密鍵が置かれていない。setup の sshHosts）。
  * 網の無い機械や、式の誤りは投げる（内容の誤り）
  */
@@ -151,7 +152,8 @@ export function netHolds(shell: ShellState, expr: string): boolean {
     const c = raw.trim();
     const negate = c.startsWith('!');
     const [head = '', arg = '', ...rest] = (negate ? c.slice(1) : c).trim().split(/\s+/);
-    if (rest.length > 0 || arg === '') throw new Error(`判定の net の式「${c}」: reach 名前[:ポート] か resolve 名前=アドレス か ssh 利用者@名前`);
+    const shape = head === 'route' ? rest.length === 3 && rest[1] === 'via' : head === 'reach' ? rest.length === 0 || (rest.length === 2 && rest[0] === 'from') : rest.length === 0;
+    if (!shape || arg === '') throw new Error(`判定の net の式「${c}」: reach 名前[:ポート] [from 機器] か route 機器 宛先 via 次 か resolve 名前=アドレス か ssh 利用者@名前`);
     if (head === 'ssh') {
       if (!shell.sshHosts) throw new Error('判定の net: この実戦の機械に SSH のサーバ（setup の sshHosts）が無い');
       return sshHolds(shell, arg) !== negate;
@@ -162,7 +164,14 @@ export function netHolds(shell: ShellState, expr: string): boolean {
     if (head === 'reach') {
       const [host = '', port] = arg.split(':');
       const ip = resolveName(net, host);
-      value = ip !== null && roundTrip(net, self, ip, port === undefined ? undefined : Number(port)).kind === 'ok';
+      const from = rest[1] ?? self;
+      if (!net.devices.has(from)) throw new Error(`判定の net の式「${c}」: 機器 ${from} が網に無い`);
+      value = ip !== null && roundTrip(net, from, ip, port === undefined ? undefined : Number(port)).kind === 'ok';
+    } else if (head === 'route') {
+      const device = net.devices.get(arg);
+      if (!device) throw new Error(`判定の net の式「${c}」: 機器 ${arg} が網に無い`);
+      const [to = '', , via = ''] = rest;
+      value = device.routes.some((r) => (r.destination === to || (to === 'default' && r.destination === '0.0.0.0/0')) && r.via === via);
     } else if (head === 'resolve') {
       const [name = '', want = ''] = arg.split('=');
       value = resolveName(net, name) === want;

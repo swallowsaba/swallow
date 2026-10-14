@@ -31,6 +31,8 @@ export interface Packet {
   payload: string;
   /** バイト数。MTU と比べる */
   size: number;
+  /** 返事（つながった後の荷物）。ファイアウォールは接続の記録（conntrack の ESTABLISHED）で通す */
+  established?: boolean;
 }
 
 export interface Route {

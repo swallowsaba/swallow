@@ -31,10 +31,21 @@ export type Outcome =
   | { kind: 'refused'; result: DeliveryResult }
   /** 送り元が出口を知らない（送る前に分かる） */
   | { kind: 'no-route'; result: DeliveryResult }
+  /** 途中のルータが宛先の網への経路を持たず、届かないと知らせてきた（ICMP の Destination Net Unreachable）。from はそのルータのアドレス */
+  | { kind: 'net-unreachable'; result: DeliveryResult; from: string }
   /** 返事が来ない（途中で止まった・塞がれた・帰り道が無い） */
   | { kind: 'timeout'; result: DeliveryResult };
 
 const routersOn = (net: Topology, r: DeliveryResult): number => r.hops.slice(1, -1).filter((h) => net.devices.get(h.device)?.kind === 'router').length;
+
+/** 途中のルータが経路を持たずに止めた時の、そのルータの入ってきた口のアドレス（送り元へ知らせが戻れる時だけ） */
+function unreachableFrom(net: Topology, go: DeliveryResult, src: string): string | null {
+  if (go.hops.length <= 1 || !(go.error ?? '').startsWith('Network is unreachable')) return null;
+  const last = go.hops[go.hops.length - 1];
+  if (!last) return null;
+  const ip = net.devices.get(last.device)?.interfaces.find((i) => i.mac === last.packet.ethernet.dstMac)?.ip;
+  return ip !== undefined && deliver(net, last.device, packet(ip, src, { protocol: 'icmp', established: true })).delivered ? ip : null;
+}
 
 /** 行きと帰り。port を書かなければ ping（ICMP） */
 export function roundTrip(net: Topology, from: string, dstIp: string, port?: number): Outcome {
@@ -42,15 +53,17 @@ export function roundTrip(net: Topology, from: string, dstIp: string, port?: num
   const go = deliver(net, from, packet(src, dstIp, port === undefined ? { protocol: 'icmp' } : { dstPort: port }));
   if (!go.delivered) {
     if (go.hops.length <= 1 && (go.error ?? '').startsWith('Network is unreachable')) return { kind: 'no-route', result: go };
+    const router = unreachableFrom(net, go, src);
+    if (router !== null) return { kind: 'net-unreachable', result: go, from: router };
     const last = go.hops[go.hops.length - 1]?.device;
     // 拒否の返事は、宛先まで行けて、宛先から送り元へ戻れる時だけ届く
-    if ((go.error ?? '').startsWith('Connection refused') && last !== undefined && deliver(net, last, packet(dstIp, src, { protocol: 'icmp' })).delivered) {
+    if ((go.error ?? '').startsWith('Connection refused') && last !== undefined && deliver(net, last, packet(dstIp, src, { protocol: 'icmp', established: true })).delivered) {
       return { kind: 'refused', result: go };
     }
     return { kind: 'timeout', result: go };
   }
   const target = go.hops[go.hops.length - 1]?.device ?? '';
-  const back = deliver(net, target, packet(dstIp, src, { protocol: 'icmp' }));
+  const back = deliver(net, target, packet(dstIp, src, { protocol: 'icmp', established: true }));
   return back.delivered ? { kind: 'ok', result: go, routers: routersOn(net, go) } : { kind: 'timeout', result: go };
 }
 
@@ -61,7 +74,7 @@ export const rttOf = (routers: number, seq = 1): string => (0.4 + routers * 0.6 
  * traceroute の各段: 答えた機器のアドレス、答えない・届かない段は null。max 段まで。宛先に着いたら、そこで終わる。
  * 段の機器が答えるのは、その機器から送り元へ返事が戻れる時だけ
  */
-export function traceHops(net: Topology, from: string, dstIp: string, max: number): { hops: (string | null)[]; reached: boolean } {
+export function traceHops(net: Topology, from: string, dstIp: string, max: number): { hops: (string | null)[]; reached: boolean; netUnreachable?: boolean } {
   const src = addressOf(net, from);
   const go = deliver(net, from, packet(src, dstIp, { protocol: 'icmp' }));
   const l3 = go.hops.slice(1).filter((h) => net.devices.get(h.device)?.kind !== 'switch');
@@ -73,9 +86,11 @@ export function traceHops(net: Topology, from: string, dstIp: string, max: numbe
     if (isTarget && !go.delivered) break;
     // 入ってきた口のアドレス（宛先なら宛先のアドレス）
     const ip = isTarget ? dstIp : (d?.interfaces.find((i) => i.mac === h.packet.ethernet.dstMac)?.ip ?? null);
-    const answers = ip !== null && !d?.silent && deliver(net, h.device, packet(ip, src, { protocol: 'icmp' })).delivered;
+    const answers = ip !== null && !d?.silent && deliver(net, h.device, packet(ip, src, { protocol: 'icmp', established: true })).delivered;
     hops.push(answers ? ip : null);
     if (isTarget) return { hops, reached: true };
+    // 経路を持たないルータは、本物と同じく !N（網に届かない）と知らせ、そこで終わる
+    if (answers && h === go.hops[go.hops.length - 1] && unreachableFrom(net, go, src) !== null) return { hops, reached: false, netUnreachable: true };
   }
   while (hops.length < max) hops.push(null);
   return { hops, reached: false };

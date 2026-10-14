@@ -167,3 +167,93 @@ describe('ss: 接続の状態', () => {
     expect(conns).toContain('TIME-WAIT');
   });
 });
+
+/** 1 台のスイッチに、ルータと 4 台のパソコンをつないだ事務所の網（pc3 は網を打ち間違え、pc4 は前の網のまま） */
+const office = {
+  network: {
+    self: 'pc4',
+    devices: [
+      { name: 'sw', kind: 'switch', ports: 8 },
+      { name: 'router', kind: 'router', addrs: ['192.168.10.1/24'] },
+      { name: 'pc1', addrs: ['192.168.10.11/24'] },
+      { name: 'pc3', addrs: ['192.168.20.13/24'] },
+      { name: 'pc4', addrs: ['192.168.1.14/24'] },
+    ],
+    links: [['router', 'sw'], ['pc1', 'sw'], ['pc3', 'sw'], ['pc4', 'sw']],
+  },
+};
+
+describe('スイッチでつないだ網と、アドレスの振り直し', () => {
+  it('スイッチは口を順に使ってつなぐ。網の違う相手には、経路が無いと断られる', () => {
+    const s = session(office);
+    expect(s.run('ping -c 1 192.168.10.1').err).toBe('ping: connect: Network is unreachable\n');
+    s.run('ip addr del 192.168.1.14/24 dev eth0');
+    s.run('ip addr add 192.168.10.14/24 dev eth0');
+    expect(s.run('ping -c 1 192.168.10.1').out).toContain('1 received, 0% packet loss');
+    expect(checkState({ kind: 'net', expr: 'reach 192.168.10.1 && reach 192.168.10.11' }, { shell: s.shell })).toBe(true);
+  });
+
+  it('自分の網の住所に誰も答えない時は、本物と同じく自分の住所から Destination Host Unreachable と知らせる', () => {
+    const s = session(office);
+    s.run('ip addr add 192.168.10.14/24 dev eth0');
+    const lost = s.run('ping -c 2 192.168.10.13');
+    expect(lost.out).toContain('From 192.168.10.14 icmp_seq=1 Destination Host Unreachable');
+    expect(lost.out).toContain('2 packets transmitted, 0 received, +2 errors, 100% packet loss');
+    expect(lost.code).toBe(1);
+    s.run('ip -n pc3 addr del 192.168.20.13/24 dev eth0');
+    s.run('ip -n pc3 addr add 192.168.10.13/24 dev eth0');
+    expect(s.run('ping -c 1 192.168.10.13').out).toContain('1 received');
+  });
+
+  it('スイッチにアドレスを書く・口の数を書かない setup は、内容の誤りとして断る', () => {
+    expect(() => initialShell('net-client', { network: { ...office.network, devices: [{ name: 'sw', kind: 'switch', addrs: ['10.0.0.1/24'], ports: 4 }, ...office.network.devices.slice(1)] } })).toThrow();
+    expect(() => initialShell('net-client', { network: { ...office.network, devices: [{ name: 'sw', kind: 'switch' }, ...office.network.devices.slice(1)] } })).toThrow();
+  });
+});
+
+/** 社内 A（pc-a）→ r1 → つなぎの網 → r2 → サーバ室 C（srv-c）。r1 も r2 も、向こう側の網への経路を持たない */
+const threeNets = {
+  network: {
+    self: 'pc-a',
+    devices: [
+      { name: 'pc-a', addrs: ['10.0.1.10/24'], gateway: '10.0.1.1' },
+      { name: 'r1', kind: 'router', addrs: ['10.0.1.1/24', '10.0.2.1/24'] },
+      { name: 'r2', kind: 'router', addrs: ['10.0.2.2/24', '10.0.3.1/24'] },
+      { name: 'srv-c', addrs: ['10.0.3.10/24'], gateway: '10.0.3.1' },
+    ],
+    links: [['pc-a', 'r1'], ['r1', 'r2'], ['r2', 'srv-c']],
+  },
+};
+
+describe('経路を足す（ip route・ip netns exec）', () => {
+  it('経路を持たないルータは、本物と同じく Destination Net Unreachable と !N で知らせる', () => {
+    const s = session(threeNets);
+    expect(s.run('ping -c 1 10.0.3.10').out).toContain('From 10.0.1.1 icmp_seq=1 Destination Net Unreachable');
+    const t = s.run('traceroute 10.0.3.10').out;
+    expect(t).toContain(' 1  10.0.1.1  0.4 ms !N');
+    expect(t).not.toContain(' 2 ');
+    expect(s.run('curl http://10.0.3.10/').err).toContain('Network is unreachable');
+  });
+
+  it('ip route add は dev を省くと、次のアドレスと同じ網の口を使う。同じ網の口が無ければ断る', () => {
+    const s = session(threeNets);
+    expect(s.run('ip -n r1 route add 10.0.3.0/24 via 10.0.2.2').err).toBe('');
+    expect(s.run('ip -n r1 route').out).toContain('10.0.3.0/24 via 10.0.2.2 dev eth1');
+    expect(s.run('ip -n r1 route add 10.0.9.0/24 via 10.0.9.1').err).toBe('Error: Nexthop has invalid gateway.\n');
+    expect(checkState({ kind: 'net', expr: 'route r1 10.0.3.0/24 via 10.0.2.2' }, { shell: s.shell })).toBe(true);
+    expect(checkState({ kind: 'net', expr: 'route r2 10.0.1.0/24 via 10.0.2.1' }, { shell: s.shell })).toBe(false);
+  });
+
+  it('ip netns exec は、その機器の中で打つ。行きの経路だけでは返事が戻らず、帰りの経路を足すと届く', () => {
+    const s = session(threeNets);
+    s.run('ip -n r1 route add 10.0.3.0/24 via 10.0.2.2');
+    expect(s.run('ping -c 1 10.0.3.10').out).toContain('0 received');
+    expect(s.run('ip netns exec srv-c ping -c 1 10.0.1.10').out).toContain('From 10.0.3.1 icmp_seq=1 Destination Net Unreachable');
+    expect(s.run('ip netns').out).toBe('pc-a\nr1\nr2\nsrv-c\n');
+    expect(s.run('ip netns exec r9 ip route').err).toContain('Cannot open network namespace "r9"');
+    s.run('ip netns exec r2 ip route add 10.0.1.0/24 via 10.0.2.1');
+    expect(s.run('ping -c 1 10.0.3.10').out).toContain('1 received');
+    expect(checkState({ kind: 'net', expr: 'reach 10.0.3.10 && reach 10.0.1.10 from srv-c' }, { shell: s.shell })).toBe(true);
+    expect(() => checkState({ kind: 'net', expr: 'reach 10.0.3.10 from r9' }, { shell: s.shell })).toThrow();
+  });
+});

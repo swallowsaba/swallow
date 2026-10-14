@@ -112,6 +112,8 @@ export function packet(
     size?: number;
     dontFragment?: boolean;
     vlan?: number | null;
+    /** 返事（つながった後の荷物）。ファイアウォールは接続の記録で通す */
+    established?: boolean;
   } = {},
 ): Packet {
   packetCounter += 1;
@@ -138,6 +140,7 @@ export function packet(
           },
     payload: options.payload ?? '',
     size: options.size ?? 64,
+    ...(options.established ? { established: true } : {}),
   };
 }
 

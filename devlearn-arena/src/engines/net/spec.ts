@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { macFor } from './build';
-import { DEFAULT_MTU } from './factory';
+import { DEFAULT_MTU, port } from './factory';
 import { contains, parseCidr } from './subnet';
 import type { Device, Interface, Link, Route, Topology } from './types';
 
@@ -8,7 +8,8 @@ import type { Device, Interface, Link, Route, Topology } from './types';
  * 実戦の setup に書く網（端末の実戦で ping・traceroute・dig・curl が使う。docs/content-spec.md 2.4 の net）。
  *
  * 機器ごとにアドレス（口ごとに 1 つ。eth0 から順）と、出口（gateway）・経路を書き、線は機器の名前の組で書く。
- * 線の両端の口は、同じ網のアドレスを持つ口から選ぶ（どの口かを書かなくてよい）。MAC は名前から決まる（同じ setup からは同じ網）
+ * 線の両端の口は、同じ網のアドレスを持つ口から選ぶ（どの口かを書かなくてよい）。MAC は名前から決まる（同じ setup からは同じ網）。
+ * スイッチ（kind: switch）はアドレスを持たず、口（port1 から順に ports 個）で機器をつなぐ。スイッチとの線は、両端の空いた口を順に使う
  */
 
 const cidr = z.string().regex(/^\d+\.\d+\.\d+\.\d+\/\d+$/, 'アドレスは 10.0.0.5/24 の形');
@@ -20,9 +21,11 @@ export const networkSetupSchema = z.object({
   self: name,
   devices: z.array(z.object({
     name,
-    kind: z.enum(['host', 'router']).default('host'),
-    /** 口ごとのアドレス（eth0・eth1 … の順） */
-    addrs: z.array(cidr).min(1),
+    kind: z.enum(['host', 'router', 'switch']).default('host'),
+    /** 口ごとのアドレス（eth0・eth1 … の順）。スイッチは書かない */
+    addrs: z.array(cidr).default([]),
+    /** スイッチの口の数 */
+    ports: z.number().int().min(2).max(48).optional(),
     /** 知らない宛先の出口（デフォルトゲートウェイ） */
     gateway: ip.optional(),
     /** 足した経路（宛先の網 → 次に渡す機器のアドレス） */
@@ -65,7 +68,10 @@ export function buildNetwork(raw: NetworkSetup): Topology {
   const devices = new Map<string, Device>();
   for (const d of spec.devices) {
     if (devices.has(d.name)) throw new Error(`機器 ${d.name} が重なる`);
-    const interfaces = d.addrs.map((a, i) => ifaceOf(d.name, i, a));
+    if (d.kind === 'switch' ? d.addrs.length > 0 || d.ports === undefined : d.addrs.length === 0) throw new Error(`機器 ${d.name}: スイッチは ports だけ、ほかは addrs を書く`);
+    const interfaces = d.kind === 'switch'
+      ? Array.from({ length: d.ports ?? 0 }, (_, i) => port(`port${String(i + 1)}`))
+      : d.addrs.map((a, i) => ifaceOf(d.name, i, a));
     const device: Device = {
       name: d.name, kind: d.kind, interfaces, routes: [], listening: d.listen ?? [], blockedPorts: d.blocked ?? [],
       arp: {}, macTable: {}, nat: null,
@@ -82,6 +88,14 @@ export function buildNetwork(raw: NetworkSetup): Topology {
     const da = devices.get(a);
     const db = devices.get(b);
     if (!da || !db) throw new Error(`線 ${a}-${b}: 機器 ${!da ? a : b} が無い`);
+    if (da.kind === 'switch' || db.kind === 'switch') {
+      const ia = da.interfaces.find((i) => !used.has(`${a}:${i.name}`));
+      const ib = db.interfaces.find((i) => !used.has(`${b}:${i.name}`));
+      if (!ia || !ib) throw new Error(`線 ${a}-${b}: 空いた口が両方に無い`);
+      used.add(`${a}:${ia.name}`);
+      used.add(`${b}:${ib.name}`);
+      return { a: `${a}:${ia.name}`, b: `${b}:${ib.name}`, up: state !== 'down', mtu: DEFAULT_MTU };
+    }
     for (const ia of da.interfaces) {
       const ib = db.interfaces.find((i) => networkOf(i) === networkOf(ia));
       if (!ib || used.has(`${a}:${ia.name}`) || used.has(`${b}:${ib.name}`)) continue;

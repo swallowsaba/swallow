@@ -88,6 +88,17 @@ export const netCommands: CommandSpec[] = [
       const head = `PING ${target} (${ip}) 56(84) bytes of data.`;
       const stats = (got: number) => [`--- ${target} ping statistics ---`, `${String(count)} packets transmitted, ${String(got)} received, ${got === count ? '0' : '100'}% packet loss`];
       const patch = { net: afterDelivery(net, r.result) };
+      // 自分の網の相手が ARP に答えない: 本物と同じく、自分の住所から「届かない」と知らせる
+      const arpFailed = r.kind === 'timeout' && r.result.hops.length === 1 && (r.result.error ?? '').includes('ARP');
+      if (r.kind === 'net-unreachable') {
+        const lines = Array.from({ length: count }, (_, i) => `From ${r.from} icmp_seq=${String(i + 1)} Destination Net Unreachable`);
+        return { stdout: fromLines([head, ...lines, '', `--- ${target} ping statistics ---`, `${String(count)} packets transmitted, 0 received, +${String(count)} errors, 100% packet loss`]), code: 1, patch };
+      }
+      if (arpFailed) {
+        const own = addressOf(net, me);
+        const lines = Array.from({ length: count }, (_, i) => `From ${own} icmp_seq=${String(i + 1)} Destination Host Unreachable`);
+        return { stdout: fromLines([head, ...lines, '', `--- ${target} ping statistics ---`, `${String(count)} packets transmitted, 0 received, +${String(count)} errors, 100% packet loss`]), code: 1, patch };
+      }
       if (r.kind !== 'ok') return { stdout: fromLines([head, '', ...stats(0)]), code: 1, patch };
       const replies = Array.from({ length: count }, (_, i) => `64 bytes from ${ip}: icmp_seq=${String(i + 1)} ttl=${String(64 - r.routers)} time=${rttOf(r.routers, i + 1)} ms`);
       return { stdout: fromLines([head, ...replies, '', ...stats(count)]), patch };
@@ -106,7 +117,7 @@ export const netCommands: CommandSpec[] = [
       const max = 8;
       const t = traceHops(net, selfName(shell), ip, max);
       const lines = [`traceroute to ${target} (${ip}), ${String(max)} hops max, 60 byte packets`];
-      t.hops.forEach((h, i) => lines.push(`${String(i + 1).padStart(2)}  ${h === null ? '* * *' : `${h}  ${rttOf(i, 1)} ms`}`));
+      t.hops.forEach((h, i) => lines.push(`${String(i + 1).padStart(2)}  ${h === null ? '* * *' : `${h}  ${rttOf(i, 1)} ms${t.netUnreachable && i === t.hops.length - 1 ? ' !N' : ''}`}`));
       return { stdout: fromLines(lines), code: t.reached ? 0 : 1 };
     },
   },
@@ -134,10 +145,11 @@ export const netCommands: CommandSpec[] = [
       const patch = { net: afterDelivery(net, r.result) };
       if (r.kind !== 'ok') {
         const refused = r.kind === 'refused';
+        const fast = refused || r.kind === 'net-unreachable';
         return {
           stdout: fromLines(verbose),
-          stderr: `curl: (${refused ? '7' : '28'}) Failed to connect to ${hostName} port ${String(port)}: ${refused ? 'Connection refused' : 'Connection timed out'}\n`,
-          code: refused ? 7 : 28,
+          stderr: `curl: (${fast ? '7' : '28'}) Failed to connect to ${hostName} port ${String(port)}: ${refused ? 'Connection refused' : r.kind === 'net-unreachable' ? 'Network is unreachable' : 'Connection timed out'}\n`,
+          code: fast ? 7 : 28,
           patch,
         };
       }
@@ -180,9 +192,22 @@ export const netCommands: CommandSpec[] = [
       (argv.length <= 2 ? ['addr', 'link', 'route'] : ['add', 'del', 'set', 'show']).filter((s) =>
         s.startsWith(prefix),
       ),
-    handler: ({ argv: raw, shell }) => {
+    handler: ({ argv: raw, shell, runLine }) => {
       const net = shell.net;
       if (net === null) return ownAddresses(shell, raw);
+      // 機器ごとを本物の netns に見立てる: `ip netns` で並べ、`ip netns exec 機器 コマンド` でその機器の中で打つ
+      if (raw[1] === 'netns') {
+        const sub = raw[2] ?? 'list';
+        if (sub === 'list' || sub === 'ls' || sub === 'show') return { stdout: fromLines([...net.devices.values()].filter((d) => d.kind !== 'switch').map((d) => d.name)) };
+        if (sub !== 'exec') return { stderr: `Command "${sub}" is unknown, try "ip netns help".\n`, code: 1 };
+        const target = raw[3];
+        const rest = raw.slice(4);
+        if (target === undefined || rest.length === 0) return { stderr: 'No netns name specified\n', code: 1 };
+        if (!net.devices.has(target)) return { stderr: `Cannot open network namespace "${target}": No such file or directory\n`, code: 1 };
+        const inside: ShellState = { ...shell, vars: new Map([...shell.vars, ['NET_SELF', target]]) };
+        const o = runLine(rest.join(' '), inside);
+        return { stdout: o.stdout, stderr: o.stderr, code: o.code, patch: { net: o.state.net, vfs: o.state.vfs } };
+      }
       // `ip -n <機器> ...` は、その機器の中で打ったのと同じにする（機器ごとを本物の netns に見立てる）
       const netns = raw[1] === '-n' || raw[1] === '-netns' ? raw[2] : undefined;
       if ((raw[1] === '-n' || raw[1] === '-netns') && netns === undefined) {

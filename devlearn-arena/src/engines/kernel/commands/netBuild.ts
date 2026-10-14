@@ -4,6 +4,7 @@ import {
   setNat, setVlan, type BuildResult,
 } from '@/engines/net/build';
 import { nat as natConfig } from '@/engines/net/factory';
+import { sameNetwork } from '@/engines/net/subnet';
 import type { DeviceKind, Topology } from '@/engines/net/types';
 import type { CommandResult, CommandSpec, ShellState } from '../registry';
 import { fromLines, parseArgs } from './args';
@@ -213,8 +214,9 @@ export function ipRoute({ net, me, argv }: IpEditContext): CommandResult {
   }
   const destination = destinationRaw === 'default' ? '0.0.0.0/0' : destinationRaw;
   const via = valueAfter(argv, 'via');
-  const dev = devOf(argv);
-  if (dev === null) return { stderr: 'ip route: dev <if> を指定してください\n', code: 2 };
+  // dev を書かなければ、本物と同じく次のアドレスと同じ網の口を使う
+  const dev = devOf(argv) ?? (via !== undefined ? devToward(net, me, via) : null);
+  if (dev === null) return { stderr: via !== undefined ? 'Error: Nexthop has invalid gateway.\n' : 'Error: Device for nexthop is not up.\n', code: 2 };
   const route = { destination, via: via ?? null, dev };
   if (action === 'add') return render(addRoute(net, me, route));
   if (action === 'del') return render(delRoute(net, me, route));
@@ -223,6 +225,12 @@ export function ipRoute({ net, me, argv }: IpEditContext): CommandResult {
     return render(addRoute(cleared.error === null ? cleared.topology : net, me, route));
   }
   return { stderr: `ip: unknown command "route ${action}"\n`, code: 2 };
+}
+
+/** そのアドレスと同じ網にある、自分の口の名前 */
+function devToward(net: Topology, me: string, ip: string): string | null {
+  const d = net.devices.get(me);
+  return d?.interfaces.find((i) => i.up && i.prefix > 0 && sameNetwork(i.ip, ip, i.prefix))?.name ?? null;
 }
 
 function valueAfter(argv: readonly string[], keyword: string): string | undefined {
