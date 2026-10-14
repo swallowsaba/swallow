@@ -1,3 +1,5 @@
+import type { ZoneRecord } from './zone';
+
 /** パケットは構造体として生成し、ホップごとにヘッダが書き換わる */
 export interface EthernetHeader {
   srcMac: string;
@@ -144,6 +146,8 @@ export interface Topology {
   links: Link[];
   /** 名前解決の表 */
   dns: Map<string, string>;
+  /** DNS のサーバが読んだゾーンの全てのレコード（dig の種類ごとの答え。src/engines/kernel/dnsZones.ts） */
+  records?: ZoneRecord[];
   /** 直前の配送の道筋。まだ何も送っていなければ無い */
   trace?: PacketTrace;
 }

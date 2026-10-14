@@ -165,14 +165,47 @@
     },
     {
       "id": "net-dhcp-range",
-      "match": "答えが合っていない",
-      "meaning": "配る範囲を変えたが、5 台に重ならずに配れる範囲になっていない。",
+      "match": "binding state abandoned",
+      "output": true,
+      "meaning": "配る範囲に、決まった番号で使う機械のアドレスが入っている。借りた機械が「使われている」と気付いて断り、サーバはその番号を捨てた（abandoned）。",
       "causes": [
-        "固定のアドレス（ルータ .1・サーバ .10・プリンタ .20）を範囲に含めた。",
-        "範囲が狭く、5 台分の番号が無い。",
-        "始めと終わりが逆、または網（192.168.1.0/24）の外の番号を書いた。"
+        "範囲にルータ（.1）・ファイルのサーバ（.10）・プリンタ（.20）の番号が入っている。",
+        "前に配った範囲を広げた時、決まった番号の機械（.10・.20）が範囲の中に入ってしまった。"
       ],
-      "hint": "固定の 3 台の番号の表と、範囲の始め・終わりを見比べよう。終わり − 始め + 1 が配れる数。"
+      "hint": "捨てられた番号（`lease` の行）を見て、その番号を含まない範囲にしよう。",
+      "terms": [
+        "dhcp",
+        "ip-address"
+      ]
+    },
+    {
+      "id": "net-dhcp-short",
+      "match": "^(?![\\s\\S]*guest-5)[\\s\\S]*valid until",
+      "output": true,
+      "meaning": "5 台全てに配れていない。範囲の番号が足りず、残りの機械は借りられなかった（no free leases）。",
+      "causes": [
+        "範囲の番号が 5 つより少ない。",
+        "範囲の中の番号が、決まった番号の機械と重なって捨てられ、足りなくなった。"
+      ],
+      "hint": "範囲の始めと終わりの差を数えよう。`dhcp-lease-list` に並ぶ台数が 5 になるまで広げる。",
+      "terms": [
+        "dhcp",
+        "lease"
+      ]
+    },
+    {
+      "id": "net-dhcp-conf",
+      "match": "Configuration file errors encountered",
+      "meaning": "設定の書き方に誤りがあり、DHCP のサーバが動けない。",
+      "causes": [
+        "文の終わりの `;` を書き忘れた（`semicolon expected.`）。",
+        "範囲が網（192.168.1.0/24）の外にある（`not on net`）。"
+      ],
+      "hint": "確かめた結果の、行の番号と `^` の印の所を直そう。",
+      "terms": [
+        "dhcp",
+        "config-file"
+      ]
     },
     {
       "id": "net-one-way",
@@ -260,14 +293,33 @@
     },
     {
       "id": "net-dns-records",
-      "match": "答えが合っていない",
-      "meaning": "レコードを足したが、依頼のとおりに届く形になっていない。",
+      "match": "status: NXDOMAIN|ANSWER: 0,",
+      "output": true,
+      "meaning": "問い合わせた名前か種類のレコードが、DNS のサーバに無い。",
       "causes": [
-        "メールの受け取り先（MX）が無い、または名前が @（shop.example）でない。",
-        "www を別名（CNAME）ではなく A にした・値を shop.example. にしていない。",
-        "名前と種類の組み合わせを取り違えた。"
+        "`NXDOMAIN` は、その名前のレコードが 1 つも無いという意味（`www` の行が無い）。",
+        "`ANSWER: 0` は、名前はあるが、その種類のレコードが無いという意味（`shop.example` に MX が無い）。",
+        "ゾーンファイルを保存したが、書き方の誤りで読み込まれていない（前の答えのまま）。"
       ],
-      "hint": "確かめた記録で、まだ届かない物を見よう。表の行を消す時は、行の「消す」か del を使う。"
+      "hint": "確かめた結果の `named-checkzone` が `OK` かを見てから、足りない名前と種類の行を足そう。",
+      "terms": [
+        "dns",
+        "cname"
+      ]
+    },
+    {
+      "id": "net-zone-error",
+      "match": "not loaded due to errors",
+      "meaning": "ゾーンファイルの書き方に誤りがあり、DNS のサーバに読み込まれなかった（前の答えのまま）。",
+      "causes": [
+        "種類の綴りの誤り（`unknown RR type`）。",
+        "MX の優先度の数を書き忘れた（`not a valid number`）。",
+        "同じ名前に CNAME と別のレコードを書いた（`CNAME and other data`）。"
+      ],
+      "hint": "誤りの行の番号（`ファイル:行`）を見て、その行を直そう。",
+      "terms": [
+        "dns"
+      ]
     },
     {
       "id": "net-seg-same",

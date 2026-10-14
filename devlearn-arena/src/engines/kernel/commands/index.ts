@@ -4,6 +4,7 @@ import { aptCommands } from './apt';
 import { builtinCommands } from './builtins';
 import { cronCommands } from './cron';
 import { socketCommands } from './sockets';
+import { dhcpServerCommands } from './dhcpServer';
 import { editorCommands } from './editor';
 import { fsCommands } from './fs';
 import { ghCommands } from './gh';
@@ -50,6 +51,7 @@ export function createDefaultRegistry(): CommandRegistry {
     ...aptCommands,
     ...cronCommands,
     ...socketCommands,
+    ...dhcpServerCommands,
     ...sshCommands,
     ...dockerCommands,
     ...miscCommands,

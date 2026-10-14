@@ -61,6 +61,14 @@ const serviceSetup = z.object({
   config: z.string().startsWith('/').optional(),
   /** DNS のゾーンファイルの場所（動かす・読み直す時に読み、網の名前の答えになる） */
   zone: z.string().startsWith('/').optional(),
+  /** DHCP のサーバ（dhcpd.conf を動かす時に読み、待っている機械にアドレスを貸す。src/engines/net/dhcp.ts） */
+  dhcp: z.object({
+    config: z.string().startsWith('/'),
+    leases: z.string().startsWith('/'),
+    iface: z.string().regex(/^[a-z][a-z0-9]*$/).default('eth0'),
+    clients: z.array(z.object({ host: z.string().regex(/^[a-z][a-z0-9-]*$/), mac: z.string().regex(/^([0-9a-f]{2}:){5}[0-9a-f]{2}$/) }).strict()).min(1),
+    inUse: z.array(z.string().regex(/^\d+\.\d+\.\d+\.\d+$/)).default([]),
+  }).strict().optional(),
   /** ログインを覚えるアプリ（PHP のセッション。動かす時に php.ini を読み、札の決まりにする。src/engines/http/session.ts） */
   session: z.object({
     ini: z.string().startsWith('/'),
@@ -381,6 +389,7 @@ export function shellOptions(environment: string, setup: unknown): SessionOption
       ...(v.routes !== undefined ? { routes: v.routes } : {}),
       ...(v.config !== undefined ? { config: v.config } : {}),
       ...(v.zone !== undefined ? { zone: v.zone } : {}),
+      ...(v.dhcp !== undefined ? { dhcp: v.dhcp } : {}),
       // 初めから動いているアプリは、置いたファイルの php.ini を読んだ状態で始める
       ...(v.session !== undefined ? { session: v.session, ...(v.active ? { cookie: readSessionIni(s.files?.[v.session.ini] ?? '') } : {}) } : {}),
       ...(v.log !== undefined ? { log: v.log } : {}),

@@ -44,9 +44,17 @@ export const textCommands: CommandSpec[] = [
   },
   {
     name: 'grep',
-    summary: 'パターンに一致する行を抜き出す（-r でディレクトリの中まで）',
+    summary: 'パターンに一致する行を抜き出す（-r でディレクトリの中まで。-A・-B・-C で前後の行も）',
     handler: ({ argv, shell, stdin }) => {
-      const { flags, operands } = parseArgs(argv);
+      const { flags, values, operands } = parseArgs(argv, { withValue: ['A', 'B', 'C'] });
+      // 前後の行の数（-C は両方）。数でなければ本物と同じく断る
+      const ctx = (k: 'A' | 'B'): number | null => {
+        const raw = values.get(k) ?? values.get('C');
+        return raw === undefined ? 0 : /^\d+$/.test(raw) ? Number(raw) : null;
+      };
+      const after = ctx('A');
+      const before = ctx('B');
+      if (after === null || before === null) return { stderr: `grep: ${values.get('A') ?? values.get('B') ?? values.get('C') ?? ''}: invalid context length argument\n`, code: 2 };
       const pattern = operands[0];
       if (pattern === undefined) return { stderr: 'usage: grep [-invcEFxnrlh] PATTERN [FILE...]\n', code: 2 };
       // 既定は基本正規表現（BRE）。-E で拡張、-F で文字どおり
@@ -113,9 +121,19 @@ export const textCommands: CommandSpec[] = [
           out.push(named ? `${src.name}:${String(hits.length)}` : String(hits.length));
           continue;
         }
-        for (const { line, index } of hits) {
-          const numbered = flags.has('n') ? `${String(index + 1)}:${line}` : line;
-          out.push(named ? `${src.name}:${numbered}` : numbered);
+        // 前後の行を足す。離れた組の間には -- を置き、前後の行は : の代わりに - で区切る（本物の GNU grep と同じ）
+        const lines = toLines(src.text);
+        const hitAt = new Set(hits.map((h) => h.index));
+        const shown = new Set<number>();
+        for (const { index } of hits) for (let k = Math.max(0, index - before); k <= Math.min(lines.length - 1, index + after); k += 1) shown.add(k);
+        let prev = -2;
+        for (const index of [...shown].sort((a, b) => a - b)) {
+          if ((before > 0 || after > 0) && prev >= 0 && index > prev + 1) out.push('--');
+          prev = index;
+          const sep = hitAt.has(index) ? ':' : '-';
+          const line = lines[index] ?? '';
+          const numbered = flags.has('n') ? `${String(index + 1)}${sep}${line}` : line;
+          out.push(named ? `${src.name}${sep}${numbered}` : numbered);
         }
       }
       const code = errors.length > 0 && total === 0 ? 2 : total > 0 ? 0 : 1;

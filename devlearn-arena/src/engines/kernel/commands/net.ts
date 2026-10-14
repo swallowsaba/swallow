@@ -1,12 +1,14 @@
 import { localCurl } from './httpLocal';
 import { addressOf, deviceAt, resolveName, roundTrip, rttOf, traceHops } from '@/engines/net/probe';
 import { parseCidr } from '@/engines/net/subnet';
+import { checkZone } from '@/engines/net/zone';
 import type { DeliveryResult, Device, Topology } from '@/engines/net/types';
 import type { CommandResult, CommandSpec, ShellState } from '../registry';
 import { fromLines, parseArgs } from './args';
 import { ipAddr, ipLink, ipRoute } from './netBuild';
+import { normalize } from '../path';
+import { exists, isDir, readFile } from '../vfs';
 
-const IPV4 = /^\d+\.\d+\.\d+\.\d+$/;
 const NO_NET = 'ネットワークが用意されていません。ネットワークの任務を選んでください。\n';
 
 /**
@@ -67,6 +69,45 @@ function afterDelivery(net: Topology, result: DeliveryResult): Topology {
       error: result.error,
     },
   };
+}
+
+const DIG_TYPES: ReadonlySet<string> = new Set(['A', 'AAAA', 'CNAME', 'MX', 'TXT', 'NS', 'SOA', 'PTR', 'SRV', 'CAA']);
+
+interface DigRow { name: string; ttl: number; type: string; value: string }
+
+/** 名前の値に末尾の . を付ける（dig の書き方） */
+const dotted = (n: string): string => (n.endsWith('.') ? n : `${n}.`);
+
+/**
+ * dig の答え。DNS のサーバが読んだレコードがあれば種類ごとに答え、別名（CNAME）は本物と同じく先を辿って並べる。
+ * レコードが無ければ、名前の表（A）から答える。名前がどこにも無ければ NXDOMAIN
+ */
+function digAnswer(net: Topology, name: string, type: string): { nx: boolean; rows: DigRow[] } {
+  const records = net.records ?? [];
+  const rows: DigRow[] = [];
+  let q = name.toLowerCase();
+  for (let hop = 0; hop < 8; hop += 1) {
+    const here = records.filter((r) => r.name.toLowerCase() === q);
+    const alias = here.find((r) => r.type === 'CNAME');
+    if (alias && type !== 'CNAME') {
+      rows.push({ name: alias.name, ttl: alias.ttl, type: 'CNAME', value: dotted(alias.value) });
+      q = alias.value.toLowerCase();
+      continue;
+    }
+    const matched = here.filter((r) => r.type === type);
+    if (matched.length > 0) {
+      rows.push(...matched.map((r) => ({ name: r.name, ttl: r.ttl, type: r.type, value: r.type === 'MX' ? r.value.replace(/(\S+)$/, (h) => dotted(h)) : r.type === 'CNAME' || r.type === 'NS' ? dotted(r.value) : r.value })));
+      return { nx: false, rows };
+    }
+    const ip = type === 'A' ? net.dns.get(q) : undefined;
+    if (ip !== undefined && here.length === 0) {
+      rows.push({ name: q, ttl: 300, type: 'A', value: ip });
+      return { nx: false, rows };
+    }
+    // 名前はあるが、その種類のレコードが無い（NOERROR で答えが空）。名前がどこにも無ければ NXDOMAIN
+    return { nx: rows.length === 0 && here.length === 0 && !net.dns.has(q), rows };
+  }
+  return { nx: false, rows };
 }
 
 export const netCommands: CommandSpec[] = [
@@ -162,27 +203,43 @@ export const netCommands: CommandSpec[] = [
   },
   {
     name: 'dig',
-    summary: '名前を引く（名前に結び付いたアドレスを DNS に問い合わせる）',
+    summary: '名前を引く（DNS に、名前と種類（A・CNAME・MX など）を問い合わせる）',
     handler: ({ argv, shell }) => {
       const net = shell.net;
       if (net === null) return { stderr: NO_NET, code: 1 };
       const short = argv.includes('+short');
-      const target = argv.slice(1).find((a) => !a.startsWith('+') && !a.startsWith('@') && a.toUpperCase() !== 'A');
-      if (target === undefined) return { stderr: 'usage: dig <名前>\n', code: 1 };
+      const words = argv.slice(1).filter((a) => !a.startsWith('+') && !a.startsWith('@'));
+      const type = (words.find((w) => DIG_TYPES.has(w.toUpperCase())) ?? 'A').toUpperCase();
+      const target = words.find((w) => !DIG_TYPES.has(w.toUpperCase()));
+      if (target === undefined) return { stderr: 'usage: dig <名前> [種類]\n', code: 1 };
       const name = target.replace(/\.$/, '');
-      const ip = IPV4.test(name) ? null : resolveName(net, name);
-      if (short) return { stdout: ip === null ? '' : `${ip}\n` };
+      const answer = digAnswer(net, name, type);
+      if (short) return { stdout: fromLines(answer.rows.map((r) => r.value)) };
       const lines = [
-        `; <<>> DiG 9.18.28 <<>> ${target}`,
-        `;; ->>HEADER<<- opcode: QUERY, status: ${ip === null ? 'NXDOMAIN' : 'NOERROR'}, id: 4242`,
+        `; <<>> DiG 9.18.28 <<>> ${argv.slice(1).filter((a) => !a.startsWith('+')).join(' ')}`,
+        `;; ->>HEADER<<- opcode: QUERY, status: ${answer.nx ? 'NXDOMAIN' : 'NOERROR'}, id: 4242`,
+        `;; flags: qr aa rd ra; QUERY: 1, ANSWER: ${String(answer.rows.length)}, AUTHORITY: 0, ADDITIONAL: 1`,
         '',
         ';; QUESTION SECTION:',
-        `;${name}.\t\t\tIN\tA`,
-        ...(ip === null ? [] : ['', ';; ANSWER SECTION:', `${name}.\t\t300\tIN\tA\t${ip}`]),
+        `;${name}.\t\t\tIN\t${type}`,
+        ...(answer.rows.length === 0 ? [] : ['', ';; ANSWER SECTION:', ...answer.rows.map((r) => `${r.name}.\t\t${String(r.ttl)}\tIN\t${r.type}\t${r.value}`)]),
         '',
         `;; SERVER: ${addressOf(net, selfName(shell))}#53`,
       ];
       return { stdout: fromLines(lines) };
+    },
+  },
+  {
+    name: 'named-checkzone',
+    summary: 'DNS のゾーンファイルの書き方を確かめる（named-checkzone 名前 ファイル）',
+    handler: ({ argv, shell }) => {
+      const [zone, file] = argv.slice(1).filter((a) => !a.startsWith('-'));
+      if (zone === undefined || file === undefined) return { stderr: 'usage: named-checkzone [-djqvD] [-c class] [-f inputformat] [-F outputformat] [-J filename] [-s (full|relative)] [-t directory] [-w directory] [-k (ignore|warn|fail)] [-n (ignore|warn|fail)] [-m (ignore|warn|fail)] [-r (ignore|warn|fail)] [-i (full|full-sibling|local|local-sibling|none)] [-M (ignore|warn|fail)] [-S (ignore|warn|fail)] [-W (ignore|warn)] [-o filename] zonename [ (filename|-) ]\n', code: 1 };
+      const path = normalize(file.startsWith('/') ? file : `${shell.cwd}/${file}`);
+      if (!exists(shell.vfs, path) || isDir(shell.vfs, path)) return { stderr: `zone ${zone.replace(/\.$/, '')}/IN: loading from master file ${file} failed: file not found\nzone ${zone.replace(/\.$/, '')}/IN: not loaded due to errors.\n`, code: 1 };
+      const r = checkZone(readFile(shell.vfs, path), zone, file);
+      if (!r.ok) return { stderr: fromLines(r.lines), code: 1 };
+      return { stdout: fromLines([`zone ${zone.replace(/\.$/, '')}/IN: loaded serial ${r.serial}`, 'OK']) };
     },
   },
   {

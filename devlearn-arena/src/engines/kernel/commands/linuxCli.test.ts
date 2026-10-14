@@ -57,6 +57,14 @@ describe('grep', () => {
     expect(t.run('grep -r timeout /var/log -c').out).toBe('/var/log/app/a.log:1\n/var/log/app/b.log:1\n');
   });
 
+  it('-B・-A・-C は前後の行も出す。離れた組の間は --、前後の行は - で区切る（-n の時）', () => {
+    const t = open({ files: { '/home/learner': null, '/tmp/l.txt': 'a\nb\nhit 1\nc\nd\ne\nhit 2\n' } });
+    expect(t.run('grep -B1 hit /tmp/l.txt').out).toBe('b\nhit 1\n--\ne\nhit 2\n');
+    expect(t.run('grep -n -A1 hit /tmp/l.txt').out).toBe('3:hit 1\n4-c\n--\n7:hit 2\n');
+    expect(t.run('grep -C2 hit /tmp/l.txt').out).toBe('a\nb\nhit 1\nc\nd\ne\nhit 2\n');
+    expect(t.run('grep -A x hit /tmp/l.txt').err).toBe('grep: x: invalid context length argument\n');
+  });
+
   it('-r が無いままディレクトリを渡すと、そう言う', () => {
     expect(open({ files }).run('grep timeout /var/log').err).toBe('grep: /var/log: Is a directory\n');
   });

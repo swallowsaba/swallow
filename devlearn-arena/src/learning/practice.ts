@@ -144,6 +144,7 @@ export function checkState(check: CheckSpec, input: CheckInput): boolean {
  * 網の判定の式（端末の機械から見て）。` && ` でつなぎ、先頭の `!` で否定。
  * `reach 名前[:ポート] [from 機器]`（行きも帰りも通る。ポートを書けば、そこで待ち受けている。from を書けば、その機器から）/
  * `route 機器 宛先の網 via 次のアドレス`（その機器の経路表に、その行がある）/ `resolve 名前=アドレス`（名前の答え）/
+ * `record 名前 種類 値`（DNS のサーバが読んだゾーンに、そのレコードがある。末尾の . は問わず、MX は優先度を問わない）/
  * `ssh 利用者@名前`（手元の秘密鍵で入った記録があり、今も鍵で入れて、サーバに秘密鍵が置かれていない。setup の sshHosts）。
  * 網の無い機械や、式の誤りは投げる（内容の誤り）
  */
@@ -153,7 +154,7 @@ export function netHolds(shell: ShellState, expr: string): boolean {
     const c = raw.trim();
     const negate = c.startsWith('!');
     const [head = '', arg = '', ...rest] = (negate ? c.slice(1) : c).trim().split(/\s+/);
-    const shape = head === 'route' ? rest.length === 3 && rest[1] === 'via' : head === 'reach' ? rest.length === 0 || (rest.length === 2 && rest[0] === 'from') : rest.length === 0;
+    const shape = head === 'route' ? rest.length === 3 && rest[1] === 'via' : head === 'record' ? rest.length === 2 : head === 'reach' ? rest.length === 0 || (rest.length === 2 && rest[0] === 'from') : rest.length === 0;
     if (!shape || arg === '') throw new Error(`判定の net の式「${c}」: reach 名前[:ポート] [from 機器] か route 機器 宛先 via 次 か resolve 名前=アドレス か ssh 利用者@名前`);
     if (head === 'ssh') {
       if (!shell.sshHosts) throw new Error('判定の net: この実戦の機械に SSH のサーバ（setup の sshHosts）が無い');
@@ -168,6 +169,10 @@ export function netHolds(shell: ShellState, expr: string): boolean {
       const from = rest[1] ?? self;
       if (!net.devices.has(from)) throw new Error(`判定の net の式「${c}」: 機器 ${from} が網に無い`);
       value = ip !== null && roundTrip(net, from, ip, port === undefined ? undefined : Number(port)).kind === 'ok';
+    } else if (head === 'record') {
+      const bare = (n: string): string => n.replace(/\.$/, '').toLowerCase();
+      const [type = '', want = ''] = rest;
+      value = (net.records ?? []).some((r) => bare(r.name) === bare(arg) && r.type === type.toUpperCase() && bare(r.type === 'MX' ? (r.value.split(/\s+/)[1] ?? '') : r.value) === bare(want));
     } else if (head === 'route') {
       const device = net.devices.get(arg);
       if (!device) throw new Error(`判定の net の式「${c}」: 機器 ${arg} が網に無い`);

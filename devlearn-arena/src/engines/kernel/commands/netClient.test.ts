@@ -82,7 +82,7 @@ describe('ping と traceroute', () => {
 const dns = {
   user: 'root',
   files: {
-    '/etc/bind/db.shop.example': '$TTL 300\n$ORIGIN shop.example.\n@    IN  A      203.0.113.10\nwww  IN  CNAME  @\n',
+    '/etc/bind/db.shop.example': '$TTL 300\n$ORIGIN shop.example.\n@    IN  SOA    ns1.shop.example. admin.shop.example. ( 2026100101 3600 900 604800 300 )\n@    IN  NS     ns1.shop.example.\nns1  IN  A      10.0.0.53\n@    IN  A      203.0.113.10\nwww  IN  CNAME  @\n',
   },
   services: { named: { description: 'BIND DNS server', active: true, enabled: true, port: 53, zone: '/etc/bind/db.shop.example' } },
   network: {
@@ -102,7 +102,8 @@ describe('dig と、名前の答えを直す', () => {
     const r = s.run('dig shop.example');
     expect(r.out).toContain('status: NOERROR');
     expect(r.out).toContain(';; ANSWER SECTION:\nshop.example.\t\t300\tIN\tA\t203.0.113.10');
-    expect(s.run('dig +short www.shop.example').out).toBe('203.0.113.10\n');
+    // 別名（CNAME）は、本物と同じく先の名前を辿って並べる
+    expect(s.run('dig +short www.shop.example').out).toBe('shop.example.\n203.0.113.10\n');
     expect(s.run('dig nope.example').out).toContain('status: NXDOMAIN');
   });
 

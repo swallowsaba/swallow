@@ -1078,7 +1078,7 @@
       "title": "DHCP",
       "goal": "アドレスが自動で配られる流れを説明できる",
       "practice": [
-        "simulation"
+        "editor"
       ],
       "prerequisites": [
         "net.b.03"
@@ -1186,7 +1186,7 @@
       "title": "DNS レコード",
       "goal": "A/AAAA/CNAME/MX/TXT を使い分けられる",
       "practice": [
-        "simulation"
+        "editor"
       ],
       "prerequisites": [
         "net.b.06"

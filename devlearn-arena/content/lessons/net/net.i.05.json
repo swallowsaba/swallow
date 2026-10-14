@@ -27,7 +27,9 @@
     "server",
     "dns",
     "service",
-    "web-server"
+    "web-server",
+    "dig",
+    "config-file"
   ],
   "explain": {
     "what": "{{term:dns}} のレコードは、名前に結び付ける情報で、種類ごとに用途が違う。{{term:a-record}}は {{term:ipv4}} のアドレス、{{term:aaaa-record}}は {{term:ipv6}} のアドレス、{{term:cname}} は別の名前の別名、{{term:mx-record}}はメールを受け取る{{term:server}}、{{term:txt-record}}は自由な文字列。",
@@ -150,148 +152,129 @@
     }
   ],
   "practice": {
-    "mode": "simulation",
-    "purpose": "店の名前 shop.example のレコードを整え、shop.example と www.shop.example でページが開き、info@shop.example 宛てのメールが届くようにする。",
-    "environment": "sim-config",
+    "mode": "editor",
+    "purpose": "店の名前 `shop.example` のゾーンファイル `/etc/bind/db.shop.example` にレコードを足す。`shop.example` と `www.shop.example` の両方でページが開き（`www` は `shop.example` の別名にして、アドレスを 1 か所で直せるように）、`info@shop.example` 宛てのメールを、メールのサーバ `mail.shop.example` で受け取れるようにする。保存すると、書き方を `named-checkzone` で確かめ、DNS のサーバ（`named`）に読み直させて、`dig` で問い合わせる。",
+    "environment": "net-client",
     "setup": {
-      "tables": [
-        {
-          "id": "zone",
-          "label": "shop.example のレコード",
-          "columns": [
-            {
-              "id": "name",
-              "label": "名前（@ は shop.example）",
-              "options": [
-                "@",
-                "www",
-                "mail"
-              ]
-            },
-            {
-              "id": "type",
-              "label": "種類",
-              "options": [
-                "A",
-                "AAAA",
-                "CNAME",
-                "MX",
-                "TXT"
-              ]
-            },
-            {
-              "id": "value",
-              "label": "値",
-              "options": [
-                "203.0.113.20",
-                "203.0.113.25",
-                "shop.example.",
-                "mail.shop.example."
-              ]
-            }
-          ],
-          "rows": [
-            {
-              "name": "@",
-              "type": "A",
-              "value": "203.0.113.20"
-            },
-            {
-              "name": "mail",
-              "type": "A",
-              "value": "203.0.113.25"
-            }
-          ]
-        }
+      "user": "root",
+      "cwd": "/root",
+      "dirs": [
+        "/root",
+        "/etc/bind"
       ],
-      "settle": "rows zone>=4",
-      "panels": [
-        {
-          "kind": "kv",
-          "title": "店からの依頼",
-          "rows": [
-            [
-              "ページ",
-              "shop.example と www.shop.example の両方で開く（www は shop.example の別名にして、アドレスを 1 か所で直せるように）"
-            ],
-            [
-              "メール",
-              "info@shop.example 宛てを、メールのサーバ mail.shop.example で受け取る"
-            ]
-          ]
-        },
-        {
-          "kind": "log",
-          "title": "www.shop.example を開いた",
-          "lines": [
-            "名前が見つからない（NXDOMAIN）"
-          ],
-          "when": "!row zone name=www"
-        },
-        {
-          "kind": "log",
-          "title": "info@shop.example へメールを送った",
-          "lines": [
-            "受け取るサーバ（MX）が分からず、送り主に戻された"
-          ],
-          "when": "!row zone type=MX"
-        },
-        {
-          "kind": "log",
-          "title": "確かめた結果",
-          "lines": [
-            "shop.example: 開いた",
-            "www.shop.example → shop.example: 開いた",
-            "info@shop.example: mail.shop.example に届いた"
-          ],
-          "when": "row zone name=www type=CNAME value=shop.example. && row zone name=@ type=MX value=mail.shop.example."
+      "files": {
+        "/etc/bind/db.shop.example": "$TTL 300\n$ORIGIN shop.example.\n@     IN  SOA    ns1.shop.example. admin.shop.example. ( 2026101401 3600 900 604800 300 )\n@     IN  NS     ns1.shop.example.\nns1   IN  A      203.0.113.53\n@     IN  A      203.0.113.20   ; 店のページ\nmail  IN  A      203.0.113.25   ; メールのサーバ\n"
+      },
+      "services": {
+        "named": {
+          "description": "BIND DNS server",
+          "active": true,
+          "enabled": true,
+          "port": 53,
+          "zone": "/etc/bind/db.shop.example"
         }
-      ]
+      },
+      "network": {
+        "self": "ns1",
+        "devices": [
+          {
+            "name": "sw",
+            "kind": "switch",
+            "ports": 4
+          },
+          {
+            "name": "ns1",
+            "addrs": [
+              "203.0.113.53/24"
+            ]
+          },
+          {
+            "name": "web",
+            "addrs": [
+              "203.0.113.20/24"
+            ],
+            "listen": [
+              80
+            ],
+            "body": "<h1>港町の店</h1>"
+          },
+          {
+            "name": "mail",
+            "addrs": [
+              "203.0.113.25/24"
+            ],
+            "listen": [
+              25
+            ]
+          }
+        ],
+        "links": [
+          [
+            "ns1",
+            "sw"
+          ],
+          [
+            "web",
+            "sw"
+          ],
+          [
+            "mail",
+            "sw"
+          ]
+        ]
+      },
+      "edit": {
+        "path": "/etc/bind/db.shop.example",
+        "apply": [
+          "named-checkzone shop.example /etc/bind/db.shop.example && systemctl reload named",
+          "dig www.shop.example",
+          "dig MX shop.example"
+        ]
+      }
     },
     "steps": [
       {
-        "id": "records",
-        "purpose": "確かめた記録を読み、足りないレコードを足す。www は shop.example の別名、メールは mail.shop.example で受け取る。",
+        "id": "www",
+        "purpose": "確かめた結果で、`www.shop.example` が見つからない（`NXDOMAIN`）ことを見る。`www` を `shop.example` の別名（{{term:cname}}）にするレコードを足し、`dig www.shop.example` の答えに `CNAME` と店のアドレス（203.0.113.20）が並ぶようにする。",
         "check": {
-          "kind": "sim",
-          "expr": "row zone name=www type=CNAME value=shop.example. && row zone name=@ type=MX value=mail.shop.example."
+          "kind": "net",
+          "expr": "record www.shop.example CNAME shop.example"
         },
-        "afterward": "www を shop.example の別名（CNAME）にし、メールの受け取り先（`MX`）に mail.shop.example を置いた。ページは 2 つの名前で開き、メールも届く。",
+        "afterward": "`www.shop.example` は `shop.example` の別名になった。`dig` は、別名の先（`shop.example.`）を辿って、店のアドレスまで答える。店が引っ越しても、`@` の `A` を 1 か所直せば `www` も付いてくる。",
         "hints": [
-          "記録で、届かない物は 2 つ。www という名前のレコードと、メールの受け取り先のレコードが無い。",
-          "www は種類 CNAME で値 shop.example.、メールは名前 @ に種類 `MX` で値 mail.shop.example.（末尾の . まで書く）。",
-          "`add zone name=www type=CNAME value=shop.example.` `add zone name=@ type=MX value=mail.shop.example.` の順に入れる。"
+          "1 行に 1 つのレコード: `名前 IN 種類 値`。名前は `$ORIGIN`（`shop.example.`）の前の部分だけ書けばよい。",
+          "名前は `www`、種類は `CNAME`、値は `shop.example.`（末尾の `.` まで書くと、そのままの名前になる）。`A` と `CNAME` を同じ名前に書くと誤りになる。",
+          "`$TTL 300\n$ORIGIN shop.example.\n@     IN  SOA    ns1.shop.example. admin.shop.example. ( 2026101401 3600 900 604800 300 )\n@     IN  NS     ns1.shop.example.\nns1   IN  A      203.0.113.53\n@     IN  A      203.0.113.20   ; 店のページ\nmail  IN  A      203.0.113.25   ; メールのサーバ\nwww   IN  CNAME  shop.example.` と保存する。"
         ],
         "expectedErrors": [
-          "net-dns-records"
+          "net-dns-records",
+          "net-zone-error"
+        ]
+      },
+      {
+        "id": "mail",
+        "purpose": "`info@shop.example` 宛てのメールの受け取り先（`MX`）のレコードを足す。名前は `shop.example`（`@`）、受け取るサーバは `mail.shop.example`。`dig MX shop.example` の答えに、優先度と `mail.shop.example.` が出るようにする。",
+        "check": {
+          "kind": "net",
+          "expr": "record shop.example MX mail.shop.example"
+        },
+        "afterward": "メールを送る側は、`@` の後ろ（`shop.example`）の `MX` を引いて、`mail.shop.example` へ届ける。`MX` の数（優先度）は、受け取るサーバが複数ある時に、小さい方から試す順番。",
+        "hints": [
+          "メールの受け取り先は、メールアドレスの `@` の後ろの名前に `MX` で書く。",
+          "`MX` は `@ IN MX 優先度 受け取るサーバ` の形。優先度の数を書き忘れると、`not a valid number` で読み込まれない。",
+          "`$TTL 300\n$ORIGIN shop.example.\n@     IN  SOA    ns1.shop.example. admin.shop.example. ( 2026101401 3600 900 604800 300 )\n@     IN  NS     ns1.shop.example.\nns1   IN  A      203.0.113.53\n@     IN  A      203.0.113.20   ; 店のページ\nmail  IN  A      203.0.113.25   ; メールのサーバ\nwww   IN  CNAME  shop.example.\n@     IN  MX     10 mail.shop.example.` と保存する。"
         ],
-        "actions": [
-          {
-            "op": "add",
-            "table": "zone",
-            "row": {
-              "name": "www",
-              "type": "CNAME",
-              "value": "shop.example."
-            }
-          },
-          {
-            "op": "add",
-            "table": "zone",
-            "row": {
-              "name": "@",
-              "type": "MX",
-              "value": "mail.shop.example."
-            }
-          }
+        "expectedErrors": [
+          "net-dns-records",
+          "net-zone-error"
         ]
       }
     ]
   },
   "result": {
-    "success": "用途ごとに正しい種類のレコードを置き、ページの 2 つの名前とメールが全て届くようにできた。",
-    "partial": "ヒントを使ってレコードを整えられた。次は、www を `A` ではなく CNAME にする良さを説明してみよう。",
-    "retry": "まだ届かない物がある。確かめた記録で、どの名前の、どの種類のレコードが足りないかを見よう。"
+    "success": "ゾーンファイルに `CNAME` と `MX` を書き、`named-checkzone` と `dig` で確かめて、ページとメールの両方を届けられた。",
+    "partial": "ヒントを使ってレコードを整えられた。次は、`dig +short www.shop.example` で、別名を辿る様子を短く見てみよう。",
+    "retry": "まだレコードが足りない。確かめた結果の `dig` で、`NXDOMAIN`（名前が無い）か `ANSWER: 0`（その種類が無い）かを見て、足りない行を足そう。"
   },
   "summary": {
     "points": [

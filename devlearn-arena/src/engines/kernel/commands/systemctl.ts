@@ -2,7 +2,7 @@ import type { CommandResult, CommandSpec, ShellState } from '../registry';
 import {
   restartService, serviceOf, setEnabled, startService, stopService, unitName, type ConfigLoader, type ServiceResult, type TextReader, type ServiceTable,
 } from '../services';
-import { exists, isDir, readFile } from '../vfs';
+import { exists, isDir, readFile, writeFile } from '../vfs';
 import { withZones } from '../dnsZones';
 import { readWebConfig } from '../webConfig';
 import { fromLines } from './args';
@@ -91,7 +91,12 @@ function run(shell: ShellState, verb: string, units: readonly string[], op: (t: 
   }
   // DNS のサーバを動かした・読み直した時は、ゾーンファイルを読んで名前の答えにする
   const net = withZones({ ...shell, services: table }).net;
-  return { patch: { services: table, ...(net !== shell.net ? { net } : {}) }, ...(out.length ? { stdout: fromLines(out) } : {}) };
+  // DHCP のサーバを動かした時は、貸した記録をリースのファイルに書く
+  let vfs = shell.vfs;
+  for (const s of table.services.values()) {
+    if (s.dhcp && s.dhcpLeases !== undefined && s !== shell.services?.services.get(s.name)) vfs = writeFile(vfs, s.dhcp.leases, s.dhcpLeases, true);
+  }
+  return { patch: { services: table, ...(net !== shell.net ? { net } : {}), ...(vfs !== shell.vfs ? { vfs } : {}) }, ...(out.length ? { stdout: fromLines(out) } : {}) };
 }
 
 /** サービスの設定ファイルを、仮想のファイルから読む */

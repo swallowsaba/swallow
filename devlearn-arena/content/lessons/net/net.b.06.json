@@ -163,7 +163,7 @@
       ],
       "files": {
         "/root/memo.txt": "店の Web サーバは 10/1 に 203.0.113.20 へ引っ越した。古い 203.0.113.10 は止めた。\n",
-        "/etc/bind/db.shop.example": "$TTL 300\n$ORIGIN shop.example.\n@    IN  A      203.0.113.10\nwww  IN  CNAME  @\n"
+        "/etc/bind/db.shop.example": "$TTL 300\n$ORIGIN shop.example.\n@    IN  SOA    ns1.shop.example. admin.shop.example. ( 2026100101 3600 900 604800 300 )\n@    IN  NS     ns1.shop.example.\nns1  IN  A      10.0.0.53\n@    IN  A      203.0.113.10\nwww  IN  CNAME  @\n"
       },
       "services": {
         "named": {

@@ -9,9 +9,12 @@
  *   設定の誤りでは起動に失敗し、理由をログに書く。待ち受けるポートは設定から決まる
  * - 動いている別のサービスと同じポートでは待ち受けられない（起動に失敗する）
  * - ログインを覚えるアプリ（session）は、動かす時に php.ini を読み、札（Cookie）の決まりにする（src/engines/http/session.ts）
+ * - DHCP のサーバ（dhcp）は、動かす時に dhcpd.conf を読み、待っている機械にアドレスを貸す（src/engines/net/dhcp.ts）。
+ *   誤りのある設定では起動に失敗し、dhcpd の言い方でログに書く。貸した記録は dhcpLeases（リースのファイルの中身）に持つ
  */
 import type { Route } from '@/engines/http/http';
 import { readSessionIni, type SessionApp, type SessionCookie } from '@/engines/http/session';
+import { DHCP_EPOCH, leasesText, parseDhcpConf, serveLeases, type DhcpClient } from '@/engines/net/dhcp';
 import type { ConfigResult, Listen, ServerBlock } from './webConfig';
 
 export type ActiveState = 'active' | 'inactive' | 'failed';
@@ -51,6 +54,10 @@ export interface Service {
   session?: SessionApp;
   /** 動かした時に php.ini から読んだ札の決まり（動いている間だけ意味がある） */
   cookie?: SessionCookie;
+  /** DHCP のサーバ: 設定・リースのファイルの場所・待つ口・借りに来る機械・網で既に使われているアドレス */
+  dhcp?: { config: string; leases: string; iface: string; clients: readonly DhcpClient[]; inUse: readonly string[] };
+  /** 動かした時に貸した記録（リースのファイルの中身。systemctl がファイルに書く） */
+  dhcpLeases?: string;
   /** ログ（journalctl で読む） */
   log: readonly string[];
 }
@@ -120,10 +127,10 @@ export function portsOf(s: Service): number[] {
   return [...(s.listens ?? []).map((l) => l.port), ...(s.port !== undefined && !s.config ? [s.port] : [])];
 }
 
-function fail(table: ServiceTable, s: Service, why: LogLine): ServiceResult {
+function fail(table: ServiceTable, s: Service, why: LogLine | LogLine[]): ServiceResult {
   const t = update(table, { ...s, active: 'failed' }, [
     `Starting ${s.name}.service - ${s.description}...`,
-    why,
+    ...(Array.isArray(why) ? why : [why]),
     `${s.name}.service: Main process exited, code=exited, status=1/FAILURE`,
     `${s.name}.service: Failed with result 'exit-code'.`,
     `Failed to start ${s.name}.service - ${s.description}.`,
@@ -143,13 +150,25 @@ export function startService(table: ServiceTable, raw: string, load?: ConfigLoad
     ready = { ...s, listens: conf.listens, servers: conf.servers };
   }
   if (s.portConfig) ready = { ...ready, port: portFromConfig(s.portConfig, read ? read(s.portConfig.file) : null) };
+  let served: LogLine[] = [];
+  if (s.dhcp) {
+    const from = `dhcpd[${String(800 + table.tick)}]`;
+    const text = read ? read(s.dhcp.config) : null;
+    if (text === null) return fail(table, s, { from, text: `Can't open ${s.dhcp.config}: No such file or directory` });
+    const conf = parseDhcpConf(text, s.dhcp.config);
+    if (!conf.ok) return fail(table, s, conf.lines.map((l) => ({ from, text: l })));
+    const run = serveLeases(conf.config, s.dhcp.clients, s.dhcp.inUse, s.dhcp.iface);
+    // 貸した時刻は、ログの時刻と同じ数え方（同じ操作からは同じ記録）
+    ready = { ...ready, dhcpLeases: leasesText(run, conf.config.leaseTime, DHCP_EPOCH + table.tick) };
+    served = [{ from, text: `Listening on LPF/${s.dhcp.iface}/02:42:c0:a8:01:05/192.168.1.0/24` }, ...run.log.map((l) => ({ from, text: l }))];
+  }
   // php.ini が無ければ、PHP と同じく既定の決まりで動く
   if (s.session) ready = { ...ready, cookie: readSessionIni((read ? read(s.session.ini) : null) ?? '') };
   for (const port of portsOf(ready)) {
     const other = [...table.services.values()].find((o) => o.name !== s.name && o.active === 'active' && portsOf(o).includes(port));
     if (other) return fail(table, s, { from: `${s.name}[${String(800 + table.tick)}]`, text: `${s.name}: [emerg] bind() to 0.0.0.0:${String(port)} failed (98: Address already in use)` });
   }
-  return { ok: true, table: update(table, { ...ready, active: 'active' }, [`Starting ${s.name}.service - ${s.description}...`, `Started ${s.name}.service - ${s.description}.`]) };
+  return { ok: true, table: update(table, { ...ready, active: 'active' }, [`Starting ${s.name}.service - ${s.description}...`, `Started ${s.name}.service - ${s.description}.`, ...served]) };
 }
 
 export function stopService(table: ServiceTable, raw: string): ServiceResult {
