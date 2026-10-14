@@ -1,10 +1,8 @@
 ﻿devlearn-arena/CLAUDE.md を最初に全部読め。規則が全てに優先する。
-次に devlearn-arena/docs/README.md の「Claude Code が読む順番」に従い、今の Phase に関係する仕様書を読め。
-今の Phase は、devlearn-arena/docs/progress/ にある記録のうち「次への条件を満たした」と書かれた最大の番号の次だ。記録が無ければ Phase 0 だ。途中まで進んだ Phase があれば、その続きから進めろ。
-docs/decisions.md の「未決」に、利用者の判断が書き込まれた項目があれば、その判断に従って仕様書と実装を直してから進め。
-docs/development-plan.md の Phase を順に進めろ。一度に全部を作らず、仕様確認 → 小さく実装 → 起動 → テスト → 画面確認 → 修正、を繰り返せ。
-意味のある単位でコミットしろ。各コミットの前に devlearn-arena で npm run typecheck と npm run lint と npm run test を通せ。
-Phase の完成条件・テスト・視覚確認を満たしたら、docs/progress/phase-<番号>.md に結果を記録し、コミットして、次の Phase に進め。
-仕様書と実装が食い違う、または仕様どおりに作れない場合は、docs/decisions.md の「未決」に「問題 → 影響 → 変更案」を書いてコミットし、DECISIONNEEDED とだけ出力して終われ。
-確認を求めるな。止まるのは、仕様の判断が必要な時と、全 Phase が終わった時だけだ。
-Phase 15 まで全て「次への条件を満たした」と記録されていれば、ALLDONE とだけ出力して終われ。
+次に devlearn-arena/REWORK-PRACTICE.txt を読め。実戦（レッスンの右側の画面）の全面的な作り直しの指示だ。
+次に devlearn-arena/docs/progress/rework-practice.md を読め。どの分野まで終わったかの記録だ。
+記録の続きの分野から、REWORK-PRACTICE.txt の【4】進め方 のとおりに作り直せ。
+一度に全部を作り直すな。分野ごとに、撮影して画面を自分の目で確かめ、npm run typecheck と npm run lint と npm run test を通し、docs/progress/rework-practice.md に追記してコミットしろ。
+確認を求めず、止まるな。
+仕様書だけでは決められない事が出たら、docs/decisions.md の未決に「問題 → 影響 → 変更案」を書いてコミットし、DECISIONNEEDED とだけ出力して終われ。
+全ての分野の作り直しが終わっていれば、ALLDONE とだけ出力して終われ。
