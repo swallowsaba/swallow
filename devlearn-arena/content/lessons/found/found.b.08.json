@@ -27,7 +27,11 @@
     "mb",
     "gb",
     "utf-8",
-    "shift-jis"
+    "shift-jis",
+    "iconv",
+    "xxd",
+    "command",
+    "terminal"
   ],
   "explain": {
     "what": "コンピュータは、全ての情報を 0 と 1 の並び（{{term:binary}}）で表す。0 か 1 の 1 けたを{{term:bit}}、8 ビットのまとまりを{{term:byte}}と呼ぶ。文字も決まった表で 0 と 1 に置き換える。この表が{{term:character-encoding}}。",
@@ -144,111 +148,78 @@
     }
   ],
   "practice": {
-    "mode": "simulation",
-    "purpose": "文字化けしたファイルを、正しい文字コードで読み直し、本文を読めるようにする。",
-    "environment": "sim-config",
+    "mode": "terminal",
+    "purpose": "隣の町の古い機械から、祭りのお知らせ `matsuri.txt` が届いた。`cat` で開くと、文字が記号の並びに化ける。どの{{term:character-encoding}}で書かれたかを本物の{{term:command}}で調べ、{{term:utf-8}}に読み直したファイル `matsuri-utf8.txt` を作る。最後に、同じ文字「こ」が 2 つの文字コードで何{{term:byte}}になるかを、0 と 1 で見比べる。",
+    "environment": "linux-basic",
     "setup": {
-      "fields": [
-        {
-          "id": "enc",
-          "label": "読む文字コード",
-          "options": [
-            "Shift_JIS",
-            "UTF-8",
-            "EUC-JP"
-          ],
-          "value": "Shift_JIS",
-          "note": "ファイルを読む時に使う表"
-        }
-      ],
-      "panels": [
-        {
-          "kind": "text",
-          "title": "表示（Shift_JIS で読んだ）",
-          "body": "縺薙ｓ縺ｫ縺｡縺ｯ縲よｸｯ縺ｮ逾ｭ繧翫・ｯ蝨滓屆譌･縺ｧ縺吶・",
-          "when": "field enc=Shift_JIS"
-        },
-        {
-          "kind": "text",
-          "title": "表示（EUC-JP で読んだ）",
-          "body": "・＜・羝・腑・ャ・с・",
-          "when": "field enc=EUC-JP"
-        },
-        {
-          "kind": "text",
-          "title": "表示（UTF-8 で読んだ）",
-          "body": "こんにちは。港の祭りは土曜日です。",
-          "when": "field enc=UTF-8"
-        },
-        {
-          "kind": "kv",
-          "title": "ファイルの情報",
-          "rows": [
-            [
-              "名前",
-              "祭りのお知らせ.txt"
-            ],
-            [
-              "大きさ",
-              "51 バイト"
-            ],
-            [
-              "書いた機械の設定",
-              "文字コード UTF-8 で保存"
-            ]
-          ]
-        },
-        {
-          "kind": "table",
-          "title": "文字「こ」の 0 と 1",
-          "columns": [
-            "文字コード",
-            "0 と 1 の並び"
-          ],
-          "rows": [
-            [
-              "UTF-8",
-              "11100011 10000001 10010011"
-            ],
-            [
-              "Shift_JIS",
-              "10000010 10110001"
-            ]
-          ]
-        }
-      ]
+      "hostname": "city-hall",
+      "files": {
+        "/home/learner/matsuri.txt": "こんにちは。港の祭りは土曜日です。\n会場は港の広場、朝 10 時から。\n"
+      },
+      "encodings": {
+        "/home/learner/matsuri.txt": "SHIFT_JIS"
+      }
     },
     "steps": [
       {
-        "id": "reread",
-        "purpose": "ファイルの情報で、書いた側の文字コードを確かめ、読む文字コードを合わせる。",
+        "id": "guess",
+        "purpose": "`cat matsuri.txt` で化けているのを見る。`file matsuri.txt` で UTF-8 の文字（`UTF-8 text`）ではないことを確かめ、`nkf -g matsuri.txt` で書いた側の文字コードの見当を付けて、その名前を答える。",
         "check": {
-          "kind": "sim",
-          "expr": "field enc=UTF-8"
+          "kind": "answer",
+          "equals": "Shift_JIS"
         },
-        "afterward": "書いた時と同じ UTF-8 で読み直すと、本文が正しく出た。ファイルは壊れていなかった。読む表が違っていただけ。",
+        "afterward": "`file` は `Non-ISO extended-ASCII text`（UTF-8 ではない、何かの 8 ビットの文字）と言い、`nkf -g` は `Shift_JIS` と見当を付けた。ファイルは壊れていない。この{{term:terminal}}は UTF-8 の表で読むので、{{term:shift-jis}}の表で書いた 0 と 1 が別の文字（読めない所は `?`）になっていた。",
         "hints": [
-          "文字化けは、書いた時と読む時の表の食い違い。まず、書いた側がどの文字コードで保存したかを見よう。",
-          "ファイルの情報に「書いた機械の設定」がある。読む文字コードの欄を、それと同じにする。",
-          "`set enc UTF-8` と入れる。"
+          "{{term:mojibake}}は、書いた時と読む時の表の食い違い。まず、書いた側の文字コードを調べる。",
+          "`file matsuri.txt` は中身の種類を言う。`nkf -g matsuri.txt` は、日本語の文字コードの見当を付けて、名前を 1 語で出す。",
+          "`nkf -g matsuri.txt` を打ち、`Shift_JIS` と答える。"
         ],
         "expectedErrors": [
-          "found-mojibake"
+          "found-encoding-misread"
+        ]
+      },
+      {
+        "id": "convert",
+        "purpose": "`iconv` で、元の文字コード（`-f`）から UTF-8（`-t`）へ読み直し、`>` で `matsuri-utf8.txt` に書く。`cat matsuri-utf8.txt` で本文が読めることを確かめる。",
+        "check": {
+          "kind": "fs",
+          "path": "/home/learner/matsuri-utf8.txt",
+          "contains": "港の祭りは土曜日です"
+        },
+        "afterward": "{{term:iconv}}は、Shift_JIS の表で 0 と 1 を文字に戻し、その文字を UTF-8 の表で 0 と 1 に書き直す。本文の文字は 1 つも変わらず、0 と 1 の並びだけが変わった。元の `matsuri.txt` もそのまま残っている。",
+        "hints": [
+          "`iconv -f 元の文字コード -t 新しい文字コード ファイル` で、読み直した本文が出る。`>` を付けると、それをファイルに書ける。",
+          "元の文字コードは前の段で調べた `SHIFT_JIS`、新しい文字コードはこの端末の `UTF-8`。",
+          "`iconv -f SHIFT_JIS -t UTF-8 matsuri.txt > matsuri-utf8.txt` と `cat matsuri-utf8.txt` を打つ。"
         ],
-        "actions": [
-          {
-            "op": "set",
-            "field": "enc",
-            "value": "UTF-8"
-          }
+        "expectedErrors": [
+          "found-iconv-illegal",
+          "found-iconv-unknown"
+        ]
+      },
+      {
+        "id": "bytes",
+        "purpose": "同じ文字「こ」の 0 と 1 を見比べる。{{term:xxd}}の `-b` は、ファイルの中身を 0 と 1 で、8 けた（8 {{term:bit}}＝1 バイト）ずつ区切って出す。`xxd -b -l 2 matsuri.txt` と `xxd -b -l 3 matsuri-utf8.txt` を打ち、UTF-8 では「こ」1 文字が何バイトかを答える。",
+        "check": {
+          "kind": "answer",
+          "equals": "3"
+        },
+        "afterward": "Shift_JIS の「こ」は `10000010 10110001` の 2 バイト（16 ビット）、UTF-8 の「こ」は `11100011 10000001 10010011` の 3 バイト（24 ビット）。同じ文字でも、表が違えば 0 と 1 も長さも違う。だから `wc -c matsuri.txt matsuri-utf8.txt` で数えると、同じ本文が 66 バイトと 96 バイトになる。",
+        "hints": [
+          "`xxd -b` は 0 と 1 を 8 けた（1 バイト）ずつ、空白で区切って出す。`-l` は見るバイトの数。",
+          "`xxd -b -l 3 matsuri-utf8.txt` の 3 つの組が「こ」。`-l 6` にすると、4 つ目から次の文字「ん」になるのが見える。",
+          "`xxd -b -l 2 matsuri.txt` と `xxd -b -l 3 matsuri-utf8.txt` を打ち、`3` と答える。"
+        ],
+        "expectedErrors": [
+          "found-bytes-misread"
         ]
       }
     ]
   },
   "result": {
-    "success": "書いた側の文字コードを確かめて読み直し、文字化けを直せた。",
-    "partial": "ヒントを使って文字化けを直せた。次は、なぜ化けるのかを 0 と 1 の並びで説明してみよう。",
-    "retry": "まだ本文が化けている。表で、同じ「こ」でも文字コードによって 0 と 1 の並びが違うことを確かめよう。"
+    "success": "`file`・`nkf -g` で書いた側の文字コードを調べ、`iconv` で UTF-8 に読み直して文字化けを直せた。同じ文字でも、文字コードで 0 と 1 の並びもバイトの数も違うことを `xxd -b` で確かめた。",
+    "partial": "ヒントを使って文字化けを直せた。次は、`wc -c` で 2 つのファイルの大きさを比べ、なぜ違うのかを 0 と 1 の並びで説明してみよう。",
+    "retry": "まだ本文が化けている。`nkf -g` で書いた側の文字コードを確かめ、`iconv -f` にその名前を書こう。"
   },
   "summary": {
     "points": [

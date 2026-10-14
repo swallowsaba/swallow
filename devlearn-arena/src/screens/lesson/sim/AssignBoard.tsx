@@ -44,6 +44,9 @@ export function AssignBoard({ s, act, expr }: BoardProps<AssignState>) {
   const pool = s.setup.items.filter((i) => i.multi === true || (s.placed[i.id] ?? []).length === 0);
   const timed = s.setup.items.some((i) => i.time !== undefined);
   const item = (id: string) => s.setup.items.find((i) => i.id === id);
+  // 札の大きさの単位: 容量のある枠の単位が 1 つに揃っていれば、それを付ける（「2」ではなく「2 GB」）
+  const units = [...new Set(s.setup.slots.filter((x) => x.capacity !== undefined).map((x) => x.unit ?? ''))];
+  const sizeUnit = units.length === 1 && units[0] !== '' ? ` ${units[0] ?? ''}` : '';
   let wrong: string[] = [];
   try {
     wrong = expr !== null && isSettled(s) && !holds(s, expr) ? misplaced(s, expr) : [];
@@ -67,7 +70,7 @@ export function AssignBoard({ s, act, expr }: BoardProps<AssignState>) {
         onKeyDown={(e) => drag.lift(e, { item: id, from })}
       >
         <span className="sim-card-label">{it?.label ?? id}</span>
-        {it?.size !== undefined ? <span className="sim-card-time num">{it.size}</span> : null}
+        {it?.size !== undefined ? <span className="sim-card-time num">{it.size}{sizeUnit}</span> : null}
         {it?.note ? <span className="sim-card-needs">{it.note}</span> : null}
       </button>
     );

@@ -1,4 +1,5 @@
 import { basename, dirname, normalize, resolve, ROOT } from './path';
+import { byteLength } from './bytes';
 import { defaultMeta, type FileMeta } from './perm';
 
 /** size は見かけの大きさ（バイト）。中身を持たない大きなファイル（ログ・DB）を表す。無ければ中身の大きさ */
@@ -151,13 +152,13 @@ export function appendFile(state: VfsState, path: string, content: string): VfsS
   const before = node?.content ?? '';
   const written = writeFile(state, p, before + content);
   // 見かけの大きさを持つファイルは、足した分だけ大きくなる
-  return node?.size === undefined ? written : setSize(written, p, node.size + new TextEncoder().encode(content).length);
+  return node?.size === undefined ? written : setSize(written, p, node.size + byteLength(content));
 }
 
 /** ファイルの大きさ（バイト）。見かけの大きさがあればそれ、無ければ中身の大きさ */
 export function fileSize(node: VfsNode | undefined): number {
   if (node?.kind !== 'file') return 0;
-  return node.size ?? new TextEncoder().encode(node.content).length;
+  return node.size ?? byteLength(node.content);
 }
 
 /** 見かけの大きさを決める（中身は変えない）。書き直すと中身の大きさに戻る */

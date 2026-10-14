@@ -370,3 +370,38 @@
 - 原則 3・4 は画面の操作の決まりなので、SQL だけの db の分野には当たらない
 
 検査: `npm run typecheck`・`npm run lint`・`npm run test`（165 ファイル・1800 件。試し台を除く）・`npm run content:check` が通った。
+
+## found（2026-10-15）
+
+8 本の実戦のうち、本物の道具がある 4 本が端末（found.b.04〜b.06 は前から、found.b.08 を作り直した）になった。打つコマンドが無い概念の 4 本（found.b.01 部品の配線・found.b.02 メモリとストレージの役割分担・found.b.03 OS の資源の割り振り・found.b.07 網の全体像の配線）は、画面の操作（つなぐ・置く）のまま、原則 3〜5 に合わせて直した。
+
+| レッスン | 直す前 | 直した後 | 打つ物・直した所 |
+|---|---|---|---|
+| found.b.08 2 進数・文字コード・データ量 | sim-config（読む文字コードの欄） | terminal | 市役所の機械 `city-hall` に古い機械から届いた `matsuri.txt`（Shift_JIS）を `cat` すると化ける → `file`（`Non-ISO extended-ASCII text`）・`nkf -g` で `Shift_JIS` と答える → `iconv -f SHIFT_JIS -t UTF-8 matsuri.txt > matsuri-utf8.txt` → `xxd -b -l 2`・`-l 3` で「こ」の 0 と 1（`10000010 10110001` と `11100011 10000001 10010011`）を見比べ、UTF-8 の「こ」が 3 バイトと答える |
+| found.b.07 ネットワークとインターネットの全体像 | sim-connect | sim-connect（そのまま） | 確かめるボタンを「ping 家のもう 1 台」「ping サーバ」にした（本物の道具の名をボタンに出す） |
+| found.b.03 OS の役割 | sim-assign | sim-assign（そのまま） | 音楽が使っている「メモリ 1 番」に動かせない理由（`keep`）を書いた。前は、共通の作り直しで札が枠から枠へ移るようになってから、使用中のメモリを黙って別のアプリへ移せてしまい、取り合いのエラー（`os-conflict`）が出なくなっていた。今は、ドラッグすると枠が赤く光り「使っている最中」の理由が出る |
+| found.b.01・found.b.02 | sim-connect・sim-assign | そのまま | b.02 の想定エラーから、今の模擬では出ない `sim-taken` を外した |
+| found.b.04〜b.06 | terminal | terminal（そのまま） | 本物の Linux のコマンド |
+
+模擬に足した物・直した物（単体テストあり）:
+
+- ファイルの 0 と 1（`src/engines/kernel/bytes.ts`・`bytes.test.ts`）: 中身は文字列のまま持ち、UTF-8 として読めないバイトは 1 バイトを U+DC80〜U+DCFF の 1 文字に置く（Python の surrogateescape と同じ考え）。パイプ・cp・保存を通しても元のバイトに戻る。文字コードは UTF-8・SHIFT_JIS（SJIS・CP932 ほかの別名）・EUC-JP・ASCII。Shift_JIS と EUC-JP の表は、ブラウザの読み方（`TextDecoder`）から初めて使う時に作る（新しい依存は足していない）
+- setup の `encodings`（場所 → `SHIFT_JIS`・`EUC-JP`）: `files` の中身を、その文字コードの 0 と 1 で置く（古い機械から届いたファイル）
+- `file`（`ASCII text`・`Unicode text, UTF-8 text`・`Non-ISO extended-ASCII text`・`ISO-8859 text`・`with no line terminators`・`with CRLF line terminators`・シェルと Python のスクリプト・`-i`・`-b`・`--mime-encoding`。名前を揃えて並べる）・`iconv`（`-f`・`-t`・`-o`・`-l`。読めない所は `illegal input sequence at position N` で止まり、そこまでは書き出す。知らない名前は本物の glibc の文で断る）・`nkf`（`-g`・`--guess`（改行の形も添える）・`-w`・`-s`・`-e`）・`xxd`（16 進数・`-b`・`-l`・`-s`・`-c`・`-g`・`-p`・`-u`）（`src/engines/kernel/commands/encoding.ts`・`encoding.test.ts`）
+- 直した不具合: `wc -c` が UTF-16 の数（日本語 1 文字を 1）で数えていた。本物と同じくバイトで数え、文字を数える `-m` を足した。ファイルの大きさ（`ls -l` など）も同じ数え方にした（先に失敗するテストを `linuxCli.test.ts` に書いた）
+- 端末の表示: 読めないバイトは 1 バイトを `?` の 1 文字で出す。初めは `�`（U+FFFD）で出したが、撮影で、多くの書体に `�` が無く代わりの書体の幅の広い字（13.6px。升目は 8.4px）で描かれて隣と重なり、読めなかった
+- 置くの盤（`AssignBoard`）: 容量のある枠の単位が揃っていれば、札の大きさに単位を付ける（「2」→「2 GB」）
+- 撮影の台本（`tools/scenarios/simDrive.mjs` の `wrongAction`）: 置くの誤りは、動かせない札を別の枠へ動かすか、容量を超える札を入れる（前は、既に入っている枠へもう一度入れる操作を選び、何も起きない画面を撮っていた）
+
+内容: エラーの案内（`content/errors/found.json`）の `found-mojibake` を、本物の出力と答えに当てた `found-encoding-misread`・`found-iconv-illegal`（`iconv: illegal input sequence at position`）・`found-iconv-unknown`（`iconv: conversion from`）・`found-bytes-misread` にした。`os-conflict` を `keep` の文に当てた。用語集に `iconv`・`xxd` を足した。`docs/lessons/found.md` の実戦の設計（b.03・b.07・b.08）、`docs/curriculum.md` の記号（模 → 端）、目録を直した。
+
+画面の確かめ（`tools/scenarios/rework.mjs`、1920×1080。端末は最後のヒントのコマンドを本物のキー入力で打った。画面の操作は本物のマウスのドラッグ）:
+
+- `rw-found.b.08-start` / `-mid` / `-done`: 原則 1（`cat` の化けた行・`file` の `Non-ISO extended-ASCII text`・`nkf -g` の `Shift_JIS`・誤った `-f` の `iconv: illegal input sequence at position 0`（赤）・`xxd` の 16 進数と読める文字・`iconv` の後の読める本文・`xxd -b` の 0 と 1）・原則 5（目的の `matsuri.txt`・`matsuri-utf8.txt`・「こ」・`-f`・`-t` が端末に同じ名前で出る）を満たす。誤った答え（`UTF-8`）には `found-encoding-misread` の案内が出る。3 つの段が全て達成になる
+- `rw-found.b.01-start` / `-drag` / `-wrong` / `-done`: 原則 3（部品から部品へドラッグして線を引く。ボタンは「「2+3」を打つ」「結果を記憶に残す」）・原則 4（つないだ線に光の粒が流れる。キーボードから画面へは線が引けず、赤い印の理由が出る。届いた道すじが出る）・原則 5（目的の入力・処理・出力・記憶が部品の名前の下に出る）を満たす。2 つの段が達成になる
+- `rw-found.b.02-start` / `-drag` / `-wrong` / `-done`: 原則 3（札を持ち上げると受け口の枠が光る）・原則 4（入れると枠の数とメーターが動き、かかる時間の合計が動く。去年の動画を作業机へ入れると、枠が赤く光り「入りきらない（容量 4GB、入れると 8GB）」が出る）・原則 5（目的の作業机（メモリ）・倉庫（ストレージ）が枠の名前に出る）を満たす。2 つの段が達成になる
+- `rw-found.b.03-start` / `-drag` / `-wrong` / `-done`: 原則 3・4（「メモリ 1 番」をブラウザへドラッグすると、ブラウザの枠が赤く光り「音楽が使っている最中」の理由が出て、札は音楽に残る）・原則 5（目的のブラウザ・表計算・音楽・メモリ 1 番〜4 番が枠と札に出る）を満たす。2 つの段が達成になる
+- `rw-found.b.07-start` / `-drag` / `-wrong` / `-done`: 原則 3（ボタンは「ping 家のもう 1 台」「ping サーバ」）・原則 4（光の粒・引けない線の赤い理由・届いた道すじ「パソコン → ルータ → プロバイダ → インターネット → サーバ」）・原則 5（目的のパソコン・サーバ・ルータ・プロバイダが部品の名前に出る）を満たす。2 つの段が達成になる
+- 残した事: `sim-taken`（`content/errors/found.json`）は今の模擬では出ないが、mon.b.01 が想定エラーに書いているので、mon の分野で直す
+
+検査: `npm run typecheck`・`npm run lint`・`npm run test`（167 ファイル・1821 件。試し台を除く）・`npm run content:check` が通った。

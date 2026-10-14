@@ -365,7 +365,7 @@
       "title": "2 進数・文字コード・データ量",
       "goal": "ビットとバイト、文字化けの理由を説明できる",
       "practice": [
-        "simulation"
+        "terminal"
       ],
       "prerequisites": [
         "found.b.01"

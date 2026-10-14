@@ -2,6 +2,7 @@ import { resolve } from '../path';
 import { compilePattern } from '../regex';
 import type { CommandSpec, ShellState } from '../registry';
 import { allows } from '../perm';
+import { byteLength } from '../bytes';
 import { isDir, list, metaOf, readFile, stat } from '../vfs';
 import { currentGroups, currentUser, denied } from './perm';
 import { fromLines, parseArgs, toLines } from './args';
@@ -189,10 +190,10 @@ export const textCommands: CommandSpec[] = [
     summary: '行数・単語数・バイト数を数える',
     handler: ({ argv, shell, stdin }) => {
       const { flags, operands } = parseArgs(argv);
-      // 出す数（-l・-w・-c。無ければ 3 つとも）
-      const picked = (['l', 'w', 'c'] as const).filter((f) => flags.has(f));
+      // 出す数（-l・-w・-m・-c。無ければ行・語・バイトの 3 つ）。-c はバイト、-m は文字（本物と同じ）
+      const picked = (['l', 'w', 'm', 'c'] as const).filter((f) => flags.has(f));
       const fields = picked.length > 0 ? picked : (['l', 'w', 'c'] as const);
-      const count = (text: string): number[] => fields.map((f) => (f === 'l' ? toLines(text).length : f === 'w' ? text.split(/\s+/).filter((w) => w !== '').length : text.length));
+      const count = (text: string): number[] => fields.map((f) => (f === 'l' ? toLines(text).length : f === 'w' ? text.split(/\s+/).filter((w) => w !== '').length : f === 'm' ? [...text].length : byteLength(text)));
       if (operands.length === 0) {
         // 標準入力は名前を出さない。数を 2 つ以上出す時は、本物と同じく 7 桁に揃える
         const n = count(stdin);

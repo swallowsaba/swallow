@@ -6,6 +6,7 @@ import { cronCommands } from './cron';
 import { socketCommands } from './sockets';
 import { dhcpServerCommands } from './dhcpServer';
 import { editorCommands } from './editor';
+import { encodingCommands } from './encoding';
 import { fsCommands } from './fs';
 import { ghCommands } from './gh';
 import { gitCommands } from './git';
@@ -43,6 +44,7 @@ export function createDefaultRegistry(): CommandRegistry {
     ...netToolCommands,
     ...textCommands,
     ...textToolCommands,
+    ...encodingCommands,
     ...jqCommands,
     ...permCommands,
     ...shellRunCommands,

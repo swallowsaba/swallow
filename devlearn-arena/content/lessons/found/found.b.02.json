@@ -259,7 +259,6 @@
           "「昨日の会議の資料（使い終わった）」を「倉庫（ストレージ）」へドラッグして入れる。"
         ],
         "expectedErrors": [
-          "sim-taken",
           "sim-overflow"
         ],
         "actions": [

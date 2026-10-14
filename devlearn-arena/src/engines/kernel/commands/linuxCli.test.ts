@@ -154,6 +154,13 @@ describe('wc（本物と同じ形）', () => {
     expect(t.run('cat a.txt | wc').out).toBe('      2       3      14\n');
   });
 
+  it('-c はバイトを数える（UTF-8 の日本語は 1 文字 3 バイト）。-m は文字を数える', () => {
+    const t = open({ files: { '/home/learner': null, '/home/learner/j.txt': 'こんにちは\n' } });
+    expect(t.run('wc -c j.txt').out).toBe('16 j.txt\n');
+    expect(t.run('wc -m j.txt').out).toBe('6 j.txt\n');
+    expect(t.run('cat j.txt | wc -c').out).toBe('16\n');
+  });
+
   it('無いファイルは本物と同じ文で知らせ、ほかのファイルは数える', () => {
     const t = open({ files });
     const r = t.run('wc -l nope.txt b.txt');

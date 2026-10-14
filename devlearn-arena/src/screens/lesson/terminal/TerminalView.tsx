@@ -2,6 +2,7 @@ import { forwardRef, useEffect, useImperativeHandle, useRef } from 'react';
 import { FitAddon } from '@xterm/addon-fit';
 import { Terminal } from '@xterm/xterm';
 import '@xterm/xterm/css/xterm.css';
+import { forDisplay } from '@/engines/kernel/bytes';
 import { complete } from '@/engines/kernel/completion';
 import {
   backspace, createLineState, deleteForward, displayWidth, expandBang, historyMove, insert,
@@ -151,7 +152,8 @@ export const TerminalView = forwardRef<TerminalHandle, Props>(function TerminalV
       let outText = '';
       for (const chunk of chunks) {
         if (chunk.stream !== 'stderr') outText += chunk.text;
-        const text = chunk.text.replace(/\n/g, '\r\n');
+        // UTF-8 として読めないバイト（Shift_JIS のファイルを cat した時など）は、1 バイトを ? の 1 文字で出す
+        const text = forDisplay(chunk.text).replace(/\n/g, '\r\n');
         if (chunk.stream === 'stderr') errorText += chunk.text;
         term.write(chunk.stream === 'stderr' ? `\u001b[31m${text}\u001b[0m` : text);
       }

@@ -5,6 +5,7 @@ import { advanceCluster } from './k8s/controllers';
 import { emptyCluster, node, service } from './k8s/factory';
 import { tickPods } from './k8s/kubelet';
 import type { ClusterState, Node } from './k8s/types';
+import { encodeAs, fromBytes } from './kernel/bytes';
 import { createClock } from './kernel/clock';
 import { createDefaultRegistry } from './kernel/commands';
 import { BUILTIN_NAMESPACES } from './kernel/commands/kubectlNamespace';
@@ -125,6 +126,8 @@ export const setupSchema = z.object({
   dirs: z.array(z.string().startsWith('/')).optional(),
   /** 置いておくファイル（場所 → 中身） */
   files: z.record(z.string().startsWith('/'), z.string()).optional(),
+  /** 置いたファイルの文字コード（場所 → SHIFT_JIS・EUC-JP）。files の中身を、その文字コードの 0 と 1 で置く（古い機械から届いたファイル） */
+  encodings: z.record(z.string().startsWith('/'), z.enum(['SHIFT_JIS', 'EUC-JP'])).optional(),
   /** ファイルの見かけの大きさ（場所 → 9.8G・300M・512K の形）。大きなログや DB を、中身を持たずに表す */
   sizes: z.record(z.string().startsWith('/'), z.string().regex(SIZE)).optional(),
   /** 機械のディスクの大きさ（20G の形。df が出す。無ければ 20G） */
@@ -356,6 +359,13 @@ export function shellOptions(environment: string, setup: unknown): SessionOption
   const files: Record<string, string | null> = {};
   for (const d of s.dirs ?? []) files[d] = null;
   for (const [path, content] of Object.entries(s.files ?? {})) files[path] = content;
+  for (const [path, charset] of Object.entries(s.encodings ?? {})) {
+    const content = s.files?.[path];
+    if (content === undefined) throw new Error(`encodings の ${path} が files に無い`);
+    const encoded = encodeAs(content, charset);
+    if (encoded.error !== undefined) throw new Error(`${path} の中身が ${charset} で書けない（${String(encoded.error)} バイト目）`);
+    files[path] = fromBytes(encoded.value);
+  }
   const user = s.user ?? 'learner';
   const home = user === 'root' ? '/root' : `/home/${user}`;
   if (s.groups) files[GROUP_FILE] = groupFileOf(s.groups, user);

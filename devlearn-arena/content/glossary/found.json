@@ -544,6 +544,36 @@
       ]
     },
     {
+      "id": "iconv",
+      "word": "iconv",
+      "reading": "あいこんぶ",
+      "plain": "ファイルの文字コードを変えるコマンド。`-f` に元の文字コード、`-t` に新しい文字コードを書く。",
+      "why": "古い機械や別の OS から届いたファイルを、今の機械の文字コード（多くは UTF-8）で読めるように直せる。本文の文字は変えず、0 と 1 の並びだけを書き直す。",
+      "related": [
+        "character-encoding",
+        "mojibake",
+        "utf-8"
+      ],
+      "lessons": [
+        "found.b.08"
+      ]
+    },
+    {
+      "id": "xxd",
+      "word": "xxd",
+      "reading": "えっくすえっくすでぃー",
+      "plain": "ファイルの中身を、文字ではなく 0 と 1 の並び（16 進数。`-b` なら 2 進数）のまま見せるコマンド。",
+      "why": "文字化けの時に、ファイルに本当は何が書いてあるかを確かめられる。同じ文字でも文字コードで並びが違うことが目で見える。",
+      "related": [
+        "binary",
+        "byte",
+        "character-encoding"
+      ],
+      "lessons": [
+        "found.b.08"
+      ]
+    },
+    {
       "id": "windows",
       "word": "Windows",
       "reading": "うぃんどうず",

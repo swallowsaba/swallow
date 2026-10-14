@@ -83,13 +83,13 @@
     },
     {
       "id": "os-conflict",
-      "match": "もう「.+」に入っている。1 つの札は",
-      "meaning": "そのメモリは、もう別のアプリに配ってある。同じメモリを 2 つのアプリに配ると、互いの中身を書き換え合う（取り合い）。",
+      "match": "」が使っている最中",
+      "meaning": "そのメモリは、もう別のアプリが使っている。使っている最中のメモリを別のアプリに配ると、互いの中身を書き換え合う（取り合い）。配り役の OS は、それを断る。",
       "causes": [
         "同じメモリを 2 つのアプリに配ろうとした。",
-        "配り直すつもりで、先に返してもらうのを忘れた。"
+        "どの区画が空いているかを確かめずに配った。"
       ],
-      "hint": "空いているメモリを探して配ろう。配り直す時は、先にアプリの枠から外す。"
+      "hint": "どのアプリの枠にも入っていない（空いている）メモリを配ろう。"
     },
     {
       "id": "os-not-enough",
@@ -122,14 +122,58 @@
       "hint": "先頭の 1 文字を除き、残り 9 文字を 3 文字ずつ（所有者・グループ・その他）に区切って w を探そう。"
     },
     {
-      "id": "found-mojibake",
+      "id": "found-encoding-misread",
       "match": "答えが合っていない",
-      "meaning": "文字コードを変えたが、本文はまだ化けている。",
+      "meaning": "答えた文字コードは、`matsuri.txt` を書いた側の文字コードではない。",
       "causes": [
-        "書いた時とは別の文字コードを選んだ。",
-        "似た名前の文字コードと取り違えた（日本語を扱う文字コードはいくつもある）。"
+        "この端末の文字コード（`UTF-8`）を答えた。端末が UTF-8 で読むから化けている。",
+        "`file` の `Non-ISO extended-ASCII text` をそのまま答えた（`file` は、日本語の文字コードの名前までは言わない）。"
       ],
-      "hint": "ファイルの情報で、書いた側がどの文字コードで保存したかを確かめよう。"
+      "hint": "`nkf -g matsuri.txt` が出す 1 語を、そのまま答えよう。",
+      "terms": [
+        "character-encoding"
+      ]
+    },
+    {
+      "id": "found-iconv-illegal",
+      "match": "iconv: illegal input sequence at position",
+      "meaning": "`iconv` が、`-f` に書いた文字コードの表では読めない 0 と 1 に当たって止まった（`position` は、先頭から何バイト目か）。止まる前までは書き出している。",
+      "causes": [
+        "`-f` に、書いた側とは別の文字コード（`UTF-8`・`EUC-JP`）を書いた。",
+        "`-f`（元の文字コード）と `-t`（新しい文字コード）を逆に書いた。"
+      ],
+      "hint": "`nkf -g matsuri.txt` で書いた側の文字コードを確かめ、それを `-f` に、この端末の `UTF-8` を `-t` に書こう。",
+      "terms": [
+        "iconv",
+        "character-encoding"
+      ]
+    },
+    {
+      "id": "found-iconv-unknown",
+      "match": "iconv: conversions? (from|to) `",
+      "meaning": "`iconv` が、書いた文字コードの名前を知らない。",
+      "causes": [
+        "名前を打ち間違えた（`SHIFT-JS`・`UFT-8` など）。",
+        "`-f` の後ろに文字コードを書かず、ファイルの名前を書いた（`iconv -f matsuri.txt` は、`matsuri.txt` という文字コードと読まれる）。"
+      ],
+      "hint": "`iconv -l` で使える名前を見よう。Shift_JIS は `SHIFT_JIS` か `SJIS`、UTF-8 は `UTF-8`。",
+      "terms": [
+        "iconv"
+      ]
+    },
+    {
+      "id": "found-bytes-misread",
+      "match": "答えが合っていない",
+      "meaning": "答えた数は、UTF-8 の「こ」1 文字のバイトの数ではない。",
+      "causes": [
+        "Shift_JIS のファイル（`matsuri.txt`）の方を数えた（こちらは 2 バイト）。",
+        "ビット（0 と 1 の 1 けた）の数を数えた。8 ビットで 1 バイト。"
+      ],
+      "hint": "`xxd -b -l 3 matsuri-utf8.txt` の、空白で区切った 8 けたの組の数を数えよう。",
+      "terms": [
+        "byte",
+        "bit"
+      ]
     }
   ]
 }

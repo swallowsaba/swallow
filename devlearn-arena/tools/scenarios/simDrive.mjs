@@ -90,6 +90,16 @@ export function wrongAction(setup, step) {
   if (first?.op === 'put') {
     const refuse = setup.items.find((i) => i.refuse && Object.keys(i.refuse).length > 0);
     if (refuse) return { op: 'put', item: refuse.id, slot: Object.keys(refuse.refuse)[0] };
+    // 動かせない札を別の枠へ動かす・容量を超える札を入れる（どちらも断られて赤く示される）
+    const at = (item) => [setup.initial?.[item] ?? []].flat();
+    const kept = setup.items.find((i) => i.keep && at(i.id).length > 0);
+    const away = kept && setup.slots.find((s) => !at(kept.id).includes(s.id));
+    if (away) return { op: 'put', item: kept.id, slot: away.id };
+    const used = (slot) => setup.items.filter((i) => at(i.id).includes(slot.id)).reduce((n, i) => n + (i.size ?? 0), 0);
+    for (const slot of setup.slots.filter((s) => s.capacity !== undefined)) {
+      const big = setup.items.find((i) => !at(i.id).includes(slot.id) && (i.size ?? 0) > slot.capacity - used(slot));
+      if (big) return { op: 'put', item: big.id, slot: slot.id };
+    }
     const other = setup.slots.find((s) => s.id !== first.slot);
     return { op: 'put', item: first.item, slot: other?.id ?? first.slot };
   }
