@@ -2548,7 +2548,7 @@
       "title": "データベースとは",
       "goal": "ファイルではなく DB を使う理由を説明できる",
       "practice": [
-        "simulation"
+        "sql"
       ],
       "prerequisites": [
         "found.b.04"

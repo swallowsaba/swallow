@@ -352,3 +352,21 @@
 - 端末・設定の編集の 9 本（`rw-net.b.03`・`b.04`・`b.05`・`b.08`・`i.01`・`i.02`・`i.03`・`i.05`・`i.06` の `-start` / `-done`）: 原則 1（`ip`・`ping`・`traceroute`・`ss`・`systemctl`・`dhcpd`・`dhcp-lease-list`・`named-checkzone`・`dig`・`iptables`・`bridge vlan`・`nmap`・`curl` の本物の出力が出る）・原則 5（目的の機械の名前（`pc4`・`web-02`・`city-svc`・`office-gw`・`pc-a`・`gw`・`web-01`・`files`・`guest`）・口（`eth0`・`eth3`・`port6`）・アドレスが、プロンプトと出力に同じ名前で出る）を満たす。全ての段が達成になる
 
 検査: `npm run typecheck`・`npm run lint`・`npm run test`（165 ファイル・1800 件。試し台を除く）・`npm run content:check` が通った。
+
+## db（2026-10-14）
+
+5 本の実戦が全て、ブラウザ内の SQLite で本物の SQL を実行する形になった。
+
+| レッスン | 直す前 | 直した後 | 実行する物 |
+|---|---|---|---|
+| db.b.01 データベースとは | sim-config（記録先と残りの欄） | sql | DB に移したのに、窓口が自分で計算した数を書いて（`SET remaining = 4`）食い違った残りを、`SELECT * FROM tickets`・`SELECT COUNT(*) FROM sales` で調べて本当の残り（3）を答える → `UPDATE tickets SET remaining = 3 WHERE id = 1` → `BEGIN; UPDATE tickets SET remaining = remaining - 1 …; INSERT INTO sales …; COMMIT;` を窓口ごとに実行し、残り 1・記録 4 で合う |
+| ほかの 4 本 | sql | そのまま | 本物の SQL |
+
+模擬は足していない（SQLite の 1 行に複数の文とトランザクションを書ける）。用語集に `transaction`（トランザクション）を足した。エラーの案内 `db-remain-misread`・`db-file-still` を新しい段に合わせた。`docs/lessons/db.md` の実戦の設計、`docs/curriculum.md` の記号（模 → S）、目録を直した。
+
+画面の確かめ（`tools/scenarios/rework.mjs`、1920×1080。最後のヒントの SQL を入力欄に入れて実行した）:
+
+- `rw-db.b.01-start` / `-done`: 原則 1（`SELECT`・`COUNT(*)`・`UPDATE`・`BEGIN … COMMIT` と、その結果の表）・原則 5（目的の `tickets`・`sales`・`remaining`・窓口 1・窓口 2 が、表の一覧と結果に同じ名前で出る）を満たす。3 つの段が全て達成になる
+- 原則 3・4 は画面の操作の決まりなので、SQL だけの db の分野には当たらない
+
+検査: `npm run typecheck`・`npm run lint`・`npm run test`（165 ファイル・1800 件。試し台を除く）・`npm run content:check` が通った。

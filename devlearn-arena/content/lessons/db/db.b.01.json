@@ -23,7 +23,8 @@
     "sql",
     "consistency",
     "file",
-    "app"
+    "app",
+    "transaction"
   ],
   "explain": {
     "what": "{{term:database}}（{{term:db}}）は、大量のデータを整理し、速く・正しく出し入れするための仕組み。データを預かって管理するのは{{term:dbms}}で、{{term:app}}は{{term:sql}}という言葉で「取り出して」「変えて」と頼む。",
@@ -157,169 +158,76 @@
     }
   ],
   "practice": {
-    "mode": "simulation",
-    "purpose": "市民ホールのチケットの残りを、2 つの窓口が共有のファイルで管理している。同時に 1 枚ずつ売ると、残りの数が食い違った。記録先を DB に移し、同時に売っても食い違わないようにする。",
-    "environment": "sim-config",
+    "mode": "sql",
+    "purpose": "市民ホールのチケットの残りを、2 つの窓口が共有の{{term:file}}で管理していて、同時に 1 枚ずつ売ると数が食い違った。記録先を{{term:db}}（表 `tickets` と、売った記録の表 `sales`）に移したが、窓口の{{term:app}}は前と同じく「自分で見た残りから計算した数を書く」（`UPDATE tickets SET remaining = 4`）ままだった。10:00 に 2 つの窓口が同時に 1 枚ずつ売った後の DB を{{term:sql}}で調べ、残りの数を数え方ごと直す。",
+    "environment": "sql-sqlite",
     "setup": {
-      "fields": [
-        {
-          "id": "窓口1",
-          "label": "窓口 1 の記録先",
-          "options": [
-            "共有のファイル",
-            "DB",
-            "ファイルとDBの両方"
-          ],
-          "value": "共有のファイル"
-        },
-        {
-          "id": "窓口2",
-          "label": "窓口 2 の記録先",
-          "options": [
-            "共有のファイル",
-            "DB",
-            "ファイルとDBの両方"
-          ],
-          "value": "共有のファイル"
-        },
-        {
-          "id": "残り",
-          "label": "売った後の残り（結果を読む）",
-          "options": [
-            "まだ",
-            "5",
-            "4",
-            "3"
-          ],
-          "value": "まだ"
-        }
-      ],
-      "settle": "!field 窓口1=共有のファイル && !field 窓口2=共有のファイル",
-      "panels": [
-        {
-          "kind": "table",
-          "title": "10:00 に起きたこと",
-          "columns": [
-            "窓口",
-            "したこと"
-          ],
-          "rows": [
-            [
-              "窓口 1",
-              "残り 5 を見て、1 枚売った"
-            ],
-            [
-              "窓口 2",
-              "同じ時に残り 5 を見て、1 枚売った"
-            ]
-          ]
-        },
-        {
-          "kind": "log",
-          "title": "共有のファイルで記録した結果",
-          "when": "field 窓口1=共有のファイル && field 窓口2=共有のファイル",
-          "lines": [
-            "10:00:00 窓口1 在庫.xlsx を開く（残り 5）",
-            "10:00:00 窓口2 在庫.xlsx を開く（残り 5）",
-            "10:00:05 窓口1 残り 4 にして保存",
-            "10:00:06 窓口2 残り 4 にして保存（窓口1 の保存を上書き）",
-            "結果: 在庫.xlsx の残り 4（2 枚売ったのに 1 枚しか減っていない）"
-          ]
-        },
-        {
-          "kind": "log",
-          "title": "DB で記録した結果",
-          "when": "field 窓口1=DB && field 窓口2=DB",
-          "lines": [
-            "10:00:00 窓口1 → DB: 残りを 1 減らす",
-            "10:00:00 窓口2 → DB: 残りを 1 減らす",
-            "DB: 窓口1 の更新を先に処理（5 → 4）",
-            "DB: 窓口2 の更新を次に処理（4 → 3）",
-            "結果: DB の残りの数が決まった"
-          ]
-        },
-        {
-          "kind": "log",
-          "title": "ファイルと DB の両方に書いた結果",
-          "when": "field 窓口1=ファイルとDBの両方",
-          "lines": [
-            "DB: 2 つの更新を順に処理した",
-            "在庫.xlsx: 後の保存が前の保存を上書きした",
-            "結果: DB とファイルで残りの数が違う。どちらを信じればよいか分からない"
-          ]
-        },
-        {
-          "kind": "log",
-          "title": "ファイルと DB の両方に書いた結果",
-          "when": "field 窓口2=ファイルとDBの両方 && !field 窓口1=ファイルとDBの両方",
-          "lines": [
-            "DB: 届いた更新を順に処理した",
-            "在庫.xlsx: 窓口2 の保存だけが残った",
-            "結果: DB とファイルで残りの数が違う。どちらを信じればよいか分からない"
-          ]
-        }
-      ]
+      "sql": "CREATE TABLE tickets (id INTEGER PRIMARY KEY, show TEXT NOT NULL, remaining INTEGER NOT NULL CHECK (remaining >= 0)) STRICT; CREATE TABLE sales (id INTEGER PRIMARY KEY, counter TEXT NOT NULL, sold_at TEXT NOT NULL) STRICT; INSERT INTO tickets VALUES (1, '市民ホール 10/20 夜の部', 5); INSERT INTO sales (counter, sold_at) VALUES ('窓口1', '10:00:05'), ('窓口2', '10:00:06'); UPDATE tickets SET remaining = 4 WHERE id = 1; UPDATE tickets SET remaining = 4 WHERE id = 1;"
     },
     "steps": [
       {
-        "id": "move",
-        "purpose": "2 つの窓口の記録先を、同時の更新を順に処理できる所に移す。",
+        "id": "read",
+        "purpose": "`tickets` の残り（`remaining`）と、`sales` に記録された売った枚数を `SELECT` で見る。初めの 5 枚から売った枚数を引いた、本当の残りの数を答える。",
         "check": {
-          "kind": "sim",
-          "expr": "field 窓口1=DB && field 窓口2=DB"
+          "kind": "answer",
+          "equals": "3"
         },
-        "afterward": "2 つの窓口が同じ DB に頼むようになった。同時に来た「1 枚減らす」を、DB が 1 つずつ順に処理した。",
+        "afterward": "売った記録は 2 枚なのに、残りは 4 のまま。2 つの窓口が同じ「残り 5」を見て、それぞれ「4 にする」と書いたので、後の書き込みが前を上書きし、1 枚分が消えた。DB に移しても、書き方がファイルと同じでは食い違う。",
         "hints": [
-          "食い違ったのは、2 人が同じ数（5）から計算して、後の保存が前を消したから。",
-          "同時の更新を順に処理するのは DB の仕事。ファイルにも書くと、記録が 2 つになって食い違う。",
-          "`set 窓口1 DB` と `set 窓口2 DB` を順に入れる。"
+          "表の中身は `SELECT * FROM 表`、行の数は `SELECT COUNT(*) FROM 表` で見る。",
+          "`tickets` の `remaining` と、`sales` の行の数を見比べる。初めは 5 枚。",
+          "`SELECT * FROM tickets` `SELECT COUNT(*) FROM sales` を順に実行し、`3` と答える。"
         ],
         "expectedErrors": [
-          "db-file-still"
-        ],
-        "actions": [
-          {
-            "op": "set",
-            "field": "窓口1",
-            "value": "DB"
-          },
-          {
-            "op": "set",
-            "field": "窓口2",
-            "value": "DB"
-          }
+          "db-remain-misread",
+          "db-no-table"
         ]
       },
       {
-        "id": "read",
-        "purpose": "DB で記録した結果を読み、2 枚売った後の残りの数を選ぶ。",
+        "id": "fix",
+        "purpose": "`tickets` の残りを、本当の数（3）に直す。",
         "check": {
-          "kind": "sim",
-          "expr": "field 残り=3"
+          "kind": "sql",
+          "query": "SELECT remaining FROM tickets WHERE id = 1",
+          "equals": 3
         },
-        "afterward": "残りは 3。5 枚から 2 枚売った数と合う。DB はデータの整合性を守った。",
+        "afterward": "残りが 3 に直った。売った記録（2 枚）と、残り（3 枚）を足すと、初めの 5 枚と合う。",
         "hints": [
-          "「DB で記録した結果」の記録を、上から順に読む。",
-          "DB は 2 つの更新を順に処理した。5 から 1 減って 4、さらに 1 減って何になるか。",
-          "`set 残り 3` と入れる。"
+          "行の値を変えるのは `UPDATE 表 SET 列 = 値 WHERE 条件`。`WHERE` を忘れると、全ての行が変わる。",
+          "`tickets` の `id` が 1 の行の `remaining` を 3 にする。",
+          "`UPDATE tickets SET remaining = 3 WHERE id = 1` を実行する。"
         ],
         "expectedErrors": [
-          "db-remain-misread"
+          "db-no-column",
+          "db-syntax"
+        ]
+      },
+      {
+        "id": "sell",
+        "purpose": "次の 2 枚を、2 つの窓口が同時に売る。今度は計算を DB に任せる書き方（`remaining = remaining - 1`。DB が今の値から 1 減らす）で、残りを減らす更新と売った記録を 1 つの{{term:transaction}}（`BEGIN` 〜 `COMMIT`）にまとめ、窓口ごとに 1 回ずつ実行する。売った記録が 4 枚・残りが 1 枚になり、合わせて 5 枚と合うことを確かめる。",
+        "check": {
+          "kind": "sql",
+          "query": "SELECT remaining || ',' || (SELECT COUNT(*) FROM sales) FROM tickets WHERE id = 1",
+          "equals": "1,4"
+        },
+        "afterward": "2 つの窓口の「1 減らす」を、DB が届いた順に 1 つずつ処理した（3 → 2 → 1）。自分で計算した数を書くと上書きで消えるが、DB に計算を任せると、同時に来ても数が消えない。トランザクションにまとめたので、「残りだけ減って記録が無い」途中の状態も残らない。",
+        "hints": [
+          "`SET remaining = 2` のように数を書くと、2 つの窓口が同じ数を書いてまた食い違う。`SET remaining = remaining - 1` なら、DB がその時の値から減らす。",
+          "1 回の販売は `BEGIN; UPDATE tickets SET remaining = remaining - 1 WHERE id = 1; INSERT INTO sales (counter, sold_at) VALUES ('窓口1', '10:30:00'); COMMIT;`。窓口 2 も同じ形で実行する。",
+          "`BEGIN; UPDATE tickets SET remaining = remaining - 1 WHERE id = 1; INSERT INTO sales (counter, sold_at) VALUES ('窓口1', '10:30:00'); COMMIT;` `BEGIN; UPDATE tickets SET remaining = remaining - 1 WHERE id = 1; INSERT INTO sales (counter, sold_at) VALUES ('窓口2', '10:30:00'); COMMIT;` `SELECT * FROM tickets` を順に実行する。"
         ],
-        "actions": [
-          {
-            "op": "set",
-            "field": "残り",
-            "value": "3"
-          }
+        "expectedErrors": [
+          "db-file-still",
+          "db-syntax",
+          "db-no-column"
         ]
       }
     ]
   },
   "result": {
-    "success": "記録先を DB に移し、同時に売っても残りの数が食い違わないことを確かめられた。",
-    "partial": "ヒントを使って DB に移せた。次は、ファイルと DB の両方に書くと困る理由を説明してみよう。",
-    "retry": "まだ数が食い違っている。共有のファイルで記録した結果を読み、2 つの保存がどう重なったかを見よう。"
+    "success": "SQL で食い違いを見つけて直し、計算を DB に任せる書き方とトランザクションで、同時に売っても数が消えないことを確かめられた。",
+    "partial": "ヒントを使って残りの数を直せた。次は、`SET remaining = 2` を 2 回実行すると、残りがどうなるかを確かめてみよう。",
+    "retry": "まだ数が合っていない。`SELECT * FROM tickets` と `SELECT COUNT(*) FROM sales` で、残りと売った枚数を足すと 5 になるかを見よう。"
   },
   "summary": {
     "points": [

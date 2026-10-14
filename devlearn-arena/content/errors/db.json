@@ -11,7 +11,9 @@
         "区切りの , が多い・少ない。"
       ],
       "hint": "near の後ろに出た語の前後を、ヒントの形と 1 語ずつ見比べる。",
-      "terms": ["sql"]
+      "terms": [
+        "sql"
+      ]
     },
     {
       "id": "db-unrecognized",
@@ -22,7 +24,9 @@
         "' の代わりに、全角の ‘ や ” を使った。"
       ],
       "hint": "文字の値は、半角の ' で前と後ろを囲む（'東京'）。",
-      "terms": ["sql"]
+      "terms": [
+        "sql"
+      ]
     },
     {
       "id": "db-no-column",
@@ -34,7 +38,9 @@
         "別のテーブルの列の名前を書いた。"
       ],
       "hint": "画面の上の「表」に出ている列の名前と見比べる。文字の値は ' で囲む。",
-      "terms": ["column"]
+      "terms": [
+        "column"
+      ]
     },
     {
       "id": "db-no-table",
@@ -45,7 +51,9 @@
         "まだテーブルを作っていない。"
       ],
       "hint": "画面の上の「表」に出ているテーブルの名前と見比べる。",
-      "terms": ["table"]
+      "terms": [
+        "table"
+      ]
     },
     {
       "id": "db-table-exists",
@@ -56,7 +64,9 @@
         "同じ CREATE TABLE を 2 回実行した。"
       ],
       "hint": "表はもうあるので、次の手順（行を入れる）へ進めばよい。作り直したい時は「初めに戻す」。",
-      "terms": ["table"]
+      "terms": [
+        "table"
+      ]
     },
     {
       "id": "db-type",
@@ -67,7 +77,10 @@
         "値の並びが、列の並びとずれている（名前の場所に番号を書いた）。"
       ],
       "hint": "INSERT の列の並びと VALUES の値の並びを、1 つずつ対にして見比べる。",
-      "terms": ["data-type", "column"]
+      "terms": [
+        "data-type",
+        "column"
+      ]
     },
     {
       "id": "db-unique",
@@ -78,7 +91,9 @@
         "前に入れた行が残っている（入れ直しは要らない）。"
       ],
       "hint": "SELECT で今ある行を見て、使っていない id にする。",
-      "terms": ["primary-key"]
+      "terms": [
+        "primary-key"
+      ]
     },
     {
       "id": "db-not-null",
@@ -89,29 +104,37 @@
         "VALUES の値の数が、列の数と合わない。"
       ],
       "hint": "テーブルの列の数と、VALUES の値の数を数えて合わせる。",
-      "terms": ["column"]
+      "terms": [
+        "column"
+      ]
     },
     {
       "id": "db-file-still",
       "match": "答えが合っていない",
-      "meaning": "全ての欄を選んだが、まだ残りの数が食い違う。",
+      "meaning": "残りと売った記録の数が合っていない。まだ自分で計算した数を書いている。",
       "causes": [
-        "ファイルにも書いている（ファイルと DB の両方に書くと、2 つの記録が食い違う）。",
-        "片方の窓口だけを DB に移した。"
+        "`SET remaining = 2` のように数を書いた（2 つの窓口が同じ数を書いて上書きになる）。",
+        "残りを減らしたが、`sales` に売った記録を足していない（トランザクションの片方が抜けた）。"
       ],
-      "hint": "2 つの窓口の記録先を、両方とも DB だけにする。結果の情報で、残りの数がどう変わるかを見る。",
-      "terms": ["consistency"]
+      "hint": "`SET remaining = remaining - 1` と `INSERT INTO sales …` を `BEGIN; … COMMIT;` で 1 つにまとめて、窓口ごとに実行しよう。",
+      "terms": [
+        "db",
+        "transaction"
+      ]
     },
     {
       "id": "db-remain-misread",
       "match": "答えが合っていない",
-      "meaning": "選んだ残りの数が、DB で記録した結果と合っていない。",
+      "meaning": "答えた数が、本当の残り（初めの 5 枚から売った枚数を引いた数）と合っていない。",
       "causes": [
-        "共有のファイルで記録した時の数（4）を選んだ。",
-        "2 つ目の更新（4 → 3）を読み落とした。"
+        "`tickets` の `remaining`（4）をそのまま答えた。それが食い違った数。",
+        "`sales` の行の数（売った枚数）を答えた。"
       ],
-      "hint": "「DB で記録した結果」の記録を、最後の処理まで読む。",
-      "terms": ["consistency"]
+      "hint": "`SELECT COUNT(*) FROM sales` で売った枚数を数え、5 から引こう。",
+      "terms": [
+        "db",
+        "consistency"
+      ]
     },
     {
       "id": "db-count-misread",
@@ -122,7 +145,9 @@
         "列の名前を取り違え、別の列で絞った。"
       ],
       "hint": "結果の表の下の「何行」を見る。0 行なら、SELECT * で表の中の値の書き方を確かめる。",
-      "terms": ["where"]
+      "terms": [
+        "where"
+      ]
     },
     {
       "id": "db-group-misread",
@@ -134,7 +159,10 @@
         "並べる向きの取り違え（DESC を付けず、少ない順に並んだ）。"
       ],
       "hint": "SELECT に並べる物は、まとめた列と集計関数だけにする。条件と並べる向きも見直す。",
-      "terms": ["group-by", "aggregate-function"]
+      "terms": [
+        "group-by",
+        "aggregate-function"
+      ]
     },
     {
       "id": "db-wrong-range",
@@ -145,7 +173,10 @@
         "先に SELECT で、同じ条件で何行が当たるかを確かめていない。"
       ],
       "hint": "変える前に、同じ WHERE で SELECT して、当たる行が 1 行だけかを見る。全員が変わったら「初めに戻す」でやり直す。",
-      "terms": ["where", "update"]
+      "terms": [
+        "where",
+        "update"
+      ]
     }
   ]
 }
