@@ -52,6 +52,10 @@ export interface LocalRequest {
   port: number;
   method: string;
   path: string;
+  /** 付いてきた札（Cookie の見出しの値） */
+  cookie?: string;
+  /** 送られた中身（-d） */
+  data?: string;
 }
 
 /** 手元のポートで待ち受けている物（chain があれば https で待ち受ける）。respond が頼みに答える */
@@ -119,6 +123,8 @@ export interface RequestOptions {
   version?: HttpVersion;
   /** 送る Host の見出し（-H 'Host: 名前'）。無ければ URL の名前 */
   host?: string;
+  /** 送る札（Cookie の見出しの値。-b・-H 'Cookie: …'） */
+  cookie?: string;
 }
 
 const REASONS: Record<number, string> = {
@@ -238,6 +244,8 @@ export function request(env: HttpEnv, raw: string, opts: RequestOptions = {}): H
   const url = parseUrl(raw);
   if (!url) return { ok: false, url: null, error: { kind: 'bad-url', message: raw } };
   const method = (opts.method ?? (opts.data !== undefined ? 'POST' : 'GET')).toUpperCase();
+  // 手元と、名前で届く物（後ろのアプリ）には、付けた札と送った中身も渡す
+  const extra = { ...(opts.cookie ? { cookie: opts.cookie } : {}), ...(opts.data !== undefined ? { data: opts.data } : {}) };
   if (env.localNames.includes(url.host)) {
     const l = env.local(url.port);
     if (!l) return { ok: false, url, error: { kind: 'refused', host: url.host, port: url.port } };
@@ -251,14 +259,14 @@ export function request(env: HttpEnv, raw: string, opts: RequestOptions = {}): H
       // https で待ち受けるポートに、暗号化せずに頼んだ
       return { ok: true, url, response: respond({ status: 400, body: '<html><body><h1>400 Bad Request</h1><p>The plain HTTP request was sent to HTTPS port</p></body></html>' }, l.server, method, '1.1') };
     }
-    const route = l.respond({ scheme: url.scheme, host: opts.host ?? url.host, port: url.port, method, path: url.path });
+    const route = l.respond({ scheme: url.scheme, host: opts.host ?? url.host, port: url.port, method, path: url.path, ...extra });
     return { ok: true, url, response: respond(route, l.server, method, '1.1'), ...(tls ? { tls } : {}) };
   }
   const remote = env.remote?.(url.host, url.port);
   if (remote !== undefined) {
     if (remote === null) return { ok: false, url, error: { kind: 'refused', host: url.host, port: url.port } };
     if ('reset' in remote || url.scheme === 'https') return { ok: false, url, error: { kind: 'empty-reply' } };
-    const route = remote.respond({ scheme: url.scheme, host: opts.host ?? url.host, port: url.port, method, path: url.path });
+    const route = remote.respond({ scheme: url.scheme, host: opts.host ?? url.host, port: url.port, method, path: url.path, ...extra });
     return { ok: true, url, response: respond(route, remote.server, method, '1.1') };
   }
   const named = env.sites.filter((s) => s.host === url.host);

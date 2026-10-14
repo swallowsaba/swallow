@@ -277,3 +277,35 @@
 - 原則 3・4 は画面の操作の決まりなので、端末だけの linux の分野には当たらない
 
 検査: `npm run typecheck`・`npm run lint`・`npm run test`（162 ファイル・1768 件）・`npm run content:check` が通った。
+
+## web（2026-10-14）
+
+14 本の実戦が全て本物の道具になった（端末 11 本・設定の編集 3 本）。端末はどれも `curl`（web.b.07・web.b.08 は Web サーバの機械で curl と systemctl など）、設定の編集は本物の nginx の書式で、保存すると `nginx -t`・`systemctl reload nginx`・`curl` が走る。
+
+| レッスン | 直す前 | 直した後 | 打つ物・書く物 |
+|---|---|---|---|
+| web.b.01 URL の組み立て | sim-config（部品を選ぶ欄） | terminal | `curl https://shop.example:8443/items`（4 件）→ `curl "https://shop.example:8443/items?id=3"`（灯台の模型）。ポートを書かないと 443 で断られ、http にすると `plain HTTP request was sent to HTTPS port` |
+| web.b.06 Cookie とセッション | sim-config（範囲と印の欄） | terminal | 店のサーバ `shop-web` で `curl -i -c cookies.txt -d 'user=minato&pass=harbor' https://shop.example/login` の `Set-Cookie`（`path=/login`）と `curl -b cookies.txt …/cart`（ログインしてください）を読む → `php.ini` の `session.cookie_path` を `/` に直して `systemctl restart apache2`、ログインし直して `/orders`（3 件）→ `session.cookie_secure`・`session.cookie_httponly` を On にして、返事が `Set-Cookie: PHPSESSID=…; path=/; secure; HttpOnly` |
+| web.i.04 キャッシュ | sim-config（2 つの欄） | editor | `/etc/nginx/conf.d/port.conf` の `location /` に `add_header Cache-Control "no-cache";`、`location /images/` に `"max-age=31536000"`。保存の後の `curl -sI` で見出しを確かめる |
+| web.i.05 CORS | sim-config（許可の欄） | editor | `/etc/nginx/conf.d/api.conf` の `location /` に `add_header Access-Control-Allow-Origin https://shop.example;`。保存の後に `curl -si -H 'Origin: https://shop.example'` と `-H 'Origin: https://evil.example'` で頼み、どちらにも同じ値が返る（止めるのはブラウザ）ことを見る |
+| ほかの 10 本 | terminal・editor | そのまま | 本物の curl・nginx の設定 |
+
+模擬に足した物（単体テストあり）:
+
+- Cookie の模型（`src/engines/http/cookies.ts`・`cookies.test.ts`）: Set-Cookie を読み（Path が無ければ頼んだ道のディレクトリ）、名前・Path（RFC 6265 の path-match）・Secure が合う札だけを付ける。札の入れ物は curl と同じ Netscape の形（HttpOnly は行頭に `#HttpOnly_`）
+- curl の `-b`・`--cookie`（`名前=値` ならそのまま、無ければ入れ物のファイル。無いファイルは黙って空）と `-c`・`--cookie-jar`（`-` なら標準出力）。`-b` か `-c` で札を覚える働きが動き、転送（`-L`）の次の頼みにも付ける。`-v` は `> Cookie:` と `* Added cookie …` を出す。Secure の札は http の頼みからは受け取らない（手元の名前は除く）
+- ログインを覚えるアプリ（`src/engines/http/session.ts`・`session.test.ts`）: setup の services に `session` を書く。本物の PHP と同じく php.ini の `session.name`・`session.cookie_path`・`session.cookie_secure`・`session.cookie_httponly` を、アプリを動かした時に読む（直しても再起動するまで前の決まり）。Set-Cookie は PHP と同じ形
+- 手元の Web サーバと後ろのアプリに、付けた札と送った中身（`-d`）を渡す（nginx の中継も通す）
+- 達成条件 `http` に `header`（返事の見出し。名前の大文字・小文字は問わず、値は同じ）・`method`・`data` を足した（`docs/content-spec.md` 2.4）
+
+内容: エラーの案内を本物の出力に当てた（`content/errors/web.json`）。`web-cookie-login`（401 の文）・`web-cookie-misread`（範囲を答え違えた）・`web-cookie-scope`（`ログインしてください` が出た）・`web-cookie-flags`（Set-Cookie に印が足りない）・`web-cache-mismatch`（HTML の Cache-Control が長い・no-store・無い）・`web-cache-image`（画像の Cache-Control が no-store・no-cache・短い）・`web-cors-origin`（`Access-Control-Allow-Origin` が自分の画面の送り元と違う）。どれも出力に当たる案内（`output`）で、誤った設定を保存・実行して当たることを試し台で確かめた。`docs/lessons/web.md` の 4 本の実戦の設計、`docs/curriculum.md` の記号（模 → 端・編）、目録を直した。
+
+画面の確かめ（`tools/scenarios/rework.mjs`、1920×1080。最後のヒントのコマンドを本物のキー入力で打ち、設定の編集は最後のヒントの中身を保存した）:
+
+- `rw-web.b.01-start` / `-done`: 原則 1（`curl` と JSON の返事）・原則 5（目的の `shop.example`・`8443`・`/items`・`id` が端末に同じ名前で出る）を満たす。2 つの段が達成になる
+- `rw-web.b.06-start` / `-done`: 原則 1（`curl -i` の `Set-Cookie` の行・`sed -i`・`systemctl restart apache2`・注文の履歴の中身）・原則 5（目的の `shop-web` がプロンプトに、`shop.example`・`/cart`・`/orders`・`cookies.txt`・`php.ini`・`session.cookie_path`・`apache2` が端末に同じ名前で出る）を満たす。3 つの段が全て達成になる
+- `rw-web.i.04-start` / `-done`: 原則 1（nginx の設定の `add_header`・`nginx -t` の結果・`curl -sI` の `Cache-Control` の行）・原則 5（目的の `port.example`・`index.html`・`/images/`・`logo.v3.png` が設定の注釈と確かめた結果に出る）を満たす。2 つの段が達成になる
+- `rw-web.i.05-start` / `-done`: 原則 1（`add_header Access-Control-Allow-Origin`・`curl -si -H 'Origin: …'` の返事の見出し）・原則 5（目的の `https://api.example`・`https://shop.example`・`https://evil.example` が設定の注釈と確かめた結果に出る）を満たす。1 つの段が達成になる
+- 原則 3・4 は画面の操作の決まりなので、端末と設定の編集だけの web の分野には当たらない
+
+検査: `npm run typecheck`・`npm run lint`・`npm run test`（163 ファイル・1780 件。試し台を除く）・`npm run content:check` が通った。

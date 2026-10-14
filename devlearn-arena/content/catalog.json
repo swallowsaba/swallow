@@ -1420,7 +1420,7 @@
       "title": "Cookie とセッション",
       "goal": "ログイン状態が保たれる仕組みを説明できる",
       "practice": [
-        "simulation"
+        "terminal"
       ],
       "prerequisites": [
         "web.b.05"
@@ -1552,7 +1552,7 @@
       "title": "キャッシュ",
       "goal": "どこで何が保存されるかを説明し、設定できる",
       "practice": [
-        "simulation"
+        "editor"
       ],
       "prerequisites": [
         "web.b.05"
@@ -1573,7 +1573,7 @@
       "title": "CORS",
       "goal": "ブラウザが他のサイトへの通信を止める理由と許可の仕方",
       "practice": [
-        "simulation"
+        "editor"
       ],
       "prerequisites": [
         "web.i.01"

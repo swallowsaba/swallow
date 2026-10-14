@@ -1,5 +1,7 @@
 import { portOwner, servedAt } from '@/engines/container/container';
 import { ingressAnswer } from '@/engines/k8s/ingress';
+import { addCookie, cookieHeader, jarText, parseJar, parseSetCookie, type Cookie } from '@/engines/http/cookies';
+import { sessionAnswer } from '@/engines/http/session';
 import { curlError, pageOf, parseUrl, request, routeFor, type HttpEnv, type HttpOutcome, type HttpVersion, type LocalListener, type LocalRequest, type Route } from '@/engines/http/http';
 import { normalize } from '../path';
 import { allows } from '../perm';
@@ -99,8 +101,9 @@ function serveConfigured(shell: ShellState, env: () => HttpEnv, s: Service, serv
   return withHeaders(plainAnswer(s, req));
 }
 
-/** 設定を持たないサービスの答え（routes があれば道ごと、無ければ / で中身） */
+/** 設定を持たないサービスの答え（ログインを覚えるアプリならセッション、routes があれば道ごと、無ければ / で中身） */
 function plainAnswer(s: Service, req: LocalRequest): Route {
+  if (s.session && s.cookie) return sessionAnswer(s.session, s.cookie, req);
   if (s.routes) return routeFor(s.routes, req.method, req.path);
   const p = req.path.split('?')[0] ?? '/';
   return p === '/' || p === '/index.html' ? { status: s.status ?? 200, body: s.body ?? `<html><body>${s.name}</body></html>` } : { status: 404, body: pageOf(404) };
@@ -157,10 +160,15 @@ interface CurlArgs {
   out?: string;
   write?: string;
   version?: HttpVersion;
+  /** -b: 送る札（名前=値 の形）か、札の入れ物のファイル */
+  cookie?: string;
+  /** -c: 終えた後に札を書き出すファイル */
+  jar?: string;
 }
 
 const WITH_VALUE: Record<string, keyof CurlArgs> = {
   X: 'method', '--request': 'method', d: 'data', '--data': 'data', '--data-raw': 'data', '--json': 'data', o: 'out', '--output': 'out', w: 'write', '--write-out': 'write',
+  b: 'cookie', '--cookie': 'cookie', c: 'jar', '--cookie-jar': 'jar',
 };
 const LONG_FLAGS: Record<string, string> = { '--insecure': 'k', '--head': 'I', '--include': 'i', '--silent': 's', '--verbose': 'v', '--location': 'L', '--show-error': 'S', '--fail': 'f' };
 
@@ -168,7 +176,7 @@ function parseCurl(argv: readonly string[]): CurlArgs | string {
   const a: CurlArgs = { headers: [], flags: new Set() };
   const take = (key: keyof CurlArgs, value: string | undefined, name: string): string | null => {
     if (value === undefined) return `curl: option ${name}: requires parameter\n`;
-    if (key === 'method' || key === 'data' || key === 'out' || key === 'write') a[key] = value;
+    if (key === 'method' || key === 'data' || key === 'out' || key === 'write' || key === 'cookie' || key === 'jar') a[key] = value;
     return null;
   };
   const rest = argv.slice(1);
@@ -240,7 +248,10 @@ function nextUrl(o: Extract<HttpOutcome, { ok: true }>): string | null {
   return `${o.url.scheme}://${o.url.host}${(o.url.scheme === 'https' && o.url.port === 443) || (o.url.scheme === 'http' && o.url.port === 80) ? '' : `:${String(o.url.port)}`}${loc.startsWith('/') ? loc : `/${loc}`}`;
 }
 
-/** ネットワークの構成を使わない実戦の curl（-X・-d・-H・-I・-i・-s・-v・-k・-L・-o・-w・--http1.1・--http2・--http3） */
+/** 札の入れ物のファイルの場所（今いる場所から） */
+const fileOf = (shell: ShellState, f: string): string => normalize(f.startsWith('/') ? f : `${shell.cwd}/${f}`);
+
+/** ネットワークの構成を使わない実戦の curl（-X・-d・-H・-I・-i・-s・-v・-k・-L・-o・-w・-b・-c・--http1.1・--http2・--http3） */
 export function localCurl(argv: readonly string[], shell: ShellState): CommandResult {
   const a = parseCurl(argv);
   if (typeof a === 'string') return { stderr: a, code: 2 };
@@ -254,10 +265,19 @@ export function localCurl(argv: readonly string[], shell: ShellState): CommandRe
   let last: Extract<HttpOutcome, { ok: true }> | null = null;
   // 付いていく転送の数の上限（本物の curl の --max-redirs の既定と同じ 50）
   const MAX_REDIRS = 50;
+  // 札（Cookie）: -b に = があれば、そのまま送る札。無ければ入れ物のファイル（無いファイルは本物と同じく黙って空とみなす）。
+  // -b か -c を書くと札を覚える働きが動き、受け取った札を次の転送でも使う
+  const engine = a.cookie !== undefined || a.jar !== undefined;
+  const typed = [...(a.cookie?.includes('=') ? [a.cookie] : []), ...a.headers.flatMap((h) => /^cookie:\s*(.*)$/i.exec(h)?.[1] ?? [])].join('; ');
+  const jarFile = a.cookie !== undefined && !a.cookie.includes('=') ? fileOf(shell, a.cookie) : null;
+  let jar: Cookie[] = jarFile && exists(shell.vfs, jarFile) && !isDir(shell.vfs, jarFile) ? parseJar(readFile(shell.vfs, jarFile)) : [];
   for (let hop = 0; ; hop += 1) {
     // -H 'Host: 名前' は、届け先（URL の名前か住所）を変えずに、名乗る名前だけを変える
     const hostHeader = a.headers.map((h) => /^host:\s*(\S+)/i.exec(h)?.[1]).find((h) => h !== undefined)?.toLowerCase();
-    const out = request({ ...env, sites }, url, { insecure: a.flags.has('k'), ...(method !== undefined ? { method } : {}), ...(a.data !== undefined ? { data: a.data } : {}), ...(a.version ? { version: a.version } : {}), ...(hostHeader !== undefined && hop === 0 ? { host: hostHeader } : {}) });
+    const target = parseUrl(url);
+    const fromJar = target ? cookieHeader(jar, target.scheme, target.host, target.path) : '';
+    const cookie = [typed, fromJar].filter((c) => c !== '').join('; ');
+    const out = request({ ...env, sites }, url, { insecure: a.flags.has('k'), ...(method !== undefined ? { method } : {}), ...(a.data !== undefined ? { data: a.data } : {}), ...(a.version ? { version: a.version } : {}), ...(hostHeader !== undefined && hop === 0 ? { host: hostHeader } : {}), ...(cookie !== '' ? { cookie } : {}) });
     if (out.url && a.flags.has('v')) verbose.push(`* Trying ${out.url.host}:${String(out.url.port)}...`);
     if (!out.ok) {
       const e = curlError(out.error, out.url?.host ?? '');
@@ -271,7 +291,14 @@ export function localCurl(argv: readonly string[], shell: ShellState): CommandRe
       verbose.push(`* Connected to ${out.url.host} port ${String(out.url.port)}`);
       if (out.tls?.trusted) verbose.push(`* SSL certificate verify ok.`, ...out.tls.path.map((c, i) => `*  ${i === 0 ? 'subject' : 'issuer'}: CN=${c.subject}`));
       if (r.version !== '1.1') verbose.push(`* using HTTP/${r.version}`);
-      verbose.push(`> ${method ?? (a.data !== undefined ? 'POST' : 'GET')} ${out.url.path} HTTP/${r.version}`, ...(hostHeader === undefined ? [`> Host: ${out.url.host}`] : []), ...a.headers.map((h) => `> ${h}`), '>', ...headOf(out).trimEnd().split('\n').map((l) => `< ${l}`), '<');
+      verbose.push(`> ${method ?? (a.data !== undefined ? 'POST' : 'GET')} ${out.url.path} HTTP/${r.version}`, ...(hostHeader === undefined ? [`> Host: ${out.url.host}`] : []), ...a.headers.map((h) => `> ${h}`), ...(fromJar !== '' || (a.cookie?.includes('=') ?? false) ? [`> Cookie: ${cookie}`] : []), '>', ...headOf(out).trimEnd().split('\n').map((l) => `< ${l}`), '<');
+    }
+    const set = r.headers['Set-Cookie'];
+    const got = engine && set !== undefined ? parseSetCookie(set, out.url.host, out.url.path) : null;
+    // Secure の札は、暗号化していない頼みからは受け取らない（手元を指す名前は除く。本物の curl と同じ）
+    if (got && (!got.secure || out.url.scheme === 'https' || env.localNames.includes(out.url.host))) {
+      jar = addCookie(jar, got);
+      if (a.flags.has('v')) verbose.push(`* Added cookie ${got.name}="${got.value}" for domain ${got.domain}, path ${got.path}, expire 0`);
     }
     const follow = a.flags.has('L') && r.status >= 300 && r.status < 400 ? nextUrl(out) : null;
     if (a.flags.has('I') || a.flags.has('i')) stdout += `${headOf(out)}\n`;
@@ -291,6 +318,10 @@ export function localCurl(argv: readonly string[], shell: ShellState): CommandRe
     else if (a.out !== '/dev/null') vfs = writeFile(vfs, normalize(a.out.startsWith('/') ? a.out : `${shell.cwd}/${a.out}`), r.body);
   }
   if (a.write !== undefined) stdout += writeOut(a.write, last);
+  if (a.jar !== undefined && jar.length > 0) {
+    if (a.jar === '-') stdout += jarText(jar);
+    else vfs = writeFile(vfs, fileOf(shell, a.jar), jarText(jar));
+  }
   const failed = a.flags.has('f') && r.status >= 400;
   const patch = { ...(sites !== env.sites && shell.web ? { web: { ...shell.web, sites } } : {}), ...(vfs !== shell.vfs ? { vfs } : {}) };
   return {

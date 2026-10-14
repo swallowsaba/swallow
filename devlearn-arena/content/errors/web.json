@@ -105,27 +105,61 @@
       "hint": "-I で頭だけを出し、名前の行を 1 つずつ確かめよう。"
     },
     {
-      "id": "web-cookie-scope",
-      "match": "答えが合っていない",
-      "meaning": "札の範囲を変えたが、まだ移った先でログインが切れる。",
+      "id": "web-cookie-login",
+      "match": "利用者の名前かパスワードが違います",
+      "output": true,
+      "meaning": "ログインが断られた（返事は 401）。札（Cookie）は渡されていない。",
       "causes": [
-        "範囲が狭い（/cart にすると、/orders への依頼には札が付かない）。",
-        "範囲を /login のままにした（ログインのページにしか札が付かない）。"
+        "`-d` で送る中身の綴りの誤り（`user=minato&pass=harbor` の形。項目の名前は `user` と `pass`）。",
+        "`-d` の中身を引用符で囲んでいない（`&` は{{term:terminal}}の特別な記号で、そこで行が切れる）。"
       ],
-      "hint": "やり取りの記録で、札（Cookie）が付いていない依頼の行を探そう。その行のパスも含む範囲にする。",
+      "hint": "送る中身を `'user=minato&pass=harbor'` のように引用符で囲んで、もう一度ログインしよう。",
       "terms": [
-        "cookie"
+        "cookie",
+        "curl"
+      ]
+    },
+    {
+      "id": "web-cookie-misread",
+      "match": "答えが合っていない",
+      "meaning": "答えた範囲が、受け取った札の範囲（path）と合っていない。",
+      "causes": [
+        "札の値（`PHPSESSID=` の後ろ）や、開いた道（`/cart`）を答えた。",
+        "`Set-Cookie` の見出しを見ていない（`-i` を付けないと、見出しは出ない）。"
+      ],
+      "hint": "`curl -i` の `Set-Cookie:` の行で、`path=` の後ろの値を探そう。`cat cookies.txt` の 3 つ目の欄も同じ値。",
+      "terms": [
+        "cookie",
+        "header"
+      ]
+    },
+    {
+      "id": "web-cookie-scope",
+      "match": "ログインしてください",
+      "output": true,
+      "meaning": "札（Cookie）が付かずに依頼が届き、アプリはログインしていない人と見なした。",
+      "causes": [
+        "`php.ini` の `session.cookie_path` が、まだ開いた道を含まない（`/login` のまま、または `/cart` にした）。",
+        "`php.ini` を直したが `apache2` を再起動していない（アプリは設定を動かす時に読む）。",
+        "直す前に受け取った札（範囲の狭い札）のまま開いた。ログインし直して、新しい札を `-c` で受け取る。"
+      ],
+      "hint": "`curl -i` でログインし直し、`Set-Cookie` の `path` が `/` になっているかを見よう。なっていなければ、設定と再起動を確かめる。",
+      "terms": [
+        "cookie",
+        "path"
       ]
     },
     {
       "id": "web-cookie-flags",
-      "match": "答えが合っていない",
-      "meaning": "安全の印を選んだが、足りない印がある。",
+      "match": "Set-Cookie: PHPSESSID=\\w+; path=/(; secure)?\\n|Set-Cookie: PHPSESSID=\\w+; path=/; HttpOnly",
+      "output": true,
+      "meaning": "ログインの返事の札に、安全の印が足りない。",
       "causes": [
-        "Secure だけ（ページの中のプログラムから札を読まれる）。",
-        "HttpOnly だけ（暗号化していない通信で札が流れる）。"
+        "`secure` だけ（ページの中のプログラムから札を読まれる）。",
+        "`HttpOnly` だけ（暗号化していない通信で札が流れる）。",
+        "`php.ini` を直したが `apache2` を再起動していない。"
       ],
-      "hint": "盗まれる道は 2 つ（通り道と、ページの中のプログラム）。両方をふさぐ印を選ぼう。",
+      "hint": "盗まれる道は 2 つ（通り道と、ページの中のプログラム）。`session.cookie_secure` と `session.cookie_httponly` の両方を `On` にして、再起動しよう。",
       "terms": [
         "cookie"
       ]
@@ -245,28 +279,45 @@
     },
     {
       "id": "web-cache-mismatch",
-      "match": "答えが合っていない",
-      "meaning": "2 つの欄を決めたが、速さと新しさの両方は満たしていない。",
+      "match": "Content-Type: text/html\\nContent-Length: \\d+\\n(\\n|Cache-Control: (max-age=[1-9]|no-store))",
+      "output": true,
+      "meaning": "お知らせのページ（HTML）の Cache-Control が、「保存して毎回確かめる」になっていない。",
       "causes": [
-        "HTML も長く保存した（max-age が長いと、お知らせを直しても、期限まで古いページが出る）。",
-        "HTML を保存しない（no-store）にした（新しさは保てるが、変わっていない時も毎回全てを取り直す）。",
-        "画像を長く保存していない（変わらない画像を、毎回取り直して遅い）。"
+        "HTML も長く保存した（`max-age` が長いと、お知らせを直しても、期限まで古いページが出る）。",
+        "HTML を保存しない（`no-store`）にした（新しさは保てるが、変わっていない時も毎回全てを取り直す）。",
+        "`location /` の `add_header` を消した（返事に Cache-Control が無い）。"
       ],
-      "hint": "表の「変わる頻度」を見よう。よく変わる物は「保存して毎回確かめる」、変わらない物は「長く保存」。",
+      "hint": "`curl -sI http://port.example/` の Cache-Control を見よう。よく変わる物は `no-cache`（保存してよいが、使う前に毎回確かめる）。",
+      "terms": [
+        "cache-control"
+      ]
+    },
+    {
+      "id": "web-cache-image",
+      "match": "Content-Type: image/png\\nContent-Length: \\d+\\n(\\n|Cache-Control: (no-store|no-cache|max-age=\\d{1,7}\\n))",
+      "output": true,
+      "meaning": "変わらない画像の Cache-Control が、「長く保存する」になっていない。",
+      "causes": [
+        "`no-store` のまま（開くたびに、全てを取り直して遅い）。",
+        "`no-cache` にした（毎回サーバに確かめに行く）。",
+        "`max-age` が短い（期限が切れるたびに取り直す）。"
+      ],
+      "hint": "設定の注釈を見よう。変わらない物は、`max-age=31536000`（1 年）で長く保存してよい。変える時は名前を変える。",
       "terms": [
         "cache-control"
       ]
     },
     {
       "id": "web-cors-origin",
-      "match": "答えが合っていない",
+      "match": "Access-Control-Allow-Origin: (?!https://shop\\.example\\n)",
+      "output": true,
       "meaning": "許可の見出しを書いたが、自分の画面だけを許す形になっていない。",
       "causes": [
         "送り元の綴りの誤り（http と https・www の有無・最後の / の有無）。ブラウザは 1 字でも違えば別のサイトとみなす。",
         "* にした（全てのサイトを許す。悪いサイトの画面からも使える）。",
         "API の側の URL（https://api.example）を書いた。書くのは呼ぶ側の画面の送り元。"
       ],
-      "hint": "表の「自分の画面」の送り元を、スキームからポートまで 1 字ずつ写そう。最後に / は付けない。",
+      "hint": "目的の「自分の画面」の送り元を、スキームからホストまで 1 字ずつ写そう。最後に / は付けない。",
       "terms": [
         "cors",
         "origin"

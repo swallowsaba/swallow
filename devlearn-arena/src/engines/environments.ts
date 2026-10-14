@@ -11,6 +11,7 @@ import { BUILTIN_NAMESPACES } from './kernel/commands/kubectlNamespace';
 import { applyManifestText } from './kernel/commands/kubectlOps';
 import type { GitServer, ShellState, WebWorld } from './kernel/registry';
 import { createServiceTable } from './kernel/services';
+import { readSessionIni } from './http/session';
 import { createShellState, type SessionOptions } from './kernel/session';
 import { execute } from './kernel/shell';
 import { GROUP_FILE, groupFileOf } from './kernel/users';
@@ -54,6 +55,17 @@ const serviceSetup = z.object({
   config: z.string().startsWith('/').optional(),
   /** DNS のゾーンファイルの場所（動かす・読み直す時に読み、網の名前の答えになる） */
   zone: z.string().startsWith('/').optional(),
+  /** ログインを覚えるアプリ（PHP のセッション。動かす時に php.ini を読み、札の決まりにする。src/engines/http/session.ts） */
+  session: z.object({
+    ini: z.string().startsWith('/'),
+    login: z.string().startsWith('/'),
+    user: z.string().min(1),
+    pass: z.string().min(1),
+    display: z.string().min(1),
+    id: z.string().regex(/^[a-z0-9]{8,}$/),
+    pages: z.record(z.string().startsWith('/'), z.string().min(1)),
+    guest: z.string().min(1),
+  }).strict().optional(),
 }).strict();
 
 const certSetup = z.object({
@@ -359,6 +371,8 @@ export function shellOptions(environment: string, setup: unknown): SessionOption
       ...(v.routes !== undefined ? { routes: v.routes } : {}),
       ...(v.config !== undefined ? { config: v.config } : {}),
       ...(v.zone !== undefined ? { zone: v.zone } : {}),
+      // 初めから動いているアプリは、置いたファイルの php.ini を読んだ状態で始める
+      ...(v.session !== undefined ? { session: v.session, ...(v.active ? { cookie: readSessionIni(s.files?.[v.session.ini] ?? '') } : {}) } : {}),
       ...(v.log !== undefined ? { log: v.log } : {}),
     })), s.hostname);
   }

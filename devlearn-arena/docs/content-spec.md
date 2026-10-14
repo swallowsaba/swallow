@@ -116,7 +116,7 @@ type CheckSpec =
   | { kind: 'k8s'; expr: string }               // 例: 'deployment/web readyReplicas>=3'
   | { kind: 'net'; expr: string }               // 例: 'reach shop.example:443'
   | { kind: 'container'; expr: string }         // 例: 'image:nginx:1.27 running:web'
-  | { kind: 'http'; url: string; status: number; contains?: string } // contains: 返事の本文にその文字列がある
+  | { kind: 'http'; url: string; status: number; contains?: string; header?: string; method?: string; data?: string } // contains: 返事の本文にその文字列がある。header: '名前: 値' の見出しがある（名前の大文字・小文字は問わず、値は同じ）。method・data: 頼み方（POST と送る中身）
   | { kind: 'tls'; host: string; trusted: boolean }
   | { kind: 'sql'; query: string; equals: unknown }
   | { kind: 'answer'; equals: string }         // 原因などを答える形
@@ -124,6 +124,7 @@ type CheckSpec =
 ```
 
 - **判定は出力の文字列ではなく、模擬環境の状態で行う**
+- `http` は端末の機械から頼んだ結果で判定する（`src/engines/http`）。Web サーバの設定（nginx の `add_header`）や、アプリの設定（php.ini の `session.cookie_path` など。アプリを動かした時に読む）を直した結果を、返事の見出し（`header`）で確かめられる。例: `{ "kind": "http", "url": "http://port.example/", "status": 200, "header": "Cache-Control: no-cache" }`
 - `fs` の `/proc/<PID>` は、その PID のプロセスが動いている間だけ有る（本物の Linux と同じ）。プロセスを止めたことは `exists: false` で確かめる
 - `net` の式は、端末の機械（setup の `network` の `self`）から見て判定する: `reach 名前[:ポート]`（行きも帰りも通る。ポートを書けば、そこで待ち受けている）/ `resolve 名前=アドレス`（名前の答え）/ `ssh 利用者@名前`（setup の `sshHosts` のサーバに、手元の秘密鍵で入った記録があり、今も鍵で入れて、サーバに秘密鍵が置かれていない。sec.b.04 の鍵の登録。`docs/decisions.md` D-17）。` && ` でつなぎ、先頭の `!` で否定
 - `git` の式は、空白で区切った条件を全て満たせば達成。先頭の `!` で否定: `branch:枝`（ある。origin/main のようなリモートの枝の控えでもよい）/ `merged-into:枝`（前の `branch:` の枝の先が取り込まれている）/ `on:枝`（今いる枝）/ `clean`（記録していない変更が無く、取り込みの途中でもない）/ `commits:枝>=数` / `resolved`（衝突の印が無い）/ `committed:パス`（今の枝の先の記録に、作業ツリーと同じ中身で入っている）/ `pushed:枝`（手元の枝の先が origin のサーバ（setup の `gitServers`）の同じ枝に届いている）/ `linear`（今の枝の履歴に合流の記録が無い）/ `tag:名前`（そのタグが今の枝の先を指す）/ `ignored:パス`（.gitignore の決まりに当たる）/ `history:文字列`（今の枝の履歴のどこかの記録に、その文字列を含むファイルがある。消して記録し直しても前の記録に残る。秘密を履歴に入れていないことを `!history:` で確かめる）

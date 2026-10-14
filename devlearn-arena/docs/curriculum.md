@@ -208,14 +208,14 @@ lab は複数分野の組み合わせ
 | web.b.03 | 初級 | メソッド | HTTP メソッド | GET/POST/PUT/DELETE を使い分けられる | 端 | web.b.02 | web.i.01, db.b.05 | web.i.01 |
 | web.b.04 | 初級 | ステータス | ステータスコード | 2xx〜5xx の意味から次の行動を判断できる | 端 | web.b.02 | trouble.i.03, mon.b.03 | web.b.05 |
 | web.b.05 | 初級 | ヘッダ | HTTP ヘッダ | Content-Type・Cache-Control・Location などを読める | 端 | web.b.02 | web.i.04, sec.b.06 | web.b.06, web.i.04 |
-| web.b.06 | 初級 | 状態 | Cookie とセッション | ログイン状態が保たれる仕組みを説明できる | 模 | web.b.05 | sec.b.02, sec.b.03 | web.b.07 |
+| web.b.06 | 初級 | 状態 | Cookie とセッション | ログイン状態が保たれる仕組みを説明できる | 端 | web.b.05 | sec.b.02, sec.b.03 | web.b.07 |
 | web.b.07 | 初級 | Web サーバ | Web サーバの役割 | 静的なファイルを配る流れを説明し、模擬サーバで公開できる | 端 | web.b.02, linux.b.02 | linux.i.01, docker.b.04 | web.i.03 |
 | web.b.08 | 初級 | HTTPS | HTTPS（HTTP を安全にする） | http と https の違い・443 番・http から https への転送・混在コンテンツを説明し確かめられる | 端 | web.b.02, sec.b.06 | sec.b.07, net.b.04 | web.i.01 |
 | web.i.01 | 中級 | API | REST と API | 資源と操作で API を設計・利用できる | 端 | web.b.03 | db.b.03, cicd.b.01 | web.i.02, web.i.05, web.a.03 |
 | web.i.02 | 中級 | データ | JSON | JSON を読み書きし、API の応答から値を取り出せる | 端 | web.i.01 | db.i.05, linux.b.05 | web.i.03 |
 | web.i.03 | 中級 | Web サーバ | 仮想ホストとリバースプロキシ | 1 台で複数サイト、後段への転送を設定できる | 編 | web.b.07 | k8s.i.04, net.a.03 | web.a.02, sec.i.02, k8s.i.04 |
-| web.i.04 | 中級 | 性能 | キャッシュ | どこで何が保存されるかを説明し、設定できる | 模 | web.b.05 | net.a.03, db.i.03 | web.a.01 |
-| web.i.05 | 中級 | 安全 | CORS | ブラウザが他のサイトへの通信を止める理由と許可の仕方 | 模 | web.i.01 | sec.b.02, web.i.01 | web.i.06 |
+| web.i.04 | 中級 | 性能 | キャッシュ | どこで何が保存されるかを説明し、設定できる | 編 | web.b.05 | net.a.03, db.i.03 | web.a.01 |
+| web.i.05 | 中級 | 安全 | CORS | ブラウザが他のサイトへの通信を止める理由と許可の仕方 | 編 | web.i.01 | sec.b.02, web.i.01 | web.i.06 |
 | web.i.06 | 中級 | 版 | HTTP/2 と HTTP/3 | 違いと利点を説明できる | 端 | web.b.02, net.b.05 | net.b.05, sec.b.06 | web.a.01 |
 | web.a.01 | 上級 | 性能 | 遅い Web を調べる | 遅延の内訳（DNS・接続・TLS・処理・転送）を切り分けられる | 模 | web.i.04, sec.b.06 | mon.i.01, net.a.02 | web.a.02 |
 | web.a.02 | 上級 | 障害 | 4xx と 5xx を直す | 症状から Web サーバ・アプリ・後段のどこかを特定できる | 端 | web.i.03, trouble.b.03 | trouble.i.03, mon.i.03 | web.a.03 |

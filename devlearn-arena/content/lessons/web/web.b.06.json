@@ -25,7 +25,13 @@
     "https",
     "program",
     "path",
-    "url"
+    "url",
+    "curl",
+    "terminal",
+    "config-file",
+    "systemctl",
+    "app",
+    "http-post"
   ],
   "explain": {
     "what": "{{term:cookie}}は、{{term:server}}がブラウザに預ける小さな札。{{term:session}}は、札の番号で利用者を見分け、ログインしている事などをサーバ側で覚えておく仕組み。",
@@ -134,165 +140,114 @@
     }
   ],
   "practice": {
-    "mode": "simulation",
-    "purpose": "店で「ログインした後、カートに移るとログアウトしてしまう」と苦情が来た。やり取りの記録を読んで札（Cookie）の流れを確かめ、札の設定を直す。",
-    "environment": "sim-config",
+    "mode": "terminal",
+    "purpose": "港の店で「ログインした後、カートに移るとログアウトしてしまう」と苦情が来た。店のサーバ `shop-web` で、`curl` で店（`https://shop.example`）にログインして札（{{term:cookie}}）の流れを確かめ、店の{{term:app}}（`PHP`）の{{term:config-file}} `/etc/php/8.3/apache2/php.ini` の札の決まりを直す。試しの利用者は `minato`（パスワード `harbor`）。",
+    "environment": "linux-server",
     "setup": {
-      "fields": [
-        {
-          "id": "path",
-          "label": "札の範囲（Path）",
-          "options": [
-            "/login",
-            "/cart",
-            "/"
-          ],
-          "value": "/login",
-          "note": "この場所と、その下への依頼に札を付ける"
+      "hostname": "shop-web",
+      "files": {
+        "/etc/hosts": "127.0.0.1\tlocalhost shop.example\n",
+        "/etc/nginx/conf.d/shop.conf": "server {\n  listen 80;\n  server_name shop.example;\n  return 301 https://$host$request_uri;\n}\n\nserver {\n  listen 443 ssl;\n  server_name shop.example;\n  ssl_certificate /etc/nginx/certs/fullchain.crt;\n  location / {\n    proxy_pass http://127.0.0.1:8080;\n  }\n}\n",
+        "/etc/nginx/certs/fullchain.crt": "-----BEGIN CERTIFICATE-----\nsubject: shop.example\nissuer: Minato Issuing CA\nnames: shop.example\nvalid: 2026-01-01 2027-01-01\n-----END CERTIFICATE-----\n-----BEGIN CERTIFICATE-----\nsubject: Minato Issuing CA\nissuer: Minato Root CA\nvalid: 2024-01-01 2030-01-01\nca: yes\n-----END CERTIFICATE-----\n",
+        "/etc/php/8.3/apache2/php.ini": "[PHP]\nengine = On\nmemory_limit = 128M\ndisplay_errors = Off\n\n[Session]\nsession.save_handler = files\nsession.use_cookies = 1\nsession.name = PHPSESSID\nsession.cookie_lifetime = 0\nsession.cookie_path = /login\nsession.cookie_domain =\nsession.cookie_secure = Off\nsession.cookie_httponly = Off\n"
+      },
+      "services": {
+        "nginx": {
+          "description": "nginx web server",
+          "enabled": true,
+          "config": "/etc/nginx/conf.d/shop.conf"
         },
-        {
-          "id": "flags",
-          "label": "安全の印",
-          "options": [
-            "なし",
-            "Secure",
-            "HttpOnly",
-            "Secure+HttpOnly"
-          ],
-          "value": "なし"
+        "apache2": {
+          "description": "The Apache HTTP Server",
+          "enabled": true,
+          "port": 8080,
+          "address": "127.0.0.1",
+          "session": {
+            "ini": "/etc/php/8.3/apache2/php.ini",
+            "login": "/login",
+            "user": "minato",
+            "pass": "harbor",
+            "display": "港",
+            "id": "q8v3k2m7t1c5h9r4w6n0b2x8ja",
+            "pages": {
+              "/cart": "<h1>カート</h1><p>港 さんのカート（2 点）</p>",
+              "/orders": "<h1>注文の履歴</h1><p>港 さんの注文の履歴: 3 件</p>"
+            },
+            "guest": "<p>ログインしてください</p>"
+          }
         }
-      ],
-      "settle": "!field path=/login",
-      "panels": [
-        {
-          "kind": "kv",
-          "title": "店のページ",
-          "rows": [
-            [
-              "ログイン",
-              "/login"
-            ],
-            [
-              "カート",
-              "/cart"
-            ],
-            [
-              "注文の履歴",
-              "/orders"
-            ]
-          ]
-        },
-        {
-          "kind": "log",
-          "title": "やり取りの記録",
-          "lines": [
-            "POST /login → 200  Set-Cookie: sid=7f3a; Path=/login",
-            "GET /cart（札なし）→ 200  ログインしてください",
-            "GET /orders（札なし）→ 200  ログインしてください"
-          ],
-          "when": "field path=/login"
-        },
-        {
-          "kind": "log",
-          "title": "やり取りの記録",
-          "lines": [
-            "POST /login → 200  Set-Cookie: sid=7f3a; Path=/cart",
-            "GET /cart  Cookie: sid=7f3a → 200  港 さんのカート（2 点）",
-            "GET /orders（札なし）→ 200  ログインしてください"
-          ],
-          "when": "field path=/cart"
-        },
-        {
-          "kind": "log",
-          "title": "やり取りの記録",
-          "lines": [
-            "POST /login → 200  Set-Cookie: sid=7f3a; Path=/",
-            "GET /cart  Cookie: sid=7f3a → 200  港 さんのカート（2 点）",
-            "GET /orders  Cookie: sid=7f3a → 200  港 さんの注文の履歴"
-          ],
-          "when": "field path=/"
-        },
-        {
-          "kind": "kv",
-          "title": "サーバの帳面（セッション）",
-          "rows": [
-            [
-              "sid=7f3a",
-              "港 さん（10:02 にログイン）"
-            ]
-          ]
-        },
-        {
-          "kind": "kv",
-          "title": "安全の印",
-          "rows": [
-            [
-              "Secure",
-              "暗号化した通信（https）の時だけ札を送る"
-            ],
-            [
-              "HttpOnly",
-              "ページの中のプログラムから札を読めなくする"
-            ]
-          ]
-        }
+      },
+      "sites": [],
+      "run": [
+        "systemctl start nginx",
+        "systemctl start apache2"
       ]
     },
     "steps": [
       {
-        "id": "scope",
-        "purpose": "やり取りの記録を読み、札を受け取っているか・次の依頼に札が付いているかを確かめる。札が付かない原因の設定を直し、カートと注文の履歴でもログインのままにする。",
+        "id": "look",
+        "purpose": "`curl -i` でログインして、返事の{{term:header}}の `Set-Cookie` を見る。受け取った札は `-c cookies.txt` で残す。続けて `-b cookies.txt` で札を付けてカート（`/cart`）を開く。札の範囲（`path=` の値）を答える。",
         "check": {
-          "kind": "sim",
-          "expr": "field path=/"
+          "kind": "answer",
+          "equals": "/login"
         },
-        "afterward": "札の範囲を / にすると、店の全てのページへの依頼に札が付き、カートでも注文の履歴でも「港 さん」と分かった。",
+        "afterward": "札は受け取れていたが、範囲（`path`）が `/login` なので、`/cart` への依頼には付かない。アプリは札の無い依頼を、ログインしていない人と見なした。",
         "hints": [
-          "記録の 1 行目で札を受け取っている。2 行目から、移った先への依頼に札が付いているかを見る。",
-          "札は受け取れているが、範囲（`Path`）が /login だけなので、/cart と /orders への依頼に付かない。店の全てのページを含む範囲にする。",
-          "`set path /` と選ぶ。"
+          "ログインは、`-d` で `user=…&pass=…` を送る（{{term:http-post}} になる）。`-i` を付けると返事の見出しが出る。`-c ファイル` で受け取った札を残し、`-b ファイル` で札を付けて送る。",
+          "見出しの `Set-Cookie: PHPSESSID=…; path=…` の `path` が、札を付けて送る範囲。`cat cookies.txt` の 3 つ目の欄も同じ。カートの道（`/cart`）がその範囲に入っているかを見る。",
+          "`curl -i -c cookies.txt -d 'user=minato&pass=harbor' https://shop.example/login` `curl -b cookies.txt https://shop.example/cart` を打ち、`/login` と答える。"
         ],
         "expectedErrors": [
-          "web-cookie-scope"
+          "web-cookie-login",
+          "web-cookie-misread"
+        ]
+      },
+      {
+        "id": "scope",
+        "purpose": "札の範囲は、店のアプリの設定 `/etc/php/8.3/apache2/php.ini` の `session.cookie_path` で決まる。店の全てのページに札が付く範囲に直し、`apache2` を再起動する（アプリは設定を動かす時に読む）。もう一度ログインして札を受け取り直し、注文の履歴（`/orders`）を開いて、履歴の件数を答える。",
+        "check": {
+          "kind": "answer",
+          "equals": "3"
+        },
+        "afterward": "`session.cookie_path = /` にして再起動すると、札の範囲が店の全てのページになり、カートでも注文の履歴でも「港 さん」と分かった。設定を直しても、アプリを再起動するまでは前の決まりのまま動く。",
+        "hints": [
+          "`grep session.cookie /etc/php/8.3/apache2/php.ini` で今の決まりを見る。直すのは `session.cookie_path` の行。`/` にすると、店の全ての道が範囲に入る。",
+          "直すのは `nano` で開いても、`sed -i 's|前|後|' ファイル` でもよい。直したら `systemctl restart apache2`。手元の札は範囲が狭いままなので、`-c cookies.txt` を付けてログインし直す。",
+          "`sed -i 's|^session.cookie_path = /login|session.cookie_path = /|' /etc/php/8.3/apache2/php.ini` `systemctl restart apache2` `curl -c cookies.txt -d 'user=minato&pass=harbor' https://shop.example/login` `curl -b cookies.txt https://shop.example/orders` を打ち、`3` と答える。"
         ],
-        "actions": [
-          {
-            "op": "set",
-            "field": "path",
-            "value": "/"
-          }
+        "expectedErrors": [
+          "web-cookie-scope",
+          "web-cookie-login"
         ]
       },
       {
         "id": "flags",
-        "purpose": "札が盗まれにくいように、暗号化した通信だけで送る印と、ページの中のプログラムから読めなくする印を、両方付ける。",
+        "purpose": "札が盗まれにくいように、`php.ini` の `session.cookie_secure`（暗号化した通信 {{term:https}} の時だけ送る）と `session.cookie_httponly`（ページの中の{{term:program}}から読めなくする）を、両方 `On` にする。`apache2` を再起動し、ログインの返事の `Set-Cookie` に `secure` と `HttpOnly` が付いたことを確かめる。",
         "check": {
-          "kind": "sim",
-          "expr": "field flags=Secure+HttpOnly"
+          "kind": "http",
+          "url": "https://shop.example/login",
+          "method": "POST",
+          "data": "user=minato&pass=harbor",
+          "status": 200,
+          "header": "Set-Cookie: PHPSESSID=q8v3k2m7t1c5h9r4w6n0b2x8ja; path=/; secure; HttpOnly"
         },
-        "afterward": "札は {{term:https}} の時だけ送られ、ページの中の{{term:program}}からは読めなくなった。札を盗む 2 つの道をふさいだ。",
+        "afterward": "`Set-Cookie: PHPSESSID=…; path=/; secure; HttpOnly` になった。札は https の時だけ送られ、ページの中のプログラムからは読めない。札を盗む 2 つの道をふさいだ。`cat cookies.txt` では、`HttpOnly` の札は行頭に `#HttpOnly_` が付き、4 つ目の欄（`Secure`）が `TRUE` になる。",
         "hints": [
           "札が盗まれる道は 2 つ。通り道で盗み見られる事と、ページに紛れ込んだ悪いプログラムに読まれる事。",
-          "「安全の印」の表を見る。`Secure` と `HttpOnly` の両方が要る。",
-          "`set flags Secure+HttpOnly` と選ぶ。"
+          "`session.cookie_secure` と `session.cookie_httponly` の 2 行を `Off` から `On` にして、`systemctl restart apache2`。`curl -i` でログインし直して見出しを見る。",
+          "`sed -i 's/^session.cookie_secure = Off/session.cookie_secure = On/;s/^session.cookie_httponly = Off/session.cookie_httponly = On/' /etc/php/8.3/apache2/php.ini` `systemctl restart apache2` `curl -i -c cookies.txt -d 'user=minato&pass=harbor' https://shop.example/login` の順に打つ。"
         ],
         "expectedErrors": [
-          "web-cookie-flags"
-        ],
-        "actions": [
-          {
-            "op": "set",
-            "field": "flags",
-            "value": "Secure+HttpOnly"
-          }
+          "web-cookie-flags",
+          "web-cookie-login"
         ]
       }
     ]
   },
   "result": {
-    "success": "札の流れを記録から読み取り、範囲と安全の印を直せた。ログインが保たれる仕組みを、自分で確かめられた。",
-    "partial": "ヒントを使って札の設定を直せた。次は、札の範囲を /cart にした時、どのページで切れるかを記録で確かめてみよう。",
-    "retry": "まだログインが保たれていない。記録で、札（Cookie）が付いていない依頼の{{term:path}}を探し、その場所も含む範囲にしよう。"
+    "success": "札の流れを {{term:curl}} で確かめ、アプリの設定（php.ini）で範囲と安全の印を直せた。ログインが保たれる仕組みを、自分で確かめられた。",
+    "partial": "ヒントを使って札の設定を直せた。次は、`session.cookie_path` を `/cart` にした時、どのページで切れるかを `curl -b` で確かめてみよう。",
+    "retry": "まだログインが保たれていない。`curl -i` の `Set-Cookie` の `path` を見て、札が付かない依頼の{{term:path}}も含む範囲にしよう。直したら `apache2` を再起動し、ログインし直す。"
   },
   "summary": {
     "points": [

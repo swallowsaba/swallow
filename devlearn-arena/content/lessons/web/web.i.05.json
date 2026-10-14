@@ -29,7 +29,9 @@
     "port",
     "permission",
     "url",
-    "internet"
+    "internet",
+    "web-server",
+    "config-file"
   ],
   "explain": {
     "what": "{{term:cors}}は、ある画面から別のサイトの{{term:api}}を呼んだ時、ブラウザが中身を画面に渡すかを決める決まり。相手の{{term:response}}に許可の{{term:header}}が無ければ、ブラウザが止める。",
@@ -139,112 +141,80 @@
     }
   ],
   "practice": {
-    "mode": "simulation",
-    "purpose": "在庫の API（https://api.example）の返事の許可の見出しを設定し、自分の画面（https://shop.example）からは使え、知らないサイトの画面からは使えないようにする。",
-    "environment": "sim-config",
+    "mode": "editor",
+    "purpose": "在庫の API（`https://api.example`）の返事に、許可の{{term:header}} `Access-Control-Allow-Origin` を付ける。自分の画面（`https://shop.example`）のブラウザからは使え、知らないサイトの画面（`https://evil.example`）からは使えないようにする。書くのは API の前に立つ{{term:web-server}}（nginx）の設定 `/etc/nginx/conf.d/api.conf`。今は、自分の画面で在庫を開くと、ブラウザが「`Access to fetch at 'https://api.example/items' from origin 'https://shop.example' has been blocked by CORS policy`」と止める。",
+    "environment": "linux-server",
     "setup": {
-      "fields": [
-        {
-          "id": "allow",
-          "label": "返事に付ける Access-Control-Allow-Origin",
-          "note": "許す送り元（画面のサイト）を書く"
+      "hostname": "api-web",
+      "files": {
+        "/etc/hosts": "127.0.0.1\tlocalhost api.example\n",
+        "/etc/nginx/conf.d/api.conf": "# 在庫の API（https://api.example）。画面のサイト（https://shop.example）のブラウザから呼ばれる\nserver {\n  listen 443 ssl;\n  server_name api.example;\n  ssl_certificate /etc/nginx/certs/api.crt;\n\n  location / {\n    proxy_pass http://127.0.0.1:3000;\n  }\n}\n",
+        "/etc/nginx/certs/api.crt": "-----BEGIN CERTIFICATE-----\nsubject: api.example\nissuer: Minato Issuing CA\nnames: api.example\nvalid: 2026-01-01 2027-01-01\n-----END CERTIFICATE-----\n-----BEGIN CERTIFICATE-----\nsubject: Minato Issuing CA\nissuer: Minato Root CA\nvalid: 2024-01-01 2030-01-01\nca: yes\n-----END CERTIFICATE-----\n"
+      },
+      "services": {
+        "nginx": {
+          "description": "nginx web server",
+          "enabled": true,
+          "config": "/etc/nginx/conf.d/api.conf"
+        },
+        "stock-api": {
+          "description": "在庫のアプリ（後ろのアプリ）",
+          "enabled": true,
+          "port": 3000,
+          "address": "127.0.0.1",
+          "routes": {
+            "/items": {
+              "status": 200,
+              "headers": {
+                "Content-Type": "application/json"
+              },
+              "body": "[{\"id\":3,\"name\":\"灯台の模型\",\"stock\":2}]"
+            }
+          }
         }
+      },
+      "sites": [],
+      "run": [
+        "systemctl start nginx",
+        "systemctl start stock-api"
       ],
-      "panels": [
-        {
-          "kind": "table",
-          "title": "登場するサイトの送り元",
-          "columns": [
-            "サイト",
-            "送り元（スキーム・ホスト・ポート）"
-          ],
-          "rows": [
-            [
-              "自分の画面",
-              "https://shop.example"
-            ],
-            [
-              "在庫の API",
-              "https://api.example"
-            ],
-            [
-              "知らないサイト",
-              "https://evil.example"
-            ]
-          ]
-        },
-        {
-          "kind": "log",
-          "title": "ブラウザの記録（自分の画面で在庫を開いた時）",
-          "lines": [
-            "GET https://api.example/items → 200（返事は届いた）",
-            "Access to fetch at 'https://api.example/items' from origin 'https://shop.example' has been blocked by CORS policy"
-          ],
-          "when": "!field allow=https://shop.example && !field allow=*"
-        },
-        {
-          "kind": "kv",
-          "title": "ブラウザの判断（全てを許した）",
-          "rows": [
-            [
-              "自分の画面",
-              "使える"
-            ],
-            [
-              "知らないサイトの画面",
-              "使える（利用者の在庫の情報が取られる）"
-            ]
-          ],
-          "when": "field allow=*"
-        },
-        {
-          "kind": "kv",
-          "title": "ブラウザの判断",
-          "rows": [
-            [
-              "自分の画面",
-              "使える"
-            ],
-            [
-              "知らないサイトの画面",
-              "ブラウザが止める"
-            ]
-          ],
-          "when": "field allow=https://shop.example"
-        }
-      ]
+      "edit": {
+        "path": "/etc/nginx/conf.d/api.conf",
+        "apply": [
+          "nginx -t && systemctl reload nginx",
+          "curl -si -H 'Origin: https://shop.example' https://api.example/items",
+          "curl -si -H 'Origin: https://evil.example' https://api.example/items"
+        ]
+      }
     },
     "steps": [
       {
         "id": "allow",
-        "purpose": "ブラウザの記録を読み、止められた理由を確かめる。返事の許可の見出しに、自分の画面の送り元だけを書く。",
+        "purpose": "確かめた結果（`curl -si`）で、今の返事に `Access-Control-Allow-Origin` が無いことを見る（返事そのものは 200 で届いている）。`location /` に `add_header` で許可の見出しを足し、値には自分の画面の送り元だけを書く。返事が `Access-Control-Allow-Origin: https://shop.example` になったことを見る。",
         "check": {
-          "kind": "sim",
-          "expr": "field allow=https://shop.example"
+          "kind": "http",
+          "url": "https://api.example/items",
+          "status": 200,
+          "header": "Access-Control-Allow-Origin: https://shop.example"
         },
-        "afterward": "返事に自分の画面の送り元が書かれたので、ブラウザは shop.example の画面には中身を渡し、evil.example の画面には渡さなくなった。",
+        "afterward": "返事に自分の画面の送り元が書かれた。ブラウザは、自分の送り元（`https://shop.example`）と見出しの値が同じなので中身を渡し、`https://evil.example` の画面には渡さない。`curl` はブラウザではないので、どちらの送り元でも中身を受け取る（止めるのはブラウザ）。",
         "hints": [
-          "ブラウザの記録の「blocked by CORS policy」は、返事に許可の見出しが無いという意味。返事は届いている。",
-          "許すのは自分の画面だけ。* は全てを許す。送り元は表から、スキーム（https://）から写し、最後に / を付けない。",
-          "`set allow https://shop.example` と入れる。"
+          "「blocked by CORS policy」は、返事に許可の見出しが無いという意味。返事は届いている。許可の見出しはサーバ（API の側）が返す。",
+          "見出しを足すのは `add_header 名前 値;`。許すのは自分の画面だけ。`*` は全てを許す。送り元はスキーム（`https://`）から写し、最後に `/` を付けない。",
+          "`# 在庫の API（https://api.example）。画面のサイト（https://shop.example）のブラウザから呼ばれる\nserver {\n  listen 443 ssl;\n  server_name api.example;\n  ssl_certificate /etc/nginx/certs/api.crt;\n\n  location / {\n    proxy_pass http://127.0.0.1:3000;\n    add_header Access-Control-Allow-Origin https://shop.example;\n  }\n}` と保存する。"
         ],
         "expectedErrors": [
-          "web-cors-origin"
-        ],
-        "actions": [
-          {
-            "op": "set",
-            "field": "allow",
-            "value": "https://shop.example"
-          }
+          "web-cors-origin",
+          "nginx-emerg",
+          "web-502"
         ]
       }
     ]
   },
   "result": {
-    "success": "止めているのがブラウザだと見抜き、許す送り元を自分の画面だけに絞れた。",
-    "partial": "ヒントを使って、許可の見出しを設定できた。次は、* にすると知らないサイトの画面から何ができてしまうかを説明してみよう。",
-    "retry": "まだ自分の画面だけを許す形になっていない。表の自分の画面の送り元と、書いた値を 1 字ずつ見比べよう。"
+    "success": "nginx の設定で許可の見出しを返し、自分の画面の送り元だけを許せた。`curl -si -H 'Origin: …'` で、返事の見出しを自分で確かめられた。",
+    "partial": "ヒントを使って許可の見出しを書けた。次は、値を `*` にした時に `https://evil.example` の画面がどうなるかを考えてみよう。",
+    "retry": "まだ自分の画面だけを許す形になっていない。`curl -si` の結果の `Access-Control-Allow-Origin` の値を、自分の画面の送り元と 1 字ずつ見比べよう。"
   },
   "summary": {
     "points": [

@@ -111,8 +111,17 @@ export const checkSchema = z.discriminatedUnion('kind', [
   z.object({ kind: z.literal('net'), expr: z.string() }).strict(),
   /** コンテナの模型の状態（イメージ・コンテナ・網・ボリューム）。式は docs/content-spec.md 2.4（src/engines/container/check.ts） */
   z.object({ kind: z.literal('container'), expr: z.string().min(1) }).strict(),
-  /** contains を書けば、返事の本文にその文字列がある（API の資源が変わったか） */
-  z.object({ kind: z.literal('http'), url: z.string(), status: z.number().int(), contains: z.string().optional() }).strict(),
+  /**
+   * contains を書けば、返事の本文にその文字列がある（API の資源が変わったか）。
+   * header を「名前: 値」で書けば、返事にその名前の見出しがあり、値が同じ（名前の大文字・小文字は問わない）。
+   * method と data で、頼み方（POST と送る中身）を決められる
+   */
+  z.object({
+    kind: z.literal('http'), url: z.string(), status: z.number().int(), contains: z.string().optional(),
+    header: z.string().regex(/^[A-Za-z0-9-]+: .+$/).optional(),
+    method: z.enum(['GET', 'HEAD', 'POST', 'PUT', 'PATCH', 'DELETE']).optional(),
+    data: z.string().optional(),
+  }).strict(),
   z.object({ kind: z.literal('tls'), host: z.string(), trusted: z.boolean() }).strict(),
   z.object({ kind: z.literal('sql'), query: z.string(), equals: z.unknown() }).strict(),
   z.object({ kind: z.literal('answer'), equals: z.string() }).strict(),

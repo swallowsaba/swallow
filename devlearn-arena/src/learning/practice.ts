@@ -72,6 +72,14 @@ function modeHolds(mode: number, spec: string): boolean {
   });
 }
 
+/** 返事に「名前: 値」の見出しがあるか（名前の大文字・小文字は問わず、値は前後の空白を除いて同じ） */
+function hasHeader(headers: Readonly<Record<string, string>>, spec: string): boolean {
+  const at = spec.indexOf(': ');
+  const name = spec.slice(0, at).toLowerCase();
+  const want = spec.slice(at + 2);
+  return Object.entries(headers).some(([k, v]) => k.toLowerCase() === name && v.trim() === want.trim());
+}
+
 /** 達成条件を、模擬環境の今の状態で判定する */
 export function checkState(check: CheckSpec, input: CheckInput): boolean {
   if (check.kind === 'sim') return input.sim !== undefined && holds(input.sim, check.expr);
@@ -104,8 +112,8 @@ export function checkState(check: CheckSpec, input: CheckInput): boolean {
       return true;
     }
     case 'http': {
-      const r = request(httpEnvOf(shell), check.url);
-      return r.ok && r.response.status === check.status && (check.contains === undefined || r.response.body.includes(check.contains));
+      const r = request(httpEnvOf(shell), check.url, { ...(check.method ? { method: check.method } : {}), ...(check.data !== undefined ? { data: check.data } : {}) });
+      return r.ok && r.response.status === check.status && (check.contains === undefined || r.response.body.includes(check.contains)) && (check.header === undefined || hasHeader(r.response.headers, check.header));
     }
     case 'tls': {
       // 手元（/etc/hosts で手元を指す名前を含む）の Web サーバは、送ってくる証明書で確かめる

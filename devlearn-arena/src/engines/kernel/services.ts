@@ -8,8 +8,10 @@
  * - 設定ファイル（config）を持つサービスは、動かす時に設定を読む（src/engines/kernel/webConfig.ts）。
  *   設定の誤りでは起動に失敗し、理由をログに書く。待ち受けるポートは設定から決まる
  * - 動いている別のサービスと同じポートでは待ち受けられない（起動に失敗する）
+ * - ログインを覚えるアプリ（session）は、動かす時に php.ini を読み、札（Cookie）の決まりにする（src/engines/http/session.ts）
  */
 import type { Route } from '@/engines/http/http';
+import { readSessionIni, type SessionApp, type SessionCookie } from '@/engines/http/session';
 import type { ConfigResult, Listen, ServerBlock } from './webConfig';
 
 export type ActiveState = 'active' | 'inactive' | 'failed';
@@ -39,6 +41,10 @@ export interface Service {
   listens?: readonly Listen[];
   /** 設定から読んだサイト（server。名前で振り分け、公開用のディレクトリ・転送・中継を決める） */
   servers?: readonly ServerBlock[];
+  /** ログインを覚えるアプリ（HTTP で応える。routes・body より先に使う） */
+  session?: SessionApp;
+  /** 動かした時に php.ini から読んだ札の決まり（動いている間だけ意味がある） */
+  cookie?: SessionCookie;
   /** ログ（journalctl で読む） */
   log: readonly string[];
 }
@@ -90,6 +96,9 @@ const isError = (x: Service | ServiceError): x is ServiceError => 'kind' in x;
 /** 設定ファイルを読む関数（場所 → 結果）。systemctl が仮想のファイルから読んで渡す */
 export type ConfigLoader = (path: string) => ConfigResult;
 
+/** ファイルの中身を読む関数（無ければ null）。アプリの設定（php.ini）を読む */
+export type TextReader = (path: string) => string | null;
+
 /** サービスが待ち受けるポート（設定から決まった物と、初めから決まっている物） */
 export function portsOf(s: Service): number[] {
   return [...(s.listens ?? []).map((l) => l.port), ...(s.port !== undefined && !s.config ? [s.port] : [])];
@@ -106,7 +115,7 @@ function fail(table: ServiceTable, s: Service, why: LogLine): ServiceResult {
   return { ok: false, table: t, error: { kind: 'failed', unit: `${s.name}.service` } };
 }
 
-export function startService(table: ServiceTable, raw: string, load?: ConfigLoader): ServiceResult {
+export function startService(table: ServiceTable, raw: string, load?: ConfigLoader, read?: TextReader): ServiceResult {
   const s = find(table, raw);
   if (isError(s)) return { ok: false, table, error: s };
   if (s.active === 'active') return { ok: true, table };
@@ -117,6 +126,8 @@ export function startService(table: ServiceTable, raw: string, load?: ConfigLoad
     if (!conf.ok) return fail(table, s, { from: `${s.name}[${String(800 + table.tick)}]`, text: conf.error });
     ready = { ...s, listens: conf.listens, servers: conf.servers };
   }
+  // php.ini が無ければ、PHP と同じく既定の決まりで動く
+  if (s.session) ready = { ...ready, cookie: readSessionIni((read ? read(s.session.ini) : null) ?? '') };
   for (const port of portsOf(ready)) {
     const other = [...table.services.values()].find((o) => o.name !== s.name && o.active === 'active' && portsOf(o).includes(port));
     if (other) return fail(table, s, { from: `${s.name}[${String(800 + table.tick)}]`, text: `${s.name}: [emerg] bind() to 0.0.0.0:${String(port)} failed (98: Address already in use)` });
@@ -131,9 +142,9 @@ export function stopService(table: ServiceTable, raw: string): ServiceResult {
   return { ok: true, table: update(table, { ...s, active: 'inactive' }, [`Stopping ${s.name}.service - ${s.description}...`, `Stopped ${s.name}.service - ${s.description}.`]) };
 }
 
-export function restartService(table: ServiceTable, raw: string, load?: ConfigLoader): ServiceResult {
+export function restartService(table: ServiceTable, raw: string, load?: ConfigLoader, read?: TextReader): ServiceResult {
   const stopped = stopService(table, raw);
-  return stopped.ok ? startService(stopped.table, raw, load) : stopped;
+  return stopped.ok ? startService(stopped.table, raw, load, read) : stopped;
 }
 
 export function setEnabled(table: ServiceTable, raw: string, enabled: boolean): ServiceResult {
@@ -145,9 +156,9 @@ export function setEnabled(table: ServiceTable, raw: string, enabled: boolean): 
 }
 
 /** 次の起動（サーバの再起動）。有効なサービスだけが動き出し、それ以外は止まったまま */
-export function reboot(table: ServiceTable, load?: ConfigLoader): ServiceTable {
+export function reboot(table: ServiceTable, load?: ConfigLoader, read?: TextReader): ServiceTable {
   let t: ServiceTable = { ...table, services: new Map([...table.services].map(([k, s]) => [k, { ...s, active: 'inactive' as const }])) };
-  for (const s of t.services.values()) if (s.enabled) t = startService(t, s.name, load).table;
+  for (const s of t.services.values()) if (s.enabled) t = startService(t, s.name, load, read).table;
   return t;
 }
 

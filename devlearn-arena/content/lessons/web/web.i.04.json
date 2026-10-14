@@ -28,7 +28,9 @@
     "html",
     "css",
     "script",
-    "file"
+    "file",
+    "curl",
+    "config-file"
   ],
   "explain": {
     "what": "{{term:cache}}は、一度取った物を近くに保存して使い回す仕組み。{{term:web}}では、ブラウザ・途中の中継・{{term:server}}の手前の 3 か所に保存がある。",
@@ -155,158 +157,87 @@
     }
   ],
   "practice": {
-    "mode": "simulation",
-    "purpose": "港町のサイトの保存の決まり（Cache-Control）を、物の種類ごとに決める。お知らせのページ（HTML）は直したらすぐ届き、変わらない画像は速く出るようにする。",
-    "environment": "sim-config",
+    "mode": "editor",
+    "purpose": "港町のサイト `port.example` の保存の決まり（{{term:cache-control}}）を、物の種類ごとに{{term:web-server}}（nginx）の設定 `/etc/nginx/conf.d/port.conf` に書く。お知らせのページ（`index.html`）は直したらすぐ届き、変わらない画像（`/images/` の `logo.v3.png`・`port.v1.jpg`）は速く出るようにする。利用者の声は「お知らせを直したと聞いたのに、昨日の物が出る」「開くたびに、写真が出るまで待たされる」。",
+    "environment": "linux-server",
     "setup": {
-      "fields": [
-        {
-          "id": "html",
-          "label": "HTML（お知らせのページ）の Cache-Control",
-          "options": [
-            "max-age=31536000",
-            "max-age=600",
-            "no-cache",
-            "no-store"
-          ],
-          "value": "max-age=31536000",
-          "note": "直す前は 1 年（31536000 秒）保存"
-        },
-        {
-          "id": "image",
-          "label": "画像（ロゴ・写真）の Cache-Control",
-          "options": [
-            "max-age=31536000",
-            "max-age=600",
-            "no-cache",
-            "no-store"
-          ],
-          "value": "no-store",
-          "note": "直す前は保存しない"
-        }
+      "hostname": "port-web",
+      "dirs": [
+        "/var/www/port/images"
       ],
-      "panels": [
-        {
-          "kind": "table",
-          "title": "サイトの部品",
-          "columns": [
-            "部品",
-            "変わる頻度",
-            "大きさ"
-          ],
-          "rows": [
-            [
-              "index.html（お知らせ）",
-              "毎日直す",
-              "12KB"
-            ],
-            [
-              "logo.v3.png（ロゴ）",
-              "変えない（変える時は名前も変える）",
-              "80KB"
-            ],
-            [
-              "port.v1.jpg（港の写真）",
-              "変えない",
-              "900KB"
-            ]
-          ]
-        },
-        {
-          "kind": "log",
-          "title": "利用者の声",
-          "lines": [
-            "お知らせを直したと聞いたのに、昨日の物が出る",
-            "開くたびに、写真が出るまで待たされる"
-          ]
-        },
-        {
-          "kind": "kv",
-          "title": "ブラウザの動き（今の設定）",
-          "rows": [
-            [
-              "HTML",
-              "1 年はサーバに聞かずに、保存した物を出す"
-            ],
-            [
-              "画像",
-              "開くたびに、全てを取り直す"
-            ]
-          ],
-          "when": "field html=max-age=31536000 && field image=no-store"
-        },
-        {
-          "kind": "kv",
-          "title": "ブラウザの動き（直した設定）",
-          "rows": [
-            [
-              "HTML",
-              "毎回サーバに新しいかを確かめる。変わっていなければ、304 で中身を送らずに済む"
-            ],
-            [
-              "画像",
-              "1 年は保存した物を使う。取り直さない"
-            ]
-          ],
-          "when": "field html=no-cache && field image=max-age=31536000"
+      "files": {
+        "/etc/hosts": "127.0.0.1\tlocalhost port.example\n",
+        "/etc/nginx/conf.d/port.conf": "server {\n  listen 80;\n  server_name port.example;\n  root /var/www/port;\n\n  # お知らせのページ（index.html）。毎日直す\n  location / {\n    add_header Cache-Control \"max-age=31536000\";\n  }\n\n  # 画像（logo.v3.png・port.v1.jpg）。変えない。変える時は名前も変える（logo.v4.png）\n  location /images/ {\n    add_header Cache-Control \"no-store\";\n  }\n}\n",
+        "/var/www/port/index.html": "<html><body><h1>港町のお知らせ</h1><p>10 月 14 日: 朝市は 7 時から</p><img src=\"/images/logo.v3.png\"><img src=\"/images/port.v1.jpg\"></body></html>\n",
+        "/var/www/port/images/logo.v3.png": "PNG\n",
+        "/var/www/port/images/port.v1.jpg": "JPEG\n"
+      },
+      "services": {
+        "nginx": {
+          "description": "nginx web server",
+          "enabled": true,
+          "config": "/etc/nginx/conf.d/port.conf"
         }
-      ]
+      },
+      "run": [
+        "systemctl start nginx"
+      ],
+      "edit": {
+        "path": "/etc/nginx/conf.d/port.conf",
+        "apply": [
+          "nginx -t && systemctl reload nginx",
+          "curl -sI http://port.example/",
+          "curl -sI http://port.example/images/logo.v3.png"
+        ]
+      }
     },
     "steps": [
       {
         "id": "html",
-        "purpose": "お知らせのページ（HTML）を、直したらすぐ届くようにする。保存はしてよいが、使う前に毎回サーバに新しいかを確かめる決まりにする。",
+        "purpose": "お知らせのページ（`location /`）を、直したらすぐ届くようにする。保存はしてよいが、使う前に毎回サーバに新しいかを確かめる決まりにする。確かめた結果で、`http://port.example/` の返事が `Cache-Control: no-cache` になったことを見る。",
         "check": {
-          "kind": "sim",
-          "expr": "field html=no-cache"
+          "kind": "http",
+          "url": "http://port.example/",
+          "status": 200,
+          "header": "Cache-Control: no-cache"
         },
         "afterward": "HTML は使う前に毎回サーバに確かめるので、直したお知らせがすぐ届く。変わっていなければ 304（変わっていない）で済み、中身は送らない。",
         "hints": [
-          "毎日直す物を長く保存すると、直しても届かない。でも、保存を一切やめる必要はない。",
-          "no-cache は「保存してよいが、使う前に毎回確かめる」。no-store は「保存しない」。名前が紛らわしい。",
-          "`set html no-cache` と入れる。"
+          "毎日直す物を長く保存すると（`max-age=31536000` は 1 年）、直しても期限まで届かない。でも、保存を一切やめる必要はない。",
+          "`no-cache` は「保存してよいが、使う前に毎回確かめる」。`no-store` は「保存しない」。名前が紛らわしい。直すのは `location /` の中の `add_header` の値。",
+          "`server {\n  listen 80;\n  server_name port.example;\n  root /var/www/port;\n\n  # お知らせのページ（index.html）。毎日直す\n  location / {\n    add_header Cache-Control \"no-cache\";\n  }\n\n  # 画像（logo.v3.png・port.v1.jpg）。変えない。変える時は名前も変える（logo.v4.png）\n  location /images/ {\n    add_header Cache-Control \"no-store\";\n  }\n}` と保存する。"
         ],
         "expectedErrors": [
-          "web-cache-mismatch"
-        ],
-        "actions": [
-          {
-            "op": "set",
-            "field": "html",
-            "value": "no-cache"
-          }
+          "web-cache-mismatch",
+          "nginx-emerg"
         ]
       },
       {
         "id": "image",
-        "purpose": "変わらない画像（ロゴ・写真）は、長く保存して、開くたびに取り直さないようにする。",
+        "purpose": "変わらない画像（`location /images/`）は、長く（1 年 = 31536000 秒）保存して、開くたびに取り直さないようにする。確かめた結果で、`http://port.example/images/logo.v3.png` の返事が `Cache-Control: max-age=31536000` になったことを見る。",
         "check": {
-          "kind": "sim",
-          "expr": "field html=no-cache && field image=max-age=31536000"
+          "kind": "http",
+          "url": "http://port.example/images/logo.v3.png",
+          "status": 200,
+          "header": "Cache-Control: max-age=31536000"
         },
-        "afterward": "画像は 1 年保存して使い回すので、2 回目からはすぐ出る。変える時は名前を変える（logo.v4.png）ので、古い画像が出続けることもない。",
+        "afterward": "画像は 1 年保存して使い回すので、2 回目からはすぐ出る。変える時は名前を変える（`logo.v4.png`）ので、古い画像が出続けることもない。",
         "hints": [
-          "表の「変わる頻度」を見る。変わらない物は、長く保存してよい。",
-          "期限を決めるのは max-age（秒）。最も長い物を選ぶ。",
-          "`set image max-age=31536000` と入れる。"
+          "設定の注釈（`#` の行）を見る。変わらない物は、長く保存してよい。",
+          "期限を決めるのは `max-age`（秒）。1 年は `31536000`。直すのは `location /images/` の中の `add_header` の値。",
+          "`server {\n  listen 80;\n  server_name port.example;\n  root /var/www/port;\n\n  # お知らせのページ（index.html）。毎日直す\n  location / {\n    add_header Cache-Control \"no-cache\";\n  }\n\n  # 画像（logo.v3.png・port.v1.jpg）。変えない。変える時は名前も変える（logo.v4.png）\n  location /images/ {\n    add_header Cache-Control \"max-age=31536000\";\n  }\n}` と保存する。"
         ],
         "expectedErrors": [
-          "web-cache-mismatch"
-        ],
-        "actions": [
-          {
-            "op": "set",
-            "field": "image",
-            "value": "max-age=31536000"
-          }
+          "web-cache-image",
+          "nginx-emerg"
         ]
       }
     ]
   },
   "result": {
-    "success": "変わる物は毎回確かめ、変わらない物は長く保存して、速さと新しさを両立できた。",
-    "partial": "ヒントを使って、保存の決まりを種類ごとに分けられた。次は、HTML を no-store にした時と no-cache の違いを説明してみよう。",
-    "retry": "まだ両立できていない。表の「変わる頻度」と、ブラウザの動きを見比べ、どこで古い物が保存されているかを確かめよう。"
+    "success": "物の種類ごとに、nginx の設定で Cache-Control を書き分けられた。`curl -I` で返事の見出しを確かめ、速さと新しさを両立できた。",
+    "partial": "ヒントを使って保存の決まりを書けた。次は、`curl -I` で 2 つの道の Cache-Control を見比べ、どこで保存されるかを考えてみよう。",
+    "retry": "まだ決まりが合っていない。`curl -sI` の結果で、HTML と画像の Cache-Control をそれぞれ見よう。よく変わる物は「保存して毎回確かめる」、変わらない物は「長く保存」。"
   },
   "summary": {
     "points": [

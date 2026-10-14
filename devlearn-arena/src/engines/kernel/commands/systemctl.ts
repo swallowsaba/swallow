@@ -1,6 +1,6 @@
 import type { CommandResult, CommandSpec, ShellState } from '../registry';
 import {
-  restartService, serviceOf, setEnabled, startService, stopService, unitName, type ConfigLoader, type ServiceResult, type ServiceTable,
+  restartService, serviceOf, setEnabled, startService, stopService, unitName, type ConfigLoader, type ServiceResult, type TextReader, type ServiceTable,
 } from '../services';
 import { exists, isDir, readFile } from '../vfs';
 import { withZones } from '../dnsZones';
@@ -98,6 +98,11 @@ function loaderOf(shell: ShellState): ConfigLoader {
   return (path) => readWebConfig(path, (p) => (exists(shell.vfs, p) && !isDir(shell.vfs, p) ? readFile(shell.vfs, p) : null));
 }
 
+/** アプリの設定（php.ini）を、仮想のファイルから読む */
+function readerOf(shell: ShellState): TextReader {
+  return (path) => (exists(shell.vfs, path) && !isDir(shell.vfs, path) ? readFile(shell.vfs, path) : null);
+}
+
 export const systemctlCommands: CommandSpec[] = [
   {
     name: 'systemctl',
@@ -124,16 +129,16 @@ export const systemctlCommands: CommandSpec[] = [
           };
         }
         case 'start':
-          return run(shell, 'start', units, (t, u) => startService(t, u, loaderOf(shell)));
+          return run(shell, 'start', units, (t, u) => startService(t, u, loaderOf(shell), readerOf(shell)));
         case 'stop':
           return run(shell, 'stop', units, stopService);
         case 'restart':
-          return run(shell, 'restart', units, (t, u) => restartService(t, u, loaderOf(shell)));
+          return run(shell, 'restart', units, (t, u) => restartService(t, u, loaderOf(shell), readerOf(shell)));
         case 'reload': {
           // 設定を読み直す。動いていなければ読み直せない（本物と同じ）
           const idle = units.find((u) => serviceOf(shell.services, u)?.active !== 'active');
           if (idle !== undefined && serviceOf(shell.services, idle)) return { stderr: `${unitOf(idle)} is not active, cannot reload.\n`, code: 1 };
-          return run(shell, 'reload', units, (t, u) => restartService(t, u, loaderOf(shell)));
+          return run(shell, 'reload', units, (t, u) => restartService(t, u, loaderOf(shell), readerOf(shell)));
         }
         case 'enable':
         case 'disable': {
@@ -148,7 +153,7 @@ export const systemctlCommands: CommandSpec[] = [
           }, (u) => (serviceOf(shell.services, u)?.enabled === on ? '' : link(u)));
           if ((set.code ?? 0) !== 0 || !now) return { ...set, stdout: (set.stdout ?? '').replace(/^\n+/gm, '') };
           const after: ShellState = { ...shell, services: (set.patch?.services ?? shell.services) };
-          const next = run(after, on ? 'start' : 'stop', units, on ? (t, u) => startService(t, u, loaderOf(shell)) : stopService);
+          const next = run(after, on ? 'start' : 'stop', units, on ? (t, u) => startService(t, u, loaderOf(shell), readerOf(shell)) : stopService);
           return { ...next, stdout: `${(set.stdout ?? '').replace(/^\n+/gm, '')}${next.stdout ?? ''}` };
         }
         case 'is-active': {
