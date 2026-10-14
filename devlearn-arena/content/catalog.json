@@ -1121,7 +1121,7 @@
       "title": "NAT",
       "goal": "内側と外側のアドレス変換を説明し、設定の誤りを見つけられる",
       "practice": [
-        "simulation"
+        "terminal"
       ],
       "prerequisites": [
         "net.i.01"
@@ -1142,7 +1142,7 @@
       "title": "ファイアウォール",
       "goal": "許可と拒否の規則を読み書きできる",
       "practice": [
-        "simulation"
+        "terminal"
       ],
       "prerequisites": [
         "net.b.04"
@@ -1207,7 +1207,7 @@
       "title": "ネットワークを分ける",
       "goal": "セグメント分割と VLAN の考え方を説明できる",
       "practice": [
-        "simulation"
+        "terminal"
       ],
       "prerequisites": [
         "net.i.01"

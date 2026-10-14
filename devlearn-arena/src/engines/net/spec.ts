@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { macFor } from './build';
 import { DEFAULT_MTU, port } from './factory';
+import { emptyIptables, runIptables, type Iptables } from './firewall';
 import { contains, parseCidr } from './subnet';
 import type { Device, Interface, Link, Route, Topology } from './types';
 
@@ -26,6 +27,8 @@ export const networkSetupSchema = z.object({
     addrs: z.array(cidr).default([]),
     /** スイッチの口の数 */
     ports: z.number().int().min(2).max(48).optional(),
+    /** スイッチの口の VLAN（口の名前 → VLAN の番号）。書いたスイッチは VLAN を絞る（書いていない口は、どの VLAN も通さない） */
+    vlans: z.record(z.string().regex(/^port\d+$/), z.number().int().min(1).max(4094)).optional(),
     /** 知らない宛先の出口（デフォルトゲートウェイ） */
     gateway: ip.optional(),
     /** 足した経路（宛先の網 → 次に渡す機器のアドレス） */
@@ -38,6 +41,8 @@ export const networkSetupSchema = z.object({
     silent: z.boolean().optional(),
     /** Web のページ（curl で取りに来た時に返す中身） */
     body: z.string().optional(),
+    /** iptables の規則（引数の行。`-P INPUT DROP`・`-A INPUT -p tcp --dport 22 -j ACCEPT`・`-t nat -A PREROUTING …`）。上から順に当てる */
+    firewall: z.array(z.string().min(1)).optional(),
   }).strict()).min(1),
   /** 線（機器の名前の組。3 つ目に down と書くと、切れた線） */
   links: z.array(z.union([z.tuple([name, name]), z.tuple([name, name, z.literal('down')])])),
@@ -69,9 +74,15 @@ export function buildNetwork(raw: NetworkSetup): Topology {
   for (const d of spec.devices) {
     if (devices.has(d.name)) throw new Error(`機器 ${d.name} が重なる`);
     if (d.kind === 'switch' ? d.addrs.length > 0 || d.ports === undefined : d.addrs.length === 0) throw new Error(`機器 ${d.name}: スイッチは ports だけ、ほかは addrs を書く`);
+    const vlanOf = (name: string): number | undefined => d.vlans?.[name];
     const interfaces = d.kind === 'switch'
-      ? Array.from({ length: d.ports ?? 0 }, (_, i) => port(`port${String(i + 1)}`))
+      ? Array.from({ length: d.ports ?? 0 }, (_, i) => {
+        const name = `port${String(i + 1)}`;
+        const v = vlanOf(name);
+        return d.vlans === undefined ? port(name) : { ...port(name, { vlan: v ?? null }), vlans: v === undefined ? [] : [v] };
+      })
       : d.addrs.map((a, i) => ifaceOf(d.name, i, a));
+    for (const p of Object.keys(d.vlans ?? {})) if (!interfaces.some((i) => i.name === p)) throw new Error(`機器 ${d.name}: vlans の口 ${p} が無い`);
     const device: Device = {
       name: d.name, kind: d.kind, interfaces, routes: [], listening: d.listen ?? [], blockedPorts: d.blocked ?? [],
       arp: {}, macTable: {}, nat: null,
@@ -80,7 +91,13 @@ export function buildNetwork(raw: NetworkSetup): Topology {
     };
     const routes: Route[] = (d.routes ?? []).map((r) => ({ destination: r.to, via: r.via, dev: devFor(device, r.via, '経路の次の機器') }));
     if (d.gateway !== undefined) routes.push({ destination: '0.0.0.0/0', via: d.gateway, dev: devFor(device, d.gateway, '出口') });
-    devices.set(d.name, { ...device, routes });
+    let iptables: Iptables | undefined;
+    for (const line of d.firewall ?? []) {
+      const r = runIptables(iptables ?? emptyIptables(), line.trim().split(/\s+/));
+      if (!r.ok) throw new Error(`機器 ${d.name} の firewall「${line}」: ${r.stderr.trim()}`);
+      iptables = r.table;
+    }
+    devices.set(d.name, { ...device, routes, ...(iptables ? { iptables } : {}) });
   }
   if (!devices.has(spec.self)) throw new Error(`端末の機械 ${spec.self} が devices に無い`);
   const used = new Set<string>();

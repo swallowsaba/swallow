@@ -24,7 +24,11 @@
     "router",
     "firewall",
     "internet",
-    "program"
+    "program",
+    "iptables",
+    "terminal",
+    "network",
+    "file"
   ],
   "explain": {
     "what": "網を用途ごとに分けた 1 つ 1 つの区切りが{{term:segment}}。社内・{{term:server}}・来客用のように分ける。{{term:vlan}} は、1 台の{{term:switch}}の中を、線は同じまま別々の網に分ける仕組み。分けた網の間は、{{term:router}}を通る。",
@@ -148,183 +152,159 @@
     }
   ],
   "practice": {
-    "mode": "simulation",
-    "purpose": "1 つの網に全員がいる事務所を、社内・サーバ・来客の 3 つの網（VLAN）に分け、来客から社内とサーバが見えないようにする。",
-    "environment": "sim-config",
+    "mode": "terminal",
+    "purpose": "事務所の網を、社内（`VLAN 10`・10.0.10.0/24）・サーバ（`VLAN 20`・10.0.20.0/24）・来客（`VLAN 30`・10.0.30.0/24）に分ける作業の途中。{{term:router}} `gw`（この{{term:terminal}}）は網ごとの口（`eth1` 社内・`eth2` サーバ・`eth3` 来客・`eth0` インターネット）を持ち、{{term:file}}のサーバ `files`（10.0.20.50）と来客のスマホ `guest`（10.0.30.100）にも新しいアドレスを振った。ただし{{term:switch}} `sw` の口は、`files` の `port6` も `guest` の `port7` も、まだ社内の `VLAN 10` のまま。スイッチの中で打つには `ip netns exec sw bridge vlan …`、確かめには `ip netns exec 機械 nmap …` や `ping` を使う。",
+    "environment": "net-client",
     "setup": {
-      "fields": [
-        {
-          "id": "pc1",
-          "label": "社員のパソコン 1 の網",
-          "options": [
-            "社内（VLAN10）",
-            "サーバ（VLAN20）",
-            "来客（VLAN30）"
+      "user": "root",
+      "network": {
+        "self": "gw",
+        "devices": [
+          {
+            "name": "news",
+            "addrs": [
+              "198.51.100.80/24"
+            ],
+            "gateway": "198.51.100.1",
+            "listen": [
+              443
+            ]
+          },
+          {
+            "name": "gw",
+            "kind": "router",
+            "addrs": [
+              "198.51.100.1/24",
+              "10.0.10.1/24",
+              "10.0.20.1/24",
+              "10.0.30.1/24"
+            ]
+          },
+          {
+            "name": "sw",
+            "kind": "switch",
+            "ports": 8,
+            "vlans": {
+              "port1": 10,
+              "port2": 20,
+              "port3": 30,
+              "port4": 10,
+              "port5": 10,
+              "port6": 10,
+              "port7": 10
+            }
+          },
+          {
+            "name": "pc1",
+            "addrs": [
+              "10.0.10.21/24"
+            ],
+            "gateway": "10.0.10.1"
+          },
+          {
+            "name": "pc2",
+            "addrs": [
+              "10.0.10.22/24"
+            ],
+            "gateway": "10.0.10.1"
+          },
+          {
+            "name": "files",
+            "addrs": [
+              "10.0.20.50/24"
+            ],
+            "gateway": "10.0.20.1",
+            "listen": [
+              445
+            ]
+          },
+          {
+            "name": "guest",
+            "addrs": [
+              "10.0.30.100/24"
+            ],
+            "gateway": "10.0.30.1"
+          }
+        ],
+        "links": [
+          [
+            "news",
+            "gw"
           ],
-          "value": "社内（VLAN10）"
-        },
-        {
-          "id": "pc2",
-          "label": "社員のパソコン 2 の網",
-          "options": [
-            "社内（VLAN10）",
-            "サーバ（VLAN20）",
-            "来客（VLAN30）"
+          [
+            "gw",
+            "sw"
           ],
-          "value": "社内（VLAN10）"
-        },
-        {
-          "id": "files",
-          "label": "ファイルサーバの網",
-          "options": [
-            "社内（VLAN10）",
-            "サーバ（VLAN20）",
-            "来客（VLAN30）"
+          [
+            "gw",
+            "sw"
           ],
-          "value": "社内（VLAN10）"
-        },
-        {
-          "id": "guest",
-          "label": "来客のスマホの網",
-          "options": [
-            "社内（VLAN10）",
-            "サーバ（VLAN20）",
-            "来客（VLAN30）"
+          [
+            "gw",
+            "sw"
           ],
-          "value": "社内（VLAN10）"
-        },
-        {
-          "id": "g2o",
-          "label": "規則: 来客 → 社内",
-          "options": [
-            "通す",
-            "止める"
+          [
+            "pc1",
+            "sw"
           ],
-          "value": "通す"
-        },
-        {
-          "id": "g2s",
-          "label": "規則: 来客 → サーバ",
-          "options": [
-            "通す",
-            "止める"
+          [
+            "pc2",
+            "sw"
           ],
-          "value": "通す"
-        },
-        {
-          "id": "o2s",
-          "label": "規則: 社内 → サーバ",
-          "options": [
-            "通す",
-            "止める"
+          [
+            "files",
+            "sw"
           ],
-          "value": "通す"
-        },
-        {
-          "id": "g2i",
-          "label": "規則: 来客 → インターネット",
-          "options": [
-            "通す",
-            "止める"
-          ],
-          "value": "通す"
-        }
-      ],
-      "settle": "field g2o=止める",
-      "panels": [
-        {
-          "kind": "log",
-          "title": "来客のスマホからファイルサーバを探した",
-          "lines": [
-            "見えた（同じ網にいるので、規則を通らない）"
-          ],
-          "when": "field guest=社内（VLAN10） files=社内（VLAN10）"
-        },
-        {
-          "kind": "log",
-          "title": "来客のスマホからファイルサーバを探した",
-          "lines": [
-            "見えた（網は分かれたが、規則で通している）"
-          ],
-          "when": "field pc1=社内（VLAN10） pc2=社内（VLAN10） files=サーバ（VLAN20） guest=来客（VLAN30） && field g2s=通す"
-        },
-        {
-          "kind": "log",
-          "title": "確かめた結果",
-          "lines": [
-            "来客 → 社内・サーバ: 止まった",
-            "来客 → インターネット: 通った",
-            "社内 → ファイルサーバ: 通った"
-          ],
-          "when": "field pc1=社内（VLAN10） pc2=社内（VLAN10） files=サーバ（VLAN20） guest=来客（VLAN30） && field g2o=止める g2s=止める o2s=通す g2i=通す"
-        }
-      ]
+          [
+            "guest",
+            "sw"
+          ]
+        ]
+      }
     },
     "steps": [
       {
         "id": "split",
-        "purpose": "機械を、用途ごとの網に分ける。社員のパソコンは社内、ファイルサーバはサーバ、来客のスマホは来客の網へ。",
+        "purpose": "`bridge vlan show` でスイッチの口の VLAN を見る。`files` の口（`port6`）を `VLAN 20` に、`guest` の口（`port7`）を `VLAN 30` に移す。社内の `pc1` から `files` の共有（445 番）に届き、`guest` から自分の網の出口（10.0.30.1）に届くことを確かめる。",
         "check": {
-          "kind": "sim",
-          "expr": "field pc1=社内（VLAN10） pc2=社内（VLAN10） files=サーバ（VLAN20） guest=来客（VLAN30）"
+          "kind": "net",
+          "expr": "reach 10.0.20.50:445 from pc1 && reach 10.0.30.1 from guest"
         },
-        "afterward": "3 つの網に分かれた。来客のスマホとファイルサーバは、もう同じ網にいない。間はルータを通るので、規則を当てられる。",
+        "afterward": "`files` はサーバの網、`guest` は来客の網に入り、それぞれの網の出口（ルータの口）に届くようになった。違う網の間は、ルータを通る。",
         "hints": [
-          "同じ網にいると、間に止める所が無い。用途ごとに網を分ける。",
-          "ファイルサーバをサーバの網（`VLAN20`）に、来客のスマホを来客の網（`VLAN30`）に移す。社員のパソコンは社内のまま。",
-          "`set files サーバ（VLAN20）` `set guest 来客（VLAN30）` の順に入れる。"
+          "`PVID` の VLAN は、その口に来たタグの無いフレームが入る VLAN。口の VLAN を移すには、新しい VLAN を足して `PVID` にし、前の VLAN を外す。",
+          "`bridge vlan add dev 口 vid 番号 pvid untagged` で足し、`bridge vlan del dev 口 vid 10` で外す。スイッチの中で打つので、前に `ip netns exec sw` を付ける。",
+          "`ip netns exec sw bridge vlan show` `ip netns exec sw bridge vlan add dev port6 vid 20 pvid untagged` `ip netns exec sw bridge vlan del dev port6 vid 10` `ip netns exec sw bridge vlan add dev port7 vid 30 pvid untagged` `ip netns exec sw bridge vlan del dev port7 vid 10` `ip netns exec pc1 nmap -p 445 10.0.20.50` `ip netns exec guest ping -c 1 10.0.30.1` の順に打つ。"
         ],
         "expectedErrors": [
-          "net-seg-same"
-        ],
-        "actions": [
-          {
-            "op": "set",
-            "field": "files",
-            "value": "サーバ（VLAN20）"
-          },
-          {
-            "op": "set",
-            "field": "guest",
-            "value": "来客（VLAN30）"
-          }
+          "net-vlan-port",
+          "net-bridge-dev"
         ]
       },
       {
         "id": "rules",
-        "purpose": "網の間の規則を決める。来客からは社内にもサーバにも入れず、インターネットだけを使える。社員はサーバを使える。",
+        "purpose": "`guest` から `nmap` で `files` の 445 番を調べると、まだ `open`（ルータが網の間を中継している）。`gw` の `FORWARD` の鎖に規則を足し、来客の網からは社内にもサーバにも入れず、インターネット（`news` 198.51.100.80 の 443 番）だけを使えるようにする。社内からサーバへは、今までどおり通す。",
         "check": {
-          "kind": "sim",
-          "expr": "field pc1=社内（VLAN10） pc2=社内（VLAN10） files=サーバ（VLAN20） guest=来客（VLAN30） && field g2o=止める g2s=止める o2s=通す g2i=通す"
+          "kind": "net",
+          "expr": "!reach 10.0.20.50:445 from guest && !reach 10.0.10.21 from guest && reach 198.51.100.80:443 from guest && reach 10.0.20.50:445 from pc1"
         },
-        "afterward": "来客から社内とサーバへの通信を止め、インターネットと、社内からサーバへの通信は通した。分けた網の間で、必要な通信だけを許した。",
+        "afterward": "来客の網（`eth3`）から社内（`eth1`）とサーバ（`eth2`）へ向かう荷物を止め、インターネット（`eth0`）と、社内からサーバへの荷物は通した。網を分けただけでは見えてしまう。分けた網の間で、必要な通信だけを許す。",
         "hints": [
-          "分けただけでは、規則が「通す」のままだと見えてしまう。来客から社内・サーバへは止める。",
-          "来客 → 社内・来客 → サーバを「止める」にする。社内 → サーバと、来客 → インターネットは「通す」のまま。",
-          "`set g2o 止める` `set g2s 止める` の順に入れる。"
+          "来客からの荷物は、`gw` の `eth3` から入る。行き先の口で、止める物と通す物を分ける。",
+          "`iptables -A FORWARD -i eth3 -o eth1 -j DROP`（来客 → 社内）と `iptables -A FORWARD -i eth3 -o eth2 -j DROP`（来客 → サーバ）を足す。`eth0` へ出る荷物は止めない。",
+          "`ip netns exec guest nmap -p 445 10.0.20.50` `iptables -A FORWARD -i eth3 -o eth1 -j DROP` `iptables -A FORWARD -i eth3 -o eth2 -j DROP` `ip netns exec guest nmap -p 445 10.0.20.50` `ip netns exec guest nmap -p 443 198.51.100.80` `ip netns exec pc1 nmap -p 445 10.0.20.50` の順に打つ。"
         ],
         "expectedErrors": [
-          "net-seg-same"
-        ],
-        "actions": [
-          {
-            "op": "set",
-            "field": "g2o",
-            "value": "止める"
-          },
-          {
-            "op": "set",
-            "field": "g2s",
-            "value": "止める"
-          }
+          "net-seg-same",
+          "net-fw-syntax"
         ]
       }
     ]
   },
   "result": {
-    "success": "用途ごとに網を分け、網の間の規則で、来客から社内とサーバが見えないようにできた。",
-    "partial": "ヒントを使って網を分けられた。次は、分けないと何が起きるかを説明してみよう。",
-    "retry": "まだ来客から見えてしまう。記録で、同じ網にいないか、間の規則で通していないかを確かめよう。"
+    "success": "スイッチの口の VLAN を `bridge vlan` で移し、網の間の規則を `iptables` の `FORWARD` に足して、来客から社内とサーバを見えなくできた。",
+    "partial": "ヒントを使って網を分けられた。次は、`pc1` から `guest` に `ping` すると、返事がどうなるかを考えてみよう（返事も `eth3` から入る）。",
+    "retry": "まだ分けられていない。`bridge vlan show` で口の VLAN を、`iptables -L FORWARD -n -v` で網の間の規則を確かめよう。"
   },
   "summary": {
     "points": [

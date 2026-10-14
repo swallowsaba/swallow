@@ -1,11 +1,13 @@
 import { localCurl } from './httpLocal';
 import { addressOf, deviceAt, resolveName, roundTrip, rttOf, traceHops } from '@/engines/net/probe';
 import { parseCidr } from '@/engines/net/subnet';
+import { emptyIptables, runIptables } from '@/engines/net/firewall';
 import { checkZone } from '@/engines/net/zone';
 import type { DeliveryResult, Device, Topology } from '@/engines/net/types';
 import type { CommandResult, CommandSpec, ShellState } from '../registry';
 import { fromLines, parseArgs } from './args';
 import { ipAddr, ipLink, ipRoute } from './netBuild';
+import { currentUser } from './perm';
 import { normalize } from '../path';
 import { exists, isDir, readFile } from '../vfs';
 
@@ -70,6 +72,9 @@ function afterDelivery(net: Topology, result: DeliveryResult): Topology {
     },
   };
 }
+
+const NMAP_HEAD = 'Starting Nmap 7.94SVN ( https://nmap.org ) at 2026-10-03 09:00 UTC';
+const SERVICES: Record<number, string> = { 22: 'ssh', 25: 'smtp', 53: 'domain', 80: 'http', 139: 'netbios-ssn', 443: 'https', 445: 'microsoft-ds', 3306: 'mysql', 5432: 'postgresql', 8080: 'http-proxy' };
 
 const DIG_TYPES: ReadonlySet<string> = new Set(['A', 'AAAA', 'CNAME', 'MX', 'TXT', 'NS', 'SOA', 'PTR', 'SRV', 'CAA']);
 
@@ -197,7 +202,9 @@ export const netCommands: CommandSpec[] = [
       if (flags.has('v')) {
         verbose.push(`* Connected to ${hostName} (${ip}) port ${String(port)}`, `> GET ${path} HTTP/1.1`, `> Host: ${hostName}`, '>', '< HTTP/1.1 200 OK', '< Content-Type: text/html', '<');
       }
-      const body = deviceAt(net, ip)?.body ?? `<html><body>It works: ${hostName}</body></html>`;
+      // 返すのは、荷物が実際に届いた機器（ポート転送の先など）
+      const reached = net.devices.get(r.result.hops[r.result.hops.length - 1]?.device ?? '') ?? deviceAt(net, ip);
+      const body = reached?.body ?? `<html><body>It works: ${hostName}</body></html>`;
       return { stdout: `${fromLines(verbose)}${body}\n`, patch };
     },
   },
@@ -227,6 +234,53 @@ export const netCommands: CommandSpec[] = [
         `;; SERVER: ${addressOf(net, selfName(shell))}#53`,
       ];
       return { stdout: fromLines(lines) };
+    },
+  },
+  {
+    name: 'iptables',
+    summary: 'パケットフィルタ（ファイアウォール）の規則を見る・足す・消す・並べ替える（-L・-S・-A・-I・-D・-F・-P、-t nat）',
+    handler: ({ argv, shell }) => {
+      const net = shell.net;
+      if (net === null) return { stderr: NO_NET, code: 1 };
+      if (currentUser(shell) !== 'root') return { stderr: 'iptables v1.8.10 (nf_tables): Could not fetch rule set generation id: Permission denied (you must be root)\n', code: 4 };
+      const me = net.devices.get(selfName(shell));
+      if (!me) return { stderr: '自分の機器が見つかりません\n', code: 1 };
+      const r = runIptables(me.iptables ?? emptyIptables(), argv.slice(1).filter((a) => a !== '-n' && a !== '--numeric'));
+      if (!r.ok) return { stderr: r.stderr, code: r.code };
+      const changed = r.table !== (me.iptables ?? null) && r.stdout === undefined;
+      return { ...(r.stdout !== undefined ? { stdout: r.stdout } : {}), ...(changed ? { patch: { net: { ...net, devices: new Map([...net.devices, [me.name, { ...me, iptables: r.table }]]) } } } : {}) };
+    },
+  },
+  {
+    name: 'nmap',
+    summary: '相手のポートが開いているか（open）・閉じているか（closed）・止められているか（filtered）を調べる（-p 番号,番号）',
+    handler: ({ argv, shell }) => {
+      const net = shell.net;
+      if (net === null) return { stderr: NO_NET, code: 1 };
+      const { values, operands } = parseArgs(argv, { withValue: ['p'] });
+      const target = operands[0];
+      if (target === undefined) return { stderr: 'Nmap 7.94SVN ( https://nmap.org )\nUsage: nmap [Scan Type(s)] [Options] {target specification}\n', code: 255 };
+      const ip = resolveName(net, target);
+      if (ip === null) return { stdout: fromLines([NMAP_HEAD, `Failed to resolve "${target}".`, 'WARNING: No targets were specified, so 0 hosts scanned.', 'Nmap done: 0 IP addresses (0 hosts up) scanned in 0.05 seconds']) };
+      const ports = (values.get('p') ?? '22,80,443').split(',').map(Number).filter((n) => Number.isInteger(n) && n > 0 && n < 65536);
+      const me = selfName(shell);
+      const rows = ports.map((port) => {
+        const r = roundTrip(net, me, ip, port);
+        return { port, state: r.kind === 'ok' ? 'open' : r.kind === 'refused' ? 'closed' : 'filtered' };
+      });
+      const width = Math.max(8, ...rows.map((r) => `${String(r.port)}/tcp`.length + 1));
+      return {
+        stdout: fromLines([
+          NMAP_HEAD,
+          `Nmap scan report for ${target === ip ? ip : `${target} (${ip})`}`,
+          'Host is up (0.00040s latency).',
+          '',
+          `${'PORT'.padEnd(width)}STATE    SERVICE`,
+          ...rows.map((r) => `${`${String(r.port)}/tcp`.padEnd(width)}${r.state.padEnd(9)}${SERVICES[r.port] ?? 'unknown'}`),
+          '',
+          'Nmap done: 1 IP address (1 host up) scanned in 1.23 seconds',
+        ]),
+      };
     },
   },
   {

@@ -1,7 +1,7 @@
 import {
   addDevice, addLink, addRoute, clearAddress, delRoute, removeDevice, removeLink,
   setAddress, setBlocked, setDnsRecord, setInterfaceUp, setLinkUp, setListening, setMtu,
-  setNat, setVlan, type BuildResult,
+  setNat, setPortVlans, setVlan, type BuildResult,
 } from '@/engines/net/build';
 import { nat as natConfig } from '@/engines/net/factory';
 import { sameNetwork } from '@/engines/net/subnet';
@@ -243,26 +243,56 @@ function devOf(argv: readonly string[]): string | null {
 }
 
 /** `bridge vlan add dev sw1:p1 vid 10` / `... vid 10,20 trunk` */
-export function bridgeVlan(net: Topology, argv: readonly string[]): CommandResult {
-  const action = argv[2] ?? '';
+/**
+ * `bridge vlan add dev 口 vid 番号 [pvid] [untagged]`・`bridge vlan del dev 口 vid 番号`・`bridge vlan show [dev 口]`（本物の Linux のブリッジの書き方。
+ * スイッチの中で打つ: ip netns exec スイッチ bridge vlan …）。前からの書き方 `dev スイッチ:口` も受け取る
+ */
+export function bridgeVlan(net: Topology, argv: readonly string[], me: string): CommandResult {
+  const action = argv[2] ?? 'show';
   const target = valueAfter(argv, 'dev');
+  if (action === 'show') {
+    const sw = net.devices.get(me);
+    if (!sw || sw.kind !== 'switch') return { stdout: 'port              vlan-id\n' };
+    const ports = sw.interfaces.filter((i) => target === undefined || i.name === target);
+    const lines = ['port              vlan-id'];
+    for (const i of ports) {
+      const ids = [...new Set([...(i.vlans ?? (i.vlan !== null ? [i.vlan] : [])), ...i.trunkVlans])].sort((x, y) => x - y);
+      ids.forEach((id, k) => {
+        const tags = [id === i.vlan ? 'PVID' : '', (i.vlans ?? [i.vlan]).includes(id) ? 'Egress Untagged' : ''].filter(Boolean).join(' ');
+        lines.push(`${(k === 0 ? i.name : '').padEnd(18)}${String(id)}${tags ? ` ${tags}` : ''}`);
+      });
+    }
+    return { stdout: fromLines(lines) };
+  }
   const vid = valueAfter(argv, 'vid');
-  if (target === undefined) return { stderr: 'usage: bridge vlan add dev <sw>:<port> vid <n>\n', code: 2 };
+  if (target === undefined) return { stderr: 'Device and VLAN ID are required arguments.\n', code: 255 };
   const at = target.indexOf(':');
-  if (at <= 0) return { stderr: 'dev は <スイッチ>:<ポート> の形で指定してください\n', code: 2 };
-  const device = target.slice(0, at);
-  const port = target.slice(at + 1);
-  if (action === 'del') return render(setVlan(net, device, port, null, []));
-  if (action !== 'add') return { stderr: `bridge: unknown command "vlan ${action}"\n`, code: 2 };
-  if (vid === undefined) return { stderr: 'vid を指定してください\n', code: 2 };
-  const ids = vid.split(',').map(Number);
-  if (ids.some((n) => !Number.isInteger(n) || n < 1 || n > 4094)) {
-    return { stderr: 'vid は 1..4094 の整数です\n', code: 2 };
+  const device = at > 0 ? target.slice(0, at) : me;
+  const portName = at > 0 ? target.slice(at + 1) : target;
+  const sw = net.devices.get(device);
+  const p = sw?.interfaces.find((i) => i.name === portName);
+  if (!sw || !p) return { stderr: `Cannot find device "${portName}"\n`, code: 1 };
+  // 前からの書き方（dev スイッチ:口）は、口をその VLAN だけにする（trunk・vid の並びはタグを付けて通す。del は VLAN を外す）
+  if (at > 0) {
+    if (action === 'del') return render(setVlan(net, device, portName, null, []));
+    if (action !== 'add') return { stderr: `bridge: unknown command "vlan ${action}"\n`, code: 2 };
+    if (vid === undefined) return { stderr: 'vid を指定してください\n', code: 2 };
+    const ids = vid.split(',').map(Number);
+    if (ids.some((x) => !Number.isInteger(x) || x < 1 || x > 4094)) return { stderr: 'vid は 1..4094 の整数です\n', code: 2 };
+    return argv.includes('trunk') || ids.length > 1 ? render(setVlan(net, device, portName, null, ids)) : render(setVlan(net, device, portName, ids[0] ?? null, []));
   }
-  if (argv.includes('trunk') || ids.length > 1) {
-    return render(setVlan(net, device, port, null, ids));
+  if (vid === undefined) return { stderr: 'Device and VLAN ID are required arguments.\n', code: 255 };
+  const n = Number(vid);
+  if (!Number.isInteger(n) || n < 1 || n > 4094) return { stderr: `Invalid VLAN ID "${vid}"\n`, code: 255 };
+  const members = p.vlans ?? (p.vlan !== null ? [p.vlan] : []);
+  if (action === 'del') {
+    if (!members.includes(n) && !p.trunkVlans.includes(n)) return {};
+    return render(setPortVlans(net, device, portName, p.vlan === n ? null : p.vlan, members.filter((x) => x !== n), p.trunkVlans.filter((x) => x !== n)));
   }
-  return render(setVlan(net, device, port, ids[0] ?? null, []));
+  if (action !== 'add') return { stderr: `Command "${action}" is unknown, try "bridge vlan help".\n`, code: 255 };
+  const untagged = argv.includes('untagged');
+  const pvid = argv.includes('pvid');
+  return render(setPortVlans(net, device, portName, pvid ? n : p.vlan, untagged ? [...new Set([...members, n])] : members, untagged ? p.trunkVlans : [...new Set([...p.trunkVlans, n])]));
 }
 
 /** `nat enable --inside 10.0.0.0/24 --outside 203.0.113.1` */

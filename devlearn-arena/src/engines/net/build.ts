@@ -229,6 +229,11 @@ export function setMtu(
   return ok({ ...changed.topology, links });
 }
 
+/** VLAN を絞るスイッチの口の、PVID・タグ無しのメンバー・タグ付きの VLAN を決める */
+export function setPortVlans(topology: Topology, deviceName: string, ifname: string, pvid: number | null, untagged: number[], tagged: number[]): BuildResult {
+  return mapInterface(topology, deviceName, ifname, (i) => ({ ...i, vlan: pvid, vlans: [...untagged].sort((a, b) => a - b), trunkVlans: [...tagged].sort((a, b) => a - b) }));
+}
+
 export function setVlan(
   topology: Topology,
   deviceName: string,

@@ -1,4 +1,5 @@
 import { BROADCAST_MAC } from './factory';
+import { decide, dnat, type Chain, type Flow } from './firewall';
 import { contains, parseCidr, sameNetwork } from './subnet';
 import type {
   Device, DeliveryResult, HopRecord, Interface, Link, NatConfig, Packet, Route, Topology,
@@ -49,6 +50,7 @@ function i2cidr(ip: string, prefix: number): string {
 
 /** VLAN の突き合わせ。アクセスポートは自分の VLAN だけ、トランクは載せた VLAN だけ通す */
 function vlanAllowed(port: Interface, vlan: number | null): boolean {
+  if (port.vlans !== undefined) return vlan !== null && (port.vlans.includes(vlan) || port.trunkVlans.includes(vlan));
   if (port.trunkVlans.length > 0) return vlan !== null && port.trunkVlans.includes(vlan);
   if (port.vlan === null) return true;
   return vlan === null || vlan === port.vlan;
@@ -86,6 +88,11 @@ function throughSwitch(
 
   const incoming = interfaceFor(sw, inPort);
   const vlan = frame.ethernet.vlan ?? incoming?.vlan ?? null;
+  // VLAN を絞る口は、PVID の無いタグ無しのフレームと、メンバーでない VLAN のフレームを入れない
+  if (incoming?.vlans !== undefined && !vlanAllowed(incoming, vlan)) {
+    walk.hops.push({ device: sw.name, packet: frame, note: `${inPort} は VLAN ${vlan === null ? '（PVID 無し）' : String(vlan)} を通さない` });
+    return { error: `${sw.name}: ${inPort} で捨てられました（VLAN ${vlan === null ? 'なし' : String(vlan)}）` };
+  }
 
   const known = learnedTable[frame.ethernet.dstMac];
   const candidates = sw.interfaces
@@ -207,10 +214,27 @@ function translateOut(config: NatConfig, packet: Packet): { config: NatConfig; p
   };
 }
 
+/** 荷物の要点（ファイアウォールが見る物） */
+function flowOf(p: Packet, inIf: string | null, outIf: string | null): Flow {
+  return { proto: p.ip.protocol, src: p.ip.srcIp, dst: p.ip.dstIp, dport: p.transport?.dstPort ?? null, inIf, outIf, established: p.established === true };
+}
+
+/** 鎖で止められた時の理由（DROP は返事なし、REJECT は拒否の返事） */
+function blockedBy(chain: Chain, name: string, flow: Flow): { note: string; error: string } | null {
+  const d = decide(chain, flow);
+  if (d.verdict === 'ACCEPT') return null;
+  const which = d.rule === 0 ? `方針 ${chain.policy}` : `規則 ${String(d.rule)}`;
+  return d.verdict === 'REJECT'
+    ? { note: `iptables ${name} の${which}で拒否 (REJECT)`, error: `Connection refused: ${flow.dst}:${String(flow.dport ?? '')}` }
+    : { note: `iptables ${name} の${which}で破棄 (DROP)`, error: `iptables ${name} で破棄されました` };
+}
+
 /**
  * パケットを宛先まで運ぶ。
  *
  * ホップごとに TTL を減らし、MAC を書き換える。IP は変わらない（NAT を通る場合を除く）。
+ * iptables を持つ機器では、入ってきた荷物に PREROUTING の DNAT を当て、自分宛てなら INPUT、通すなら FORWARD、
+ * 自分が送り出すなら OUTPUT の鎖で決める。
  * 途中で学んだこと（ARP 表・MAC 表・NAT 表）は learned に載せて返す。
  * 届かない場合は、どこで止まったかを理由付きで返す。
  */
@@ -235,11 +259,30 @@ export function deliver(topology: Topology, from: string, packet: Packet): Deliv
     learned: walk.learned,
   });
 
+  // 今の機器に入ってきた口（送り出した機器では null）
+  let arrivedOn: string | null = null;
   for (let hop = 0; hop < MAX_HOPS; hop += 1) {
     current = deviceOf(walk, current.name) ?? current;
+    const fw = current.iptables;
+    let dnatNote = '';
+
+    // 入ってきた荷物の宛先の書き換え（PREROUTING の DNAT。ポート転送）
+    if (fw && arrivedOn !== null && !inFlight.established) {
+      const to = dnat(fw, flowOf(inFlight, arrivedOn, null));
+      if (to) {
+        const before = `${inFlight.ip.dstIp}:${String(inFlight.transport?.dstPort ?? '')}`;
+        inFlight = { ...inFlight, ip: { ...inFlight.ip, dstIp: to.dst }, transport: inFlight.transport ? { ...inFlight.transport, dstPort: to.dport ?? inFlight.transport.dstPort } : null };
+        dnatNote = ` / DNAT ${before} → ${to.dst}:${String(to.dport ?? '')}`;
+      }
+    }
 
     // 自分宛てか
     if (ownsIp(current, inFlight.ip.dstIp)) {
+      const stop = fw && arrivedOn !== null ? blockedBy(fw.filter.INPUT, 'INPUT', flowOf(inFlight, arrivedOn, null)) : null;
+      if (stop) {
+        walk.hops.push({ device: current.name, packet: inFlight, note: stop.note });
+        return fail(stop.error);
+      }
       const port = inFlight.transport?.dstPort ?? null;
       if (port !== null && current.blockedPorts.includes(port)) {
         walk.hops.push({ device: current.name, packet: inFlight, note: `ファイアウォールで拒否 (port ${String(port)})` });
@@ -249,7 +292,7 @@ export function deliver(topology: Topology, from: string, packet: Packet): Deliv
         walk.hops.push({ device: current.name, packet: inFlight, note: `待ち受けていない (port ${String(port)})` });
         return fail(`Connection refused: ${inFlight.ip.dstIp}:${String(port)}`);
       }
-      walk.hops.push({ device: current.name, packet: inFlight, note: '宛先に到着' });
+      walk.hops.push({ device: current.name, packet: inFlight, note: `宛先に到着${dnatNote}` });
       return { hops: walk.hops, delivered: true, error: null, learned: walk.learned };
     }
 
@@ -264,6 +307,15 @@ export function deliver(topology: Topology, from: string, packet: Packet): Deliv
     if (!route) {
       walk.hops.push({ device: current.name, packet: inFlight, note: '経路が無い' });
       return fail(`Network is unreachable: ${inFlight.ip.dstIp}`);
+    }
+
+    // 通す荷物は FORWARD、自分が送り出す荷物は OUTPUT の鎖
+    if (fw) {
+      const stop = arrivedOn === null ? blockedBy(fw.filter.OUTPUT, 'OUTPUT', flowOf(inFlight, null, route.dev)) : blockedBy(fw.filter.FORWARD, 'FORWARD', flowOf(inFlight, arrivedOn, route.dev));
+      if (stop) {
+        walk.hops.push({ device: current.name, packet: inFlight, note: stop.note });
+        return fail(stop.error);
+      }
     }
 
     const out = interfaceFor(current, route.dev);
@@ -320,7 +372,7 @@ export function deliver(topology: Topology, from: string, packet: Packet): Deliv
       note:
         `${hop === 0 ? '送出' : '転送'} → ${next0.name}` +
         (arp.asked ? ` / ARP 要求で ${nextHopIp} は ${arp.mac} と判明` : '') +
-        natNote,
+        natNote + dnatNote,
     });
 
     const ttl = outgoing.ip.ttl - 1;
@@ -350,6 +402,7 @@ export function deliver(topology: Topology, from: string, packet: Packet): Deliv
     }
 
     current = next;
+    arrivedOn = inPort;
   }
 
   return fail('ホップ数が上限を超えました');

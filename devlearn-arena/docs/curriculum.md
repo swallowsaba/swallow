@@ -187,11 +187,11 @@ lab は複数分野の組み合わせ
 | net.b.07 | 初級 | 確認 | ping と traceroute | 到達と経路を確かめられる | 端 | net.b.03 | trouble.i.02, linux.i.04 | net.i.01 |
 | net.b.08 | 初級 | DHCP | DHCP | アドレスが自動で配られる流れを説明できる | 編 | net.b.03 | net.b.03, cloud.b.03 | net.i.01 |
 | net.i.01 | 中級 | ルーティング | 経路とデフォルトゲートウェイ | 経路表を読み、足りない経路を足せる | 端 | net.b.07 | cloud.b.03, trouble.i.02 | net.i.02, net.i.06 |
-| net.i.02 | 中級 | NAT | NAT | 内側と外側のアドレス変換を説明し、設定の誤りを見つけられる | 模 | net.i.01 | cloud.b.03, docker.b.04 | net.i.03 |
-| net.i.03 | 中級 | Firewall | ファイアウォール | 許可と拒否の規則を読み書きできる | 模 | net.b.04 | sec.i.04, k8s.b.06 | net.a.01, net.a.03, trouble.i.02 |
+| net.i.02 | 中級 | NAT | NAT | 内側と外側のアドレス変換を説明し、設定の誤りを見つけられる | 端 | net.i.01 | cloud.b.03, docker.b.04 | net.i.03 |
+| net.i.03 | 中級 | Firewall | ファイアウォール | 許可と拒否の規則を読み書きできる | 端 | net.b.04 | sec.i.04, k8s.b.06 | net.a.01, net.a.03, trouble.i.02 |
 | net.i.04 | 中級 | TCP | 接続の確立と状態 | 3 ウェイハンドシェイクと ss の状態を読める | 端 | net.b.05 | trouble.i.02, web.b.02 | net.a.02 |
 | net.i.05 | 中級 | DNS | DNS レコード | A/AAAA/CNAME/MX/TXT を使い分けられる | 編 | net.b.06 | web.b.01, sec.b.07 | net.i.06 |
-| net.i.06 | 中級 | 設計 | ネットワークを分ける | セグメント分割と VLAN の考え方を説明できる | 模 | net.i.01 | cloud.i.01, k8s.b.07 | net.a.01 |
+| net.i.06 | 中級 | 設計 | ネットワークを分ける | セグメント分割と VLAN の考え方を説明できる | 端 | net.i.01 | cloud.i.01, k8s.b.07 | net.a.01 |
 | net.a.01 | 上級 | 切り分け | 繋がらない原因を層ごとに探す | 物理〜アプリの順に切り分けられる | 模 | net.i.03, trouble.b.01 | trouble.i.02, mon.i.03 | net.a.02 |
 | net.a.02 | 上級 | 経路 | MTU と断片化 | 大きな通信だけ失敗する理由を説明できる | 模 | net.i.04 | trouble.a.02, web.a.01 | net.a.03 |
 | net.a.03 | 上級 | 負荷分散 | ロードバランサ | 振り分け方式と健全性確認を設計できる | 模 | net.i.03 | k8s.b.06, cloud.i.02 | net.a.04 |

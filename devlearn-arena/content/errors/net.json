@@ -252,23 +252,72 @@
     {
       "id": "net-nat-wrong",
       "match": "答えが合っていない",
-      "meaning": "ファイアウォールを開けたが、外から店のページに届く設定になっていない。",
+      "meaning": "答えたアドレスが、今の転送先と合っていない。",
       "causes": [
-        "転送の決まりの、中の住所が違う（経理のパソコンへ送っている）。",
-        "外のポートか中のポートの番号が違う。",
-        "ファイアウォールで、まだ閉じている。"
+        "転送したい先（`web` の 192.168.1.10）を答えた。聞いているのは、今の規則の転送先。",
+        "`to:` の後ろのポート（`:443`）まで答えた。"
       ],
-      "hint": "外から開いた記録で、通信がどこで止まったかを読もう。止まった所の設定を、中の機械の表と見比べる。"
+      "hint": "`iptables -t nat -L PREROUTING -n` の `to:` の後ろの、`:` より前を見よう。",
+      "terms": [
+        "nat",
+        "port-forwarding"
+      ]
     },
     {
       "id": "net-fw-open",
-      "match": "答えが合っていない",
-      "meaning": "規則を全て並べたが、期待どおりに通す・止めるになっていない。",
+      "match": "22/tcp +open",
+      "output": true,
+      "meaning": "外から 22 番（SSH）に届いてしまう。管理の扉が外に開いている。",
       "causes": [
-        "送り元を絞っていない（「許可: 22 番・誰でも」が残り、外から SSH に入れる）。",
-        "「拒否: 全て」が許可より上にあり、許可が効かない。"
+        "誰からでも 22 番を許す規則（`tcp dpt:22` で送り元が `0.0.0.0/0`）が、まだ残っている。",
+        "社内だけの許可に `-s 10.0.0.0/8` を付け忘れた。"
       ],
-      "hint": "確かめた記録で、どの通信がどの規則に当たったかを読もう。要らない規則は並べず、拒否は一番最後に置く。"
+      "hint": "`iptables -L INPUT -n --line-numbers` で、22 番の許可の `source` の欄を見よう。社内からだけなら `10.0.0.0/8`。",
+      "terms": [
+        "firewall",
+        "ssh"
+      ]
+    },
+    {
+      "id": "net-fw-misread",
+      "match": "答えが合っていない",
+      "meaning": "答えた番号が、外からの 443 番を止めている規則の番号と合っていない。",
+      "causes": [
+        "443 番の許可の行（6 番）を答えた。止めているのは、それより上で先に当たる行。",
+        "`--line-numbers` を付けずに見て、上から数え違えた。"
+      ],
+      "hint": "1 番から順に、443 番の荷物に当たる最初の行を探そう。`DROP` で条件の無い行は、全ての荷物に当たる。",
+      "terms": [
+        "firewall"
+      ]
+    },
+    {
+      "id": "net-fw-syntax",
+      "match": "iptables v1\\.8\\.10 \\(nf_tables\\)|Bad argument|No chain/target/match by that name|Index of (deletion|insertion) too big|Bad rule",
+      "meaning": "iptables の命令の書き方が違うか、指した規則が無い。",
+      "causes": [
+        "`--dport` の前に `-p tcp` を書いていない（`unknown option \"--dport\"`）。",
+        "消す・差し込む番号が、今の規則の数より大きい（消すと下の番号が詰まる）。",
+        "鎖の名前の綴りの誤り（`INPUT`・`FORWARD`・`PREROUTING` は大文字）。"
+      ],
+      "hint": "`iptables -L 鎖 -n --line-numbers` で今の番号を見てから打とう。",
+      "terms": [
+        "firewall"
+      ]
+    },
+    {
+      "id": "net-fw-timeout",
+      "match": "Connection timed out",
+      "meaning": "返事が来ないまま時間が切れた。途中で荷物が止められている（ファイアウォールで DROP など）。",
+      "causes": [
+        "ポート転送の先が違う機械を指している。",
+        "ルータの `FORWARD` の鎖が、転送した荷物を通していない（方針が `DROP`）。"
+      ],
+      "hint": "`iptables -t nat -L PREROUTING -n` で転送先を、`iptables -L FORWARD -n -v` で通り抜けの許可を確かめよう。",
+      "terms": [
+        "nat",
+        "firewall"
+      ]
     },
     {
       "id": "net-ss-refused",
@@ -323,14 +372,47 @@
     },
     {
       "id": "net-seg-same",
-      "match": "答えが合っていない",
-      "meaning": "規則を変えたが、来客から社内やサーバが見えない形になっていない。",
+      "match": "Nmap scan report for 10\\.0\\.20\\.50[\\s\\S]*445/tcp +open",
+      "output": true,
+      "meaning": "来客の網から、まだサーバの共有（445 番）に届く。網は分かれたが、ルータが網の間を中継している。",
       "causes": [
-        "来客と社内（またはサーバ）を、同じ網に置いたまま。同じ網の中の通信は、規則を通らない。",
-        "網の間の規則で、来客からの通信を通している。",
-        "必要な通信（社内 → サーバ・来客 → インターネット）まで止めた。"
+        "`FORWARD` の鎖に、来客の網（`eth3`）から入る荷物を止める規則が無い。",
+        "止める規則の口（`-i`・`-o`）が違う（来客は `eth3`、サーバは `eth2`）。"
       ],
-      "hint": "記録で、来客のスマホから何が見えたかを読もう。まず網を分け、その後に網の間の規則を決める。"
+      "hint": "`iptables -L FORWARD -n -v` で、`in` が `eth3` の行を見よう。",
+      "terms": [
+        "vlan",
+        "firewall"
+      ]
+    },
+    {
+      "id": "net-vlan-port",
+      "match": "445/tcp +filtered|100% packet loss",
+      "output": true,
+      "meaning": "届かない。機械の口が、まだ自分のアドレスの網（VLAN）と違う VLAN にある。",
+      "causes": [
+        "スイッチの口の PVID を、新しい VLAN に変えていない。",
+        "違う口（`port6` は `files`、`port7` は `guest`）を変えた。"
+      ],
+      "hint": "`ip netns exec sw bridge vlan show` で、`port6` と `port7` の `PVID` を見よう。",
+      "terms": [
+        "vlan",
+        "switch"
+      ]
+    },
+    {
+      "id": "net-bridge-dev",
+      "match": "Cannot find device|Device and VLAN ID are required|Invalid VLAN ID",
+      "meaning": "スイッチの口の名前か、VLAN の番号の書き方が違う。",
+      "causes": [
+        "スイッチの中で打っていない（`ip netns exec sw` を付け忘れた）。",
+        "口の名前の綴りの誤り（`port6` の形）。"
+      ],
+      "hint": "`ip netns exec sw bridge vlan show` で、口の名前を確かめよう。",
+      "terms": [
+        "vlan",
+        "switch"
+      ]
     }
   ]
 }

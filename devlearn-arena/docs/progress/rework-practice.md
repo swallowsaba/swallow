@@ -309,3 +309,46 @@
 - 原則 3・4 は画面の操作の決まりなので、端末と設定の編集だけの web の分野には当たらない
 
 検査: `npm run typecheck`・`npm run lint`・`npm run test`（163 ファイル・1780 件。試し台を除く）・`npm run content:check` が通った。
+
+## net（2026-10-14）
+
+14 本の実戦のうち、本物の道具がある 12 本が端末（10 本）と設定の編集（2 本）になった。打つコマンドが無い概念の 2 本（net.b.01 LAN と WAN の配線・net.b.02 層への仕分け）は、画面の操作（つなぐ・置く）のまま。
+
+| レッスン | 直す前 | 直した後 | 打つ物・書く物 |
+|---|---|---|---|
+| net.b.01 ネットワークとは | sim-connect | sim-connect（そのまま） | 確かめるボタンを「ping 支店のプリンタ」「ping 本社のサーバ」にした（本物の道具の名をボタンに出す） |
+| net.b.03 IP アドレスとサブネット | sim-config（4 つの欄） | terminal | `pc4` で `ip addr`・`ping`（`Network is unreachable`）から網の住所（192.168.1.0/24）を答える → `ip addr del`・`add` で 192.168.10.14/24 → `ip -n pc3 addr` で打ち間違い（192.168.20.13）を直す（`Destination Host Unreachable`） |
+| net.b.04 ポート | sim-assign | terminal | `web-02` で `ss -tlnp`・`curl http://localhost/` から nginx の番号（8080）を答える → `listen 80;` にし、80 番を持つ古い `preview` を `systemctl stop`・`disable` して nginx を動かし直す（`Address already in use`）→ `sshd_config` の `Port 22`・`systemctl restart ssh` |
+| net.b.05 TCP と UDP | sim-read | terminal | `city-svc` で `ss -tulnp` の `Netid` から asterisk の番号（UDP 5060）→ 音声が UDP を使う理由（遅れる）→ sshd の決まり（tcp）を答える |
+| net.b.08 DHCP | sim-config（範囲の欄） | editor | `/etc/dhcp/dhcpd.conf` の `range` を直す。保存すると `dhcpd -t -q`・`systemctl restart isc-dhcp-server`・`dhcp-lease-list`・`grep -B3 abandoned` が走る |
+| net.i.01 経路とデフォルトゲートウェイ | sim-config（経路表） | terminal | `traceroute` の `!N`・`ping` の `Destination Net Unreachable` から止めたルータ（10.0.1.1）を答える → `ip -n r1 route add` → `ip netns exec srv-c ping` で帰り道の欠けを見つけ `ip -n r2 route add` |
+| net.i.02 NAT | sim-config（転送の表・欄） | terminal | ルータ `gw` で `iptables -t nat -L PREROUTING` から誤った転送先（192.168.1.11）を答える → `-t nat -D`・`-A … -j DNAT --to-destination 192.168.1.10:443` → `-L FORWARD -v` を読み `-A FORWARD -p tcp -d 192.168.1.10 --dport 443 -j ACCEPT`、`ip netns exec outside curl` で店のページ |
+| net.i.03 ファイアウォール | sim-order（札の並べ替え） | terminal | `web-01` で `iptables -L INPUT -n --line-numbers`・`ip netns exec outside nmap` から 443 を止める規則の番号（5）を答える → `-D`・`-I` で 443 を DROP より上へ → 誰でもの 22 を消し `-s 10.0.0.0/8` の 22 を入れる（outside から filtered、office-pc から open） |
+| net.i.05 DNS レコード | sim-config（レコードの表） | editor | `/etc/bind/db.shop.example` に `www IN CNAME shop.example.`・`@ IN MX 10 mail.shop.example.` を書く。保存すると `named-checkzone`・`systemctl reload named`・`dig www.shop.example`・`dig MX shop.example` が走る |
+| net.i.06 ネットワークを分ける | sim-config（8 つの欄） | terminal | `ip netns exec sw bridge vlan add dev port6 vid 20 pvid untagged`・`del … vid 10`（port7 は 30）→ `ip netns exec guest nmap` でまだ見えることを確かめ、`gw` で `iptables -A FORWARD -i eth3 -o eth1・-o eth2 -j DROP` |
+| ほかの 3 本 | terminal・sim-assign | そのまま | net.b.06・net.b.07・net.i.04 は本物の道具、net.b.02 は層への仕分け（原則 2 の例） |
+
+模擬に足した物・直した物（単体テストあり）:
+
+- 網の setup: スイッチ（`kind: switch`・`ports`・口ごとの `vlans`）、機器ごとの iptables の規則（`firewall`。iptables の引数の行）（`netClient.test.ts`・`firewall.test.ts`）
+- `ip netns exec 機器 コマンド`・`ip netns list`（機器ごとを本物の netns に見立てる）。`ip route add … via X` は dev を省くと同じ網の口を使い、無ければ `Nexthop has invalid gateway`
+- 経路の無いルータは、本物と同じく `Destination Net Unreachable` で知らせる（`ping` の `From ルータ`・`traceroute` の `!N`・`curl` の `Network is unreachable`）。自分の網で ARP に誰も答えなければ `Destination Host Unreachable` と `+N errors`
+- iptables の模型（`src/engines/net/firewall.ts`）: filter（INPUT・FORWARD・OUTPUT）と nat（PREROUTING の DNAT・POSTROUTING）、`-A`・`-I`・`-D`（番号・規則）・`-F`・`-P`・`-L`（`--line-numbers`・`-v`）・`-S`、条件 `-p`・`--dport`・`-s`・`-d`・`-i`・`-o`・`-m conntrack --ctstate`。荷物を運ぶ所（`deliver`）で、入ってきた口を見て DNAT と鎖を当てる。返事の荷物は ESTABLISHED で、状態の規則に当たる（状態の規則が無く方針が DROP なら、返事も止まる）。誤りは本物の文（`unknown option "--dport"`・`Index of deletion too big.` など）。root でなければ断る
+- `nmap -p 番号,番号 相手`: open（届いて待っている）・closed（拒否の返事）・filtered（止められて返事が無い）
+- VLAN を絞るスイッチ（Linux のブリッジの vlan_filtering）: 口ごとの PVID とメンバー。`bridge vlan add dev 口 vid N [pvid] [untagged]`・`del`・`show`（本物の形）。前からの書き方 `dev スイッチ:口` はそのまま使える
+- DNS: ゾーンの全てのレコードを持ち、`dig 名前 種類`（A・CNAME・MX・TXT・NS・SOA など）で答える。別名は本物と同じく先を辿って並べる（`+short` も）。`named-checkzone`（知らない種類・A の値・MX の優先度・CNAME と他の同居・SOA が要る）と同じ確かめをし、誤りのあるゾーンは読み込まない（前の答えのまま）
+- DHCP のサーバ（`src/engines/net/dhcp.ts`）: ISC dhcpd の設定（`subnet … { range …; }`）を動かす時に読み、待っている機械に範囲の小さい方から貸す。使われているアドレスは借りた機械が断り（`DHCPDECLINE`）、サーバは捨てる（`abandoned`）。尽きると `no free leases`。本物の形のリースのファイルに書く。`dhcpd -t [-q] -cf`・`dhcp-lease-list`
+- `ss` の `-u`（UDP の待ち受けは `UNCONN`）と `Netid` の欄、プログラムの名前（ssh のサービスの `sshd` など）。設定ファイルの行から待ち受けるポートを読むサービス（`sshd_config` の `Port`。動かし直すまで前の番号）
+- `grep` の `-A`・`-B`・`-C`（離れた組の間は `--`）。`systemctl status` は最後の 10 行の記録を添える（本物の既定）
+- 達成条件: `service` の `listen`、`net` の `reach … from 機器`・`route 機器 宛先 via 次`・`record 名前 種類 値`・`dnat 機器 ポート 先`
+- net.b.06 のゾーンファイルに SOA と NS を足した（本物の named は SOA の無いゾーンを読み込まない）。`dig +short www.shop.example` は、本物と同じく別名の先（`shop.example.`）も出す
+
+内容: エラーの案内（`content/errors/net.json`）を本物の出力に当てた（`Network is unreachable`・`Destination Host Unreachable`・`Destination Net Unreachable`・`Address already in use`・`NXDOMAIN`/`ANSWER: 0`・`not loaded due to errors`・`binding state abandoned`・`Configuration file errors encountered`・`Connection timed out`・iptables の誤りの文・nmap の `open`/`filtered` など）。用語集に `iptables` を足した。`docs/lessons/net.md` の 10 本の実戦の設計、`docs/curriculum.md` の記号（模 → 端・編）、目録を直した。
+
+画面の確かめ（`tools/scenarios/rework.mjs`、1920×1080。端末は最後のヒントのコマンドを本物のキー入力で打ち、設定の編集は最後のヒントの中身を保存した。画面の操作は本物のマウスのドラッグ）:
+
+- `rw-net.b.01-start` / `-drag` / `-wrong` / `-done`: 原則 3（部品から部品へドラッグして線を引く。押して送るボタンは「ping 支店のプリンタ」のように何をするかが文字で分かる）・原則 4（つないだ線に光の粒が流れる。つなげない組み合わせは線が引けず、赤い印の付いた理由が 1 行出る。届いた道すじが下に出る）・原則 5（目的の「支店の LAN」「本社のサーバ」「WAN」が部品の名前に同じ名前で出る）を満たす。2 つの段が達成になる
+- `rw-net.b.02-start` / `-drag` / `-done`: 原則 3（札を持ち上げて枠へ運ぶ）・原則 4（ドラッグ中は受け口の枠が光り、入れた札は枠の中に移る。置き違えは全て置いた時に赤く示す）・原則 5（目的の「5 つの症状」と層の名前が札と枠に出る）を満たす
+- 端末・設定の編集の 9 本（`rw-net.b.03`・`b.04`・`b.05`・`b.08`・`i.01`・`i.02`・`i.03`・`i.05`・`i.06` の `-start` / `-done`）: 原則 1（`ip`・`ping`・`traceroute`・`ss`・`systemctl`・`dhcpd`・`dhcp-lease-list`・`named-checkzone`・`dig`・`iptables`・`bridge vlan`・`nmap`・`curl` の本物の出力が出る）・原則 5（目的の機械の名前（`pc4`・`web-02`・`city-svc`・`office-gw`・`pc-a`・`gw`・`web-01`・`files`・`guest`）・口（`eth0`・`eth3`・`port6`）・アドレスが、プロンプトと出力に同じ名前で出る）を満たす。全ての段が達成になる
+
+検査: `npm run typecheck`・`npm run lint`・`npm run test`（165 ファイル・1800 件。試し台を除く）・`npm run content:check` が通った。

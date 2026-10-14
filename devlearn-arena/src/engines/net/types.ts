@@ -1,3 +1,4 @@
+import type { Iptables } from './firewall';
 import type { ZoneRecord } from './zone';
 
 /** パケットは構造体として生成し、ホップごとにヘッダが書き換わる */
@@ -57,6 +58,11 @@ export interface Interface {
   vlan: number | null;
   /** トランクポートが通す VLAN。アクセスポートなら空 */
   trunkVlans: number[];
+  /**
+   * VLAN を絞るスイッチ（Linux のブリッジの vlan_filtering）の口が、タグを付けずに通す VLAN（メンバー）。
+   * 書いてあれば、メンバーの VLAN（とトランクの VLAN）だけを通し、タグの無いフレームは PVID（vlan）の VLAN に入れる
+   */
+  vlans?: number[];
   /** そのリンクに載せられる最大サイズ */
   mtu: number;
 }
@@ -98,6 +104,8 @@ export interface Device {
   macTable: Record<string, string>;
   /** ルータなら NAT の設定を持てる */
   nat: NatConfig | null;
+  /** iptables の表（filter・nat）。無ければ全て通す（src/engines/net/firewall.ts） */
+  iptables?: Iptables;
   /** 経路を調べる問い（traceroute）に答えない（通る荷物は普通に通す） */
   silent?: boolean;
   /** Web のページ（curl で取りに来た時に返す中身） */

@@ -68,7 +68,7 @@ export const netToolCommands: CommandSpec[] = [
     handler: ({ argv, shell }) => {
       const net = shell.net;
       if (net === null) return { stderr: NO_NET, code: 1 };
-      if (argv[1] === 'vlan') return bridgeVlan(net, argv);
+      if (argv[1] === 'vlan') return bridgeVlan(net, argv, shell.vars.get('NET_SELF') ?? '');
       const { operands } = parseArgs(argv);
       const name = operands[1] ?? operands[0];
       const switches = [...net.devices.values()].filter((d) => d.kind === 'switch');

@@ -24,7 +24,10 @@
     "server",
     "web",
     "ssh",
-    "web-server"
+    "web-server",
+    "iptables",
+    "terminal",
+    "network"
   ],
   "explain": {
     "what": "{{term:firewall}}は、通してよい通信と止める通信を、規則で分ける仕組み。規則は送り元・宛先・{{term:port}}で書き、上から順に比べて、最初に当てはまった 1 つで通すか止めるかが決まる。",
@@ -150,149 +153,134 @@
     }
   ],
   "practice": {
-    "mode": "simulation",
-    "purpose": "サーバのファイアウォールの規則を並べ直し、Web（80・443）は誰からでも、SSH（22）は社内の網からだけ通す。",
-    "environment": "sim-order",
+    "mode": "terminal",
+    "purpose": "Web の{{term:server}} `web-01`（203.0.113.10。この{{term:terminal}}）の{{term:firewall}}（`iptables` の `INPUT` の規則）を並べ直し、Web（80・443）は誰からでも、SSH（22）は社内の網（`10.0.0.0/8`）からだけ通す。確かめには、外のパソコン `outside`（198.51.100.7）と社内のパソコン `office-pc`（10.0.5.20）の中で `nmap` を打つ（`ip netns exec 機械 nmap …`）。",
+    "environment": "net-client",
     "setup": {
-      "items": [
-        {
-          "id": "web80",
-          "label": "許可: 80 番・誰でも"
-        },
-        {
-          "id": "web443",
-          "label": "許可: 443 番・誰でも"
-        },
-        {
-          "id": "ssh-in",
-          "label": "許可: 22 番・社内（10.0.0.0/8）から"
-        },
-        {
-          "id": "ssh-any",
-          "label": "許可: 22 番・誰でも",
-          "extra": true
-        },
-        {
-          "id": "deny-all",
-          "label": "拒否: 全て"
-        }
-      ],
-      "initial": [
-        [
-          "ssh-any"
-        ],
-        [
-          "web80"
-        ],
-        [
-          "deny-all"
-        ],
-        [
-          "web443"
-        ]
-      ],
-      "panels": [
-        {
-          "kind": "table",
-          "title": "確かめる通信と、期待",
-          "columns": [
-            "通信",
-            "期待"
-          ],
-          "rows": [
-            [
-              "外 → 80・443（Web）",
-              "通す"
+      "user": "root",
+      "network": {
+        "self": "web-01",
+        "devices": [
+          {
+            "name": "office-pc",
+            "addrs": [
+              "10.0.5.20/24"
             ],
-            [
-              "外 → 22（SSH）",
-              "止める"
+            "gateway": "10.0.5.1"
+          },
+          {
+            "name": "outside",
+            "addrs": [
+              "198.51.100.7/24"
             ],
-            [
-              "社内 → 22（SSH）",
-              "通す"
+            "gateway": "198.51.100.1"
+          },
+          {
+            "name": "gw",
+            "kind": "router",
+            "addrs": [
+              "10.0.5.1/24",
+              "198.51.100.1/24",
+              "203.0.113.1/24"
             ]
+          },
+          {
+            "name": "web-01",
+            "addrs": [
+              "203.0.113.10/24"
+            ],
+            "gateway": "203.0.113.1",
+            "listen": [
+              22,
+              80,
+              443
+            ],
+            "firewall": [
+              "-P INPUT ACCEPT",
+              "-A INPUT -i lo -j ACCEPT",
+              "-A INPUT -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT",
+              "-A INPUT -p tcp --dport 22 -j ACCEPT",
+              "-A INPUT -p tcp --dport 80 -j ACCEPT",
+              "-A INPUT -j DROP",
+              "-A INPUT -p tcp --dport 443 -j ACCEPT"
+            ]
+          }
+        ],
+        "links": [
+          [
+            "office-pc",
+            "gw"
+          ],
+          [
+            "outside",
+            "gw"
+          ],
+          [
+            "gw",
+            "web-01"
           ]
-        },
-        {
-          "kind": "log",
-          "title": "外 → 22（SSH）",
-          "lines": [
-            "通ってしまった（「許可: 22 番・誰でも」に当たった）"
-          ],
-          "when": "has ssh-any && !seq deny-all<ssh-any"
-        },
-        {
-          "kind": "log",
-          "title": "外 → 443（Web）",
-          "lines": [
-            "止められた（「拒否: 全て」が先に当たった）"
-          ],
-          "when": "seq deny-all<web443"
-        },
-        {
-          "kind": "log",
-          "title": "外 → 443（Web）",
-          "lines": [
-            "許可する規則が並んでいない"
-          ],
-          "when": "!has web443"
-        },
-        {
-          "kind": "log",
-          "title": "確かめた結果",
-          "lines": [
-            "外 → 80・443: 通った",
-            "外 → 22: 止まった",
-            "社内 → 22: 通った"
-          ],
-          "when": "seq web80<deny-all && seq web443<deny-all && seq ssh-in<deny-all && !has ssh-any"
-        }
-      ]
+        ]
+      }
     },
     "steps": [
       {
-        "id": "rules",
-        "purpose": "今の規則では、外から SSH に入れて、443 番は止められている。必要な許可だけを上に並べ、最後に「拒否: 全て」を置く。",
+        "id": "look",
+        "purpose": "`iptables -L INPUT -n --line-numbers` で規則を番号付きで見て、`outside` から `nmap` で 22・80・443 番を調べる。外からの 443 番を止めている規則の番号を答える。",
         "check": {
-          "kind": "sim",
-          "expr": "seq web80<deny-all && seq web443<deny-all && seq ssh-in<deny-all && !has ssh-any"
+          "kind": "answer",
+          "equals": "5"
         },
-        "afterward": "Web の 2 つと、社内からの SSH だけを許可し、最後の「拒否: 全て」でそれ以外を止めた。「22 番・誰でも」は外し、管理の扉を外に開けないようにした。",
+        "afterward": "規則は上から順に見て、最初に当たった物で決まる。443 番の許可（6 番）より先に、5 番の「全て `DROP`」に当たるので、443 番は `filtered`（止められて返事が無い）になった。22 番は 3 番の「誰でも許可」に当たり、外から開いている。",
         "hints": [
-          "必要な扉は 80・443・22（社内から）の 3 つ。誰からでも入れる 22 番は要らない。拒否は一番最後。",
-          "3 つの許可を先に並べ、その後に「拒否: 全て」。「許可: 22 番・誰でも」は並べない。",
-          "上から 「許可: 80 番・誰でも」 → 「許可: 443 番・誰でも」 → 「許可: 22 番・社内（10.0.0.0/8）から」 → 「拒否: 全て」 の順に、札をドラッグして並べる。"
+          "`nmap` の `STATE` は、`open`（開いている）・`closed`（待っていない）・`filtered`（途中で止められた）。",
+          "規則を 1 番から順に、443 番の荷物（`tcp dpt:443`）が最初に当たる行を探す。`DROP` で全てに当たる行より下にある許可は、使われない。",
+          "`iptables -L INPUT -n --line-numbers` `ip netns exec outside nmap -p 22,80,443 203.0.113.10` を打ち、`5` と答える。"
         ],
         "expectedErrors": [
-          "net-fw-open"
+          "net-fw-misread"
+        ]
+      },
+      {
+        "id": "web",
+        "purpose": "443 番の許可を、「全て `DROP`」より上に並べ直す。`outside` から `nmap` で 443 番が `open` になったことを確かめる。",
+        "check": {
+          "kind": "net",
+          "expr": "reach 203.0.113.10:443 from outside && reach 203.0.113.10:80 from outside"
+        },
+        "afterward": "443 番の許可が `DROP` より上に来たので、外からの 443 番が開いた。許可は上に、最後に「それ以外は全て `DROP`」と並べる。",
+        "hints": [
+          "規則の場所は動かせないので、消して（`-D INPUT 番号`）、入れ直す（`-I INPUT 番号 規則`。その番号の所に差し込む）。",
+          "6 番（443 の許可）を消し、5 番（`DROP`）の所に `-p tcp --dport 443 -j ACCEPT` を差し込む。消すと下の番号が 1 つずつ詰まることに気を付ける。",
+          "`iptables -D INPUT 6` `iptables -I INPUT 5 -p tcp --dport 443 -j ACCEPT` `ip netns exec outside nmap -p 22,80,443 203.0.113.10` の順に打つ。"
         ],
-        "actions": [
-          {
-            "op": "arrange",
-            "stages": [
-              [
-                "web80"
-              ],
-              [
-                "web443"
-              ],
-              [
-                "ssh-in"
-              ],
-              [
-                "deny-all"
-              ]
-            ]
-          }
+        "expectedErrors": [
+          "net-fw-syntax"
+        ]
+      },
+      {
+        "id": "ssh",
+        "purpose": "誰からでも入れる SSH の許可（`tcp dpt:22`）を消し、社内の網（`10.0.0.0/8`）からだけ 22 番を許す規則を、`DROP` より上に入れる。`outside` からは 22 番が `filtered`、`office-pc` からは `open` になることを確かめる。",
+        "check": {
+          "kind": "net",
+          "expr": "!reach 203.0.113.10:22 from outside && reach 203.0.113.10:22 from office-pc && reach 203.0.113.10:443 from outside"
+        },
+        "afterward": "Web の 2 つは誰からでも、SSH は社内の網からだけ通り、それ以外は最後の `DROP` で止まる。管理の扉（22 番）を外に開けたままにしないことは、守りの基本。",
+        "hints": [
+          "`-s 10.0.0.0/8` を付けた規則は、送り元がその網の時だけ当たる。",
+          "3 番（22 の誰でも許可）を消すと、`DROP` は 5 番になる。その所に `-s 10.0.0.0/8 -p tcp --dport 22 -j ACCEPT` を差し込む。",
+          "`iptables -D INPUT 3` `iptables -I INPUT 5 -s 10.0.0.0/8 -p tcp --dport 22 -j ACCEPT` `iptables -L INPUT -n --line-numbers` `ip netns exec outside nmap -p 22,80,443 203.0.113.10` `ip netns exec office-pc nmap -p 22 203.0.113.10` の順に打つ。"
+        ],
+        "expectedErrors": [
+          "net-fw-open",
+          "net-fw-syntax"
         ]
       }
     ]
   },
   "result": {
-    "success": "必要な扉だけを許可し、送り元を絞り、最後に全て拒否を置けた。",
-    "partial": "ヒントを使って規則を並べ直せた。次は、拒否を許可より上に置くと何が起きるかを説明してみよう。",
-    "retry": "まだ期待どおりになっていない。確かめた記録で、どの通信が、どの規則に当たったかを見よう。"
+    "success": "`iptables -L --line-numbers` で規則の順を読み、`-D`・`-I` で並べ直して、`nmap` で外と社内からの見え方を確かめられた。",
+    "partial": "ヒントを使って規則を並べ直せた。次は、`iptables -S INPUT` で、規則を作る時の書き方の一覧を見てみよう。",
+    "retry": "まだ期待どおりに通っていない。`iptables -L INPUT -n --line-numbers` で、確かめたい荷物が最初に当たる行を、1 番から順に探そう。"
   },
   "summary": {
     "points": [

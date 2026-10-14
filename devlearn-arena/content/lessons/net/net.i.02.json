@@ -26,7 +26,10 @@
     "port",
     "web-server",
     "dns",
-    "firewall"
+    "firewall",
+    "iptables",
+    "terminal",
+    "curl"
   ],
   "explain": {
     "what": "{{term:nat}} は、網の中の住所（{{term:private-address}}）と、外向きの住所を付け替える仕組み。多くは{{term:router}}が行う。外へ出る時は送り元を外向きの住所に付け替え、対応を表に覚えて、返事を中の機械へ戻す。",
@@ -133,189 +136,154 @@
     }
   ],
   "practice": {
-    "mode": "simulation",
-    "purpose": "外向きの住所（203.0.113.5）の 443 番に来た通信を、中の Web サーバへ転送して、店のページを外に公開する。",
-    "environment": "sim-config",
+    "mode": "terminal",
+    "purpose": "店の{{term:router}} `gw`（この{{term:terminal}}。外向きの住所 203.0.113.5 が `eth0`、中の網 192.168.1.0/24 が `eth1`）で、外から `https://shop.example/`（203.0.113.5 の 443 番）に来た通信を、中の Web サーバ `web`（192.168.1.10）の 443 番へ転送して、店のページを外に公開する。中には経理のパソコン `keiri`（192.168.1.11）とプリンタ（192.168.1.20）もある。確かめには、外のパソコン `outside` の中で `curl` を打つ（`ip netns exec outside curl …`）。",
+    "environment": "net-client",
     "setup": {
-      "fields": [
-        {
-          "id": "fw443",
-          "label": "ルータのファイアウォール: 外から 443 番",
-          "options": [
-            "閉じる",
-            "開ける"
-          ],
-          "value": "閉じる"
-        }
-      ],
-      "tables": [
-        {
-          "id": "forward",
-          "label": "ポート転送の決まり（外 → 中）",
-          "columns": [
-            {
-              "id": "outport",
-              "label": "外のポート",
-              "options": [
-                "22",
-                "80",
-                "443",
-                "8080"
-              ]
-            },
-            {
-              "id": "to",
-              "label": "中の住所",
-              "options": [
-                "192.168.1.10",
-                "192.168.1.11",
-                "192.168.1.20"
-              ]
-            },
-            {
-              "id": "toport",
-              "label": "中のポート",
-              "options": [
-                "22",
-                "80",
-                "443"
-              ]
-            }
-          ],
-          "rows": [
-            {
-              "outport": "443",
-              "to": "192.168.1.11",
-              "toport": "443"
-            }
-          ]
-        }
-      ],
-      "panels": [
-        {
-          "kind": "table",
-          "title": "中の機械",
-          "columns": [
-            "機械",
-            "住所",
-            "待つポート"
-          ],
-          "rows": [
-            [
-              "Web サーバ（店のページ）",
-              "192.168.1.10",
-              "443"
+      "user": "root",
+      "network": {
+        "self": "gw",
+        "devices": [
+          {
+            "name": "outside",
+            "addrs": [
+              "203.0.113.77/24"
             ],
-            [
-              "経理のパソコン",
-              "192.168.1.11",
-              "—"
+            "gateway": "203.0.113.5"
+          },
+          {
+            "name": "gw",
+            "kind": "router",
+            "addrs": [
+              "203.0.113.5/24",
+              "192.168.1.1/24"
             ],
-            [
-              "プリンタ",
-              "192.168.1.20",
-              "—"
+            "firewall": [
+              "-P FORWARD DROP",
+              "-A FORWARD -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT",
+              "-A FORWARD -i eth1 -o eth0 -j ACCEPT",
+              "-t nat -A PREROUTING -i eth0 -p tcp --dport 443 -j DNAT --to-destination 192.168.1.11:443",
+              "-t nat -A POSTROUTING -o eth0 -j MASQUERADE"
             ]
+          },
+          {
+            "name": "sw",
+            "kind": "switch",
+            "ports": 4
+          },
+          {
+            "name": "web",
+            "addrs": [
+              "192.168.1.10/24"
+            ],
+            "gateway": "192.168.1.1",
+            "listen": [
+              443
+            ],
+            "body": "<h1>港町の店</h1><p>本日のおすすめ: 灯台の模型</p>"
+          },
+          {
+            "name": "keiri",
+            "addrs": [
+              "192.168.1.11/24"
+            ],
+            "gateway": "192.168.1.1"
+          },
+          {
+            "name": "printer",
+            "addrs": [
+              "192.168.1.20/24"
+            ],
+            "gateway": "192.168.1.1"
+          }
+        ],
+        "links": [
+          [
+            "outside",
+            "gw"
+          ],
+          [
+            "gw",
+            "sw"
+          ],
+          [
+            "web",
+            "sw"
+          ],
+          [
+            "keiri",
+            "sw"
+          ],
+          [
+            "printer",
+            "sw"
           ]
-        },
-        {
-          "kind": "log",
-          "title": "外から https://203.0.113.5/ を開いた",
-          "lines": [
-            "203.0.113.5:443 に来た → ファイアウォールで止めた（返事なし・時間切れ）"
-          ],
-          "when": "field fw443=閉じる"
-        },
-        {
-          "kind": "log",
-          "title": "外から https://203.0.113.5/ を開いた",
-          "lines": [
-            "203.0.113.5:443 → 192.168.1.11:443 へ転送 → 経理のパソコンが拒否（そこには何も待っていない）"
-          ],
-          "when": "field fw443=開ける && row forward to=192.168.1.11"
-        },
-        {
-          "kind": "log",
-          "title": "外から https://203.0.113.5/ を開いた",
-          "lines": [
-            "203.0.113.5:443 → 転送の決まりが無い → 捨てた"
-          ],
-          "when": "field fw443=開ける && !row forward to=192.168.1.11 && !row forward outport=443 to=192.168.1.10 toport=443"
-        },
-        {
-          "kind": "log",
-          "title": "外から https://203.0.113.5/ を開いた",
-          "lines": [
-            "203.0.113.5:443 → 192.168.1.10:443 へ転送 → 店のページが返った"
-          ],
-          "when": "field fw443=開ける && !row forward to=192.168.1.11 && row forward outport=443 to=192.168.1.10 toport=443"
+        ],
+        "dns": {
+          "shop.example": "203.0.113.5"
         }
-      ]
+      }
     },
     "steps": [
       {
-        "id": "forward",
-        "purpose": "転送の決まりの、中の住所が違う。経理のパソコンへ送る誤った行を消し、外の 443 番を Web サーバの 443 番へ送る行にする。",
+        "id": "look",
+        "purpose": "`outside` から `curl https://shop.example/` を打ち、ページが開かないことを確かめる。転送の決まり（`nat` の表の `PREROUTING` の `DNAT`）を `iptables -t nat -L PREROUTING -n --line-numbers` で見て、転送先のアドレスを答える。",
         "check": {
-          "kind": "sim",
-          "expr": "row forward outport=443 to=192.168.1.10 toport=443 && !row forward to=192.168.1.11"
+          "kind": "answer",
+          "equals": "192.168.1.11"
         },
-        "afterward": "外の 443 番は、Web サーバの 443 番へ送られる。経理のパソコンへ外から入る道も消えた（誤った転送は、見せてはいけない機械を外にさらす）。",
+        "afterward": "外の 443 番は、Web サーバではなく経理のパソコン（192.168.1.11）へ転送されていた。誤った転送は、見せてはいけない機械を外にさらす。",
         "hints": [
-          "中の機械の表と、転送の決まりの「中の住所」を見比べる。",
-          "1 行目は経理のパソコン（192.168.1.11）へ送っている。消してから、Web サーバ（192.168.1.10）の 443 番へ送る行を足す。",
-          "`del forward 1` `add forward outport=443 to=192.168.1.10 toport=443` の順に入れる。"
+          "{{term:nat}}の表は `-t nat` を付けて見る。`DNAT` の行の `to:` の後ろが転送先。",
+          "`to:アドレス:ポート` のアドレスを、中の機械の一覧と見比べる。",
+          "`ip netns exec outside curl https://shop.example/` `iptables -t nat -L PREROUTING -n --line-numbers` を打ち、`192.168.1.11` と答える。"
         ],
         "expectedErrors": [
+          "net-fw-timeout",
           "net-nat-wrong"
-        ],
-        "actions": [
-          {
-            "op": "del",
-            "table": "forward",
-            "index": 1
-          },
-          {
-            "op": "add",
-            "table": "forward",
-            "row": {
-              "outport": "443",
-              "to": "192.168.1.10",
-              "toport": "443"
-            }
-          }
         ]
       },
       {
-        "id": "open",
-        "purpose": "ルータの{{term:firewall}}で、外からの 443 番を開け、外から店のページが開くことを記録で確かめる。",
+        "id": "dnat",
+        "purpose": "誤った転送の規則を消し、外（`eth0`）から来た 443 番を `web` の 192.168.1.10:443 へ転送する規則を足す。",
         "check": {
-          "kind": "sim",
-          "expr": "field fw443=開ける && row forward outport=443 to=192.168.1.10 toport=443 && !row forward to=192.168.1.11"
+          "kind": "net",
+          "expr": "dnat gw 443 192.168.1.10:443"
         },
-        "afterward": "外から https://203.0.113.5/ を開くと、ルータが 192.168.1.10:443 へ転送し、店のページが返った。転送の決まりと、ファイアウォールの両方が揃って、初めて外から届く。",
+        "afterward": "外の 443 番は `web` へ転送されるようになった。ただし、まだページは開かない（転送した荷物を、ルータの `FORWARD` の鎖が止めている）。",
         "hints": [
-          "転送の決まりがあっても、手前のファイアウォールで止められると届かない。",
-          "ファイアウォールの欄を「開ける」にする。",
-          "`set fw443 開ける` と入れる。"
+          "規則を消すのは `iptables -t nat -D PREROUTING 番号`、足すのは `iptables -t nat -A PREROUTING 条件 -j DNAT --to-destination 先`。",
+          "条件は `-i eth0 -p tcp --dport 443`、先は `192.168.1.10:443`。",
+          "`iptables -t nat -D PREROUTING 1` `iptables -t nat -A PREROUTING -i eth0 -p tcp --dport 443 -j DNAT --to-destination 192.168.1.10:443` を打つ。"
         ],
         "expectedErrors": [
-          "net-nat-wrong"
+          "net-fw-syntax"
+        ]
+      },
+      {
+        "id": "forward",
+        "purpose": "ルータの{{term:firewall}}で、通り抜ける荷物を決める `FORWARD` の鎖（方針は `DROP`）を `iptables -L FORWARD -n -v --line-numbers` で見る。`web` の 443 番へ向かう荷物を通す規則を足し、`outside` から `curl` で店のページが返ることを確かめる。",
+        "check": {
+          "kind": "net",
+          "expr": "reach 203.0.113.5:443 from outside"
+        },
+        "afterward": "外から https://shop.example/ を開くと、ルータが 192.168.1.10:443 へ転送し、通り抜けを許したので店のページが返った。転送の決まり（`DNAT`）と、通り抜けの許可（`FORWARD`）の両方が揃って、初めて外から届く。",
+        "hints": [
+          "`-v` を付けると、口（`in`・`out`）の欄も出る。2 番の許可は `in` が `eth1`（中から外へ）だけ。外から中への荷物を許す規則は無い。",
+          "`-A FORWARD -p tcp -d 192.168.1.10 --dport 443 -j ACCEPT` で、転送先の 443 番へ向かう荷物だけを許す（返事は 1 番の `ESTABLISHED` で通る）。",
+          "`iptables -L FORWARD -n -v --line-numbers` `iptables -A FORWARD -p tcp -d 192.168.1.10 --dport 443 -j ACCEPT` `ip netns exec outside curl https://shop.example/` の順に打つ。"
         ],
-        "actions": [
-          {
-            "op": "set",
-            "field": "fw443",
-            "value": "開ける"
-          }
+        "expectedErrors": [
+          "net-fw-timeout",
+          "net-fw-syntax"
         ]
       }
     ]
   },
   "result": {
-    "success": "転送の決まりの誤りを直し、ファイアウォールを開けて、中のサーバを外に公開できた。",
-    "partial": "ヒントを使って公開できた。次は、外へ出る付け替えと、外から入る転送の違いを説明してみよう。",
-    "retry": "まだ外から店のページが開かない。記録で、どこで止まったか（ファイアウォール・転送の決まり・中の機械）を確かめよう。"
+    "success": "`iptables -t nat` で誤った転送を見つけて直し、`FORWARD` の許可も足して、外から店のページを開けた。",
+    "partial": "ヒントを使ってポート転送を直せた。次は、`iptables -t nat -S` と `iptables -S FORWARD` で、転送と通り抜けの規則を並べて見てみよう。",
+    "retry": "まだ外からページが開かない。`nat` の表の `DNAT` の転送先と、`FORWARD` の鎖の方針と許可を確かめよう。"
   },
   "summary": {
     "points": [
