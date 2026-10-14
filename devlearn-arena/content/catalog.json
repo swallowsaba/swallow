@@ -990,7 +990,7 @@
       "title": "ポート",
       "goal": "1 台の中で通信を届け分ける仕組みを説明できる",
       "practice": [
-        "simulation"
+        "terminal"
       ],
       "prerequisites": [
         "net.b.03"
@@ -1013,7 +1013,7 @@
       "title": "TCP と UDP",
       "goal": "確実さと速さの違い、使い分けを判断できる",
       "practice": [
-        "simulation"
+        "terminal"
       ],
       "prerequisites": [
         "net.b.04"

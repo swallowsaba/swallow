@@ -105,7 +105,8 @@ export const checkSchema = z.discriminatedUnion('kind', [
     mode: z.string().regex(/^([0-7]{3,4}|[ugoa]*[+-][rwx]+(,[ugoa]*[+-][rwx]+)*)$/).optional(),
   }).strict(),
   z.object({ kind: z.literal('cwd'), equals: z.string() }).strict(),
-  z.object({ kind: z.literal('service'), name: z.string(), active: z.boolean().optional(), enabled: z.boolean().optional() }).strict(),
+  /** listen を書けば、そのサービスが動いていて、その番号で待ち受けている（TCP か UDP） */
+  z.object({ kind: z.literal('service'), name: z.string(), active: z.boolean().optional(), enabled: z.boolean().optional(), listen: z.number().int().min(1).max(65535).optional() }).strict(),
   z.object({ kind: z.literal('git'), expr: z.string() }).strict(),
   z.object({ kind: z.literal('k8s'), expr: z.string() }).strict(),
   z.object({ kind: z.literal('net'), expr: z.string() }).strict(),

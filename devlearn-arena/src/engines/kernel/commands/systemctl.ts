@@ -63,7 +63,8 @@ function status(table: ServiceTable, raw: string): CommandResult {
     for (const l of s.listens ?? []) lines.push(`     Listen: 0.0.0.0:${String(l.port)}${l.ssl ? ' (ssl)' : ''}`);
     if (!s.config && s.port !== undefined) lines.push(`     Listen: 0.0.0.0:${String(s.port)}`);
   }
-  const tail = s.log.slice(-3);
+  // 本物と同じく、最後の 10 行の記録を添える
+  const tail = s.log.slice(-10);
   if (tail.length > 0) lines.push('', ...tail);
   // 本物と同じく、動いていなければ終了の値は 3
   return { stdout: fromLines(lines), code: s.active === 'active' ? 0 : 3 };

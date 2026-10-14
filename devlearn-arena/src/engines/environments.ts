@@ -10,7 +10,7 @@ import { createDefaultRegistry } from './kernel/commands';
 import { BUILTIN_NAMESPACES } from './kernel/commands/kubectlNamespace';
 import { applyManifestText } from './kernel/commands/kubectlOps';
 import type { GitServer, ShellState, WebWorld } from './kernel/registry';
-import { createServiceTable } from './kernel/services';
+import { createServiceTable, portFromConfig } from './kernel/services';
 import { readSessionIni } from './http/session';
 import { createShellState, type SessionOptions } from './kernel/session';
 import { execute } from './kernel/shell';
@@ -44,6 +44,12 @@ const serviceSetup = z.object({
   /** それまでのログ（journalctl で読める行。「Oct 03 02:13:44 server web[812]: …」の形） */
   log: z.array(z.string()).optional(),
   port: z.number().int().optional(),
+  /** UDP で待ち受けるポート */
+  udp: z.array(z.number().int().min(1).max(65535)).optional(),
+  /** ss -p に出るプログラムの名前（無ければサービスの名前） */
+  program: z.string().regex(/^[a-z][a-z0-9-]*$/).optional(),
+  /** 待ち受けるポートを、動かす時に設定ファイルの行（`Port 22` の形）から読む */
+  portConfig: z.object({ file: z.string().startsWith('/'), key: z.string().min(1), fallback: z.number().int() }).strict().optional(),
   /** 待ち受けるアドレス（無ければ 0.0.0.0。127.0.0.1 なら、その機械の中からだけ届く） */
   address: z.string().regex(/^\d+\.\d+\.\d+\.\d+$/).optional(),
   body: z.string().optional(),
@@ -365,6 +371,10 @@ export function shellOptions(environment: string, setup: unknown): SessionOption
       enabled: v.enabled,
       ...(v.broken !== undefined ? { broken: v.broken } : {}),
       ...(v.port !== undefined ? { port: v.port } : {}),
+      ...(v.udp !== undefined ? { udp: v.udp } : {}),
+      ...(v.program !== undefined ? { program: v.program } : {}),
+      // 初めから動いているサービスは、置いたファイルの設定から読んだポートで始める
+      ...(v.portConfig !== undefined ? { portConfig: v.portConfig, ...(v.active ? { port: portFromConfig(v.portConfig, s.files?.[v.portConfig.file] ?? null) } : {}) } : {}),
       ...(v.address !== undefined ? { address: v.address } : {}),
       ...(v.body !== undefined ? { body: v.body } : {}),
       ...(v.status !== undefined ? { status: v.status } : {}),

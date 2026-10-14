@@ -23,8 +23,14 @@ export interface Service {
   enabled: boolean;
   /** 動かそうとすると失敗する理由（ログに出す行） */
   broken?: string;
-  /** 待ち受けるポート（動いている間だけ） */
+  /** 待ち受けるポート（TCP。動いている間だけ） */
   port?: number;
+  /** UDP で待ち受けるポート（動いている間だけ。ss -u で見える） */
+  udp?: readonly number[];
+  /** ss -p に出るプログラムの名前（無ければサービスの名前。ssh のサービスの sshd など） */
+  program?: string;
+  /** 待ち受けるポートを、動かす時に設定ファイルの行（`Port 22` の形）から読む。行が無ければ fallback（sshd_config の Port など） */
+  portConfig?: { file: string; key: string; fallback: number };
   /** 待ち受けるアドレス（無ければ 0.0.0.0 = 全ての口。127.0.0.1 なら、その機械の中からだけ届く） */
   address?: string;
   /** HTTP で応える中身 */
@@ -99,6 +105,16 @@ export type ConfigLoader = (path: string) => ConfigResult;
 /** ファイルの中身を読む関数（無ければ null）。アプリの設定（php.ini）を読む */
 export type TextReader = (path: string) => string | null;
 
+/** 設定ファイルの `キー 数` の行から読んだポート（# の注釈は飛ばす。無ければ fallback） */
+export function portFromConfig(spec: { key: string; fallback: number }, text: string | null): number {
+  for (const raw of (text ?? '').split('\n')) {
+    const line = raw.replace(/#.*$/, '').trim();
+    const [k, v] = line.split(/\s+/);
+    if (k !== undefined && v !== undefined && k.toLowerCase() === spec.key.toLowerCase() && /^\d+$/.test(v)) return Number(v);
+  }
+  return spec.fallback;
+}
+
 /** サービスが待ち受けるポート（設定から決まった物と、初めから決まっている物） */
 export function portsOf(s: Service): number[] {
   return [...(s.listens ?? []).map((l) => l.port), ...(s.port !== undefined && !s.config ? [s.port] : [])];
@@ -126,6 +142,7 @@ export function startService(table: ServiceTable, raw: string, load?: ConfigLoad
     if (!conf.ok) return fail(table, s, { from: `${s.name}[${String(800 + table.tick)}]`, text: conf.error });
     ready = { ...s, listens: conf.listens, servers: conf.servers };
   }
+  if (s.portConfig) ready = { ...ready, port: portFromConfig(s.portConfig, read ? read(s.portConfig.file) : null) };
   // php.ini が無ければ、PHP と同じく既定の決まりで動く
   if (s.session) ready = { ...ready, cookie: readSessionIni((read ? read(s.session.ini) : null) ?? '') };
   for (const port of portsOf(ready)) {

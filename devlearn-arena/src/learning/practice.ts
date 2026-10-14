@@ -9,7 +9,7 @@ import { httpEnvOf } from '@/engines/kernel/commands/httpLocal';
 import { resolve } from '@/engines/kernel/path';
 import { matchesExpected, type SqlDb } from '@/engines/db/check';
 import type { CommandRegistry, ShellState } from '@/engines/kernel/registry';
-import { serviceOf } from '@/engines/kernel/services';
+import { portsOf, serviceOf } from '@/engines/kernel/services';
 import { execute } from '@/engines/kernel/shell';
 import { sshHolds } from '@/engines/kernel/commands/ssh';
 import { exists, isDir, metaOf, readFile, writeFile } from '@/engines/kernel/vfs';
@@ -109,6 +109,7 @@ export function checkState(check: CheckSpec, input: CheckInput): boolean {
       if (!s) return false;
       if (check.active !== undefined && (s.active === 'active') !== check.active) return false;
       if (check.enabled !== undefined && s.enabled !== check.enabled) return false;
+      if (check.listen !== undefined && (s.active !== 'active' || ![...portsOf(s), ...(s.udp ?? [])].includes(check.listen))) return false;
       return true;
     }
     case 'http': {

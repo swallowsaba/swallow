@@ -357,6 +357,56 @@ describe('IP とポートを確かめる（ip addr・ss）', () => {
     expect(out).not.toContain(':5432');
     expect(t.run('ss -tln').out).not.toContain('users:');
   });
+
+  it('-u は UDP の待ち受け（状態は UNCONN）。-t と -u を両方書くと、先頭に Netid の欄を付けて UDP から並べる。-p はプログラムの名前', () => {
+    const t = open({ services: createServiceTable([
+      { name: 'named', description: 'DNS', active: 'active', enabled: true, port: 53, udp: [53], program: 'named' },
+      { name: 'ssh', description: 'SSH', active: 'active', enabled: true, port: 22, program: 'sshd' },
+    ]), vars: { USER: 'root' } });
+    const udp = t.run('ss -ulnp').out;
+    expect(udp).toMatch(/^UNCONN\s+0\s+0\s+0\.0\.0\.0:53\s+0\.0\.0\.0:\*\s+users:\(\("named",/m);
+    expect(udp).not.toContain(':22');
+    const both = t.run('ss -tulnp').out.split('\n');
+    expect(both[0]).toMatch(/^Netid State/);
+    expect(both[1]).toMatch(/^udp\s+UNCONN\s.*:53\s/);
+    expect(both.slice(2).join('\n')).toMatch(/^tcp\s+LISTEN\s.*:22\s.*users:\(\("sshd",/m);
+    expect(t.run('ss -tlnp').out).not.toContain('UNCONN');
+  });
+});
+
+describe('設定ファイルから待ち受けるポートを読むサービス（sshd_config の Port）', () => {
+  const setup = {
+    files: { '/etc/ssh/sshd_config': '# Port 2200 は注釈\nPort 2222\nPermitRootLogin no\n' },
+    services: { ssh: { description: 'OpenBSD Secure Shell server', enabled: true, program: 'sshd', portConfig: { file: '/etc/ssh/sshd_config', key: 'Port', fallback: 22 } } },
+  };
+
+  it('動かす時に Port の行を読む。直しても、動かし直すまで前の番号のまま。行が無ければ既定の番号', async () => {
+    const { initialShell } = await import('@/engines/environments');
+    const { checkState } = await import('@/learning/practice');
+    const { createDefaultRegistry } = await import('./index');
+    const { createClock } = await import('../clock');
+    const registry = createDefaultRegistry();
+    const clock = createClock();
+    let shell = initialShell('linux-server', setup);
+    const run = (line: string): string => {
+      const o = execute(shell, line, registry, clock);
+      shell = o.state;
+      return o.chunks.map((c) => c.text).join('');
+    };
+    run('systemctl start ssh');
+    expect(run('ss -tlnp')).toContain('0.0.0.0:2222');
+    expect(checkState({ kind: 'service', name: 'ssh', listen: 22 }, { shell })).toBe(false);
+    run("sed -i 's/^Port 2222/Port 22/' /etc/ssh/sshd_config");
+    expect(run('ss -tln')).toContain(':2222');
+    run('systemctl restart ssh');
+    expect(run('ss -tln')).toMatch(/0\.0\.0\.0:22\s/);
+    expect(checkState({ kind: 'service', name: 'ssh', active: true, listen: 22 }, { shell })).toBe(true);
+    run("sed -i '/^Port/d' /etc/ssh/sshd_config");
+    run('systemctl restart ssh');
+    expect(checkState({ kind: 'service', name: 'ssh', listen: 22 }, { shell })).toBe(true);
+    run('systemctl stop ssh');
+    expect(checkState({ kind: 'service', name: 'ssh', listen: 22 }, { shell })).toBe(false);
+  });
 });
 
 describe('容量を調べる（df・du・sort -h）', () => {

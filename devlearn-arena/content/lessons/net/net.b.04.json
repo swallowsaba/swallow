@@ -30,7 +30,13 @@
     "firewall",
     "https",
     "http",
-    "ping"
+    "ping",
+    "ss",
+    "curl",
+    "systemctl",
+    "config-file",
+    "terminal",
+    "url"
   ],
   "explain": {
     "what": "{{term:port}}は、1 台の機械の中で、届いた通信をどの{{term:program}}に渡すかを決める番号（0〜65535）。{{term:ip-address}}が建物の住所なら、ポートは建物の扉。{{term:service}}は決まった扉で待ち受ける。",
@@ -149,133 +155,113 @@
     }
   ],
   "practice": {
-    "mode": "simulation",
-    "purpose": "新しいサーバで、3 つのサービスを正しい扉（ポート）で待ち受けさせる。",
-    "environment": "sim-assign",
+    "mode": "terminal",
+    "purpose": "新しい{{term:server}} `web-02` で、Web（`nginx`）と SSH（`ssh` のサービス。プログラムは `sshd`）を、それぞれ既定の番号（{{term:port}}）で待ち受けさせる。http の既定は 80、SSH の既定は 22。前の担当が試しに動かした Web（`preview` のサービス。プログラムは `python3`）が残っている。",
+    "environment": "linux-server",
     "setup": {
-      "slots": [
-        {
-          "id": "p22",
-          "label": "22 番",
-          "capacity": 1,
-          "full": "bind: 0.0.0.0:22 は使用中（Address already in use）。1 つのポートで待ち受けられるのは 1 つだけ"
-        },
-        {
-          "id": "p80",
-          "label": "80 番",
-          "capacity": 1,
-          "full": "bind: 0.0.0.0:80 は使用中（Address already in use）。1 つのポートで待ち受けられるのは 1 つだけ"
-        },
-        {
-          "id": "p443",
-          "label": "443 番",
-          "capacity": 1,
-          "full": "bind: 0.0.0.0:443 は使用中（Address already in use）。1 つのポートで待ち受けられるのは 1 つだけ"
-        },
-        {
-          "id": "p8080",
-          "label": "8080 番",
-          "capacity": 1,
-          "full": "bind: 0.0.0.0:8080 は使用中（Address already in use）。1 つのポートで待ち受けられるのは 1 つだけ"
-        }
+      "hostname": "web-02",
+      "dirs": [
+        "/var/www/html"
       ],
-      "items": [
-        {
-          "id": "web",
-          "label": "Web（HTTP）",
-          "size": 1
-        },
-        {
-          "id": "https",
-          "label": "Web（HTTPS）",
-          "size": 1
-        },
-        {
-          "id": "ssh",
-          "label": "SSH（管理）",
-          "size": 1
-        }
-      ],
-      "initial": {
-        "web": "p443"
+      "files": {
+        "/etc/nginx/conf.d/site.conf": "server {\n  listen 8080;\n  server_name web-02;\n  root /var/www/html;\n}\n",
+        "/var/www/html/index.html": "<html><body><h1>港町の案内</h1></body></html>\n",
+        "/etc/ssh/sshd_config": "Include /etc/ssh/sshd_config.d/*.conf\n\nPort 2222\nPermitRootLogin no\nPasswordAuthentication no\n"
       },
-      "panels": [
-        {
-          "kind": "table",
-          "title": "よく使うポート",
-          "columns": [
-            "番号",
-            "使う物"
-          ],
-          "rows": [
-            [
-              "22",
-              "SSH"
-            ],
-            [
-              "80",
-              "Web（HTTP）"
-            ],
-            [
-              "443",
-              "Web（HTTPS）"
-            ],
-            [
-              "8080",
-              "試しの Web によく使う"
-            ]
-          ]
+      "services": {
+        "nginx": {
+          "description": "nginx web server",
+          "enabled": true,
+          "config": "/etc/nginx/conf.d/site.conf"
         },
-        {
-          "kind": "text",
-          "title": "外から確かめた結果",
-          "body": "http://・https://・ssh の 3 つとも、番号を書かずに届いた。",
-          "when": "in web=p80 https=p443 ssh=p22"
+        "preview": {
+          "description": "試しの Web（python3 -m http.server 80）",
+          "enabled": true,
+          "active": true,
+          "port": 80,
+          "program": "python3",
+          "body": "<html><body>試しのページ（古い）</body></html>"
+        },
+        "ssh": {
+          "description": "OpenBSD Secure Shell server",
+          "enabled": true,
+          "program": "sshd",
+          "portConfig": {
+            "file": "/etc/ssh/sshd_config",
+            "key": "Port",
+            "fallback": 22
+          }
         }
+      },
+      "run": [
+        "systemctl start nginx",
+        "systemctl start ssh"
       ]
     },
     "steps": [
       {
-        "id": "doors",
-        "purpose": "Web（HTTP）・Web（HTTPS）・SSH を、それぞれ既定の番号で待ち受けさせる。443 番には、間違えて Web（HTTP）が入っている。",
+        "id": "look",
+        "purpose": "`ss -tlnp` で、どのプログラムがどの番号で待っているかを見る。`curl http://localhost/` で、番号を書かずに開くと何が返るかも確かめる。Web のサーバ（`nginx`）が今待っている番号を答える。",
         "check": {
-          "kind": "sim",
-          "expr": "in web=p80 https=p443 ssh=p22"
+          "kind": "answer",
+          "equals": "8080"
         },
-        "afterward": "3 つのサービスが、それぞれ既定の扉で待ち受けた。利用者は番号を書かなくても、ブラウザや ssh が既定の番号に届けてくれる。",
+        "afterward": "`nginx` は 8080 番で待っていて、http の既定の 80 番には、古い試しの Web（`python3`）がいた。番号を書かずに開いた人には、古いページが返っていた。",
         "hints": [
-          "既定の番号を思い出す。1 つの扉には 1 つしか入らないので、間違えて入っている物を先に出す。",
-          "HTTP は 80、HTTPS は 443、SSH は 22。443 番の Web（HTTP）を出してから、80 番に入れ直す。",
-          "「Web（HTTP）」を「80 番」へドラッグして入れる、「Web（HTTPS）」を「443 番」へドラッグして入れる、「SSH（管理）」を「22 番」へドラッグして入れる。"
+          "`ss -tlnp` の `Local Address:Port` の `:` の後ろが番号、`Process` の `users:((\"…\"` がプログラムの名前。",
+          "`nginx` の行を探す。`curl` の{{term:url}}に番号を書かないと、http は既定の 80 番へ届く。今 80 番にいるのは誰か。",
+          "`ss -tlnp` `curl http://localhost/` を打ち、`8080` と答える。"
+        ],
+        "expectedErrors": [
+          "net-port-default"
+        ]
+      },
+      {
+        "id": "web",
+        "purpose": "`nginx` の設定 `/etc/nginx/conf.d/site.conf` の `listen` を 80 番にして、動かし直す。80 番で待てるのは 1 つのプログラムだけなので、古い試しの Web（`preview`）を止め、起動の時にも動かないようにする。`curl http://localhost/` で「港町の案内」のページが返ることを確かめる。",
+        "check": {
+          "kind": "http",
+          "url": "http://localhost/",
+          "status": 200,
+          "contains": "港町の案内"
+        },
+        "afterward": "`preview` を止めて 80 番を空けたので、`nginx` が 80 番で待てた。番号を書かずに開いた人にも、港町の案内のページが返る。",
+        "hints": [
+          "`listen 8080;` を `listen 80;` に直し、`nginx -t` で確かめて `systemctl restart nginx`。失敗したら `systemctl status nginx` の記録を読む。",
+          "`bind() to 0.0.0.0:80 failed (98: Address already in use)` は、80 番を別のプログラムが使っているという意味。`systemctl stop preview` で止め、`systemctl disable preview` で起動の時にも動かないようにしてから、もう一度 `systemctl restart nginx`。",
+          "`sed -i 's/listen 8080;/listen 80;/' /etc/nginx/conf.d/site.conf` `nginx -t` `systemctl restart nginx` `systemctl stop preview` `systemctl disable preview` `systemctl restart nginx` `curl http://localhost/` の順に打つ。"
         ],
         "expectedErrors": [
           "net-port-in-use",
-          "net-port-default"
+          "service-failed",
+          "nginx-emerg"
+        ]
+      },
+      {
+        "id": "ssh",
+        "purpose": "SSH のサーバを、既定の 22 番で待たせる。設定 `/etc/ssh/sshd_config` の `Port` の行を直し、`ssh` を動かし直して、`ss -tlnp` で `sshd` が 22 番にいることを確かめる。",
+        "check": {
+          "kind": "service",
+          "name": "ssh",
+          "active": true,
+          "listen": 22
+        },
+        "afterward": "http は 80、SSH は 22 で待つようになった。利用者はブラウザや `ssh` に番号を書かなくても、既定の番号に届く。1 台の中では、届いた通信を番号で届け分けている。",
+        "hints": [
+          "SSH の既定の番号は 22。今の設定は `Port 2222`。",
+          "`Port 2222` の行を `Port 22` に直し、`systemctl restart ssh`。設定は動かす時に読む。",
+          "`sed -i 's/^Port 2222/Port 22/' /etc/ssh/sshd_config` `systemctl restart ssh` `ss -tlnp` の順に打つ。"
         ],
-        "actions": [
-          {
-            "op": "put",
-            "item": "web",
-            "slot": "p80"
-          },
-          {
-            "op": "put",
-            "item": "https",
-            "slot": "p443"
-          },
-          {
-            "op": "put",
-            "item": "ssh",
-            "slot": "p22"
-          }
+        "expectedErrors": [
+          "service-failed"
         ]
       }
     ]
   },
   "result": {
-    "success": "3 つのサービスを、重ならないように既定の扉で待ち受けさせられた。",
-    "partial": "ヒントを使って扉を割り振れた。次は、使用中のポートで動かそうとすると何が起きるかを説明してみよう。",
-    "retry": "まだ扉の割り振りが合っていない。表の既定の番号と、1 つの扉に 1 つだけ、を確かめよう。"
+    "success": "`ss -tlnp` で番号とプログラムを読み、設定を直して、Web と SSH を既定の番号で待たせられた。1 つの番号に 1 つのプログラム、という決まりも確かめた。",
+    "partial": "ヒントを使って既定の番号に揃えられた。次は、`curl http://localhost:8080/` が今どうなるかを確かめてみよう。",
+    "retry": "まだ既定の番号に揃っていない。`ss -tlnp` で、80 番と 22 番に、どのプログラムがいるかを見よう。"
   },
   "summary": {
     "points": [

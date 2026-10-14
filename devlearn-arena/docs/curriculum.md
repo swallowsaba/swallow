@@ -181,8 +181,8 @@ lab は複数分野の組み合わせ
 | net.b.01 | 初級 | 全体像 | ネットワークとは（LAN と WAN） | 家庭・会社・インターネットのつながりを描ける | 模 | found.b.07 | found.b.07, cloud.b.03 | net.b.02 |
 | net.b.02 | 初級 | 層 | OSI と TCP/IP の層 | 各層の役割と、どの層の話かを判断できる | 模 | net.b.01 | web.b.02, trouble.b.01 | net.b.03 |
 | net.b.03 | 初級 | IP | IP アドレスとサブネット | アドレスとネットワーク部を読み、同じ網かを判断できる | 端 | net.b.02 | cloud.b.03, linux.i.04 | net.b.04, net.b.06, net.b.07 |
-| net.b.04 | 初級 | ポート | ポート | 1 台の中で通信を届け分ける仕組みを説明できる | 模 | net.b.03 | linux.i.04, docker.b.04 | net.b.05, net.i.03, web.b.02 |
-| net.b.05 | 初級 | TCP/UDP | TCP と UDP | 確実さと速さの違い、使い分けを判断できる | 模 | net.b.04 | web.i.06, mon.i.01 | net.i.04, web.i.06 |
+| net.b.04 | 初級 | ポート | ポート | 1 台の中で通信を届け分ける仕組みを説明できる | 端 | net.b.03 | linux.i.04, docker.b.04 | net.b.05, net.i.03, web.b.02 |
+| net.b.05 | 初級 | TCP/UDP | TCP と UDP | 確実さと速さの違い、使い分けを判断できる | 端 | net.b.04 | web.i.06, mon.i.01 | net.i.04, web.i.06 |
 | net.b.06 | 初級 | DNS | 名前解決 | 名前から IP を引く流れを説明し、dig で確かめられる | 端 | net.b.03 | web.b.01, trouble.i.02 | net.i.05, web.b.01 |
 | net.b.07 | 初級 | 確認 | ping と traceroute | 到達と経路を確かめられる | 端 | net.b.03 | trouble.i.02, linux.i.04 | net.i.01 |
 | net.b.08 | 初級 | DHCP | DHCP | アドレスが自動で配られる流れを説明できる | 模 | net.b.03 | net.b.03, cloud.b.03 | net.i.01 |

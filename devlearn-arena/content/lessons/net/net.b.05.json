@@ -26,7 +26,11 @@
     "dns",
     "app",
     "server",
-    "service"
+    "service",
+    "ss",
+    "terminal",
+    "ssh",
+    "program"
   ],
   "explain": {
     "what": "{{term:tcp}} と {{term:udp}} は、データの送り方の決まり。TCP は届いたかを確かめながら送り、欠けた所は送り直す。UDP は確かめずに、次々と送る。どちらもトランスポート層で、{{term:port}}で届け先を分ける。",
@@ -154,132 +158,107 @@
     }
   ],
   "practice": {
-    "mode": "simulation",
-    "purpose": "4 つの{{term:service}}に、TCP と UDP のどちらを使うかを、理由とともに選ぶ。",
-    "environment": "sim-read",
+    "mode": "terminal",
+    "purpose": "市の通信の{{term:server}} `city-svc` で、4 つの{{term:service}}が {{term:tcp}} と {{term:udp}} のどちらで待っているかを `ss` で調べ、なぜその決まりを使うのかを考える。サービスは、名前を引く `named`（DNS）・音声通話の交換機 `asterisk`・時刻を合わせる `chronyd`・管理とファイルの転送に使う `sshd`（{{term:ssh}}）。",
+    "environment": "linux-server",
     "setup": {
-      "questions": [
-        {
-          "id": "file",
-          "prompt": "ファイルの転送（設計書を送る）",
-          "options": [
-            "TCP・欠けると困る",
-            "TCP・速いから",
-            "UDP・遅れると困る",
-            "UDP・短い問いで済む"
-          ]
-        },
-        {
-          "id": "voice",
-          "prompt": "生の音声通話",
-          "options": [
-            "TCP・欠けると困る",
-            "TCP・速いから",
-            "UDP・遅れると困る",
-            "UDP・短い問いで済む"
-          ]
-        },
-        {
-          "id": "web",
-          "prompt": "Web のページ",
-          "options": [
-            "TCP・欠けると困る",
-            "TCP・速いから",
-            "UDP・遅れると困る",
-            "UDP・短い問いで済む"
-          ]
-        },
-        {
-          "id": "dns",
-          "prompt": "DNS の問い合わせ（名前を引く）",
-          "options": [
-            "TCP・欠けると困る",
-            "TCP・速いから",
-            "UDP・遅れると困る",
-            "UDP・短い問いで済む"
-          ]
-        }
-      ],
-      "panels": [
-        {
-          "kind": "table",
-          "title": "欠けたら・遅れたら、どうなるか",
-          "columns": [
-            "サービス",
-            "一部が欠けたら",
-            "遅れたら"
+      "hostname": "city-svc",
+      "services": {
+        "named": {
+          "description": "BIND Domain Name Server",
+          "enabled": true,
+          "active": true,
+          "port": 53,
+          "udp": [
+            53
           ],
-          "rows": [
-            [
-              "ファイルの転送",
-              "壊れて開けない",
-              "待てばよい"
-            ],
-            [
-              "生の音声通話",
-              "一瞬乱れるだけ",
-              "会話にならない"
-            ],
-            [
-              "Web のページ",
-              "表示が崩れる",
-              "少し待てばよい"
-            ],
-            [
-              "DNS の問い合わせ",
-              "もう一度問えばよい（問いも答えも小さい）",
-              "ページが開くのが遅れる"
-            ]
-          ]
+          "program": "named"
+        },
+        "asterisk": {
+          "description": "Asterisk PBX（音声通話の交換機）",
+          "enabled": true,
+          "active": true,
+          "udp": [
+            5060
+          ],
+          "program": "asterisk"
+        },
+        "chrony": {
+          "description": "chrony, an NTP client/server",
+          "enabled": true,
+          "active": true,
+          "udp": [
+            123
+          ],
+          "program": "chronyd"
+        },
+        "ssh": {
+          "description": "OpenBSD Secure Shell server",
+          "enabled": true,
+          "active": true,
+          "port": 22,
+          "program": "sshd"
         }
-      ]
+      }
     },
     "steps": [
       {
-        "id": "choose",
-        "purpose": "表で「欠けたら」「遅れたら」を読み、4 つのサービスそれぞれに、決まりと理由を選ぶ。",
+        "id": "read",
+        "purpose": "`ss -tulnp` で、TCP と UDP の待ち受けを並べて見る（先頭の `Netid` の欄が決まり）。音声通話の交換機（`asterisk`）が待っている番号を答える。",
         "check": {
-          "kind": "sim",
-          "expr": "answered file=TCP・欠けると困る voice=UDP・遅れると困る web=TCP・欠けると困る dns=UDP・短い問いで済む"
+          "kind": "answer",
+          "equals": "5060"
         },
-        "afterward": "欠けて困る物は TCP、遅れて困る物や、短い問いと答えで済む物は UDP。速さだけで選ばず、欠けた時と遅れた時のどちらが困るかで選んだ。",
+        "afterward": "`asterisk` は UDP の 5060 番で待っている。UDP の待ち受けは、つながりを作らないので状態が `UNCONN`（つながっていない）と出る。`named` は 53 番を UDP と TCP の両方で待っている。",
         "hints": [
-          "表の「一部が欠けたら」と「遅れたら」の、どちらが困るかを見る。",
-          "ファイルと Web は欠けると困るので TCP。音声は遅れると困るので UDP。DNS は問いも答えも小さく、欠けたら問い直せば済むので UDP。",
-          "「ファイルの転送（設計書を送る）」は「TCP・欠けると困る」を押す、「生の音声通話」は「UDP・遅れると困る」を押す、「Web のページ」は「TCP・欠けると困る」を押す、「DNS の問い合わせ（名前を引く）」は「UDP・短い問いで済む」を押す。"
+          "`-t` は TCP、`-u` は UDP、`-l` は待ち受け、`-n` は番号のまま、`-p` は{{term:program}}の名前。まとめて `-tulnp` と書ける。",
+          "`Process` の欄が `asterisk` の行の、`Local Address:Port` の `:` の後ろを見る。",
+          "`ss -tulnp` を打ち、`5060` と答える。"
+        ],
+        "expectedErrors": [
+          "net-proto-read"
+        ]
+      },
+      {
+        "id": "voice",
+        "purpose": "`asterisk` は、通話の音声も UDP で流す。音声の一部が「欠ける」のと、届くのが「遅れる」のと、どちらが困るから UDP を使うのか。`欠ける` か `遅れる` で答える。",
+        "check": {
+          "kind": "answer",
+          "equals": "遅れる"
+        },
+        "afterward": "生の音声は、一瞬欠けても少し乱れるだけだが、遅れると会話にならない。TCP は欠けた所を送り直すので確実だが、送り直しを待つ間に遅れる。だから、遅れて困る物は UDP を使う。",
+        "hints": [
+          "TCP は、届いたかを確かめ、欠けたら送り直す。UDP は、確かめずにすぐ送る。",
+          "電話で、相手の声が 1 秒遅れて届く時と、一瞬だけ途切れる時を比べる。",
+          "`遅れる` と答える。"
         ],
         "expectedErrors": [
           "net-proto-mix"
+        ]
+      },
+      {
+        "id": "file",
+        "purpose": "管理とファイルの転送（`sftp`）に使う `sshd` は、どちらの決まりで待っているか。`ss` で確かめて、`tcp` か `udp` で答える。",
+        "check": {
+          "kind": "answer",
+          "equals": "tcp"
+        },
+        "afterward": "`sshd` は TCP の 22 番で待っている。ファイルや打った命令は、1 文字でも欠けると壊れる。少し待っても、欠けずに届く TCP を使う。名前を引く問い（DNS）は、問いも答えも小さく、欠けたら問い直せば済むので、ふだんは UDP を使う。",
+        "hints": [
+          "`ss -tlnp`（TCP だけ）と `ss -ulnp`（UDP だけ）を見比べてもよい。",
+          "`sshd` の行の `Netid`（`ss -tulnp` の時）か、どちらの一覧に出たかを見る。",
+          "`ss -tlnp` `ss -ulnp` を打ち、`tcp` と答える。"
         ],
-        "actions": [
-          {
-            "op": "answer",
-            "question": "file",
-            "value": "TCP・欠けると困る"
-          },
-          {
-            "op": "answer",
-            "question": "voice",
-            "value": "UDP・遅れると困る"
-          },
-          {
-            "op": "answer",
-            "question": "web",
-            "value": "TCP・欠けると困る"
-          },
-          {
-            "op": "answer",
-            "question": "dns",
-            "value": "UDP・短い問いで済む"
-          }
+        "expectedErrors": [
+          "net-proto-mix"
         ]
       }
     ]
   },
   "result": {
-    "success": "欠けた時と遅れた時のどちらが困るかで、TCP と UDP を使い分けられた。",
-    "partial": "ヒントを使って選べた。次は、ほかのサービス（メール・ゲーム）ならどちらかを考えてみよう。",
-    "retry": "まだ選び方が合っていない。表で、欠けて困る物と、遅れて困る物を分けてみよう。"
+    "success": "`ss -tulnp` で TCP と UDP の待ち受けを読み分け、欠けて困る物は TCP、遅れて困る物は UDP、という使い分けを自分で説明できた。",
+    "partial": "ヒントを使って使い分けを確かめられた。次は、`named` がなぜ TCP の 53 番でも待っているのかを調べてみよう。",
+    "retry": "まだ答えが合っていない。`ss -tulnp` の `Netid` の欄と、「欠けたら」「遅れたら」のどちらが困るかを見直そう。"
   },
   "summary": {
     "points": [
