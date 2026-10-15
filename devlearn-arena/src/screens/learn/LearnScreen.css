@@ -45,7 +45,7 @@
 }
 .lib-index-item {
   display: grid;
-  grid-template-columns: 12px 1fr auto;
+  grid-template-columns: 12px minmax(0, 1fr) auto;
   grid-template-areas:
     'sw name count'
     '. meter meter';
@@ -82,6 +82,9 @@
 }
 .lib-index-name {
   grid-area: name;
+  /* 長い分野の名前でも、右の修了の数を押し出さない */
+  overflow: hidden;
+  text-overflow: ellipsis;
   white-space: nowrap;
   font-size: var(--fs-13);
   font-weight: 500;
@@ -725,7 +728,7 @@
 /* 1280×720 など横の狭い画面 */
 @media (max-width: 1599px) {
   .learn-body {
-    grid-template-columns: calc(196px * var(--font-scale, 1)) 1fr 330px;
+    grid-template-columns: calc(232px * var(--font-scale, 1)) 1fr 330px;
   }
   .learn.is-graph .learn-body {
     grid-template-columns: 1fr 330px;

@@ -137,6 +137,20 @@
   color: var(--hud-text);
 }
 
+/* 画面の高さが低い時（1280×720 など）は、行と区画の上下の余白を詰めて、窓の中に全部を収める */
+@media (max-height: 799px) {
+  .settings-body {
+    padding: 10px 0 12px;
+  }
+  .settings-row {
+    padding: 8px 0;
+  }
+  .settings-bay {
+    gap: 4px;
+    padding: 8px 0;
+  }
+}
+
 /* 確かめ（読み込む前の中身・やり直す前の注意） */
 .settings-confirm {
   display: flex;
