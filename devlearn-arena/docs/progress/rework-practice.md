@@ -471,3 +471,36 @@
 - `rw-cloud.b.03-start` / `-wrong` / `-drag` / `-done`: 原則 3（部品から部品へドラッグして線を引く。ボタンは「curl Web の機械（外から）」）・原則 4（外側の網から DB の機械へは線が引けず、赤い印の理由「DB を外側の網に置くと、外から DB に届いてしまう」が出る。つないだ線に光の粒が流れ、ボタンの下に「届いた」と出る。内側の網に置くと「外から DB へ: 届かない」の情報が出る）・原則 5（目的の外側の網・内側の網・Web・DB・画像の置き場が部品の名前に出る）を満たす。3 つの段が達成になる
 
 検査: `npm run typecheck`・`npm run lint`・`npm run test`（168 ファイル・1842 件。試し台を除く）・`npm run content:check` が通った。
+
+## sec（2026-10-15）
+
+7 本の実戦のうち、本物の道具がある 3 本が端末（sec.b.04・b.05 は前から、sec.b.07 を作り直した）になった。打つコマンドが無い概念の 4 本は画面の操作で、設定する（sim-config）の 2 本（sec.b.01・b.03）を置く（sim-assign）に作り直し、置く・並べるの 2 本（sec.b.02・b.06）を原則 3〜5 に合わせて直した。
+
+| レッスン | 直す前 | 直した後 | 打つ物・置く物・直した所 |
+|---|---|---|---|
+| sec.b.07 証明書と認証局 | sim-order（証明書の札の並べ替え） | terminal | 港の店のサーバ `minato-shop` で、`curl https://shop.example/` の `unable to get local issuer certificate` → `openssl s_client -connect shop.example:443 -servername shop.example` の `Certificate chain`（1 枚だけ・`Verify return code: 21`）から発行者 `Minato Issuing CA` を答える → `openssl x509 -noout -subject -issuer` で中間証明書を確かめ、`cat shop.crt minato-issuing-ca.crt > fullchain.crt`・`ssl_certificate` を替えて `nginx -t`・`systemctl reload nginx`・`curl` でページ → もう一度 `s_client` で `0 (ok)` を見て、送る枚数（2。ルート証明書は手元の物）を答える |
+| sec.b.01 何を守るのか | sim-config（8 つの欄） | sim-assign | 事故の札 5 枚（事故: 名簿 など）と守りの札 3 枚を、機密性・完全性・可用性の枠へドラッグして置く。「事故: 料金表」を機密性へ入れると、枠が赤く光り「失われたのは料金表の値の正しさ。盗まれたパスワードは入られたきっかけ」が出る。「守り: …暗号化する」を可用性へ入れると「暗号化は見られないための手」が出る |
+| sec.b.03 パスワードと多要素認証 | sim-config（5 つの欄） | sim-assign | 入口の決まりの札を、全員に求める要素・使いたい人だけに求める要素・パスワードの決まり の枠へドラッグして組み直す。初めは「パスワード（知っている物）」（動かせない）だけが入口にあり、決まりの枠に「六文字」「何度でも試せる」が入っている。秘密の質問を要素の枠へ入れると「パスワードと同じ知っている物」、確認コードを使いたい人だけの枠へ入れると「使わない人の入口は漏れたパスワードだけで入られる」で断る。弱い札が決まりの枠に残っていれば、置き終えた所で赤い縁で示す |
+| sec.b.06 HTTPS と TLS | sim-order | sim-order（そのまま） | 握手の段の札に、先に要る段（`needs`）と、「パスワードをそのまま送る」に止まる理由（`stop`）を書いた。前は、札を逆に並べても赤く示されず、全てを並べ終えるまで誤りが見えなかった。今は、並べるたびに上から流れ、先に要る段が後ろにある所で止まり、その段が赤くなって「「ブラウザが証明書を確かめる」には、先に「サーバが証明書を見せる」が要る」が出る |
+| sec.b.02 認証と認可 | sim-assign | sim-assign（そのまま） | エラーの案内 `sec-authz-excess` のヒントに残っていた打つ文（`take で外す`）を「置き場へドラッグして外す」にした |
+| sec.b.04・b.05 | terminal | terminal（そのまま） | 本物の ssh-keygen・ssh・git など |
+
+模擬に足した物・直した物（単体テストあり）:
+
+- `openssl`（`src/engines/kernel/commands/openssl.ts`・`openssl.test.ts`）: `x509 -in ファイル -noout`（`-subject`・`-issuer`・`-dates`・`-ext subjectAltName`・`-text`。束は本物と同じく先頭の 1 枚を読む。標準入力からも読む）と `s_client -connect 名前:ポート`（`-servername`・`-showcerts`）。TLS の握手でサーバが送る証明書の並び（`Certificate chain` の `s:`・`i:`）と、手元のルートまでたどった道（`depth=`）・検証の結果（`Verify return code: 0 (ok)`・`20`・`21`・`10`・`18`）を、本物の OpenSSL 3 の形で出す。証明書のファイルは前からの練習の形（項目を書いた PEM 風）のまま
+- 名前とポートで届く相手が送る証明書を返す `peerChain`（`src/engines/http/http.ts`。curl と同じ手元・名前で届く物・サイトの順に探す）
+- 置く（`src/engines/sim/sim.ts` の `stepSettled`・`misplaced`）: 手順の式（`in 札=枠`）に出てくる札を全て置いた所で合っているかを知らせ、違う札を赤い縁で示す（前は、ほかの手順の札まで全て置くまで示さなかった）。`!in 札=枠` の式で、入っていてはいけない枠に残っている札も赤く示す（`sim.test.ts`）
+- 撮影の台本（`tools/scenarios/simDrive.mjs` の `wrongAction`）: 置くの誤りは、手順の札を全て置く（1 枚目だけ違う枠）。前は 1 枚だけを違う枠に置き、何も示されない画面を撮っていた
+
+内容: エラーの案内（`content/errors/sec.json`）に、本物の出力に当たる `sec-chain-incomplete`（`unable to get local issuer certificate`）・`sec-chain-order`（`no alternative certificate subject name matches`。束の順が逆）・`sec-cert-path`（nginx の `cannot load certificate`）・`sec-cert-file`（`Could not open file or uri for loading certificate`）と、答えの段の `sec-chain-answer`・`sec-chain-count`、枠が断る理由に当たる `sec-price-loss`・`sec-encrypt-uptime`・`sec-mfa-same-kind`・`sec-mfa-optional` を足した。画面の欄にしか無かった `sec-mfa-no-factor` を消した。`docs/lessons/sec.md` の 4 本の実戦の設計、`docs/curriculum.md` の記号（sec.b.07: 模 → 端）、目録を直した。
+
+画面の確かめ（`tools/scenarios/rework.mjs`、1920×1080。端末は最後のヒントのコマンドを本物のキー入力で打った。画面の操作は本物のマウスのドラッグ）:
+
+- `rw-sec.b.07-start` / `-done`: 原則 1（`openssl s_client` の `CONNECTED`・`depth=`・`Certificate chain` の 1 枚と 2 枚・`Verify return code: 21` と `0 (ok)`、`openssl x509` の `subject=`・`issuer=`、`cat` の束、`nginx -t`、`curl` のページ）・原則 5（目的の `minato-shop` がプロンプトに、`shop.example`・`minato-issuing-ca.crt`・`Minato Root CA` が端末に同じ名前で出る）を満たす。3 つの段が全て達成になる
+- `rw-sec.b.01-start` / `-wrong` / `-drag` / `-done`: 原則 3（札を持ち上げて枠へ運ぶ）・原則 4（「事故: 料金表」を機密性へ入れると、枠が赤く光り理由が 1 行出て、札は置き場に残る。入れた札は枠の中に移る）・原則 5（目的の機密性・完全性・可用性が枠の名前に、表の事故の名前が札に出る）を満たす。2 つの段が達成になる
+- `rw-sec.b.02-start` / `-wrong` / `-drag` / `-done`: 原則 3・4（1 つ目の手順の札を置き終えた所で、違う枠の「予約を入れる」が赤い縁で示され、エラーの案内 `sec-authz-excess` が出る）・原則 5（目的の 3 つの役割が枠の名前に出る）を満たす。2 つの段が達成になる
+- `rw-sec.b.03-start` / `-wrong` / `-drag` / `-done`: 原則 3（札を枠から枠・置き場へ動かす）・原則 4（秘密の質問を全員に求める要素へ入れると、枠が赤く光り「パスワードと同じ「知っている物」…」が出る）・原則 5（目的の「パスワード（知っている物）」・「全員に求める要素」・「パスワードの決まり」が札と枠に出る）を満たす。2 つの段が達成になる
+- `rw-sec.b.06-start` / `-wrong` / `-drag` / `-done`: 原則 3（札をドラッグして上から並べる）・原則 4（逆に並べると、1 段目の「ブラウザが証明書を確かめる」が赤くなり「先に「サーバが証明書を見せる」が要る（まだ後の段にある）」が出る。並べ直すと上から順に流れる）・原則 5（目的の挨拶・証明書を見せる・確かめるが札の名前に出る）を満たす。2 つの段が達成になる
+- `rw-sec.b.04` / `rw-sec.b.05` の `-start` / `-done`: 前から端末（ssh-keygen・ssh・git・環境変数）。全ての段が達成になる
+
+検査: `npm run typecheck`・`npm run lint`・`npm run test`（169 ファイル・1849 件。試し台を除く）・`npm run content:check` が通った。

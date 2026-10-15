@@ -155,25 +155,38 @@
         {
           "id": "cert",
           "label": "サーバが証明書を見せる",
-          "note": "名前 shop.example"
+          "note": "名前 shop.example",
+          "needs": [
+            "hello"
+          ]
         },
         {
           "id": "verify",
           "label": "ブラウザが証明書を確かめる",
-          "note": "名前・期限・発行者"
+          "note": "名前・期限・発行者",
+          "needs": [
+            "cert"
+          ]
         },
         {
           "id": "key",
-          "label": "二人だけの鍵を決める"
+          "label": "二人だけの鍵を決める",
+          "needs": [
+            "verify"
+          ]
         },
         {
           "id": "talk",
-          "label": "暗号化して話す"
+          "label": "暗号化して話す",
+          "needs": [
+            "key"
+          ]
         },
         {
           "id": "plain",
           "label": "パスワードをそのまま送る",
-          "extra": true
+          "extra": true,
+          "stop": "暗号化する前にパスワードを送ると、通り道で誰でも読める。暗号化して話す段の中で送る"
         }
       ],
       "panels": [

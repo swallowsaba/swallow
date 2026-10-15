@@ -29,7 +29,9 @@
     "public-key",
     "file",
     "name-resolution",
-    "signature"
+    "signature",
+    "config-file",
+    "tls"
   ],
   "explain": {
     "what": "{{term:certificate}}は、{{term:server}}が「この名前の本物です」と示す身分証。発行した{{term:certificate-authority}}の{{term:signature}}が付く。サーバの証明書 →{{term:intermediate-certificate}}→{{term:root-certificate}}と、発行者をたどれる（{{term:certificate-chain}}）。",
@@ -137,101 +139,96 @@
     }
   ],
   "practice": {
-    "mode": "simulation",
-    "purpose": "港の店のサイトで「発行者が分からない」と警告が出る。サーバが送る証明書の並びを見て、欠けた輪を足し、連鎖を完成させる。",
-    "environment": "sim-order",
+    "mode": "terminal",
+    "purpose": "港の店の{{term:server}} `minato-shop` で、`https://shop.example/` を開くと「発行者が分からない」と断られる。サーバ（nginx）が送る{{term:certificate}}の並び（{{term:certificate-chain}}）を `openssl` で調べ、認証局から届いた{{term:intermediate-certificate}} `minato-issuing-ca.crt` をつないで、手元の{{term:root-certificate}} `Minato Root CA` までたどれるようにする。",
+    "environment": "linux-basic",
     "setup": {
-      "items": [
-        {
-          "id": "leaf",
-          "label": "サーバの証明書",
-          "note": "名前 shop.example ／ 発行者 Minato Issuing CA"
-        },
-        {
-          "id": "inter",
-          "label": "中間証明書",
-          "note": "名前 Minato Issuing CA ／ 発行者 Minato Root CA"
-        },
-        {
-          "id": "root",
-          "label": "ルート証明書",
-          "note": "名前 Minato Root CA ／ 手元に初めからある",
-          "extra": true
-        },
-        {
-          "id": "other",
-          "label": "別のサイトの証明書",
-          "note": "名前 harbor.example",
-          "extra": true
-        }
+      "hostname": "minato-shop",
+      "dirs": [
+        "/var/www/shop"
       ],
-      "initial": [
-        [
-          "leaf"
-        ]
-      ],
-      "panels": [
-        {
-          "kind": "kv",
-          "title": "ブラウザが信頼するルート（手元）",
-          "rows": [
-            [
-              "Minato Root CA",
-              "初めから入っている"
-            ]
-          ]
-        },
-        {
-          "kind": "text",
-          "title": "ブラウザの判断",
-          "body": "shop.example の発行者 Minato Issuing CA を知らない。ルートまでたどれないので警告を出す。",
-          "when": "!seq leaf<inter"
-        },
-        {
-          "kind": "text",
-          "title": "ブラウザの判断",
-          "body": "shop.example → Minato Issuing CA → Minato Root CA（手元にある）。連鎖がつながり、警告は出ない。",
-          "when": "seq leaf<inter"
+      "files": {
+        "/etc/hosts": "127.0.0.1\tlocalhost shop.example\n",
+        "/etc/nginx/conf.d/shop.conf": "# 港の店（https://shop.example/）\nserver {\n  listen 443 ssl;\n  server_name shop.example;\n  ssl_certificate /etc/nginx/certs/shop.crt;\n  root /var/www/shop;\n}\n",
+        "/etc/nginx/certs/shop.crt": "-----BEGIN CERTIFICATE-----\nsubject: shop.example\nissuer: Minato Issuing CA\nnames: shop.example\nvalid: 2026-01-01 2027-01-01\n-----END CERTIFICATE-----\n",
+        "/etc/nginx/certs/minato-issuing-ca.crt": "-----BEGIN CERTIFICATE-----\nsubject: Minato Issuing CA\nissuer: Minato Root CA\nvalid: 2024-01-01 2030-01-01\nca: yes\n-----END CERTIFICATE-----\n",
+        "/var/www/shop/index.html": "<html><body><h1>港の店</h1><p>本日の入荷: 灯台の模型</p></body></html>\n"
+      },
+      "services": {
+        "nginx": {
+          "description": "nginx web server",
+          "enabled": true,
+          "config": "/etc/nginx/conf.d/shop.conf"
         }
+      },
+      "sites": [],
+      "run": [
+        "systemctl start nginx"
       ]
     },
     "steps": [
       {
-        "id": "chain",
-        "purpose": "サーバが送る証明書の並びに欠けた輪を足し、サーバの証明書から順に、ルート証明書までたどれる並びにする。",
+        "id": "see",
+        "purpose": "`curl https://shop.example/` の誤りを読み、`openssl s_client -connect shop.example:443 -servername shop.example` で、サーバが送っている証明書の並び（`Certificate chain`）を見る。サーバの証明書（`0 s:CN = shop.example`）の発行者（`i:`）の名前を答える。",
         "check": {
-          "kind": "sim",
-          "expr": "seq leaf<inter && !has other"
+          "kind": "answer",
+          "equals": "Minato Issuing CA"
         },
-        "afterward": "サーバの証明書の後ろに中間証明書を並べると、発行者を順にたどって手元のルート証明書に着き、警告が消えた。ルート証明書は手元にあるので、送らなくてよい。",
+        "afterward": "サーバが送っているのは `shop.example` の 1 枚だけ。発行者 `Minato Issuing CA` の証明書（中間証明書）が届かないので、手元が信頼する `Minato Root CA` までたどれない（`Verify return code: 21 (unable to verify the first certificate)`）。",
         "hints": [
-          "各証明書の「発行者」が、次に並べる証明書の名前になる。shop.example の発行者を探す。",
-          "サーバの証明書の発行者は `Minato Issuing CA`（中間証明書）。サーバの証明書を先頭に、その後ろに中間証明書を並べる。",
-          "上から 「サーバの証明書」 → 「中間証明書」 の順に、札をドラッグして並べる。"
+          "`curl` の `unable to get local issuer certificate` は「発行者を、手元で信頼している所までたどれない」という意味。まず、サーバが何を送っているかを見る。",
+          "`openssl s_client -connect 名前:ポート` は、{{term:tls}} の握手でサーバが送る証明書を並べる。`s:` が持ち主、`i:` が発行者。",
+          "`openssl s_client -connect shop.example:443 -servername shop.example` を打ち、`Minato Issuing CA` と答える。"
         ],
         "expectedErrors": [
-          "sec-chain-order"
+          "sec-chain-answer"
+        ]
+      },
+      {
+        "id": "chain",
+        "purpose": "`openssl x509 -in … -noout -subject -issuer` で `minato-issuing-ca.crt` が欠けた輪（持ち主が `Minato Issuing CA`、発行者が `Minato Root CA`）かを確かめる。サーバの証明書を先頭に、その後ろに中間証明書をつないだ束 `fullchain.crt` を `cat` で作り、{{term:config-file}} `/etc/nginx/conf.d/shop.conf` の `ssl_certificate` をその束に替えて、nginx に読み直させる。`curl https://shop.example/` でページが出ることを確かめる。",
+        "check": {
+          "kind": "http",
+          "url": "https://shop.example/",
+          "status": 200,
+          "contains": "港の店"
+        },
+        "afterward": "`curl` が警告なしでページを取れた。各証明書の発行者が、次の証明書の持ち主になっている（`shop.example` → `Minato Issuing CA` → `Minato Root CA`）。束は、サーバの証明書を先頭に、ルート証明書に近い方へ順に並べる。",
+        "hints": [
+          "各証明書の「発行者」が、次に並べる証明書の「持ち主」になる。`openssl x509 -in ファイル -noout -subject -issuer` で 2 つの{{term:file}}を読み比べる。",
+          "`cat 前 後 > 束` は、前と後を順につないで束に書く。サーバの証明書が前、中間証明書が後。nginx は `ssl_certificate` に書いたファイルを送り、設定は `systemctl reload nginx` で読み直す。",
+          "`openssl x509 -in /etc/nginx/certs/minato-issuing-ca.crt -noout -subject -issuer` `cat /etc/nginx/certs/shop.crt /etc/nginx/certs/minato-issuing-ca.crt > /etc/nginx/certs/fullchain.crt` `sed -i 's|/etc/nginx/certs/shop.crt|/etc/nginx/certs/fullchain.crt|' /etc/nginx/conf.d/shop.conf` `nginx -t` `systemctl reload nginx` `curl https://shop.example/` を打つ。"
         ],
-        "actions": [
-          {
-            "op": "arrange",
-            "stages": [
-              [
-                "leaf"
-              ],
-              [
-                "inter"
-              ]
-            ]
-          }
+        "expectedErrors": [
+          "sec-chain-incomplete",
+          "sec-chain-order",
+          "sec-cert-path",
+          "sec-cert-file"
+        ]
+      },
+      {
+        "id": "count",
+        "purpose": "もう一度 `openssl s_client -connect shop.example:443 -servername shop.example` を打ち、`Verify return code: 0 (ok)` を確かめる。サーバが送っている証明書の枚数を答える。",
+        "check": {
+          "kind": "answer",
+          "equals": "2"
+        },
+        "afterward": "送っているのは、サーバの証明書と中間証明書の 2 枚。`depth=2 CN = Minato Root CA` は、手元（ブラウザ・`curl`）に初めから入っているルート証明書で、サーバは送らない。手元に無いルート証明書を送っても、信頼の元にはならない。",
+        "hints": [
+          "`Certificate chain` の下の、番号（0・1 …）の付いた行が、サーバが送った証明書。",
+          "`depth=` の行は、手元でたどった道。ルート証明書は手元の物を使う。",
+          "`openssl s_client -connect shop.example:443 -servername shop.example` を打ち、`2` と答える。"
+        ],
+        "expectedErrors": [
+          "sec-chain-count"
         ]
       }
     ]
   },
   "result": {
-    "success": "発行者をたどって欠けた輪を見つけ、連鎖を完成させられた。",
-    "partial": "ヒントを使って連鎖を完成させた。次は、ルート証明書を送らなくてよい理由を説明してみよう。",
-    "retry": "まだ警告が消えていない。サーバの証明書の発行者の名前と、次に並べた証明書の名前が同じかを確かめよう。"
+    "success": "`openssl s_client` で欠けた輪を見つけ、サーバの証明書の後ろに中間証明書をつないで、手元のルート証明書までたどれる連鎖にできた。",
+    "partial": "ヒントを使って直せた。次は、なぜルート証明書はサーバから送らないのかを、`depth=` の行を使って説明してみよう。",
+    "retry": "まだ警告が出る。`openssl s_client` の `Certificate chain` で、各証明書の `i:`（発行者）が次の `s:`（持ち主）になっているかを見よう。"
   },
   "summary": {
     "points": [

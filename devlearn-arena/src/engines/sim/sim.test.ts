@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
-  actionNames, applyAction, connectProblem, createSim, describeAction, exprProblems, holds, isSettled, misplaced, orderStop, sendRoute, shownPanels,
+  actionNames, applyAction, connectProblem, createSim, describeAction, exprProblems, holds, isSettled, misplaced, orderStop, sendRoute, shownPanels, stepSettled, wrongAnswers,
   type SimEnvironmentId,
 } from './sim';
 import type { SimAction, SimState } from './types';
@@ -198,6 +198,7 @@ describe('置く（sim-assign）', () => {
     const s = run(sim('sim-assign', desk), [put('資料A', '倉庫'), put('資料B', '机')]).state as Extract<SimState, { type: 'assign' }>;
     expect(misplaced(s, 'in 資料A=机 資料B=机 && count 机<=2')).toEqual(['資料A']);
     expect(misplaced(s, 'in 図面=倉庫')).toEqual(['図面']);
+    expect(misplaced(s, 'in 図面=倉庫 && !in 資料A=倉庫 && !in 資料B=倉庫')).toEqual(['図面', '資料A']);
   });
 });
 
@@ -340,5 +341,26 @@ describe('設定する（sim-config。作り直しの間だけ残す型）', () 
     const expr = 'pool start end in=192.168.1.0/24 size>=5 avoid=192.168.1.1,192.168.1.10';
     expect(holds(run(s, [set('start', '192.168.1.100'), set('end', '192.168.1.150')]).state, expr)).toBe(true);
     expect(holds(run(s, [set('start', '192.168.1.5'), set('end', '192.168.1.50')]).state, expr)).toBe(false);
+  });
+});
+
+describe('手順ごとの出来上がり（stepSettled・wrongAnswers）', () => {
+  it('置くは、手順の式の in に出てくる札を全て置いたら出来上がり（否定の条件の札と、ほかの手順の札は数えない）', () => {
+    const setup = { slots: [{ id: 'c', label: '機密性' }, { id: 'a', label: '可用性' }], items: [{ id: 'x', label: 'X' }, { id: 'y', label: 'Y' }, { id: 'z', label: 'Z' }] };
+    const expr = 'in x=c y=a && !in z=c';
+    expect(stepSettled(run(sim('sim-assign', setup), [put('x', 'c')]).state, expr)).toBe(false);
+    expect(stepSettled(run(sim('sim-assign', setup), [put('x', 'a'), put('y', 'a')]).state, expr)).toBe(true);
+    expect(stepSettled(run(sim('sim-assign', setup), [put('x', 'a')]).state, null)).toBe(false);
+  });
+
+  it('読み取って答えるは、手順の式に出てくる問いに全て答えたら出来上がり。違う答えの問いだけを返す', () => {
+    const setup = { panels: [{ kind: 'text', title: 'T', body: 'B' }], questions: [{ id: 'p', prompt: 'P', options: ['1', '2'] }, { id: 'q', prompt: 'Q', options: ['1', '2'] }, { id: 'r', prompt: 'R', options: ['1', '2'] }] };
+    const expr = 'answered p=1 q=2';
+    const half = run(sim('sim-read', setup), [answer('p', '2')]).state;
+    expect(stepSettled(half, expr)).toBe(false);
+    expect(wrongAnswers(half, expr)).toEqual([]);
+    const both = run(sim('sim-read', setup), [answer('p', '2'), answer('q', '2')]).state;
+    expect(stepSettled(both, expr)).toBe(true);
+    expect(wrongAnswers(both, expr)).toEqual(['p']);
   });
 });

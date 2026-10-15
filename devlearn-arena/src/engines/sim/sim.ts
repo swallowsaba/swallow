@@ -381,16 +381,18 @@ function assignOp(s: AssignState, action: SimAction, initial: boolean): SimOutco
   return ok({ ...s, placed: { ...base, [item.id]: [...(base[item.id] ?? []), slot.id] } });
 }
 
-/** 達成条件の in の式のうち、今は違う枠にある札（全て置いたのに合っていない時、その札を赤く示す） */
+/** 達成条件の in の式のうち今は違う枠にある札と、!in の式で入っていてはいけない枠に残っている札（置き終えたのに合っていない時、その札を赤く示す） */
 export function misplaced(s: AssignState, expr: string): string[] {
   const out: string[] = [];
   for (const raw of expr.split('&&')) {
     const [head = '', ...args] = raw.trim().split(/\s+/);
-    if (head !== 'in') continue;
+    if (head !== 'in' && head !== '!in') continue;
     for (const a of args) {
       const at = a.indexOf('=');
       const item = a.slice(0, at);
-      if (at > 0 && !(s.placed[item] ?? []).includes(a.slice(at + 1)) && !out.includes(item)) out.push(item);
+      // in は入っていない札、!in は入っていてはいけない枠に残っている札
+      const there = (s.placed[item] ?? []).includes(a.slice(at + 1));
+      if (at > 0 && there === (head === '!in') && !out.includes(item)) out.push(item);
     }
   }
   return out;
@@ -465,15 +467,28 @@ function askedIn(expr: string): string[] {
   return expr.split(/\s+/).filter((t) => t.includes('=')).map((t) => t.slice(0, t.indexOf('=')).replace(/^!/, ''));
 }
 
+/** 手順の式の in 札=枠 に出てくる札（否定の条件は除く） */
+function placedIn(expr: string): string[] {
+  return expr.split('&&').map((c) => c.trim()).filter((c) => c.startsWith('in ')).flatMap((c) => askedIn(c.slice(3)));
+}
+
 /**
- * 今の手順の分が出来上がったか。読み取って答えるは、手順の式に出てくる問いに全て答えたら出来上がり
- * （手順ごとに、答え終えた所で合っているかを知らせる）。ほかの型は isSettled と同じ
+ * 今の手順の分が出来上がったか（手順ごとに、終えた所で合っているかを知らせる）。
+ * 読み取って答えるは手順の式に出てくる問いに全て答えたら、置くは手順の式（in 札=枠）に出てくる札を全て置いたら出来上がり。
+ * ほかの型は isSettled と同じ
  */
 export function stepSettled(s: SimState, expr: string | null | undefined): boolean {
   if (isSettled(s)) return true;
-  if (s.type !== 'read' || !expr) return false;
-  const asked = askedIn(expr);
-  return asked.length > 0 && asked.every((q) => (s.answers[q] ?? '') !== '');
+  if (!expr) return false;
+  if (s.type === 'read') {
+    const asked = askedIn(expr);
+    return asked.length > 0 && asked.every((q) => (s.answers[q] ?? '') !== '');
+  }
+  if (s.type === 'assign') {
+    const items = placedIn(expr);
+    return items.length > 0 && items.every((i) => (s.placed[i] ?? []).length > 0);
+  }
+  return false;
 }
 
 /** 手順の式と違う答えをした問い（手順の問いに全て答えた時だけ。読み取って答える） */

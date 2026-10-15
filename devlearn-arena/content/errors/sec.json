@@ -15,23 +15,91 @@
       ]
     },
     {
-      "id": "sec-chain-order",
-      "match": "答えが合っていない",
-      "meaning": "送る証明書を並べたが、まだ連鎖がつながらない。",
+      "id": "sec-chain-incomplete",
+      "match": "unable to get local issuer certificate",
+      "output": true,
+      "meaning": "`curl` が、サーバの証明書の発行者を、手元で信頼するルートまでたどれなかった。",
       "causes": [
-        "順番の誤り（サーバの証明書を先頭に、その発行者の中間証明書を後ろに並べる）。",
-        "中間証明書を入れていない（ブラウザはルートまでたどれない）。"
+        "中間証明書をつないでいない（サーバが葉の 1 枚だけを送っている）。",
+        "束を作ったが、`ssl_certificate` を書き換えていない、または nginx に読み直させていない。"
       ],
-      "hint": "連鎖の図で、各証明書の「発行者」が次の証明書の名前になっているかを見よう。",
+      "hint": "`openssl s_client` の `Certificate chain` に 2 枚あるかを見よう。1 枚なら、`shop.conf` の `ssl_certificate` と `systemctl reload nginx` を確かめる。",
       "terms": [
-        "certificate-chain",
-        "intermediate-certificate"
+        "intermediate-certificate",
+        "certificate-chain"
+      ]
+    },
+    {
+      "id": "sec-chain-order",
+      "match": "no alternative certificate subject name matches",
+      "output": true,
+      "meaning": "サーバが先頭に送った証明書が、`shop.example` の物ではなかった。",
+      "causes": [
+        "束の順が逆。`cat` で中間証明書を先に書いた。",
+        "中間証明書だけを `ssl_certificate` に書いた。"
+      ],
+      "hint": "束はサーバの証明書が先頭。`cat /etc/nginx/certs/shop.crt /etc/nginx/certs/minato-issuing-ca.crt > /etc/nginx/certs/fullchain.crt` の順で作り直そう。",
+      "terms": [
+        "certificate-chain"
+      ]
+    },
+    {
+      "id": "sec-cert-path",
+      "match": "cannot load certificate",
+      "meaning": "nginx が、`ssl_certificate` に書いたファイルを読めなかった。",
+      "causes": [
+        "ファイルの場所の打ち間違い（`fullchain.crt` を `fullchian.crt` など）。",
+        "束をまだ作っていない。"
+      ],
+      "hint": "`ls /etc/nginx/certs` で、ある名前と `shop.conf` の `ssl_certificate` の行を見比べよう。",
+      "terms": [
+        "config-file"
+      ]
+    },
+    {
+      "id": "sec-cert-file",
+      "match": "Could not open file or uri for loading certificate",
+      "meaning": "`openssl x509 -in` に書いたファイルが無い。",
+      "causes": [
+        "場所の打ち間違い。",
+        "今いるディレクトリからの相対の場所で書いた。"
+      ],
+      "hint": "`/etc/nginx/certs/minato-issuing-ca.crt` のように、/ から書こう。",
+      "terms": [
+        "certificate"
+      ]
+    },
+    {
+      "id": "sec-chain-count",
+      "match": "答えが合っていない",
+      "meaning": "答えた数は、サーバが送っている証明書の枚数ではない。",
+      "causes": [
+        "`depth=` の行を数えた（手元のルート証明書も入る）。",
+        "ルート証明書もサーバが送ると考えた。"
+      ],
+      "hint": "`Certificate chain` の下の、番号の付いた `s:` の行を数えよう。",
+      "terms": [
+        "root-certificate"
+      ]
+    },
+    {
+      "id": "sec-chain-answer",
+      "match": "答えが合っていない",
+      "meaning": "答えた名前は、サーバの証明書の発行者ではない。",
+      "causes": [
+        "持ち主（`s:`）の `shop.example` を答えた。発行者は `i:` の行。",
+        "ルートの `Minato Root CA` を答えた。サーバの証明書を直接出したのは、間の認証局。"
+      ],
+      "hint": "`openssl s_client` の `0 s:CN = shop.example` のすぐ下の `i:` の行の `CN =` の後ろを答えよう。",
+      "terms": [
+        "certificate",
+        "certificate-authority"
       ]
     },
     {
       "id": "sec-cia-mixup",
       "match": "答えが合っていない",
-      "meaning": "全ての欄を選んだが、事故の分け方が合っていない。",
+      "meaning": "5 つの事故の札を全て置いたが、分け方が合っていない（赤い縁の札が違う枠にある）。",
       "causes": [
         "結果ではなく、きっかけ（原因）で分けた（盗まれたパスワードを見て、料金表を機密性にした）。",
         "「止まった」と「書き換えられた」を取り違えた。"
@@ -46,7 +114,7 @@
     {
       "id": "sec-protect-mixup",
       "match": "答えが合っていない",
-      "meaning": "全ての欄を選んだが、観点と守りの手の組が合っていない。",
+      "meaning": "守りの札を全て置いたが、観点と守りの手の組が合っていない（赤い縁の札が違う枠にある）。",
       "causes": [
         "暗号化を、止まる事故（可用性）の守りに選んだ。",
         "変更の記録を、見られる事故（機密性）の守りに選んだ。"
@@ -59,6 +127,34 @@
       ]
     },
     {
+      "id": "sec-encrypt-uptime",
+      "match": "暗号化は、見られないための手",
+      "meaning": "「守り: …暗号化する」を可用性の枠に入れようとして、断られた。暗号化は中身を見られないための手で、止まる事故には効かない。",
+      "causes": [
+        "守りの手なら、どれもどの観点にも効くと考えた。",
+        "「通信」という言葉だけで、押し寄せる通信の事故に結び付けた。"
+      ],
+      "hint": "止まらないための手は、予備の機械と通信の量の制限。暗号化は機密性の枠へ。",
+      "terms": [
+        "availability",
+        "confidentiality"
+      ]
+    },
+    {
+      "id": "sec-price-loss",
+      "match": "料金表の事故で失われたのは",
+      "meaning": "「事故: 料金表」を機密性の枠に入れようとして、断られた。きっかけは盗まれたパスワード（見られた）だが、事故で失われたのは料金表の値の正しさ。",
+      "causes": [
+        "事故のきっかけで分けた。観点は「何が失われたか」で決める。",
+        "「盗まれた」という言葉だけを見た。"
+      ],
+      "hint": "料金表は「書き換えられた」。勝手に書き換えられないことは、完全性。",
+      "terms": [
+        "integrity",
+        "confidentiality"
+      ]
+    },
+    {
       "id": "sec-authz-excess",
       "match": "答えが合っていない",
       "meaning": "全ての操作を割り当てたが、役割と操作の組に過不足がある。",
@@ -67,29 +163,42 @@
         "運営係を「何でもできる人」にして、仕事に無い予約の操作まで入れた。",
         "仕事に要る操作が抜けている（窓口係の取り消しなど）。"
       ],
-      "hint": "役割ごとの仕事の表を 1 行ずつ読み、仕事に無い操作の札を take で外す。",
+      "hint": "役割ごとの仕事の表を 1 行ずつ読み、仕事に無い操作の札を、置き場へドラッグして外す。",
       "terms": [
         "authorization"
       ]
     },
     {
-      "id": "sec-mfa-no-factor",
-      "match": "2 つ目の要素が「なし」のまま",
-      "meaning": "多要素認証を始めようとしたが、2 つ目の要素がまだ決まっていない。",
+      "id": "sec-mfa-same-kind",
+      "match": "パスワードと同じ「知っている物」",
+      "meaning": "秘密の質問を 2 つ目の要素にしようとして、断られた。パスワードと同じ種類（知っている物）なので、一緒に漏れ得る。",
       "causes": [
-        "先に多要素認証を選んだ（何と組み合わせるかが無いと、始められない）。",
-        "2 つ目の要素を「なし」に戻した後で、多要素認証を選び直した。"
+        "要素の数だけを増やせばよいと考えた。",
+        "要素の種類（知っている物・持っている物・本人の特徴）の表を見ていない。"
       ],
-      "hint": "先に「2 つ目の要素」を選び、それから多要素認証の欄を選ぶ。",
+      "hint": "2 つ目は「持っている物」か「本人の特徴」から選ぼう。",
       "terms": [
-        "mfa",
-        "authentication-factor"
+        "authentication-factor",
+        "mfa"
+      ]
+    },
+    {
+      "id": "sec-mfa-optional",
+      "match": "使いたい人だけにすると",
+      "meaning": "2 つ目の要素を「使いたい人だけ」に求めようとして、断られた。使わない人の入口は、パスワードだけのまま残る。",
+      "causes": [
+        "職員の手間を減らそうとして、任意にした。",
+        "入られた鈴木さんのような、使わない人の入口を考えていない。"
+      ],
+      "hint": "2 つ目の要素は「全員に求める要素」の枠に入れよう。",
+      "terms": [
+        "mfa"
       ]
     },
     {
       "id": "sec-mfa-weak",
       "match": "答えが合っていない",
-      "meaning": "全ての欄を変えたが、入口がまだ弱い。",
+      "meaning": "要素の札を置いたが、入口がまだ弱い（赤い縁の札が違う枠にある）。",
       "causes": [
         "多要素を任意にした（「使いたい人だけ」では、使わない人の入口がパスワードだけのまま）。",
         "2 つ目の要素に秘密の質問を選んだ（パスワードと同じ「知っている物」で、種類が 1 つのまま）。"
@@ -103,12 +212,12 @@
     {
       "id": "sec-password-weak",
       "match": "答えが合っていない",
-      "meaning": "全ての欄を変えたが、パスワードの決まりにまだ弱い所がある。",
+      "meaning": "パスワードの決まりの札を置いたが、まだ弱い所がある（赤い縁の札が、入っていてはいけない枠に残っているか、違う枠にある）。",
       "causes": [
         "最低の長さが短い（短いと、全ての組み合わせを試されて早く当たる）。",
         "漏れた一覧と照合していない、または何度でも試せるまま。"
       ],
-      "hint": "長さ・漏れた一覧との照合・続けて失敗した時、の 3 つを 1 つずつ見直す。",
+      "hint": "「六文字」と「何度でも試せる」は置き場へ戻す。長さは十二文字以上、漏れた一覧と照合、続けての失敗で止める、の 3 枚を「パスワードの決まり」へ。",
       "terms": [
         "password-reuse"
       ]

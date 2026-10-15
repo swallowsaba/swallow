@@ -100,8 +100,9 @@ export function wrongAction(setup, step) {
       const big = setup.items.find((i) => !at(i.id).includes(slot.id) && (i.size ?? 0) > slot.capacity - used(slot));
       if (big) return { op: 'put', item: big.id, slot: slot.id };
     }
+    // 手順の札を全て置く（1 枚目だけ違う枠）。置き終えた所で、違う枠の札が赤く示される
     const other = setup.slots.find((s) => s.id !== first.slot);
-    return { op: 'put', item: first.item, slot: other?.id ?? first.slot };
+    return [{ op: 'put', item: first.item, slot: other?.id ?? first.slot }, ...step.actions.slice(1)];
   }
   if (first?.op === 'arrange') return { op: 'arrange', stages: [...first.stages].reverse() };
   if (first?.op === 'answer') {

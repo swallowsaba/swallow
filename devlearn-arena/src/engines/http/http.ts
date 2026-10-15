@@ -240,6 +240,25 @@ function versionOf(site: Pick<Site, 'versions'>, scheme: Url['scheme'], want: Ht
   return scheme === 'https' && v.includes('2') ? '2' : '1.1';
 }
 
+/**
+ * 名前とポートで届く相手が、TLS の握手で送る証明書（葉 → 中間）。openssl s_client が使う。
+ * 名前が引けない・待ち受けていない・TLS で待ち受けていない時は、その訳
+ */
+export function peerChain(env: HttpEnv, host: string, port: number): { chain: readonly Cert[] } | { error: 'resolve' | 'refused' | 'plain' } {
+  if (env.localNames.includes(host)) {
+    const l = env.local(port);
+    if (!l || 'reset' in l) return { error: 'refused' };
+    return l.chain && l.chain.length > 0 ? { chain: l.chain } : { error: 'plain' };
+  }
+  const remote = env.remote?.(host, port);
+  if (remote !== undefined) return remote === null ? { error: 'refused' } : { error: 'plain' };
+  const named = env.sites.filter((s) => s.host === host);
+  if (named.length === 0) return { error: 'resolve' };
+  const site = named.find((s) => s.port === port);
+  if (!site) return { error: 'refused' };
+  return site.chain && site.chain.length > 0 ? { chain: site.chain } : { error: 'plain' };
+}
+
 export function request(env: HttpEnv, raw: string, opts: RequestOptions = {}): HttpOutcome {
   const url = parseUrl(raw);
   if (!url) return { ok: false, url: null, error: { kind: 'bad-url', message: raw } };

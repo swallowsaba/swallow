@@ -1817,7 +1817,7 @@
       "title": "証明書と認証局",
       "goal": "サーバ証明書・中間証明書・ルート証明書の関係を説明できる",
       "practice": [
-        "simulation"
+        "terminal"
       ],
       "prerequisites": [
         "sec.b.06"

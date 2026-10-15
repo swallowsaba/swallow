@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { createPortal } from 'react-dom';
-import { assignTime, holds, isSettled, misplaced, usedOf } from '@/engines/sim/sim';
+import { assignTime, holds, misplaced, stepSettled, usedOf } from '@/engines/sim/sim';
 import type { AssignState } from '@/engines/sim/types';
 import { useDrag } from './drag';
 import type { BoardProps } from './boardTypes';
@@ -49,7 +49,8 @@ export function AssignBoard({ s, act, expr }: BoardProps<AssignState>) {
   const sizeUnit = units.length === 1 && units[0] !== '' ? ` ${units[0] ?? ''}` : '';
   let wrong: string[] = [];
   try {
-    wrong = expr !== null && isSettled(s) && !holds(s, expr) ? misplaced(s, expr) : [];
+    // 手順の札を全て置いた所で、合っていない札を赤く示す
+    wrong = expr !== null && stepSettled(s, expr) && !holds(s, expr) ? misplaced(s, expr) : [];
   } catch {
     wrong = [];
   }
