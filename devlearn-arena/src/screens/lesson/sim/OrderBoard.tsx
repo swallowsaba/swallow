@@ -1,6 +1,6 @@
 import type { CSSProperties } from 'react';
 import { createPortal } from 'react-dom';
-import { isSettled, orderStop, orderTime, stageOf, stageTime } from '@/engines/sim/sim';
+import { isSettled, needChoices, orderStop, orderTime, stageOf, stageTime } from '@/engines/sim/sim';
 import type { OrderState } from '@/engines/sim/types';
 import { useDrag } from './drag';
 import { moveTo, type Carry } from './orderMove';
@@ -47,7 +47,7 @@ export function OrderBoard({ s, act }: BoardProps<OrderState>) {
       >
         <span className="sim-card-label">{it?.label ?? id}</span>
         {it?.minutes !== undefined ? <span className="sim-card-time num">{it.minutes} {unit}</span> : null}
-        {it?.needs?.length ? <span className="sim-card-needs">先に要る: {it.needs.map((n) => items.get(n)?.label ?? n).join('・')}</span> : null}
+        {it?.needs?.length ? <span className="sim-card-needs">先に要る: {it.needs.map((n) => needChoices(n).map((c) => items.get(c)?.label ?? c).join(' か ')).join('・')}</span> : null}
         {it?.note ? <span className="sim-card-needs">{it.note}</span> : null}
       </button>
     );

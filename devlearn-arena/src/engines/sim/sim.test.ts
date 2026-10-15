@@ -140,6 +140,25 @@ describe('並べる（sim-order）', () => {
     expect(at(['build'], ['unit'], ['deploy'])?.reason).toContain('「書き方の検査」が要る（まだ流れに無い）');
     expect(at(['build'], ['manual'], ['unit'])).toEqual({ stage: 1, item: 'manual', reason: '人の手で写す所で、流れが止まる' });
   });
+
+  it('先に要る物を a|b と書くと、どれか 1 つが前の段にあればよい', () => {
+    const flow = sim('sim-order', {
+      items: [
+        { id: 'ci', label: '検査', minutes: 1 },
+        { id: 'meeting', label: '承認会議', minutes: 9, needs: ['ci'] },
+        { id: 'auto', label: '自動の承認', minutes: 1, needs: ['ci'] },
+        { id: 'deploy', label: '配る', minutes: 2, needs: ['meeting|auto'] },
+      ],
+    }) as Extract<SimState, { type: 'order' }>;
+    const at = (...stages: string[][]) => run(flow, [arrange(...stages)]).state as typeof flow;
+    expect(orderStop(at(['ci'], ['meeting'], ['deploy']))).toBeNull();
+    expect(orderStop(at(['ci'], ['auto'], ['deploy']))).toBeNull();
+    expect(holds(at(['ci'], ['auto'], ['deploy']), 'deps')).toBe(true);
+    expect(orderStop(at(['ci'], ['deploy'], ['auto']))).toEqual({ stage: 1, item: 'deploy', reason: '「配る」には、先に「承認会議」か「自動の承認」が要る（まだ後の段にある）' });
+    expect(orderStop(at(['ci'], ['deploy']))?.reason).toContain('（まだ流れに無い）');
+    expect(holds(at(['ci'], ['deploy']), 'deps')).toBe(false);
+    expect(() => sim('sim-order', { items: [{ id: 'a', label: 'A' }, { id: 'b', label: 'B', needs: ['a|c'] }] })).toThrow('b の needs: c が無い');
+  });
 });
 
 describe('置く（sim-assign）', () => {

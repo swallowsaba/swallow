@@ -55,7 +55,7 @@ export function createSim(environment: string, setup: unknown): SimState {
     case 'order': {
       const s = orderSetupSchema.parse(setup);
       const ids = unique(s.items.map((i) => i.id), '札');
-      for (const i of s.items) need(ids, i.needs ?? [], `${i.id} の needs`);
+      for (const i of s.items) need(ids, (i.needs ?? []).flatMap(needChoices), `${i.id} の needs`);
       const state: OrderState = { type: 'order', setup: s, stages: [] };
       if (s.initial === undefined) return state;
       const r = arrange(state, s.initial);
@@ -288,6 +288,19 @@ const itemLabel = (s: OrderState | AssignState, id: string): string => s.setup.i
 
 export const stageOf = (s: OrderState, id: string): number => s.stages.findIndex((g) => g.includes(id));
 
+/** 先に要る物の 1 つ（needs の 1 項）。`a|b` は、どれか 1 つが前の段にあればよい */
+export const needChoices = (need: string): string[] => need.split('|');
+
+/** 先に要る物の 1 項が、その段より前の段で済んでいるか */
+const needMet = (s: OrderState, need: string, at: number): boolean =>
+  needChoices(need).some((n) => {
+    const before = stageOf(s, n);
+    return before >= 0 && before < at;
+  });
+
+/** 先に要る物の 1 項の名前（「a」か「b」） */
+export const needLabel = (s: OrderState, need: string): string => needChoices(need).map((n) => itemLabel(s, n)).join('」か「');
+
 /** 各段の最も長い時間の合計 */
 export const orderTime = (s: OrderState): number =>
   s.stages.reduce((sum, g) => sum + stageTime(s, g), 0);
@@ -302,8 +315,7 @@ export function unmetNeeds(s: OrderState): { item: string; needs: string }[] {
     const at = stageOf(s, item.id);
     if (at < 0) continue;
     for (const n of item.needs ?? []) {
-      const before = stageOf(s, n);
-      if (before < 0 || before >= at) out.push({ item: item.id, needs: n });
+      if (!needMet(s, n, at)) out.push({ item: item.id, needs: n });
     }
   }
   return out;
@@ -318,14 +330,11 @@ export function orderStop(s: OrderState): { stage: number; item: string; reason:
     for (const id of g) {
       const item = s.setup.items.find((x) => x.id === id);
       if (item?.stop) return { stage: at, item: id, reason: item.stop };
-      const missing = (item?.needs ?? []).find((n) => {
-        const before = stageOf(s, n);
-        return before < 0 || before >= at;
-      });
+      const missing = (item?.needs ?? []).find((n) => !needMet(s, n, at));
       if (missing !== undefined) {
-        const where = stageOf(s, missing);
-        const why = where < 0 ? 'まだ流れに無い' : where === at ? '同じ段で、まだ終わっていない' : 'まだ後の段にある';
-        return { stage: at, item: id, reason: `「${itemLabel(s, id)}」には、先に「${itemLabel(s, missing)}」が要る（${why}）` };
+        const where = needChoices(missing).map((n) => stageOf(s, n)).filter((x) => x >= 0);
+        const why = where.length === 0 ? 'まだ流れに無い' : where.includes(at) ? '同じ段で、まだ終わっていない' : 'まだ後の段にある';
+        return { stage: at, item: id, reason: `「${itemLabel(s, id)}」には、先に「${needLabel(s, missing)}」が要る（${why}）` };
       }
     }
   }

@@ -171,7 +171,8 @@
           "label": "申請書で運用に渡し、手で配ってもらう",
           "minutes": 7,
           "needs": [
-            "code"
+            "code",
+            "localtest|sharedtest"
           ],
           "extra": true
         },
@@ -188,7 +189,8 @@
           "label": "一緒に作った手順で、自動で配る",
           "minutes": 1,
           "needs": [
-            "code"
+            "code",
+            "localtest|sharedtest"
           ]
         }
       ],

@@ -150,12 +150,18 @@
           "id": "approve",
           "label": "週 1 回の承認会議を待つ",
           "minutes": 9,
-          "extra": true
+          "extra": true,
+          "needs": [
+            "ci|ci-fast"
+          ]
         },
         {
           "id": "deploy",
           "label": "配って見張る",
-          "minutes": 2
+          "minutes": 2,
+          "needs": [
+            "approve|auto"
+          ]
         },
         {
           "id": "ci-fast",
@@ -167,7 +173,10 @@
           "id": "auto",
           "label": "検査が通れば、その場で承認",
           "minutes": 1,
-          "extra": true
+          "extra": true,
+          "needs": [
+            "ci|ci-fast"
+          ]
         }
       ],
       "panels": [

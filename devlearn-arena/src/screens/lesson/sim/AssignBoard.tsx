@@ -117,7 +117,7 @@ export function AssignBoard({ s, act, expr }: BoardProps<AssignState>) {
           );
         })}
       </div>
-      {timed ? <p className="sim-total">かかる時間の合計: <span className="num">{assignTime(s)}</span></p> : null}
+      {timed ? <p className="sim-total">{s.setup.timeLabel ?? 'かかる時間の合計'}: <span className="num">{assignTime(s)}</span>{s.setup.timeUnit ? ` ${s.setup.timeUnit}` : ''}</p> : null}
       <div
         className={`sim-pool${drag.now?.over === 'pool' ? ' is-over' : ''}`}
         data-drop="pool"

@@ -69,7 +69,7 @@ export const orderSetupSchema = z.object({
     label: z.string().min(1),
     /** かかる時間（単位は unit。無ければ分） */
     minutes: z.number().min(0).optional(),
-    /** 先（前の段）に要る物 */
+    /** 先（前の段）に要る物。`a|b` は、どれか 1 つが前の段にあればよい（承認会議か、自動の承認か） */
     needs: z.array(id).optional(),
     /** 並べなくてよい物（紛れ込ませた札） */
     extra: z.boolean().optional(),
@@ -117,6 +117,9 @@ export const assignSetupSchema = z.object({
   }).strict()).min(1),
   /** 初めの割り振り（札 → 枠） */
   initial: z.record(id, z.union([id, z.array(id)])).optional(),
+  /** 札の枠ごとの時間（time）の合計の見出しと単位（無ければ「かかる時間の合計」・単位なし） */
+  timeLabel: z.string().min(1).optional(),
+  timeUnit: z.string().min(1).optional(),
   ...panels,
 }).strict();
 
