@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { createCamera, screenToWorld, worldToScreen } from './camera';
-import { fromMinimap, minimapFrame, toMinimap } from './minimap';
+import { fromMinimap, minimapBox, minimapFrame, minimapKey, toMinimap, viewOutline } from './minimap';
+import { sampleCity } from './sample';
 import type { Rotation } from './projection';
 import { generateTerrain, MAP_SIZE } from './terrain';
 
@@ -92,5 +93,42 @@ describe('ミニマップの座標', () => {
       const a = toMinimap(f, screenToWorld(near, vp, { sx: 0, sy: 0 }, MAP_SIZE));
       expect(focus.mx - a.mx).toBeLessThan(focus.mx - tl.mx);
     }
+  });
+});
+
+describe('ミニマップの大きさと下絵', () => {
+  it('画面の高さが 900 以上は 160×160、900 未満は 100×100（docs/decisions.md D-18）', () => {
+    expect(minimapBox(1080)).toBe(160);
+    expect(minimapBox(900)).toBe(160);
+    expect(minimapBox(899)).toBe(100);
+    expect(minimapBox(720)).toBe(100);
+  });
+
+  it('今の視野の枠は、画面の四隅の下の地面を、左上・右上・右下・左下の順に結ぶ', () => {
+    const vp = { width: 1280, height: 720 };
+    const cam = createCamera({ x: 50, y: 47 }, 0.8, 2);
+    const f = minimapFrame(terrain.slab, MAP_SIZE, 100, 2);
+    const outline = viewOutline(f, cam, vp);
+    const expected = [[0, 0], [1280, 0], [1280, 720], [0, 720]].map(([sx = 0, sy = 0]) => toMinimap(f, screenToWorld(cam, vp, { sx, sy }, MAP_SIZE)));
+    expect(outline).toEqual(expected);
+    expect(outline[0]?.mx).toBeLessThan(outline[1]?.mx ?? 0);
+    expect(outline[0]?.my).toBeLessThan(outline[3]?.my ?? 0);
+  });
+
+  it('下絵の印は、都市の日付が進んでも変わらず、道路・区画・施設・晴れた範囲・向き・大きさが変わると変わる', () => {
+    const city = sampleCity();
+    const f = minimapFrame(terrain.slab, MAP_SIZE, 160, 0);
+    const key = minimapKey(city, f);
+    const later: typeof city = { ...city, day: city.day + 3, funds: city.funds + 100 };
+    expect(minimapKey(later, f)).toBe(key);
+    expect(minimapKey({ ...city, roads: city.roads.slice(1) }, f)).not.toBe(key);
+    expect(minimapKey({ ...city, zones: city.zones.slice(1) }, f)).not.toBe(key);
+    expect(minimapKey({ ...city, facilities: city.facilities.slice(1) }, f)).not.toBe(key);
+    expect(minimapKey({ ...city, revealed: [{ x: 0, y: 0, w: MAP_SIZE, h: MAP_SIZE }] }, f)).not.toBe(key);
+    expect(minimapKey(city, minimapFrame(terrain.slab, MAP_SIZE, 160, 1))).not.toBe(key);
+    expect(minimapKey(city, minimapFrame(terrain.slab, MAP_SIZE, 100, 0))).not.toBe(key);
+    // 施設が建ち終わると点の色が変わるので、印も変わる
+    const building = { ...city, facilities: city.facilities.map((x, i) => (i === 0 ? { ...x, state: 'constructing' as const } : x)) };
+    expect(minimapKey(building, f)).not.toBe(key);
   });
 });

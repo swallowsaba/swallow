@@ -259,6 +259,11 @@ export class CityRenderer {
     return obj?.select ?? null;
   }
 
+  /** 今の画面の大きさと地形（ミニマップが、今の視野の枠と島の形を描くのに読む） */
+  view(): { camera: Camera; viewport: Viewport; terrain: Terrain } {
+    return { camera: this.camera, viewport: this.viewport, terrain: this.terrain };
+  }
+
   /** 地図の点を画面の中央に持ってくる */
   focusOn(x: number, y: number): void {
     this.camera = { ...this.camera, focus: { x: Math.max(0, Math.min(this.size, x)), y: Math.max(0, Math.min(this.size, y)) } };

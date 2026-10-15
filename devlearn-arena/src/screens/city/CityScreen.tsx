@@ -15,6 +15,7 @@ import { BuildMenu } from './BuildMenu';
 import { attachBuildControls } from './buildControls';
 import { CityNotice, DemolishConfirm, PlacementHint } from './CityOverlays';
 import { InfoPanel } from './InfoPanel';
+import { Minimap } from './Minimap';
 import { panelModel } from './infoPanelModel';
 import { OverlayToggle, type OverlayLegend } from './OverlayToggle';
 import { RecommendPanel } from './RecommendPanel';
@@ -183,6 +184,8 @@ export function CityScreen({ session, active = true, covered = false, current, d
     s.askDemolish(null);
   }, [store]);
   const onNo = useCallback(() => store.getState().askDemolish(null), [store]);
+  // ミニマップは、描画器ができた後に、その今の姿を読む
+  const minimapSource = useCallback(() => rendererRef.current, []);
 
   return (
     <div className="city-screen" data-testid="city-screen" data-tool={state.tool.kind}>
@@ -211,6 +214,7 @@ export function CityScreen({ session, active = true, covered = false, current, d
               store.getState().upgrade(id, values, performance.now());
             }}
             {...(onLesson ? { onLesson } : {})} {...(onLibrary ? { onLibrary } : {})} {...(onMission ? { onMission } : {})} />
+          <Minimap store={store} source={minimapSource} />
           <OverlayToggle value={state.overlay} onChange={state.setOverlay} legend={state.menu === null && state.overlay ? legendOf(state.overlay, store) : null} />
           <BuildMenu state={state} landmarks={landmarks} />
           <PlacementHint hint={state.confirm ? null : state.hint} />

@@ -6,6 +6,7 @@
 // 1920×1080 で撮り、shots/<名前>.png に保存する。開発用のサーバを自分で立てて、自分で片付ける。
 // 環境変数:
 //   SHOOT_SIZE=1280x720   画面の大きさを変える
+//   SHOOT_DPR=2           画素の倍率（小さい部品を細かく撮る。ミニマップなど）
 //   SHOOT_FPS=1           都市を毎フレーム描き直させ、3 秒間の fps を測って表示する
 //   SHOOT_EVAL='...'      撮る前にページで実行する式（カメラを動かすなど）
 //   SHOOT_TWICE=2000      その間隔で 2 枚撮る（動きの確認。<名前>-2.png）
@@ -30,7 +31,7 @@ const url = `http://localhost:${String(port)}/${path.startsWith('#') ? path : pa
 const browser = await chromium.launch();
 try {
   mkdirSync('shots', { recursive: true });
-  const page = await browser.newPage({ viewport: { width, height } });
+  const page = await browser.newPage({ viewport: { width, height }, deviceScaleFactor: Number(process.env.SHOOT_DPR ?? 1) });
   const errors = [];
   page.on('pageerror', (e) => errors.push(String(e)));
   page.on('console', (m) => {

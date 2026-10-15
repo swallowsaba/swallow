@@ -1,4 +1,4 @@
-/* おすすめの欄（docs/ui-design.md 3 章: 左上、幅 300、高さ 160 まで。畳むと見出しだけ） */
+/* おすすめの欄（docs/ui-design.md 3 章: 左上、幅 300、高さ 160 まで（画面の高さが 900 未満では 120 まで）。畳むと見出しだけ） */
 .recommend {
   position: absolute;
   top: 58px;
@@ -12,6 +12,12 @@
   border: 2px solid var(--hud-line);
   border-radius: 4px 18px 4px 18px;
   box-shadow: var(--shadow-window);
+}
+/* 画面の高さが 900 未満では 120 まで（左下のミニマップと合わせて、常時の UI を 20% 以内に収める。docs/decisions.md D-18） */
+@media (max-height: 899px) {
+  .recommend {
+    max-height: calc(120px * var(--font-scale, 1));
+  }
 }
 .recommend-head {
   display: flex;
