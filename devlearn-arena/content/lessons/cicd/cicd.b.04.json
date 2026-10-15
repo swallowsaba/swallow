@@ -24,7 +24,8 @@
     "image",
     "directory",
     "repository",
-    "log"
+    "log",
+    "job"
   ],
   "explain": {
     "what": "{{term:artifact}}は、{{term:pipeline}}の段が作り、保存して次の段に渡す物。組み立てた{{term:file}}、{{term:container}}の{{term:image}}、検査の報告書など。次の段は、作り直さずにそれを受け取る。",
@@ -131,150 +132,261 @@
     }
   ],
   "practice": {
-    "mode": "simulation",
-    "purpose": "予約サイトのパイプラインで、検査の段と配布の段が、それぞれ組み立て直している。前回は、検査した物と違う物が本番に出た。組み立ての成果物を、検査と配布に渡すように直す。",
-    "environment": "sim-config",
+    "mode": "editor",
+    "purpose": "予約サイトの流れ（`.github/workflows/deploy.yml`）は、`build`・`test`・`deploy` の 3 つの{{term:job}}が、それぞれ `npm install` と `npm run build` で組み立て直している。前回（`#61`）は、`test` の後に部品 `date-lib` の新しい版 2.4.0 が出て、`deploy` が組み立て直した物（2.4.0 入り）は検査していないまま本番に出た。本番の `reserve.example` は今も、10 月 20 日を選ぶと 10 月 19 日の予約になる。`build` で作った `dist/` を{{term:artifact}}として渡し、検査した物と同じ物を配るように直す。保存すると `git push` し、`gh run view` と、成果物の指紋（`SHA256 digest`）の行と、本番の答えを見る。",
+    "environment": "linux-basic",
     "setup": {
-      "fields": [
+      "hostname": "reserve-dev",
+      "cwd": "/home/learner/reserve",
+      "dirs": [
+        "/home/learner/reserve/src",
+        "/home/learner/reserve/e2e",
+        "/home/learner/reserve/.github/workflows"
+      ],
+      "sites": [],
+      "files": {
+        "/home/learner/reserve/package.json": "{\n  \"name\": \"reserve-site\",\n  \"version\": \"1.6.0\",\n  \"private\": true,\n  \"scripts\": {\n    \"build\": \"tsc --noEmit && esbuild src/server.ts --bundle --platform=node --outfile=dist/server.js\",\n    \"e2e\": \"playwright test\",\n    \"deploy\": \"rsync -av --delete dist/ deploy@reserve.example:/srv/reserve/releases/$npm_package_version/ && ssh deploy@reserve.example /srv/reserve/bin/switch $npm_package_version\"\n  },\n  \"dependencies\": {\n    \"date-lib\": \"^2.3.0\",\n    \"express\": \"^4.21.0\"\n  },\n  \"devDependencies\": {\n    \"@playwright/test\": \"^1.48.0\",\n    \"esbuild\": \"^0.24.0\",\n    \"typescript\": \"^5.6.0\"\n  }\n}\n",
+        "/home/learner/reserve/.gitignore": "node_modules/\ndist/\npackage-lock.json\n",
+        "/home/learner/reserve/src/server.ts": "// 予約サイトの入口。選んだ日の予約を作る\nimport express from 'express';\nimport { parseDay } from 'date-lib';\n\nconst app = express();\napp.get('/api/reserve', (req, res) => {\n  res.json({ date: parseDay(String(req.query.date)) });\n});\napp.listen(3000);\n",
+        "/home/learner/reserve/.github/workflows/deploy.yml": "# 予約サイトを組み立てて、検査して、本番に配る\nname: deploy\non:\n  push:\n    branches: [main]\njobs:\n  build:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@v4\n      - run: npm install\n      - run: npm run build\n  test:\n    needs: build\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@v4\n      - run: npm install\n      - run: npm run build\n      - run: npm run e2e\n  deploy:\n    needs: test\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@v4\n      - run: npm install\n      - run: npm run build\n      - run: npm run deploy\n"
+      },
+      "run": [
+        "export __NOW='2026-10-14 10:00'",
+        "export GIT_AUTHOR_NAME=Tanaka GIT_AUTHOR_EMAIL=tanaka@city.example GIT_AUTHOR_DATE=\"2026-10-14 09:58\"",
+        "git init -q",
+        "git remote add origin https://git.city.example/city/reserve.git",
+        "git add .",
+        "git commit -q -m '#61 予約の日付を選べるようにする'",
+        "git push -q -u origin main",
+        "npm install",
+        "unset GIT_AUTHOR_NAME GIT_AUTHOR_EMAIL GIT_AUTHOR_DATE",
+        "export __NOW='2026-10-15 09:30'"
+      ],
+      "gitServers": [
         {
-          "id": "保存",
-          "label": "組み立ての段: 作った dist/ を",
-          "options": [
-            "保存しない",
-            "成果物appとして保存"
-          ],
-          "value": "保存しない"
-        },
-        {
-          "id": "検査",
-          "label": "検査の段: 検査する物",
-          "options": [
-            "組み立て直す",
-            "成果物appを受け取る",
-            "成果物distを受け取る"
-          ],
-          "value": "組み立て直す",
-          "requires": [
-            {
-              "value": "成果物appを受け取る",
-              "expr": "field 保存=成果物appとして保存",
-              "message": "Error: Unable to download artifact(s): Artifact not found for name: app（組み立ての段で、まだ保存していない）"
-            },
-            {
-              "value": "成果物distを受け取る",
-              "expr": "field 保存=成果物distとして保存",
-              "message": "Error: Unable to download artifact(s): Artifact not found for name: dist（その名前の成果物は無い。dist/ は中身のディレクトリの名前）"
+          "url": "https://git.city.example/city/reserve.git",
+          "run": [],
+          "forge": {
+            "repo": "city/reserve",
+            "actions": {
+              "firstRun": 61,
+              "installSeconds": 30,
+              "packages": {
+                "date-lib": [
+                  {
+                    "version": "2.3.0"
+                  },
+                  {
+                    "version": "2.4.0",
+                    "published": "2026-10-14 10:05"
+                  },
+                  {
+                    "version": "2.4.1",
+                    "published": "2026-10-15 08:00"
+                  }
+                ]
+              },
+              "scripts": {
+                "build": {
+                  "kind": "build",
+                  "seconds": 150,
+                  "sources": "src",
+                  "bundle": "dist/server.js",
+                  "log": [
+                    "",
+                    "  dist/server.js  812.4kb",
+                    "",
+                    "⚡ Done in 9ms"
+                  ]
+                },
+                "e2e": {
+                  "kind": "test",
+                  "seconds": 120,
+                  "out": "dist",
+                  "missing": {
+                    "log": [
+                      "Error: Timed out waiting 60000ms from config.webServer.",
+                      "",
+                      "[WebServer] Error: Cannot find module '/home/runner/work/reserve/reserve/dist/server.js'"
+                    ],
+                    "code": 1
+                  },
+                  "log": [
+                    "",
+                    "Running 3 tests using 1 worker",
+                    "",
+                    "  3 passed (1.9m)"
+                  ],
+                  "faults": [
+                    {
+                      "when": [
+                        {
+                          "path": "dist/server.js",
+                          "has": "var version = \"2.4.0\";"
+                        }
+                      ],
+                      "code": 1,
+                      "log": [
+                        "",
+                        "Running 3 tests using 1 worker",
+                        "",
+                        "  1) [chromium] › e2e/reserve.spec.ts:6:5 › 予約: 10 月 20 日を選ぶと 10 月 20 日の予約になる ─────",
+                        "",
+                        "    Error: expect(received).toBe(expected) // Object.is equality",
+                        "",
+                        "    Expected: \"2026-10-20\"",
+                        "    Received: \"2026-10-19\"",
+                        "",
+                        "       7 |   const res = await request.get('/api/reserve?date=2026-10-20');",
+                        "    >  8 |   expect((await res.json()).date).toBe('2026-10-20');",
+                        "         |                                   ^",
+                        "",
+                        "  1 failed",
+                        "    [chromium] › e2e/reserve.spec.ts:6:5 › 予約: 10 月 20 日を選ぶと 10 月 20 日の予約になる ─────",
+                        "  2 passed (1.9m)"
+                      ]
+                    }
+                  ]
+                },
+                "deploy": {
+                  "kind": "deploy",
+                  "seconds": 30,
+                  "out": "dist",
+                  "site": "reserve.example",
+                  "log": [
+                    "sending incremental file list",
+                    "created directory /srv/reserve/releases/{version}",
+                    "./",
+                    "server.js",
+                    "",
+                    "sent 1,402 bytes  received 52 bytes  2,908.00 bytes/sec",
+                    "total size is 1,284  speedup is 0.88",
+                    "switched: /srv/reserve/current -> releases/{version}"
+                  ],
+                  "missing": {
+                    "log": [
+                      "rsync: [sender] change_dir \"/home/runner/work/reserve/reserve/dist\" failed: No such file or directory (2)",
+                      "rsync error: some files/attrs were not transferred (see previous errors) (code 23) at main.c(1338) [sender=3.2.7]"
+                    ],
+                    "code": 23
+                  }
+                }
+              },
+              "sites": [
+                {
+                  "host": "reserve.example",
+                  "chain": [
+                    {
+                      "id": "leaf-reserve.example",
+                      "subject": "reserve.example",
+                      "issuer": "Minato Issuing CA",
+                      "sans": [
+                        "reserve.example"
+                      ],
+                      "notBefore": "2026-01-01",
+                      "notAfter": "2027-01-01",
+                      "ca": false
+                    },
+                    {
+                      "id": "inter",
+                      "subject": "Minato Issuing CA",
+                      "issuer": "Minato Root CA",
+                      "sans": [],
+                      "notBefore": "2024-01-01",
+                      "notAfter": "2030-01-01",
+                      "ca": true
+                    }
+                  ],
+                  "releases": [
+                    {
+                      "version": "1.5.0",
+                      "files": {
+                        "server.js": "// node_modules/date-lib/index.js\nvar version = \"2.3.0\";\n"
+                      }
+                    }
+                  ],
+                  "current": "1.5.0",
+                  "routes": {
+                    "/": {
+                      "status": 200,
+                      "body": "<html><body><h1>港の予約</h1><p>版 {version}</p></body></html>"
+                    },
+                    "/api/reserve?date=2026-10-20": {
+                      "status": 200,
+                      "body": "{\"date\":\"2026-10-20\"}"
+                    }
+                  },
+                  "faults": [
+                    {
+                      "when": [
+                        {
+                          "path": "server.js",
+                          "has": "var version = \"2.4.0\";"
+                        }
+                      ],
+                      "routes": {
+                        "/api/reserve?date=2026-10-20": {
+                          "status": 200,
+                          "body": "{\"date\":\"2026-10-19\"}"
+                        }
+                      }
+                    }
+                  ]
+                }
+              ]
             }
-          ]
-        },
-        {
-          "id": "配布",
-          "label": "配布の段: 配る物",
-          "options": [
-            "組み立て直す",
-            "成果物appを受け取る",
-            "成果物distを受け取る"
-          ],
-          "value": "組み立て直す",
-          "requires": [
-            {
-              "value": "成果物appを受け取る",
-              "expr": "field 保存=成果物appとして保存",
-              "message": "Error: Unable to download artifact(s): Artifact not found for name: app（組み立ての段で、まだ保存していない）"
-            },
-            {
-              "value": "成果物distを受け取る",
-              "expr": "field 保存=成果物distとして保存",
-              "message": "Error: Unable to download artifact(s): Artifact not found for name: dist（その名前の成果物は無い。dist/ は中身のディレクトリの名前）"
-            }
-          ]
+          }
         }
       ],
-      "panels": [
-        {
-          "kind": "log",
-          "title": "前回（#61）の結果",
-          "when": "field 配布=組み立て直す",
-          "lines": [
-            "10:02 組み立て: dist/ を作った（部品 date-lib 2.3.0）",
-            "10:05 検査: 組み立て直した（部品 date-lib 2.3.0）→ 全て成功",
-            "10:09 配布: 組み立て直した（部品 date-lib 2.4.0 が出ていた）→ 本番に置いた",
-            "10:15 本番: 予約の日付が 1 日ずれる。検査したのは 2.3.0 の物、配ったのは 2.4.0 の物"
-          ]
-        },
-        {
-          "kind": "log",
-          "title": "成果物の置き場",
-          "when": "field 保存=成果物appとして保存",
-          "lines": [
-            "app（中身: dist/、指紋 3f9a…、部品 date-lib 2.3.0）"
-          ]
-        },
-        {
-          "kind": "log",
-          "title": "流し直した結果（#62）",
-          "when": "field 検査=成果物appを受け取る && field 配布=成果物appを受け取る",
-          "lines": [
-            "組み立て: dist/ を成果物 app として保存（指紋 3f9a…）",
-            "検査: 成果物 app を受け取った（指紋 3f9a…）→ 全て成功",
-            "配布: 成果物 app を受け取った（指紋 3f9a…）→ 本番に置いた",
-            "検査した物と配った物の指紋が同じ。本番の予約の日付も正しい"
-          ]
-        }
-      ]
+      "edit": {
+        "path": "/home/learner/reserve/.github/workflows/deploy.yml",
+        "apply": [
+          "git add .github/workflows/deploy.yml",
+          "git commit -q -m '組み立てた物を成果物で渡す'",
+          "git push -q origin main",
+          "gh run view",
+          "gh run view --log | grep -E 'SHA256 digest|Artifact not found|No files were found|Cannot find module'",
+          "curl -s 'https://reserve.example/api/reserve?date=2026-10-20'"
+        ]
+      }
     },
     "steps": [
       {
         "id": "save",
-        "purpose": "組み立ての段で作った `dist/` を、成果物として保存する。",
+        "purpose": "`build` のジョブで作った `dist/` を、`actions/upload-artifact` で、`app` という名前の成果物として上げる。",
         "check": {
-          "kind": "sim",
-          "expr": "field 保存=成果物appとして保存"
+          "kind": "ci",
+          "expr": "head artifact:app job:build=success"
         },
-        "afterward": "`dist/` が成果物 app として保存された。後の段は、この app を名前で受け取れる。",
+        "afterward": "`build` が `dist/` を成果物 `app` として上げた（`gh run view` の `ARTIFACTS` に `app`、ログに `SHA256 digest of uploaded artifact zip is …`）。後のジョブは、この `app` を名前で受け取れる。",
         "hints": [
-          "後の段に渡すには、まず組み立ての段で保存する。",
-          "「組み立ての段」の欄で、成果物として保存する方を選ぶ。名前は app。",
-          "`set 保存 成果物appとして保存` と入れる。"
+          "後のジョブに渡すには、まず `build` のジョブの最後で上げる。ジョブは別々の機械で動くので、上げなければ `dist/` は残らない。",
+          "`build` の手順の最後に `- uses: actions/upload-artifact@v4` を足し、`with:` の下に `name: app` と `path: dist/` を書く。",
+          "`# 予約サイトを組み立てて、検査して、本番に配る\nname: deploy\non:\n  push:\n    branches: [main]\njobs:\n  build:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@v4\n      - run: npm install\n      - run: npm run build\n      - uses: actions/upload-artifact@v4\n        with:\n          name: app\n          path: dist/\n  test:\n    needs: build\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@v4\n      - run: npm install\n      - run: npm run build\n      - run: npm run e2e\n  deploy:\n    needs: test\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@v4\n      - run: npm install\n      - run: npm run build\n      - run: npm run deploy\n` と保存する。"
         ],
         "expectedErrors": [
-          "cicd-artifact-missing"
-        ],
-        "actions": [
-          {
-            "op": "set",
-            "field": "保存",
-            "value": "成果物appとして保存"
-          }
+          "cicd-artifact-missing",
+          "cicd-workflow-invalid",
+          "cicd-upload-empty"
         ]
       },
       {
         "id": "pass",
-        "purpose": "検査の段と配布の段が、組み立て直さずに、同じ成果物を受け取るようにする。",
+        "purpose": "`test` と `deploy` のジョブが、組み立て直さずに、同じ成果物 `app` を `actions/download-artifact` で `dist/` に受け取るようにする。`npm run build` は `build` のジョブだけに残す。",
         "check": {
-          "kind": "sim",
-          "expr": "field 検査=成果物appを受け取る 配布=成果物appを受け取る"
+          "kind": "ci",
+          "expr": "head run=success got:test=app got:deploy=app !has:test/npm+run+build !has:deploy/npm+run+build deployed:reserve.example=1.6.0"
         },
-        "afterward": "検査も配布も、同じ成果物 app を受け取った。指紋が同じなので、検査した物がそのまま本番に届いた。",
+        "afterward": "`test` も `deploy` も、同じ成果物 `app` を受け取った。上げた時と受け取った時の `SHA256 digest` が同じなので、検査した物がそのまま本番に届いた。今回の `date-lib` は直った 2.4.1 で、本番は 10 月 20 日を正しく答える。",
         "hints": [
-          "検査した物と同じ物を配りたい。前回の結果では、配布で組み立て直した時に部品の版が変わっていた。",
-          "受け取る名前は、保存した成果物の名前の app。dist は中身の{{term:directory}}の名前で、成果物の名前ではない。",
-          "`set 検査 成果物appを受け取る` `set 配布 成果物appを受け取る` の順に入れる。"
+          "検査した物と同じ物を配りたい。前回は、`deploy` で組み立て直した時に部品の版が変わっていた。",
+          "`test` と `deploy` の `npm run build` を消し、代わりに `- uses: actions/download-artifact@v4` と `with:` の下の `name: app`・`path: dist/` を置く。受け取る名前は、上げた成果物の名前の `app`（`dist` は中身の{{term:directory}}の名前）。`deploy` は `rsync` で送るだけなので、`npm install` も要らない。",
+          "`# 予約サイトを組み立てて、検査して、本番に配る\nname: deploy\non:\n  push:\n    branches: [main]\njobs:\n  build:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@v4\n      - run: npm install\n      - run: npm run build\n      - uses: actions/upload-artifact@v4\n        with:\n          name: app\n          path: dist/\n  test:\n    needs: build\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@v4\n      - uses: actions/download-artifact@v4\n        with:\n          name: app\n          path: dist/\n      - run: npm install\n      - run: npm run e2e\n  deploy:\n    needs: test\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@v4\n      - uses: actions/download-artifact@v4\n        with:\n          name: app\n          path: dist/\n      - run: npm run deploy\n` と保存する。"
         ],
         "expectedErrors": [
-          "cicd-artifact-missing"
-        ],
-        "actions": [
-          {
-            "op": "set",
-            "field": "検査",
-            "value": "成果物appを受け取る"
-          },
-          {
-            "op": "set",
-            "field": "配布",
-            "value": "成果物appを受け取る"
-          }
+          "cicd-artifact-missing",
+          "cicd-workflow-invalid",
+          "cicd-e2e-no-dist"
         ]
       }
     ]

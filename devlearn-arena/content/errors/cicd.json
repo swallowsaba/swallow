@@ -3,72 +3,160 @@
   "errors": [
     {
       "id": "cicd-order-wrong",
-      "match": "答えが合っていない",
-      "meaning": "全ての手順を並べたが、流れの順が合っていない。このまま流すと、壊れた物が本番に届くか、途中で止まる。",
+      "match": "disabled>予約を確定する",
+      "output": true,
+      "meaning": "本番の `reserve.example` が、押せない「予約を確定する」のボタンを出している。誤りの入った #42 が、検査されないまま本番に配られた。",
       "causes": [
-        "検査の前に配布している（壊れた物が、検査されずに本番に届く）。",
-        "組み立てる前に検査している（検査する物が、まだ無い）。",
-        "人が手でする作業（手順書を印刷する）まで、自動の流れに入れた。"
+        "`npm run deploy`（配る）の手順が、`npm test`（検査）より前にある。前の手順が成功していれば、配った後で検査が失敗しても、本番は壊れたまま。",
+        "`npm test` の手順を書いていない（検査の手順を飛ばしている）。"
       ],
-      "hint": "変更を取ってくる → 組み立てる → 検査する → 配る の順。配るのは一番最後。",
+      "hint": "流れは上から順に動き、失敗した所で止まる。取ってくる → 部品を入れる → 組み立てる → 検査する → 配る の順に並べよう。壊れた本番は「初めに戻す」で初めの 1.4.0 に戻せる。",
       "terms": ["ci", "continuous-delivery"]
     },
     {
-      "id": "cicd-deps",
-      "match": "答えが合っていない",
-      "meaning": "全てのジョブを並べたが、流れが合っていない。先に要る物が無いまま動くジョブがあるか、時間が長すぎる。",
+      "id": "cicd-missing-script",
+      "match": "Missing script: \"[^\"]+\"",
+      "output": true,
+      "meaning": "npm に「その名前の script は無い」と断られた（`npm error Missing script`）。`npm run` の後ろの名前は、package.json の `scripts` に書いた名前のどれかでなければならない。",
       "causes": [
-        "依存の見落とし。検査を組み立てと同じステージに置き、組み立てた物が無いまま動かした。",
-        "互いに関係ない 3 つの検査を 1 列に並べて、順に待っている。",
-        "配布を、検査と同じステージに置いた（検査の結果を待たずに配る）。"
+        "名前の綴りが違う（`npm run tests`・`npm run deploy-prod` など）。",
+        "`npm test` は `npm run test` と同じ。`npm run` の後ろに `npm test` と書いた。"
       ],
-      "hint": "表の「先に要る物」を見る。組み立てを 1 段目、3 つの検査を 2 段目に並べ、配布を最後に置く。",
-      "terms": ["stage", "job"]
+      "hint": "package.json の `scripts` の名前（`build`・`test`・`deploy`）をそのまま使おう。",
+      "terms": ["npm"]
+    },
+    {
+      "id": "cicd-workflow-invalid",
+      "match": "This run likely failed because of a workflow file issue",
+      "output": true,
+      "meaning": "GitHub が{{term:workflow}}のファイルを読めず、ジョブを 1 つも動かさなかった。`ANNOTATIONS` の `(Line: 行, Col: 桁)` が、読めなかった場所。",
+      "causes": [
+        "字下げがずれている（{{term:yaml}}は、字下げの深さで入れ子を決める。`- name:` の下の `run:` は、`name:` と同じ深さ）。",
+        "鍵の綴りが違う（`runs_on`・`step`・`need` など。`Unexpected value` と言われる）。",
+        "手順に `run:` も `uses:` も無い（`There's not enough info to determine what you meant`）。"
+      ],
+      "hint": "知らせの行と桁の所を見て、上の手順と字下げを揃えよう。",
+      "terms": ["workflow", "yaml"]
+    },
+    {
+      "id": "cicd-deps",
+      "match": "\\s(1[3-9]|[2-9]\\d)m\\d+s\\s",
+      "output": true,
+      "meaning": "流れは通ったが、配り終えるまで 12 分を超えた（`gh run list` の `ELAPSED`）。互いの結果を使わないジョブが、まだ順に待っている。",
+      "causes": [
+        "3 つの検査のどれかの `needs` が、`build` ではなくほかの検査になっている（例: `lint` が `unit` を待つ）。",
+        "`deploy` が、一番時間のかかる `e2e` の後に、さらに別の検査も順に待っている。"
+      ],
+      "hint": "`unit`・`lint`・`e2e` の `needs:` は、どれも `build` だけにしよう。`deploy` は `[unit, lint, e2e]` を待つ。",
+      "terms": ["job", "pipeline"]
+    },
+    {
+      "id": "cicd-needs-unknown",
+      "match": "depends on unknown job",
+      "output": true,
+      "meaning": "`needs` に、このワークフローに無いジョブの名前を書いた（`Job 'deploy' depends on unknown job '…'`）。ファイル全体が読めず、ジョブは動かなかった。",
+      "causes": [
+        "ジョブの名前の綴りが違う（`tests`・`e2e-test` など）。",
+        "表の名前（単体の検査）を書いた。`needs` には、`jobs:` の下の鍵（`unit`・`lint`・`e2e`）を書く。"
+      ],
+      "hint": "`jobs:` のすぐ下に並んだ名前（`build`・`unit`・`lint`・`e2e`・`deploy`）から選ぼう。",
+      "terms": ["job"]
     },
     {
       "id": "cicd-read-last",
       "match": "答えが合っていない",
-      "meaning": "答えは受け取ったが、結果の画面とログに合っていない。",
+      "meaning": "答えは受け取ったが、実行のログに合っていない。",
       "causes": [
-        "ログの最後の行（exit code）だけを見た。最後の行は「失敗した」としか言わない。",
-        "2 つ目の誤りを選んだ。最初の誤りが元で、後の誤りが続けて出ることが多い。",
-        "ビルドの失敗とテストの失敗を取り違えた（組み立てられなければ、テストは動かない）。"
+        "ログの最後の行（`Process completed with exit code 2.`）だけを見た。最後の行は「失敗した」としか言わない。",
+        "違う実行（run）を開いた。`gh run list` の `TITLE` で、#58 と #59 を見分ける。",
+        "期待した値（`Expected`）と、実際の値（`Received`）を取り違えた。"
       ],
-      "hint": "結果の表で、最初に「失敗」になったジョブを見つけ、そのログを上から読んで、最初の誤りの行で止まる。",
-      "terms": ["build", "test"]
+      "hint": "`gh run view <ID>` で `X` の付いたジョブを見つけ、`--log-failed` のログを上から読み、最初の誤りの行で止まろう。",
+      "terms": ["build", "test", "log"]
+    },
+    {
+      "id": "gh-run-not-found",
+      "match": "could not find any workflow run with ID",
+      "meaning": "その ID の実行（run）が無い、と言われた。",
+      "causes": [
+        "ID の打ち間違い（桁が足りない・多い）。",
+        "`#58` のような、記録の題の番号を ID として打った。ID は `gh run list` の `ID` の列の長い数。"
+      ],
+      "hint": "`gh run list` を打ち、`ID` の列の数をそのまま `gh run view` に渡そう。",
+      "terms": ["github"]
+    },
+    {
+      "id": "git-nothing-to-commit",
+      "match": "nothing to commit|no changes added to commit",
+      "output": true,
+      "meaning": "記録する変更が無い、と言われた（`nothing to commit`）。ファイルは何も変わっていない。",
+      "causes": [
+        "`sed -i 's/前/後/'` の「前」が、ファイルの中身と 1 字でも違い、何も置き換わらなかった。",
+        "直したのが別のファイルだった。"
+      ],
+      "hint": "`cat src/price.ts` で今の中身を見て、置き換える前の文字をそのまま写そう。",
+      "terms": ["commit"]
     },
     {
       "id": "cicd-artifact-missing",
-      "match": "Artifact not found",
-      "meaning": "受け取ろうとした名前の成果物が無い、と言われた。",
+      "match": "Artifact not found for name",
+      "output": true,
+      "meaning": "受け取ろうとした名前の{{term:artifact}}が無い、と言われた（`Unable to download artifact(s): Artifact not found for name`）。",
       "causes": [
-        "保存の名前と、受け取る名前が違う（保存したディレクトリの名前 dist と、成果物の名前 app を取り違えた）。",
-        "組み立ての段で、成果物をまだ保存していない。"
+        "上げた名前と、受け取る名前が違う（中身のディレクトリの名前 `dist` と、成果物の名前 `app` を取り違えた）。",
+        "`build` のジョブで、まだ `actions/upload-artifact` で上げていない。",
+        "受け取るジョブの `needs` に、上げるジョブ（`build`）が無く、上げる前に受け取ろうとした。"
       ],
-      "hint": "組み立ての段で保存した成果物の名前を見て、その名前のまま受け取る。",
+      "hint": "`actions/upload-artifact` の `name:` と同じ名前を、`actions/download-artifact` の `name:` に書こう。",
       "terms": ["artifact"]
     },
     {
-      "id": "cicd-no-previous",
-      "match": "戻す先が無い",
-      "meaning": "前の版に戻す設定にしようとしたが、戻す先の版が無い、と言われた。",
+      "id": "cicd-upload-empty",
+      "match": "No files were found with the provided path",
+      "output": true,
+      "meaning": "上げる物が見つからず、成果物は上がらなかった（`No files were found with the provided path`）。",
       "causes": [
-        "配った後に、前の版を消している（前の版を残していない）。",
-        "欄を選ぶ順が逆。戻す先を残す設定より先に、戻す設定を選んだ。"
+        "`path:` が、組み立てた物の場所（`dist/`）と違う。",
+        "`npm run build` より前に、`actions/upload-artifact` の手順を置いた（まだ `dist/` が無い）。"
       ],
-      "hint": "先に「前の版」を「残す」にしてから、失敗した時に前の版へ戻す設定にする。",
-      "terms": ["rollback"]
+      "hint": "`npm run build` の後ろに、`path: dist/` で上げよう。",
+      "terms": ["artifact", "build"]
+    },
+    {
+      "id": "cicd-e2e-no-dist",
+      "match": "Cannot find module '[^']*dist/server\\.js'",
+      "output": true,
+      "meaning": "画面の検査（`playwright test`）が、組み立てた `dist/server.js` を見つけられず、サイトを動かせなかった。",
+      "causes": [
+        "`npm run build` を消したが、代わりに成果物を受け取っていない。",
+        "受け取った場所（`path:`）が `dist/` ではない。"
+      ],
+      "hint": "`test` のジョブで、`actions/download-artifact` で `app` を `path: dist/` に受け取ろう。",
+      "terms": ["artifact"]
     },
     {
       "id": "cicd-no-verify",
-      "match": "答えが合っていない",
-      "meaning": "全ての欄を変えたが、壊れた版を配った時に、本番が自動で元に戻らない。",
+      "match": "✓ main deploy · \\d+",
+      "output": true,
+      "meaning": "流れは「成功」と言ったが、本番の `/health` は 500 を返している。配った後に、動いているかを確かめていない。",
       "causes": [
-        "ファイルが置けたことだけを確かめた。置けても、サイトが動いているとは限らない。",
-        "失敗した時に知らせるだけで、戻していない。知らせを読むまで、壊れた版のまま。"
+        "確かめる手順が無い（ファイルを置けたことしか見ていない）。",
+        "`curl` に `-f` を付けていない。`-f` が無いと、500 の返事でも成功（終了の値 0）で終わる。"
       ],
-      "hint": "確かめるのは、動いているサイトの返事（/health が 200 か）。失敗したら、前の版に戻す。",
-      "terms": ["deploy", "rollback"]
+      "hint": "`npm run deploy` の後ろに `run: curl -fsS https://reserve.example/health` を足そう。",
+      "terms": ["health-check", "status-code", "curl"]
+    },
+    {
+      "id": "cicd-no-previous",
+      "match": "removed: /srv/reserve/releases/1\\.4\\.0|no release before",
+      "output": true,
+      "meaning": "戻す先の 1.4.0 が、本番から消えた（`removed: /srv/reserve/releases/1.4.0`）か、もう無いと言われた（`no release before`）。前の版が無いと、切り戻しはできない。",
+      "causes": [
+        "`前の版を消す`（`npm run prune`）を、確かめる手順より前に動かした。",
+        "確かめる手順が無く、流れが成功のまま `前の版を消す` まで進んだ。"
+      ],
+      "hint": "確かめる手順を、`前の版を消す` より前に置こう。消えた 1.4.0 は「初めに戻す」で戻せる。",
+      "terms": ["rollback"]
     }
   ]
 }

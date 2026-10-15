@@ -18,6 +18,7 @@ import { kubectlCommands } from './kubectl';
 import { netCommands } from './net';
 import { netLabCommands } from './netBuild';
 import { netToolCommands } from './netTools';
+import { npmCommands } from './npm';
 import { permCommands } from './perm';
 import { shellRunCommands } from './shellRun';
 import { sshCommands } from './ssh';
@@ -39,6 +40,7 @@ export function createDefaultRegistry(): CommandRegistry {
     ...editorCommands,
     ...gitCommands,
     ...ghCommands,
+    ...npmCommands,
     ...kubeadmCommands,
     ...kubectlCommands,
     ...netCommands,

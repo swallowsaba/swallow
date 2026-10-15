@@ -55,7 +55,18 @@ export default async function rework(page, shot) {
     }
     await wait(page, 1500);
   } else {
-    for (const step of p.steps) {
+    // 設定の編集は、初めの中身のまま保存した所（誤った流れの結果。原則 4）を -wrong に撮り、初めに戻す
+    if (p.mode === 'editor' && process.env.WRONG) {
+      await page.click('[data-testid="editor-save"]');
+      await wait(page, 900);
+      const guide = await page.evaluate(() => document.querySelector('[data-testid="practice-error"]')?.getAttribute('data-guide') ?? null);
+      console.log('誤り', guide);
+      await shot(`${name}-wrong`);
+      await page.click('[data-testid="practice-reset"]');
+      await wait(page);
+    }
+    for (const [i, step] of p.steps.entries()) {
+      if (i > 0 && process.env.STEPS) await shot(`${name}-s${String(i)}`);
       const lines = [...step.hints[2].matchAll(/`([^`]+)`/g)].map((m) => m[1]);
       const answerStep = step.check.kind === 'answer';
       for (const [j, line] of lines.entries()) {

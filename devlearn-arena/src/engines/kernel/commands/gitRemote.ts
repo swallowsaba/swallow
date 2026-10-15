@@ -6,6 +6,7 @@ import type { GitState } from '@/engines/git/types';
 import { cloneFrom, createRemote, fetch as fetchRemote, push as pushRemote, type FetchResult, type Remote } from '@/engines/git/remote';
 import { mergeWith } from './gitHistory';
 import { checkoutWorktree } from '@/engines/git/worktree';
+import { runOnPush } from '@/engines/cicd/runner';
 import { fromLines, parseArgs } from './args';
 import { resolve } from '../path';
 import type { CommandResult, GitServer, ShellState } from '../registry';
@@ -38,7 +39,7 @@ export const remoteSubcommands: Record<string, GitHandler> = {
     }
     return { stdout: fromLines(names.map((r) => r.name)) };
   },
-  push: ({ git, shell, rest }) => {
+  push: ({ git, shell, rest, nowSeconds, runLine }) => {
     const { flags, operands } = parseArgs(['push', ...rest]);
     const remoteName = operands[0] ?? 'origin';
     const branch = operands[1] ?? currentBranch(git) ?? 'main';
@@ -61,7 +62,14 @@ export const remoteSubcommands: Record<string, GitHandler> = {
     if (!result.ok) {
       return { stderr: result.message, code: 1, patch: { git: { ...git, remotes } } };
     }
-    const servers = serversAfterPush(shell, result.remote);
+    let servers = serversAfterPush(shell, result.remote);
+    // 置き場に GitHub Actions があれば、枝が進んだ push でワークフローを動かす（src/engines/cicd/runner.ts）
+    const server = serverOf(shell, known.url);
+    const before = server?.state.refs.get(`refs/heads/${branch}`);
+    const after = result.remote.state.refs.get(`refs/heads/${branch}`);
+    if (servers && server?.forge?.setup.actions && after !== undefined && after !== before) {
+      servers = runOnPush({ url: server.url, servers, branch, sha: after, nowSeconds, runLine });
+    }
     return { stdout: result.message, patch: { git: { ...result.git, remotes }, ...(servers ? { gitServers: servers } : {}) } };
   },
   fetch: ({ git, shell, rest }) => {

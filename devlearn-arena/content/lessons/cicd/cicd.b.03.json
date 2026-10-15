@@ -26,7 +26,9 @@
     "log",
     "compile",
     "stage",
-    "file"
+    "file",
+    "github-actions",
+    "argument"
   ],
   "explain": {
     "what": "{{term:build}}は、書いた{{term:program}}を動かせる形に組み立てること。{{term:test}}は、組み立てた物が期待どおりに動くかを確かめること。{{term:pipeline}}の結果の画面には、{{term:job}}ごとに成功か失敗かが出る。",
@@ -175,208 +177,277 @@
     }
   ],
   "practice": {
-    "mode": "simulation",
-    "purpose": "予約サイトのパイプラインが 2 回続けて失敗した。結果の表とログを読み、それぞれ何の失敗か、どこから直すかを答える。",
-    "environment": "sim-read",
+    "mode": "terminal",
+    "purpose": "予約サイトの流れ（{{term:github-actions}} の `ci`）が、2 回続けて失敗した。`#58 残りの席の数を出す` と `#59 大人の料金を 3500 円にする` の 2 つの push の実行（run）を、`gh run list` と `gh run view` で読み、それぞれどこで止まったか、何を直すかを見つける。最後に直して push し、流れを通す。",
+    "environment": "linux-basic",
     "setup": {
-      "questions": [
-        {
-          "id": "k58",
-          "prompt": "#58 の失敗の種類",
-          "options": [
-            "ビルドの失敗",
-            "テストの失敗",
-            "配布の失敗"
-          ]
-        },
-        {
-          "id": "w58",
-          "prompt": "#58 で、最初に直す場所",
-          "options": [
-            "src/reserve.ts:12",
-            "src/reserve.ts:30",
-            "最後の行"
-          ]
-        },
-        {
-          "id": "k59",
-          "prompt": "#59 の失敗の種類",
-          "options": [
-            "ビルドの失敗",
-            "テストの失敗",
-            "配布の失敗"
-          ]
-        },
-        {
-          "id": "w59",
-          "prompt": "#59 で、失敗した検査の場所",
-          "options": [
-            "test/price.test.ts:8",
-            "src/reserve.ts:12",
-            "最後の行"
-          ]
-        }
+      "hostname": "reserve-dev",
+      "cwd": "/home/learner/reserve",
+      "dirs": [
+        "/home/learner/reserve/src",
+        "/home/learner/reserve/test",
+        "/home/learner/reserve/.github/workflows"
       ],
-      "panels": [
+      "sites": [],
+      "files": {
+        "/home/learner/reserve/package.json": "{\n  \"name\": \"reserve-site\",\n  \"version\": \"1.6.0\",\n  \"private\": true,\n  \"scripts\": {\n    \"build\": \"tsc --noEmit && esbuild src/server.ts --bundle --platform=node --outfile=dist/server.js\",\n    \"test\": \"vitest run\",\n    \"deploy\": \"ssh deploy@reserve.example /srv/reserve/bin/deploy $GITHUB_SHA\"\n  },\n  \"dependencies\": {\n    \"express\": \"^4.21.0\"\n  },\n  \"devDependencies\": {\n    \"esbuild\": \"^0.24.0\",\n    \"typescript\": \"^5.6.0\",\n    \"vitest\": \"^2.1.0\"\n  }\n}\n",
+        "/home/learner/reserve/.gitignore": "node_modules/\ndist/\n",
+        "/home/learner/reserve/src/reserve.ts": "// 予約を受け付ける\nexport function reserve(seatsLeft: number, people: number) {\n  if (people > seatsLeft) return { ok: false, reason: '空きが足りない' };\n  return { ok: true };\n}\n",
+        "/home/learner/reserve/src/price.ts": "// 料金（円）。大人 3000 円\nconst ADULT = 3000;\n\nexport function priceOf(p: { adults: number }) {\n  return p.adults * ADULT;\n}\n",
+        "/home/learner/reserve/test/price.test.ts": "import { expect, test } from 'vitest';\nimport { priceOf } from '../src/price';\n\ntest('料金: 大人 1 人で 3000 円', () => {\n  expect(priceOf({ adults: 1 })).toBe(3000);\n});\n\ntest('料金: 大人 2 人で 6000 円', () => {\n  expect(priceOf({ adults: 2 })).toBe(6000);\n});\n",
+        "/tmp/reserve-58.ts": "// 予約を受け付ける\nexport function reserve(seatsLeft: number, people: number) {\n  if (people > seatsLeft) return { ok: false, reason: '空きが足りない' };\n  return { ok: true };\n}\n\n// 残りの席の数の文。seatsLeft が 0 なら満席\nexport function seatsText(seatsLeft: number) {\n  if (seatsLeft === 0) {\n    return '満席';\n  }\n  const left = seatCount;\n  return `残り ${left} 席`;\n}\n",
+        "/home/learner/reserve/.github/workflows/ci.yml": "# 予約サイトの流れ。組み立て → 検査 → 配る\nname: ci\non:\n  push:\n    branches: [main]\njobs:\n  build:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@v4\n      - run: npm ci\n      - run: npm run build\n  test:\n    needs: build\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@v4\n      - run: npm ci\n      - run: npm test\n  deploy:\n    needs: test\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@v4\n      - run: npm run deploy\n"
+      },
+      "run": [
+        "export __NOW='2026-10-14 16:20'",
+        "export GIT_AUTHOR_NAME=Tanaka GIT_AUTHOR_EMAIL=tanaka@city.example GIT_AUTHOR_DATE=\"2026-10-14 16:18\"",
+        "git init -q",
+        "git remote add origin https://git.city.example/city/reserve.git",
+        "npm install",
+        "git add .",
+        "git commit -q -m '#57 予約の受付を作る'",
+        "git push -q -u origin main",
+        "export __NOW='2026-10-15 08:50'",
+        "export GIT_AUTHOR_DATE=\"2026-10-15 08:48\"",
+        "cp /tmp/reserve-58.ts src/reserve.ts",
+        "git commit -q -am '#58 残りの席の数を出す'",
+        "git push -q",
+        "export __NOW='2026-10-15 09:10'",
+        "export GIT_AUTHOR_DATE=\"2026-10-15 09:08\"",
+        "sed -i 's/const left = seatCount;/const left = seatsLeft;/' src/reserve.ts",
+        "sed -i 's/大人 1 人で 3000 円/大人 1 人で 3500 円/; s/toBe(3000)/toBe(3500)/; s/大人 2 人で 6000 円/大人 2 人で 7000 円/; s/toBe(6000)/toBe(7000)/' test/price.test.ts",
+        "sed -i 's/大人 3000 円/大人 3500 円/' src/price.ts",
+        "git commit -q -am '#59 大人の料金を 3500 円にする'",
+        "git push -q",
+        "rm /tmp/reserve-58.ts",
+        "unset GIT_AUTHOR_NAME GIT_AUTHOR_EMAIL GIT_AUTHOR_DATE",
+        "export __NOW='2026-10-15 09:30'"
+      ],
+      "gitServers": [
         {
-          "kind": "table",
-          "title": "パイプライン #58（予約の受付の変更）",
-          "columns": [
-            "ステージ",
-            "ジョブ",
-            "結果"
-          ],
-          "rows": [
-            [
-              "組み立て",
-              "組み立て",
-              "失敗"
-            ],
-            [
-              "検査",
-              "単体の検査",
-              "動かず"
-            ],
-            [
-              "検査",
-              "書き方の検査",
-              "動かず"
-            ],
-            [
-              "検査",
-              "画面の検査",
-              "動かず"
-            ],
-            [
-              "配布",
-              "配布",
-              "動かず"
-            ]
-          ]
-        },
-        {
-          "kind": "log",
-          "title": "#58 組み立てのログ",
-          "lines": [
-            "$ npm run build",
-            "> reserve-site@1.4.0 build",
-            "> tsc && vite build",
-            "src/reserve.ts(12,5): error TS2304: Cannot find name 'seatCount'.",
-            "src/reserve.ts(30,9): error TS2304: Cannot find name 'seatCount'.",
-            "Found 2 errors in the same file, starting at: src/reserve.ts:12",
-            "Error: Process completed with exit code 2."
-          ]
-        },
-        {
-          "kind": "table",
-          "title": "パイプライン #59（料金の変更）",
-          "columns": [
-            "ステージ",
-            "ジョブ",
-            "結果"
-          ],
-          "rows": [
-            [
-              "組み立て",
-              "組み立て",
-              "成功"
-            ],
-            [
-              "検査",
-              "単体の検査",
-              "失敗"
-            ],
-            [
-              "検査",
-              "書き方の検査",
-              "成功"
-            ],
-            [
-              "検査",
-              "画面の検査",
-              "成功"
-            ],
-            [
-              "配布",
-              "配布",
-              "動かず"
-            ]
-          ]
-        },
-        {
-          "kind": "log",
-          "title": "#59 単体の検査のログ",
-          "lines": [
-            "$ npm test",
-            " PASS  予約: 空きがあれば受け付ける",
-            " PASS  予約: 満席なら断る",
-            " FAIL  料金: 大人 2 人で 7000 円",
-            "       期待: 7000",
-            "       実際: 6000",
-            "       at test/price.test.ts:8",
-            "Tests: 1 failed, 2 passed, 3 total",
-            "Error: Process completed with exit code 1."
-          ]
+          "url": "https://git.city.example/city/reserve.git",
+          "run": [],
+          "forge": {
+            "repo": "city/reserve",
+            "actions": {
+              "firstRun": 57,
+              "installSeconds": 20,
+              "scripts": {
+                "build": {
+                  "kind": "build",
+                  "seconds": 40,
+                  "sources": "src",
+                  "bundle": "dist/server.js",
+                  "log": [
+                    "",
+                    "  dist/server.js  1.4kb",
+                    "",
+                    "⚡ Done in 9ms"
+                  ],
+                  "faults": [
+                    {
+                      "when": [
+                        {
+                          "path": "src/reserve.ts",
+                          "has": "= seatCount;"
+                        }
+                      ],
+                      "code": 2,
+                      "log": [
+                        "src/reserve.ts(12,16): error TS2304: Cannot find name 'seatCount'.",
+                        "",
+                        "Found 1 error in src/reserve.ts:12",
+                        ""
+                      ]
+                    }
+                  ]
+                },
+                "test": {
+                  "kind": "test",
+                  "seconds": 30,
+                  "log": [
+                    " RUN  v2.1.3 /home/runner/work/reserve/reserve",
+                    "",
+                    " ✓ test/price.test.ts (2 tests) 4ms",
+                    "",
+                    " Test Files  1 passed (1)",
+                    "      Tests  2 passed (2)",
+                    "   Start at  10:02:03",
+                    "   Duration  488ms"
+                  ],
+                  "faults": [
+                    {
+                      "when": [
+                        {
+                          "path": "src/price.ts",
+                          "has": "const ADULT = 3000;"
+                        },
+                        {
+                          "path": "test/price.test.ts",
+                          "has": "toBe(3500)"
+                        }
+                      ],
+                      "code": 1,
+                      "log": [
+                        " RUN  v2.1.3 /home/runner/work/reserve/reserve",
+                        "",
+                        " ❯ test/price.test.ts (2 tests | 2 failed) 7ms",
+                        "   × 料金: 大人 1 人で 3500 円 5ms",
+                        "     → expected 3000 to be 3500 // Object.is equality",
+                        "   × 料金: 大人 2 人で 7000 円 1ms",
+                        "     → expected 6000 to be 7000 // Object.is equality",
+                        "",
+                        "⎯⎯⎯⎯⎯⎯⎯ Failed Tests 2 ⎯⎯⎯⎯⎯⎯⎯",
+                        "",
+                        " FAIL  test/price.test.ts > 料金: 大人 1 人で 3500 円",
+                        "AssertionError: expected 3000 to be 3500 // Object.is equality",
+                        "",
+                        "- Expected",
+                        "+ Received",
+                        "",
+                        "- 3500",
+                        "+ 3000",
+                        "",
+                        " ❯ test/price.test.ts:5:34",
+                        "      3| ",
+                        "      4| test('料金: 大人 1 人で 3500 円', () => {",
+                        "      5|   expect(priceOf({ adults: 1 })).toBe(3500);",
+                        "       |                                  ^",
+                        "      6| });",
+                        "      7| ",
+                        "",
+                        " FAIL  test/price.test.ts > 料金: 大人 2 人で 7000 円",
+                        "AssertionError: expected 6000 to be 7000 // Object.is equality",
+                        "",
+                        "- Expected",
+                        "+ Received",
+                        "",
+                        "- 7000",
+                        "+ 6000",
+                        "",
+                        " ❯ test/price.test.ts:9:34",
+                        "      8| test('料金: 大人 2 人で 7000 円', () => {",
+                        "      9|   expect(priceOf({ adults: 2 })).toBe(7000);",
+                        "       |                                  ^",
+                        "     10| });",
+                        "",
+                        " Test Files  1 failed (1)",
+                        "      Tests  2 failed (2)",
+                        "   Start at  09:12:41",
+                        "   Duration  506ms"
+                      ]
+                    }
+                  ]
+                },
+                "deploy": {
+                  "kind": "deploy",
+                  "seconds": 30,
+                  "site": "reserve.example",
+                  "log": [
+                    "deploy: fetching from https://git.city.example/city/reserve.git",
+                    "deploy: npm ci && npm run build",
+                    "deploy: switched /srv/reserve/current -> releases/{version}"
+                  ]
+                }
+              },
+              "sites": [
+                {
+                  "host": "reserve.example",
+                  "chain": [
+                    {
+                      "id": "leaf-reserve.example",
+                      "subject": "reserve.example",
+                      "issuer": "Minato Issuing CA",
+                      "sans": [
+                        "reserve.example"
+                      ],
+                      "notBefore": "2026-01-01",
+                      "notAfter": "2027-01-01",
+                      "ca": false
+                    },
+                    {
+                      "id": "inter",
+                      "subject": "Minato Issuing CA",
+                      "issuer": "Minato Root CA",
+                      "sans": [],
+                      "notBefore": "2024-01-01",
+                      "notAfter": "2030-01-01",
+                      "ca": true
+                    }
+                  ],
+                  "releases": [
+                    {
+                      "version": "1.5.0",
+                      "files": {}
+                    }
+                  ],
+                  "current": "1.5.0",
+                  "routes": {
+                    "/": {
+                      "status": 200,
+                      "body": "<html><body><h1>港の予約</h1><p>版 {version}</p></body></html>"
+                    }
+                  }
+                }
+              ]
+            }
+          }
         }
       ]
     },
     "steps": [
       {
         "id": "build",
-        "purpose": "#58 の結果の表とログを読み、失敗の種類と、最初に直す場所を答える。",
+        "purpose": "`gh run list` で実行の一覧を見て、`#58 残りの席の数を出す` の実行を `gh run view <ID>` で開く。どのジョブで止まったかを見て、`--log-failed` で失敗した手順のログを読み、最初に直す場所を、ログの `Found 1 error in` の後ろの形（ファイル:行）で答える。",
         "check": {
-          "kind": "sim",
-          "expr": "answered k58=ビルドの失敗 w58=src/reserve.ts:12"
+          "kind": "answer",
+          "equals": "src/reserve.ts:12"
         },
-        "afterward": "#58 は組み立ての段で止まった。2 つの誤りは同じ名前 seatCount が無いと言っていて、最初の 12 行目から直す。最後の行は「失敗した」としか言わない。",
+        "afterward": "#58 は `build` のジョブの `npm run build`（`tsc`）で止まり、`test` と `deploy` は動かなかった（`-`）。`error TS2304: Cannot find name 'seatCount'` は「seatCount という名前が無い」。12 行目で、{{term:argument}}の `seatsLeft` と書くつもりが `seatCount` になっていた。最後の `Process completed with exit code 2.` は「失敗した」としか言わない。",
         "hints": [
-          "結果の表で、最初に「失敗」になったジョブを探す。そのジョブのログを、上から読む。",
-          "組み立てのジョブが失敗している。ログの `error` の行は 2 つあるが、どちらも同じ名前が無いと言っている。最初の行から直す。",
-          "「#58 の失敗の種類」は「ビルドの失敗」を押す、「#58 で、最初に直す場所」は「src/reserve.ts:12」を押す。"
+          "`gh run list` の `ID` の列が、実行を開く番号。`STATUS` の `X` は失敗。",
+          "`gh run view <ID>` の `JOBS` で、`X` の付いたジョブと手順を探す。`gh run view <ID> --log-failed` は、失敗した手順のログだけを出す。`error` の行と、その下の `Found 1 error in` の行を読む。",
+          "`gh run list` `gh run view 4200064786` `gh run view 4200064786 --log-failed` と打ち、`src/reserve.ts:12` と答える。"
         ],
         "expectedErrors": [
-          "cicd-read-last"
-        ],
-        "actions": [
-          {
-            "op": "answer",
-            "question": "k58",
-            "value": "ビルドの失敗"
-          },
-          {
-            "op": "answer",
-            "question": "w58",
-            "value": "src/reserve.ts:12"
-          }
+          "cicd-read-last",
+          "gh-run-not-found"
         ]
       },
       {
         "id": "test",
-        "purpose": "#59 の結果の表とログを読み、失敗の種類と、失敗した検査の場所を答える。",
+        "purpose": "次の `#59 大人の料金を 3500 円にする` の実行を開く。今度はどのジョブで止まったかを見て、失敗した検査のログを読み、大人 1 人の料金として、検査が実際に受け取った値（`Received`）を答える。",
         "check": {
-          "kind": "sim",
-          "expr": "answered k59=テストの失敗 w59=test/price.test.ts:8"
+          "kind": "answer",
+          "equals": "3000"
         },
-        "afterward": "#59 は組み立てが成功し、単体の検査で止まった。大人 2 人の料金が、期待の 7000 円でなく 6000 円になっている。料金の計算を見直す。",
+        "afterward": "#59 は `build` が通り、`test` のジョブの `npm test`（`vitest`）で止まった。`expected 3000 to be 3500` は「3500 のはずが 3000 だった」。検査（`test/price.test.ts`）は 3500 円に直したが、料金を計算する `src/price.ts` の `ADULT` が 3000 のまま。",
         "hints": [
-          "#59 は組み立てが成功している。検査のステージで、失敗したジョブを探す。",
-          "単体の検査のログで、`FAIL` の行の下に、期待と実際の値と、検査の場所（`at` の後ろ）が出ている。",
-          "「#59 の失敗の種類」は「テストの失敗」を押す、「#59 で、失敗した検査の場所」は「test/price.test.ts:8」を押す。"
+          "#59 は `build` が `✓`。`X` の付いたジョブが変わっている。",
+          "`--log-failed` の `FAIL` の行の下の `- Expected`（期待した値）と `+ Received`（実際の値）を見比べる。",
+          "`gh run view 4200065903` `gh run view 4200065903 --log-failed` と打ち、`3000` と答える。"
         ],
         "expectedErrors": [
-          "cicd-read-last"
+          "cicd-read-last",
+          "gh-run-not-found"
+        ]
+      },
+      {
+        "id": "fix",
+        "purpose": "`src/price.ts` の大人の料金（`const ADULT = 3000;`）を 3500 にして記録し、push する。`gh run watch` で、新しい実行の全てのジョブが通るのを見届ける。",
+        "check": {
+          "kind": "ci",
+          "expr": "head run=success job:deploy=success"
+        },
+        "afterward": "新しい実行（#60）は `build` → `test` → `deploy` の全てが `✓` になり、`Run ci (…) completed with 'success'` で終わった。失敗した時は、最初に `X` の付いたジョブのログを上から読み、最初の誤りの行を直す。",
+        "hints": [
+          "直すのは検査ではなく、料金を計算する側（`src/price.ts`）。直したら `git commit` と `git push` で送る。push すると、流れは自動で動く。",
+          "`sed -i 's/const ADULT = 3000;/const ADULT = 3500;/' src/price.ts` で直せる。`gh run watch` は、一番新しい実行が終わるまで見て、結果を出す。",
+          "`sed -i 's/const ADULT = 3000;/const ADULT = 3500;/' src/price.ts` `git commit -am '大人の料金を 3500 円に直す'` `git push` `gh run watch` と打つ。"
         ],
-        "actions": [
-          {
-            "op": "answer",
-            "question": "k59",
-            "value": "テストの失敗"
-          },
-          {
-            "op": "answer",
-            "question": "w59",
-            "value": "test/price.test.ts:8"
-          }
+        "expectedErrors": [
+          "cicd-read-last",
+          "git-nothing-to-commit"
         ]
       }
     ]

@@ -1,10 +1,14 @@
 import {
   checksOf, editPull, findRun, latestReviews, markMerged, mergeBlockers, openPull, pullUrl, requestReview, type Forge, type ForgePull,
 } from '@/engines/github/forge';
+import { runList, runLog, runView, runWatch } from '@/engines/cicd/ghRun';
+import type { RunRecord } from '@/engines/cicd/types';
 import { currentBranch } from '@/engines/git/repository';
+import { START_TIME } from '../cron';
 import type { CommandContext, CommandResult, GitServer, ShellState } from '../registry';
 import { createShellState } from '../session';
 import { fromLines, parseArgs } from './args';
+import { parseLocalTime } from './gitShared';
 
 /**
  * gh pr・gh run を、Git のサーバの Pull Request の置き場（forge）に向けて打つ（本物の gh と同じ書き方）。
@@ -178,10 +182,39 @@ export function ghPrForge(ctx: CommandContext, server: GitServer): CommandResult
   return { stderr: `unknown command "${action}" for "gh pr"\n`, code: 1 };
 }
 
+/** gh run list・view・watch: GitHub Actions の実行（置き場に setup.actions がある時。src/engines/cicd） */
+function ghRunActions(ctx: CommandContext, server: GitServer, forge: Forge, runs: readonly RunRecord[]): CommandResult {
+  const parsed = parseArgs(['run', ...ctx.argv.slice(2)], { withValue: ['workflow', 'w', 'branch', 'b', 'limit', 'L', 'job', 'j'] });
+  const [action, id] = parsed.operands;
+  const v = (long: string, short: string): string | undefined => parsed.values.get(long) ?? parsed.values.get(short);
+  const now = (parseLocalTime(ctx.shell.vars.get('__NOW') ?? START_TIME) ?? 0) + Math.floor(ctx.clock.nowMs / 1000);
+  const host = hostOf(server);
+  const repo = forge.setup.repo;
+  if (action === 'list' || action === 'ls') {
+    const limit = Number(v('limit', 'L') ?? '20');
+    const workflow = v('workflow', 'w');
+    const branch = v('branch', 'b');
+    return { stdout: runList(runs, now, { ...(workflow !== undefined ? { workflow } : {}), ...(branch !== undefined ? { branch } : {}), limit: Number.isFinite(limit) ? limit : 20 }) };
+  }
+  if (action !== 'view' && action !== 'watch') return { stderr: `unknown command "${action ?? ''}" for "gh run"\n\nUsage:  gh run <command> [flags]\n\nAvailable commands:\n  list\n  view\n  watch\n`, code: 1 };
+  // ID を書かなければ、一番新しい実行（本物の gh は選ぶ画面を出す）
+  const run = id === undefined ? runs.at(-1) : runs.find((r) => String(r.id) === id);
+  if (!run) return { stderr: id === undefined ? 'found no runs to view\n' : `could not find any workflow run with ID ${id}\n`, code: 1 };
+  const exit = parsed.flags.has('exit-status') && run.conclusion === 'failure' ? 1 : 0;
+  if (action === 'watch') return { stdout: runWatch(run, now, host, repo), code: exit };
+  const job = v('job', 'j');
+  if (parsed.flags.has('log-failed') || parsed.flags.has('log')) {
+    const jobId = job === undefined ? undefined : Number(job);
+    return { stdout: runLog(run, parsed.flags.has('log-failed'), jobId), code: exit };
+  }
+  return { stdout: runView(run, now, host, repo, { verbose: parsed.flags.has('verbose') || parsed.flags.has('v') }), code: exit };
+}
+
 /** gh run view <番号> [--log-failed | --log]: 自動の検査の実行のログ */
 export function ghRunForge(ctx: CommandContext, server: GitServer): CommandResult {
   const forge = server.forge;
   if (!forge) return { stderr: 'この置き場には検査の実行がありません\n', code: 1 };
+  if (forge.runs) return ghRunActions(ctx, server, forge, forge.runs);
   const parsed = parseArgs(['run', ...ctx.argv.slice(2)]);
   const [action, id] = parsed.operands;
   if (action !== 'view') return { stderr: `unknown command "${action ?? ''}" for "gh run"\n`, code: 1 };

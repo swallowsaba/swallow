@@ -274,11 +274,11 @@ lab は複数分野の組み合わせ
 
 | ID | 難易度 | テーマ | レッスン | 到達目標 | 実戦 | 推奨前提 | 関連 | 次に学ぶとよい |
 |---|---|---|---|---|---|---|---|---|
-| cicd.b.01 | 初級 | 考え方 | CI と CD とは | 手作業の配布の危うさと、自動化で何が良くなるかを説明できる | 模 | git.b.02 | devops.b.01, git.b.02 | cicd.b.02, devops.b.01 |
-| cicd.b.02 | 初級 | pipeline | パイプラインの形 | ステージとジョブの流れを読める | 模 | cicd.b.01 | linux.b.05, devops.b.03 | cicd.b.03, cicd.i.01 |
-| cicd.b.03 | 初級 | build/test | ビルドとテスト | 失敗したら止まる理由と、結果の読み方 | 模 | cicd.b.02 | trouble.b.02, docker.i.02 | cicd.b.04 |
-| cicd.b.04 | 初級 | artifact | 成果物（artifact） | 作った物を次の段に渡す仕組みを説明できる | 模 | cicd.b.03 | docker.i.05, ctr.b.05 | cicd.b.05 |
-| cicd.b.05 | 初級 | deploy | デプロイ | 環境へ配る段と、確認の段を置ける | 模 | cicd.b.04 | k8s.i.08, devops.b.03 | cicd.i.02, cicd.i.05, devops.b.03 |
+| cicd.b.01 | 初級 | 考え方 | CI と CD とは | 手作業の配布の危うさと、自動化で何が良くなるかを説明できる | 編 | git.b.02 | devops.b.01, git.b.02 | cicd.b.02, devops.b.01 |
+| cicd.b.02 | 初級 | pipeline | パイプラインの形 | ステージとジョブの流れを読める | 編 | cicd.b.01 | linux.b.05, devops.b.03 | cicd.b.03, cicd.i.01 |
+| cicd.b.03 | 初級 | build/test | ビルドとテスト | 失敗したら止まる理由と、結果の読み方 | 端 | cicd.b.02 | trouble.b.02, docker.i.02 | cicd.b.04 |
+| cicd.b.04 | 初級 | artifact | 成果物（artifact） | 作った物を次の段に渡す仕組みを説明できる | 編 | cicd.b.03 | docker.i.05, ctr.b.05 | cicd.b.05 |
+| cicd.b.05 | 初級 | deploy | デプロイ | 環境へ配る段と、確認の段を置ける | 編 | cicd.b.04 | k8s.i.08, devops.b.03 | cicd.i.02, cicd.i.05, devops.b.03 |
 | cicd.i.01 | 中級 | runner | runner | ジョブを実行する機械の役割と種類を説明できる | 模 | cicd.b.02 | cloud.b.03, docker.b.01 | cicd.i.02 |
 | cicd.i.02 | 中級 | 設定 | 設定ファイルを書く | GitHub Actions と GitLab CI の設定を読み書きできる | 編 | cicd.b.05 | git.i.03, devops.i.01 | cicd.i.03, cicd.i.04, cicd.a.02 |
 | cicd.i.03 | 中級 | 秘密情報 | 秘密情報をパイプラインに渡す | Secrets を使い、ログに出さない設定ができる | 編 | cicd.i.02, sec.b.05 | sec.i.05, k8s.i.02 | sec.i.05, lab.i.02 |

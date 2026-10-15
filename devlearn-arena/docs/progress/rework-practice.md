@@ -504,3 +504,41 @@
 - `rw-sec.b.04` / `rw-sec.b.05` の `-start` / `-done`: 前から端末（ssh-keygen・ssh・git・環境変数）。全ての段が達成になる
 
 検査: `npm run typecheck`・`npm run lint`・`npm run test`（169 ファイル・1849 件。試し台を除く）・`npm run content:check` が通った。
+
+## cicd（2026-10-15）
+
+5 本の実戦が全て本物の道具になった（設定の編集 4 本・端末 1 本）。設定の編集は、本物の書式の GitHub Actions のワークフロー（`.github/workflows/*.yml`）を書き、保存すると `git push` で本当に流れが動き、`gh run view`・`gh run list`・`gh run view --log-failed`・`curl` で結果を読む。端末は `gh run list`・`gh run view`・`--log-failed`・`gh run watch` と `git` で、失敗した流れを読んで直す。
+
+| レッスン | 直す前 | 直した後 | 書く物・打つ物 |
+|---|---|---|---|
+| cicd.b.01 CI と CD とは | sim-order（手順の札の並べ替え） | editor | 手で配っていた時の手順書の並びのまま（`npm run deploy` の後に `npm test`）の `release.yml` を、取ってくる → `npm ci` → `npm run build` → `npm test`（→ `npm run deploy`）の順に直す。誤りの入った #42 を push すると `npm test` で止まり、`本番に配る` は動かない（`-`）。直す前のまま保存すると、本番の `reserve.example` が押せないボタンを出す |
+| cicd.b.02 パイプラインの形 | sim-order（ジョブの札を段に並べる） | editor | 5 つのジョブを `needs` で 1 列につないだ `ci.yml`（16 分）を、`unit`・`lint`・`e2e` の `needs: build`、`deploy` の `needs: [unit, lint, e2e]` に直し、`gh run list` の `ELAPSED` が `12m0s` になる |
+| cicd.b.03 ビルドとテスト | sim-read（表とログを読んで押して答える） | terminal | `gh run list` → `gh run view <ID>`（`X build`・`- test`・`- deploy`）→ `--log-failed` の `error TS2304: Cannot find name 'seatCount'` から `src/reserve.ts:12` を答える → #59 の `vitest` の `- Expected`・`+ Received` から `3000` を答える → `sed -i` で `src/price.ts` を直し `git commit`・`git push`・`gh run watch` で全てのジョブが通る |
+| cicd.b.04 成果物（artifact） | sim-config（保存と受け取りの欄） | editor | 3 つのジョブがそれぞれ組み立て直す `deploy.yml` を、`build` が `actions/upload-artifact` で `dist/` を `app` として上げ、`test` と `deploy` が `actions/download-artifact` で受け取る形にする。上げた時と受け取った時の `SHA256 digest` が同じ。前回（#61）は `test` の後に部品 `date-lib` 2.4.0 が出て、`deploy` が組み立て直した検査していない物が本番に出ていた |
+| cicd.b.05 デプロイ | sim-config（確かめ・前の版・失敗時の欄） | editor | `npm run deploy` の後に `curl -fsS https://reserve.example/health`（`前の版を消す` より前）を足すと、わざと壊した 1.5.0 で `curl: (22) … 500` になり、前の版 1.4.0 が残る → 最後に `if: failure()` の `npm run rollback` を足すと、1.4.0 に戻る（`switched: /srv/reserve/current -> releases/1.4.0`） |
+
+模擬に足した物（単体テストあり。`src/engines/cicd/cicd.test.ts`）:
+
+- GitHub Actions の runner（`src/engines/cicd/runner.ts`）: Git のサーバの置き場（forge）の setup に `actions` があれば、`git push` で枝が進んだ時に、push した記録の `.github/workflows/*.yml` を動かす。`on.push.branches`（`*`・`**`）で絞り、job を `needs` の順に、依存しない job は同じ時刻に並べて動かす（全体の時間は一番長い道すじ）。job ごとに新しい runner の機械を作り、`actions/checkout`・`actions/setup-node`・`actions/upload-artifact`・`actions/download-artifact`（名前が無ければ本物の `Artifact not found for name` で失敗）と、`run` の行を本物のシェル（`set -e`）で動かす。失敗の後は `if: failure()`・`always()` の手順・job だけが動き、依存が成功しなかった job は `skipped`。`${{ github.sha }}` などの式。手順ごとの生のログ（`##[group]Run …`・`shell: /usr/bin/bash -e {0}`・`##[error]Process completed with exit code N.`）
+- ワークフローの読み取り（`src/engines/cicd/workflow.ts`）: 本物の GitHub の言い方の誤り（`You have an error in your yaml syntax on line N`・`(Line: N, Col: M): Unexpected value 'step'`・`Required property is missing: runs-on`・`There's not enough info to determine what you meant…`・`Job 'deploy' depends on unknown job '…'.`・依存の輪）。読めないワークフローは、本物と同じく、どの枝の push でも job の無い失敗の実行になる
+- `gh run list`・`gh run view [<ID>] [--log | --log-failed | --job | -v | --exit-status]`・`gh run watch`（`src/engines/cicd/ghRun.ts`）: 本物の gh 2 の形（`STATUS TITLE WORKFLOW BRANCH EVENT ID ELAPSED AGE` の表・`X main ci · ID`・`JOBS` と失敗した job の手順・`ANNOTATIONS`・`ARTIFACTS`・`job<TAB>手順<TAB>時刻 行` のログ・`This run likely failed because of a workflow file issue.`）。ID を書かずに打つと、本物の選ぶ画面の代わりに一番新しい実行を選ぶ。記録は保存から戻しても残る
+- `npm`（`src/engines/kernel/commands/npm.ts`）: `npm ci`（package-lock.json の版のまま。無ければ本物の `EUSAGE`）・`npm install`（範囲 `^`・`~` に合う、その時刻に出ている一番新しい版を入れ、package-lock.json に書く）・`npm install 名前[@版]`・`npm run`・`npm test`（`> 名前@版 script` の見出し・`Missing script`・入れる前の道具は `sh: 1: tsc: not found`）。scripts が呼ぶ道具（tsc・esbuild・vitest・playwright・rsync・ssh）の振る舞いは setup の模型（`build`・`test`・`deploy`・`rollback`・`prune`。ファイルの中身の条件で失敗する）で決め、模型の無い script は本物と同じくシェルで動かす（`npm_package_version` を渡す）
+- 配る先のサーバ（`src/engines/cicd/project.ts`）: 置いた版と今の版を持ち、今の版の中身（束ねた `dist/server.js`）の条件で `https://名前/` の道の答えが替わる（500・日付のずれ）。runner と端末の機械の両方の `curl` から届く（`src/engines/kernel/commands/httpLocal.ts`）
+- 達成条件 `ci`（`src/engines/cicd/check.ts`）: `head`・`run=`・`job:`・`step:`・`has:`・`order:`・`needs:`・`elapsed<=`・`artifact:`・`got:`・`deployed:`・`release:`・`kept:`（`docs/content-spec.md` 2.4）
+- 時刻の書き方 `formatUtcTime`・`formatLocalTime`（`parseLocalTime` の逆。模型の層で Date を使わない）
+- 撮影の台本（`tools/scenarios/rework.mjs`）: 設定の編集の実戦で、`WRONG=1` なら初めの中身のまま保存した所を `-wrong` に、`STEPS=1` なら手順ごとの途中を `-s1`… に撮る
+
+内容: エラーの案内（`content/errors/cicd.json`）を本物の出力に当てた（`disabled>予約を確定する`（壊れた版が本番に出た）・`Missing script`・`This run likely failed because of a workflow file issue`・`ELAPSED` が 12 分を超える・`depends on unknown job`・`could not find any workflow run with ID`・`nothing to commit`・`Artifact not found for name`・`No files were found with the provided path`・`Cannot find module '…dist/server.js'`・`✓ main deploy`（確かめずに成功）・`removed: …/1.4.0`・`no release before`）。画面の欄にしか無かった答えの案内の形を消した。用語集に `workflow`（ワークフロー）・`npm`・`github-actions`（GitHub Actions）を足し、`npm` を用語にしたので、ctr.b.04 と docker.i.01 の地の文の `npm install` を `` で囲んだ。`docs/lessons/cicd.md` の 5 本の実戦の設計、`docs/curriculum.md` の記号（模 → 編・端）、`docs/content-spec.md` 2.4（`ci` の式と setup の `actions`）、`docs/architecture.md` 3 章（`cicd/`）、目録を直した。
+
+画面の確かめ（`tools/scenarios/rework.mjs`、1920×1080。設定の編集は最後のヒントの中身を保存し、端末は最後のヒントのコマンドを本物のキー入力で打った）:
+
+- `rw-cicd.b.01-start` / `-wrong` / `-s1` / `-done`: 原則 1（本物の書式の `release.yml`・`git push` の送った範囲・`gh run view` の `JOBS` と手順の `✓`・`X`・`-`・`curl` の本番のページ）・原則 5（目的の `.github/workflows/release.yml`・`npm run deploy`・`npm test`・`reserve.example`・#42 が、編集欄のパスと中身と確かめた結果に同じ名前で出る）を満たす。直す前のまま保存すると、本番が `<button disabled>予約を確定する</button>` を返し、エラーの案内 `cicd-order-wrong` が出る。2 つの段が達成になる
+- `rw-cicd.b.02-start` / `-wrong` / `-s1` / `-done`: 原則 1（`needs:`・`gh run list` の `ELAPSED` の `16m0s` と `12m0s`・`gh run view` の 5 つのジョブ）・原則 5（目的の `build`・`unit`・`lint`・`e2e`・`deploy`・`ci.yml` が中身と結果に出る）を満たす。そのまま保存すると 16 分の流れに `cicd-deps` の案内が出る。2 つの段が達成になる
+- `rw-cicd.b.03-start` / `-s1` / `-s2` / `-done`: 原則 1（`gh run list` の表・`gh run view` の `X build`・`- test`・`--log-failed` の `tsc` と `vitest` の本物の形のログ・`git commit`・`git push`・`gh run watch` の `completed with 'success'`）・原則 5（目的の `#58 残りの席の数を出す`・`#59 大人の料金を 3500 円にする`・`src/price.ts`・`ADULT` が一覧の `TITLE` とログに出る）を満たす。3 つの段が全て達成になる
+- `rw-cicd.b.04-start` / `-wrong` / `-s1` / `-done`: 原則 1（`actions/upload-artifact`・`download-artifact` の `name`・`path`・`ARTIFACTS` の `app`・3 つの同じ `SHA256 digest` の行・`curl` の `{"date":"2026-10-20"}`）・原則 5（目的の `build`・`test`・`deploy`・`dist/`・`app`・`date-lib`・`reserve.example` が中身と結果に出る）を満たす。2 つの段が達成になる
+- `rw-cicd.b.05-start` / `-wrong` / `-s1` / `-done`: 原則 1（`curl -fsS`・`if: failure()`・`npm run rollback`・`gh run view` の `X 配った後に確かめる`・`- 前の版を消す`・`✓ 確かめて失敗したら、前の版に戻す`・ログの `curl: (22) The requested URL returned error: 500` と `switched`）・原則 5（目的の `reserve.example`・`/health`・1.4.0・1.5.0・`npm run prune` が中身と結果に出る）を満たす。確かめずに保存すると `cicd-no-verify` の案内が出る。2 つの段が達成になる
+- 原則 3・4 は画面の操作の決まりなので、設定の編集と端末だけの cicd の分野には当たらない
+- 気付いた事（今回は直さない）: 確かめた結果の欄は高さが限られ、`gh run view` の後半はスクロールして読む。`--log-failed` の行は本物と同じく長く、端末の幅で折り返す
+- 一時の試し台 `src/__tests__/zz-try.test.ts`（コミットしない物）を、調べるのに上書きしてから消した
+
+検査: `npm run typecheck`・`npm run lint`・`npm run test`（169 ファイル・1863 件。試し台を除く）・`npm run content:check` が通った。

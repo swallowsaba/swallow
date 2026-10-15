@@ -2823,7 +2823,7 @@
       "title": "CI と CD とは",
       "goal": "手作業の配布の危うさと、自動化で何が良くなるかを説明できる",
       "practice": [
-        "simulation"
+        "editor"
       ],
       "prerequisites": [
         "git.b.02"
@@ -2845,7 +2845,7 @@
       "title": "パイプラインの形",
       "goal": "ステージとジョブの流れを読める",
       "practice": [
-        "simulation"
+        "editor"
       ],
       "prerequisites": [
         "cicd.b.01"
@@ -2867,7 +2867,7 @@
       "title": "ビルドとテスト",
       "goal": "失敗したら止まる理由と、結果の読み方",
       "practice": [
-        "simulation"
+        "terminal"
       ],
       "prerequisites": [
         "cicd.b.02"
@@ -2888,7 +2888,7 @@
       "title": "成果物（artifact）",
       "goal": "作った物を次の段に渡す仕組みを説明できる",
       "practice": [
-        "simulation"
+        "editor"
       ],
       "prerequisites": [
         "cicd.b.03"
@@ -2909,7 +2909,7 @@
       "title": "デプロイ",
       "goal": "環境へ配る段と、確認の段を置ける",
       "practice": [
-        "simulation"
+        "editor"
       ],
       "prerequisites": [
         "cicd.b.04"

@@ -2,7 +2,9 @@ import { portOwner, servedAt } from '@/engines/container/container';
 import { ingressAnswer } from '@/engines/k8s/ingress';
 import { addCookie, cookieHeader, jarText, parseJar, parseSetCookie, type Cookie } from '@/engines/http/cookies';
 import { sessionAnswer } from '@/engines/http/session';
-import { curlError, pageOf, parseUrl, request, routeFor, type HttpEnv, type HttpOutcome, type HttpVersion, type LocalListener, type LocalRequest, type Route } from '@/engines/http/http';
+import { siteOf } from '@/engines/cicd/project';
+import { DEMO_ROOT } from '@/engines/tls/tls';
+import { curlError, pageOf, parseUrl, request, routeFor, type Site, type HttpEnv, type HttpOutcome, type HttpVersion, type LocalListener, type LocalRequest, type Route } from '@/engines/http/http';
 import { normalize } from '../path';
 import { allows } from '../perm';
 import type { CommandResult, ShellState } from '../registry';
@@ -109,6 +111,17 @@ function plainAnswer(s: Service, req: LocalRequest): Route {
   return p === '/' || p === '/index.html' ? { status: s.status ?? 200, body: s.body ?? `<html><body>${s.name}</body></html>` } : { status: 404, body: pageOf(404) };
 }
 
+/** GitHub Actions で配る先のサーバ（Git のサーバの置き場の setup.actions.sites。今の版の中身で答える。src/engines/cicd） */
+function deployedSites(shell: ShellState): Site[] {
+  return [...(shell.gitServers?.values() ?? [])].flatMap((g) => {
+    const setups = g.forge?.setup.actions?.sites ?? [];
+    return setups.flatMap((s) => {
+      const state = g.forge?.sites?.find((x) => x.host === s.host);
+      return state ? [siteOf(s, state)] : [];
+    });
+  });
+}
+
 /**
  * 手元（この機械）から見た HTTP の世界（src/engines/http の HttpEnv）。
  * localhost と自分の名前（と /etc/hosts で手元を指す名前）には、動いているサービス（systemctl）と、公開したコンテナのポート（docker run -p）が応える。
@@ -116,9 +129,10 @@ function plainAnswer(s: Service, req: LocalRequest): Route {
  */
 export function httpEnvOf(shell: ShellState): HttpEnv {
   const web = shell.web;
+  const deployed = deployedSites(shell);
   const env: HttpEnv = {
-    sites: web?.sites ?? [],
-    roots: web?.roots ?? [],
+    sites: [...(web?.sites ?? []), ...deployed],
+    roots: web?.roots ?? (deployed.length > 0 ? [DEMO_ROOT] : []),
     today: web?.today ?? '2026-10-03',
     localNames: ['localhost', '127.0.0.1', ...(web?.hostname ? [web.hostname] : []), ...hostsLocalNames(shell)],
     remote: (host, port) => clusterRemote(shell, host, port),

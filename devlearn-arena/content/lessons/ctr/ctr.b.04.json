@@ -186,7 +186,7 @@
     ]
   },
   "result": {
-    "success": "変わる回数の少ない物（package.json と npm install）を先に、よく変わるコードを後に置き、コードの直しでは `npm install` の層を使い回せた。",
+    "success": "変わる回数の少ない物（package.json と `npm install`）を先に、よく変わるコードを後に置き、コードの直しでは `npm install` の層を使い回せた。",
     "partial": "ヒントを使って並べ替えられた。次は、なぜ上の段を変えると下の段が全て作り直しになるのかを、`--> Using cache` の出方で説明してみよう。",
     "retry": "まだ、コードを直すたびに `RUN npm install` をやり直している。確かめた結果の、最後の作り直しの `STEP` の行を見比べよう。"
   },

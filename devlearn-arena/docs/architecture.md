@@ -58,7 +58,7 @@ devlearn-arena/
       http/                  HTTP と Web サーバ
       tls/                   証明書の連鎖と検証
       sim/                   画面で操作する模擬（つなぐ・並べる・置く・読み取って答える。docs/decisions.md D-16・D-19）
-      cicd/                  （将来）パイプラインの専用の模擬。初回は github のワークフローの評価と sim の型で作る（D-16・D-19）
+      cicd/                  GitHub Actions の実行（push で .github/workflows を動かす runner・npm の scripts と配る先の模型・gh run の出力。D-19）
       monitor/               （将来）ログ・メトリクス・トレースの専用の模擬。初回は sim の型で作る（D-16）
       db/                    sql.js の包み
     content/                 コンテンツの読み込みと検証

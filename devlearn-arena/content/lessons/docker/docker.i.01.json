@@ -50,7 +50,7 @@
     {
       "id": "q2",
       "kind": "predict",
-      "prompt": "RUN npm install と書いた。この命令はいつ実行されるか。",
+      "prompt": "`RUN npm install` と書いた。この命令はいつ実行されるか。",
       "choices": [
         { "id": "a", "text": "イメージを作る時に 1 度だけ。結果がイメージの層に残る", "correct": true },
         { "id": "b", "text": "コンテナを動かすたびに毎回", "correct": false, "whyNot": "動かすたびに実行するのは CMD。RUN の結果は、作る時にイメージに焼き込まれる。" },
@@ -97,7 +97,7 @@
         "afterward": "作った hello:1.0 から動かしたコンテナが、`hello: listening on :3000` と出して待ち受け、8080 番に答えた。作り方は Dockerfile に残っているので、ほかの機械でも同じイメージを作れる。",
         "hints": [
           "FROM の下に、場所を決める WORKDIR、写す COPY、部品を入れる RUN、動かす時の CMD を順に書く。",
-          "`WORKDIR /app` `COPY package.json .` `RUN npm install` `COPY . .` `CMD [\"node\", \"server.js\"]` の 5 行を、FROM の下に足す。npm install は package.json を写した後でないと失敗する。",
+          "`WORKDIR /app` `COPY package.json .` `RUN npm install` `COPY . .` `CMD [\"node\", \"server.js\"]` の 5 行を、FROM の下に足す。`npm install` は package.json を写した後でないと失敗する。",
           "`# 窓口のアプリ（server.js）のイメージを作る\nFROM node:20-alpine\nWORKDIR /app\nCOPY package.json .\nRUN npm install\nCOPY . .\nCMD [\"node\", \"server.js\"]` と保存する。"
         ],
         "expectedErrors": ["docker-build-parse", "docker-build-copy", "docker-build-run", "docker-app-down"]

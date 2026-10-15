@@ -179,6 +179,19 @@ export function parseLocalTime(text: string): number | null {
   return daysFromCivil(n(1), n(2), n(3)) * 86400 + n(4) * 3600 + n(5) * 60 + n(6) - JST_OFFSET;
 }
 
+/** UNIX 秒を、UTC の「2026-10-15T01:02:03」にする */
+export function formatUtcTime(seconds: number): string {
+  const s = Math.floor(seconds);
+  const days = Math.floor(s / 86400);
+  const rest = s - days * 86400;
+  const { y, m, d } = civilFromDays(days);
+  const p = (n: number, w = 2): string => String(n).padStart(w, '0');
+  return `${p(y, 4)}-${p(m)}-${p(d)}T${p(Math.floor(rest / 3600))}:${p(Math.floor((rest % 3600) / 60))}:${p(rest % 60)}`;
+}
+
+/** UNIX 秒を、日本時間の「2026-10-15 10:02:03」にする（parseLocalTime の逆） */
+export const formatLocalTime = (seconds: number): string => formatUtcTime(seconds + JST_OFFSET).replace('T', ' ');
+
 /** 本物の git log の日付の形（Sat Oct 3 09:00:00 2026 +0900）。時刻は記録の時差で出す */
 export function formatGitDate(timestamp: number, timezone: string): string {
   const sign = timezone.startsWith('-') ? -1 : 1;

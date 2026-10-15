@@ -1,4 +1,7 @@
 import { z } from 'zod';
+import { actionsSetupSchema } from '@/engines/cicd/setup';
+import { siteStateOf } from '@/engines/cicd/project';
+import type { RunRecord, SiteState } from '@/engines/cicd/types';
 import { materialize } from '@/engines/git/repository';
 import type { GitState } from '@/engines/git/types';
 
@@ -37,6 +40,8 @@ export const forgeSetupSchema = z.object({
   }).strict()).default([]),
   /** 枝の保護（取り込みに要る承認の数と、必須の検査） */
   protect: z.object({ branch: z.string().min(1), approvals: z.number().int().min(0), checks: z.array(z.string()) }).strict().optional(),
+  /** GitHub Actions（push で .github/workflows のワークフローを動かす。src/engines/cicd） */
+  actions: actionsSetupSchema.optional(),
 }).strict();
 
 export type ForgeSetup = z.infer<typeof forgeSetupSchema>;
@@ -65,9 +70,17 @@ export interface ForgePull {
 export interface Forge {
   setup: ForgeSetup;
   pulls: ForgePull[];
+  /** GitHub Actions の実行の記録（古い順。setup.actions がある時だけ） */
+  runs?: RunRecord[];
+  /** 配る先のサーバの今（setup.actions.sites の順） */
+  sites?: SiteState[];
 }
 
-export const createForge = (setup: ForgeSetup): Forge => ({ setup, pulls: [] });
+export const createForge = (setup: ForgeSetup): Forge => ({
+  setup,
+  pulls: [],
+  ...(setup.actions ? { runs: [], sites: setup.actions.sites.map(siteStateOf) } : {}),
+});
 
 export interface CheckResult {
   name: string;

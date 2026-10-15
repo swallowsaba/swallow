@@ -92,6 +92,32 @@
       "why": "壊れた版のまま原因を探すより、先に前の版へ戻せば、使う人の困る時間が短くなる。戻すには、前の版を残しておく。",
       "related": ["deploy"],
       "lessons": ["cicd.b.05", "k8s.i.08"]
+    },
+    {
+      "id": "workflow",
+      "word": "ワークフロー",
+      "plain": "GitHub Actions で、自動で動かす流れを書いたファイル。リポジトリの `.github/workflows/` に YAML で置き、いつ動かすか（`on:`）と、ジョブ（`jobs:`）と手順（`steps:`）を書く。",
+      "why": "流れがファイルとしてリポジトリに入るので、手順書と違って毎回同じ順に動き、変えた跡も履歴に残る。",
+      "related": ["ci", "job", "yaml", "github"],
+      "lessons": ["cicd.b.01", "cicd.b.02", "cicd.b.04", "cicd.b.05"]
+    },
+    {
+      "id": "npm",
+      "word": "npm",
+      "reading": "エヌピーエム",
+      "plain": "Node.js の部品（パッケージ）を入れ、package.json の `scripts` に書いた作業（組み立て・検査・配布）を動かす道具。`npm ci` は package-lock.json の版のまま入れ、`npm run 名前` で作業を動かす。",
+      "why": "道具の名前や細かい引数を覚えなくても、誰でも同じ `npm run build` で同じ作業ができる。自動の流れも、この名前で作業を呼ぶ。",
+      "related": ["package", "dependency", "build"],
+      "lessons": ["cicd.b.01", "cicd.b.03", "cicd.b.04"]
+    },
+    {
+      "id": "github-actions",
+      "word": "GitHub Actions",
+      "reading": "ギットハブ アクションズ",
+      "plain": "GitHub の、自動の流れ（CI/CD）を動かす仕組み。リポジトリに push すると、`.github/workflows/` のワークフローに書いた手順を、GitHub が用意した機械（runner）で動かす。",
+      "why": "組み立て・検査・配布を、変更のたびに同じ順で自動で動かせる。結果は `gh run list`・`gh run view` や画面で、誰でも見られる。",
+      "related": ["workflow", "ci", "github"],
+      "lessons": ["cicd.b.01", "cicd.b.03"]
     }
   ]
 }
