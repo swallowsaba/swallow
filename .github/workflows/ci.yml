@@ -76,6 +76,14 @@ jobs:
           set -o pipefail
           npm run build 2>&1 | tee /tmp/build.log
 
+      # git が持つ全てのファイル・ビルドの結果（dist/）・コミットの文に、鍵やトークンが無いか（docs/testing-strategy.md 9 章）
+      - name: 秘密情報の検査
+        id: secrets
+        continue-on-error: true
+        run: |
+          set -o pipefail
+          npm run secrets 2>&1 | tee /tmp/secrets.log
+
       # 失敗したものの本文を Summary ページに出す。掘らなくても読める
       - name: 結果をまとめる
         if: always()
@@ -98,11 +106,13 @@ jobs:
           report "Lint"           "${{ steps.lint.outcome }}"      /tmp/lint.log
           report "ユニットテスト" "${{ steps.test.outcome }}"      /tmp/test.log
           report "ビルド"         "${{ steps.build.outcome }}"     /tmp/build.log
+          report "秘密情報の検査" "${{ steps.secrets.outcome }}"   /tmp/secrets.log
 
           if [ "${{ steps.typecheck.outcome }}" != "success" ] \
             || [ "${{ steps.lint.outcome }}" != "success" ] \
             || [ "${{ steps.test.outcome }}" != "success" ] \
-            || [ "${{ steps.build.outcome }}" != "success" ]; then
+            || [ "${{ steps.build.outcome }}" != "success" ] \
+            || [ "${{ steps.secrets.outcome }}" != "success" ]; then
             exit 1
           fi
 
@@ -127,6 +137,9 @@ jobs:
       - name: E2E
         id: e2e
         continue-on-error: true
+        # 公開と同じサブディレクトリで配信する（docs/deployment.md 3 章・docs/testing-strategy.md 9 章）
+        env:
+          E2E_BASE: /swallow/devlearn-arena/
         run: |
           set -o pipefail
           npm run e2e 2>&1 | tee /tmp/e2e.log

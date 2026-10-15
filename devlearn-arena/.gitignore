@@ -9,3 +9,5 @@ shots/
 .shoot.lock
 .work/
 review/
+.env*
+!.env.example
