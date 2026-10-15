@@ -7,9 +7,23 @@
       "meaning": "全ての物を分けたが、まだ 3 台が同じに動かない。",
       "causes": [
         "設定を箱に入れていない（機械ごとに違う設定のまま動く）。",
-        "カーネルを箱に入れた。コンテナはカーネルを持たず、動かす機械のカーネルを共有する。"
+        "ライブラリを機械に任せた（機械ごとに版が違うまま動く）。"
       ],
       "hint": "アプリ・ライブラリ・設定は箱に入れる。カーネルは機械の物を使う。",
+      "terms": [
+        "container",
+        "kernel"
+      ]
+    },
+    {
+      "id": "ctr-kernel-box",
+      "match": "カーネルは箱（イメージ）に入らない",
+      "meaning": "カーネルを箱（イメージ）に入れようとして、断られた。コンテナはカーネルを持たず、動かす機械のカーネルを共有する。",
+      "causes": [
+        "OS の全てを箱に入れると考えた（それは仮想マシンの作り）。",
+        "カーネルも機械ごとに違うので、そろえたいと考えた。"
+      ],
+      "hint": "カーネルは「それぞれの機械に任せる」へ置こう。箱に入れるのは、アプリ・ライブラリ・設定。",
       "terms": [
         "container",
         "kernel"
@@ -31,42 +45,15 @@
       ]
     },
     {
-      "id": "ctr-container-only",
-      "match": "答えが合っていない",
-      "meaning": "全ての欄を選んだが、作り直すと、まだ設定が 17 時に戻る。",
-      "causes": [
-        "コンテナだけを直した。作り直しの元のイメージは古いまま。",
-        "作り直すたびに中で直す方法を選んだ。直すまでの間と、直し忘れた時に戻る。"
-      ],
-      "hint": "作り直しても残すには、元の設計図を直し、新しいイメージからコンテナを作る。",
-      "terms": [
-        "image",
-        "container"
-      ]
-    },
-    {
-      "id": "ctr-layer-order",
-      "match": "答えが合っていない",
-      "meaning": "全ての層を並べたが、コードを直すたびに、変わっていない層まで作り直している。",
-      "causes": [
-        "変わりやすいアプリのコードを、下の層に置いた（変えた層より上は、全て作り直しになる）。",
-        "設定とライブラリの順が逆。変わる回数の少ない物ほど下に置く。"
-      ],
-      "hint": "変わる回数の少ない順に、下から積む: 土台 → ライブラリ → 設定 → コード。",
-      "terms": [
-        "layer"
-      ]
-    },
-    {
       "id": "ctr-pull-not-found",
-      "match": "manifest unknown|repository does not exist",
-      "meaning": "レジストリに、その名前やタグのイメージが無い、と言われた。",
+      "match": "manifest unknown|name unknown: repository name not known to registry|authentication required",
+      "meaning": "置き場（レジストリ）に、その名前やタグのイメージが無い、または見せてもらえない、と言われた。",
       "causes": [
-        "タグの綴りの誤り（1.2 を v1.2 と書いた）。",
-        "イメージの名前の打ち間違い（web を wbe と書いた）。",
-        "認証が要るレジストリに、ログインしていない（does not exist or may require login と言われる）。"
+        "タグの綴りの誤り（`1.2` を `v1.2` と書いた）。名前はあるがタグが無い時は `manifest unknown`。",
+        "名前の打ち間違い（`web` を `wbe` と書いた）。名前ごと無い時は `name unknown`。",
+        "置き場にログインしていない（`authentication required`）。"
       ],
-      "hint": "レジストリにあるタグの一覧と、1 字ずつ見比べる。",
+      "hint": "`podman search --list-tags registry.city.example/shop/web` で、置き場にある名前とタグを並べ、1 字ずつ見比べよう。",
       "terms": [
         "registry",
         "image-tag"
@@ -75,14 +62,15 @@
     {
       "id": "ctr-latest",
       "match": "答えが合っていない",
-      "meaning": "選んだ答えが、表と本番で起きたことに合っていない。",
+      "meaning": "答えたタグは、今 `shop` で動いている中身の版ではない。",
       "causes": [
-        "タグを省くと「最新の安定版」になると考えた。実際は latest という名札の付いた物を取るだけ。",
-        "latest がいつ、どの版に付け替えられたかを、表で読んでいない。"
+        "`latest` をそのまま答えた。`latest` は名札の 1 つで、版の番号ではない。どの版と同じ中身かを答える。",
+        "タグを省くと「最新の安定版」になると考えた（`1.2` と答えた）。実際は `latest` の名札の付いた物を取るだけ。"
       ],
-      "hint": "タグの表で、latest の行が指している版を見る。本番は版を書いて固定する。",
+      "hint": "`podman pull` でタグを 1 つずつ取り、`podman images` で `latest` と同じ `IMAGE ID` のタグを探そう。",
       "terms": [
-        "image-tag"
+        "image-tag",
+        "image"
       ]
     },
     {
@@ -102,56 +90,172 @@
     {
       "id": "ctr-net-wrong",
       "match": "答えが合っていない",
-      "meaning": "全ての欄を選んだが、web から DB に届かないか、外から届いてはいけない物に届く。",
+      "meaning": "答えたコンテナは、`web` の中から見た `localhost` ではない。",
       "causes": [
-        "localhost で DB を指した。コンテナの中の localhost は、そのコンテナ自身。",
-        "IP のアドレスで DB を指した。コンテナを作り直すとアドレスが変わる。",
-        "DB を外に公開したままにした。"
+        "`db` と答えた。`localhost` は DB のコンテナではなく、つなごうとしたコンテナ自身を指す。",
+        "機械（`reserve-01`）と答えた。コンテナの中の `localhost` は、機械ではなく、そのコンテナの中。"
       ],
-      "hint": "同じ網にいれば、相手のコンテナの名前で届く。外に公開するのは web だけ。",
+      "hint": "`podman logs web` の `ECONNREFUSED 127.0.0.1:5432` を打ったのは `web` の中のアプリ。その `127.0.0.1` は誰か、を答えよう。",
       "terms": [
-        "port-publish",
+        "container",
+        "network"
+      ]
+    },
+    {
+      "id": "ctr-net-localhost",
+      "match": "connect ECONNREFUSED 127\\.0\\.0\\.1:5432",
+      "output": true,
+      "meaning": "`web` の中のアプリが、`localhost`（`127.0.0.1`）の 5432 番につなごうとして断られた。コンテナの中の `localhost` は、そのコンテナ自身。",
+      "causes": [
+        "`DATABASE_URL` の DB の場所を、`localhost` のまま作り直した。",
+        "DB は別のコンテナ `db` にいる。`web` の中に DB はいない。"
+      ],
+      "hint": "DB の場所は、相手のコンテナの名前で書く（`postgres://postgres@db:5432/reserve`）。",
+      "terms": [
+        "container",
+        "env-var"
+      ]
+    },
+    {
+      "id": "ctr-net-notfound",
+      "match": "getaddrinfo ENOTFOUND",
+      "output": true,
+      "meaning": "`web` の中で、DB のコンテナの名前が引けなかった。名前で届くのは、同じ自作の網にいる、動いているコンテナだけ。",
+      "causes": [
+        "`db` がまだ `front-net` に入っていない（`back-net` だけにいる）。",
+        "`web` を `--network front-net` を付けずに作り、既定の網 `podman` に入れた（既定の網では名前を引けない）。",
+        "名前の打ち間違い。"
+      ],
+      "hint": "`podman network inspect front-net` の `containers` に、`web` と `db` の両方がいるかを見よう。",
+      "terms": [
+        "network",
+        "container"
+      ]
+    },
+    {
+      "id": "ctr-net-timeout",
+      "match": "connect ETIMEDOUT",
+      "output": true,
+      "meaning": "`web` の中で、アドレスで指した DB に届かなかった。",
+      "causes": [
+        "別の網のアドレスを書いた。網が違えば、アドレスでも届かない。",
+        "アドレスで指した。コンテナを作り直すとアドレスは変わる。"
+      ],
+      "hint": "DB はアドレスではなく、同じ網にいるコンテナの名前 `db` で指そう。",
+      "terms": [
+        "network",
+        "container"
+      ]
+    },
+    {
+      "id": "ctr-no-network",
+      "match": "unable to find network with name or ID",
+      "meaning": "指した網が無い。",
+      "causes": [
+        "網の名前の打ち間違い（`front-net` を `frontnet` と書いた）。",
+        "まだ作っていない網を書いた。"
+      ],
+      "hint": "`podman network ls` で、ある網の名前を確かめよう。",
+      "terms": [
         "network"
       ]
     },
     {
       "id": "ctr-volume-path",
       "match": "答えが合っていない",
-      "meaning": "作り直したら、試しに入れたデータが消えた。",
+      "meaning": "答えた場所は、DB がデータを書いている場所ではない。",
       "causes": [
-        "ボリュームを付けていない（データはコンテナの中の書き込み層にあり、作り直すと消える）。",
-        "付けた場所の誤り。DB がデータを書く場所と、ボリュームを付けた場所が違う。"
+        "ボリュームを付けた場所（`/data`）を答えた。付けた場所と、DB が書く場所は別。",
+        "ボリュームの手元の置き場所（`.local/share/containers/storage/volumes/…`）を答えた。聞いているのはコンテナの中の場所。"
       ],
-      "hint": "DB のコンテナの情報で、データを書く場所を見る。ボリュームは、その場所に付ける。",
+      "hint": "`podman exec db psql -U postgres -d reserve -c 'SHOW data_directory'` の答えの行を、そのまま答えよう。",
       "terms": [
-        "volume"
+        "volume",
+        "db"
       ]
     },
     {
-      "id": "ctr-split-order",
-      "match": "置き場所が無い",
-      "meaning": "web を画面だけにしようとしたが、API と DB の置き場所が無い、と言われた。",
+      "id": "ctr-psql-db",
+      "match": "FATAL:  (database|role) \".+\" does not exist",
+      "meaning": "DB のコンテナの中の psql が、指した利用者か DB の名前を知らないと言った。",
       "causes": [
-        "分ける順が逆。先に api と db のコンテナを用意してから、web を画面だけにする。",
-        "api か db の、どちらかのコンテナをまだ使わない設定のまま。"
+        "`-d` の DB の名前の打ち間違い（予約の DB は `reserve`）。",
+        "`-U` の利用者の名前の打ち間違い（`postgres`）。"
       ],
-      "hint": "api に API を、db に DB を入れてから、web を画面だけにする。",
+      "hint": "`podman exec db psql -U postgres -d reserve -c '文'` の形で打とう。",
       "terms": [
+        "db"
+      ]
+    },
+    {
+      "id": "ctr-split-localhost",
+      "match": "connect ECONNREFUSED 127\\.0\\.0\\.1:(3000|5432)",
+      "output": true,
+      "meaning": "分けたサービスが、`localhost` の相手につなごうとして断られた。分けた後の `localhost` は、そのコンテナ自身。",
+      "causes": [
+        "`API_URL` が `http://localhost:3000` のまま（画面のコンテナの中に API はいない）。",
+        "`DATABASE_URL` が `localhost:5432` のまま（API のコンテナの中に DB はいない）。"
+      ],
+      "hint": "相手は、同じ構成のサービスの名前で指そう（`http://api:3000`・`postgres://postgres@db:5432/reserve`）。",
+      "terms": [
+        "container",
+        "env-var"
+      ]
+    },
+    {
+      "id": "ctr-split-name",
+      "match": "getaddrinfo ENOTFOUND",
+      "output": true,
+      "meaning": "分けたサービスが、相手の名前を引けなかった。",
+      "causes": [
+        "相手のサービスの名前の打ち間違い（`api` を `API` や `web` と書いた）。",
+        "相手のサービスを書いていない、または相手が先に止まっていた（`depends_on:` で先に動かす）。"
+      ],
+      "hint": "`services:` の下に書いた名前（`web`・`api`・`db`）を、そのまま場所に書こう。",
+      "terms": [
+        "service",
         "container"
       ]
     },
     {
-      "id": "ctr-connect-wrong",
-      "match": "答えが合っていない",
-      "meaning": "3 つに分けたが、コンテナどうしがつながっていない。",
+      "id": "ctr-split-env",
+      "match": "Error: missing environment variable (API_URL|DATABASE_URL)",
+      "output": true,
+      "meaning": "分けたサービスが、相手の場所を受け取る環境変数が無いので止まった。",
       "causes": [
-        "localhost で、別のコンテナを指した。localhost は自分のコンテナ。",
-        "相手のコンテナの名前を取り違えた（web は自分。API は api、DB は db）。"
+        "`web` に `API_URL` を書いていない。",
+        "`api` に `DATABASE_URL` を書いていない、または `environment:` の字下げがずれた。"
       ],
-      "hint": "画面からは api:3000、API からは db:5432 のように、相手のコンテナの名前で指す。",
+      "hint": "`environment:` を `image:` と同じ深さに置き、その下に `名前: 値` を書こう。",
       "terms": [
-        "container",
-        "network"
+        "env-var"
+      ]
+    },
+    {
+      "id": "ctr-compose-file",
+      "match": "yaml: line \\d+|services must be a mapping",
+      "meaning": "compose.yaml を YAML として読めなかったか、`services:` の形が違う。",
+      "causes": [
+        "字下げのずれ（`api:` が `web:` と同じ深さになっていない）。",
+        "`:` の後の空白が抜けた。"
+      ],
+      "hint": "サービスの名前は `services:` の 2 字下げ、その項目（`image:` など）は 4 字下げにそろえよう。",
+      "terms": [
+        "yaml",
+        "compose"
+      ]
+    },
+    {
+      "id": "ctr-compose-key",
+      "match": "additional properties '[^']+' not allowed",
+      "meaning": "サービスに、Compose が知らない項目を書いた。",
+      "causes": [
+        "項目の名前の打ち間違い（`enviroment`・`depend_on` など）。",
+        "項目を 1 つ深く・浅く書いた。"
+      ],
+      "hint": "サービスに書ける項目は `image:`・`ports:`・`environment:`・`depends_on:` など。綴りを見直そう。",
+      "terms": [
+        "compose"
       ]
     },
     {
@@ -195,6 +299,100 @@
       "hint": "docker stats --no-stream report の MEM USAGE / LIMIT の、/ の右を読む。",
       "terms": [
         "cgroups"
+      ]
+    },
+    {
+      "id": "ctr-name-in-use",
+      "match": "the container name \".+\" is already in use",
+      "meaning": "同じ名前のコンテナが、まだ在る。1 つの名前は 1 つのコンテナにだけ付く。",
+      "causes": [
+        "前のコンテナを消さずに、同じ名前で作ろうとした。",
+        "`podman rm` が `as it is running` で断られ、消せていなかった。"
+      ],
+      "hint": "`podman ps -a` でその名前のコンテナが残っていないかを見て、`podman rm -f 名前` で消してから作ろう。",
+      "terms": [
+        "container",
+        "podman"
+      ]
+    },
+    {
+      "id": "ctr-running-rm",
+      "match": "as it is running - running or paused containers cannot be removed without force",
+      "meaning": "動いているコンテナは、そのままでは消せない。",
+      "causes": [
+        "`-f` を付けずに `podman rm` を打った。",
+        "止めてから消す手順の、止める方（`podman stop`）を飛ばした。"
+      ],
+      "hint": "`podman rm -f 名前`（止めてから消す）か、`podman stop 名前` の後に `podman rm 名前` を打とう。",
+      "terms": [
+        "container"
+      ]
+    },
+    {
+      "id": "ctr-port-in-use",
+      "match": "rootlessport listen tcp [0-9.]+:\\d+: bind: address already in use",
+      "meaning": "公開しようとした手元のポートを、ほかのコンテナが使っている。1 つの手元のポートは 1 つのコンテナにだけつなげる。",
+      "causes": [
+        "前のコンテナが、まだ同じ手元のポートで動いている。",
+        "別の名前で作ったコンテナが、そのポートを使っている。"
+      ],
+      "hint": "`podman ps` の `PORTS` の欄を見て、そのポートを使っているコンテナを消してから作ろう。",
+      "terms": [
+        "port-publish"
+      ]
+    },
+    {
+      "id": "ctr-layer-order",
+      "match": "STEP \\d+/\\d+: RUN npm install\\n(?!--> Using cache)(?![\\s\\S]*RUN npm install)",
+      "output": true,
+      "meaning": "コード（server.js）を 1 行直しただけなのに、最後の作り直しで `RUN npm install` をやり直した（`--> Using cache` が出ていない）。",
+      "causes": [
+        "`COPY . .` のように、server.js も含めて全てを写す命令が `RUN npm install` より上にある。写した中身が変わると、その段から下は全て作り直しになる。",
+        "`RUN npm install` を、`COPY server.js .` より下に置いた。"
+      ],
+      "hint": "`npm install` が読むのは `package.json` だけ。`COPY package.json .` → `RUN npm install` → `COPY server.js .` の順にすると、コードの直しは一番上の層だけで済む。",
+      "terms": [
+        "layer",
+        "containerfile"
+      ]
+    },
+    {
+      "id": "ctr-build-run",
+      "match": "Error: building at STEP \"RUN [^\"]*\": while running runtime: exit status",
+      "meaning": "`RUN` の命令が失敗して、イメージを作るのが止まった。上の行に、命令が出した誤りがある。",
+      "causes": [
+        "`RUN npm install` を `COPY package.json .` より上に書いた（`npm error enoent Could not read package.json`）。",
+        "命令を打ち間違えた（`npm instal` は `Unknown command`）。"
+      ],
+      "hint": "`npm install` は、写した `package.json` を読む。`COPY package.json .` の下に `RUN npm install` を置こう。",
+      "terms": [
+        "containerfile"
+      ]
+    },
+    {
+      "id": "ctr-build-copy",
+      "match": "checking on sources under \"[^\"]*\": copier: stat: \"[^\"]*\": no such file or directory",
+      "meaning": "`COPY` で写そうとしたファイルが、作る元のディレクトリ（`~/reserve`）に無い。",
+      "causes": [
+        "ファイルの名前を打ち間違えた（`server.js` を `serve.js` など）。",
+        "`~/reserve` の外にあるファイルを写そうとした。"
+      ],
+      "hint": "`ls ~/reserve` で、写せるファイルの名前を確かめよう。",
+      "terms": [
+        "containerfile"
+      ]
+    },
+    {
+      "id": "ctr-build-parse",
+      "match": "Error: parsing containerfile:",
+      "meaning": "Containerfile に、知らない命令の行がある。",
+      "causes": [
+        "命令の名前を打ち間違えた（`COPPY`・`FORM` など）。",
+        "命令の名前の前に空白や記号が入った。"
+      ],
+      "hint": "行の頭は `FROM`・`WORKDIR`・`COPY`・`RUN`・`CMD` のどれか。誤りの文の `line` の番号の行を見直そう。",
+      "terms": [
+        "containerfile"
       ]
     }
   ]

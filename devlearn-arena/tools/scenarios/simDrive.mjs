@@ -81,7 +81,7 @@ export async function perform(page, action, setup, midShot) {
 }
 
 /**
- * わざと誤る操作（エラーの小窓を撮る）。つなぐは引けない線（forbid）、置くは入らない枠、並べるは順の違う並び、答えるは違う答え
+ * わざと誤る操作（エラーの小窓を撮る）。つなぐは引けない線（forbid）、置くは入らない枠、並べるは順の違う並び、答えるは違う答え（操作の並びを返す）
  */
 export function wrongAction(setup, step) {
   const first = step.actions?.[0];
@@ -105,8 +105,9 @@ export function wrongAction(setup, step) {
   }
   if (first?.op === 'arrange') return { op: 'arrange', stages: [...first.stages].reverse() };
   if (first?.op === 'answer') {
+    // 手順の問いを全て答える（1 つ目だけ違う答え）。全てに答えた時に、合っていない事が示される
     const q = setup.questions.find((x) => x.id === first.question);
-    return { op: 'answer', question: first.question, value: q.options.find((o) => o !== first.value) };
+    return [{ op: 'answer', question: first.question, value: q.options.find((o) => o !== first.value) }, ...step.actions.slice(1)];
   }
   return null;
 }

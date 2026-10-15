@@ -26,6 +26,18 @@ export interface BuildOutput {
   /** 失敗の文（ERROR: failed to solve: …） */
   error?: string;
   image?: Image;
+  /** 命令ごとの記録（道具ごとの出し方で出す。podman は Buildah の STEP n/m の形） */
+  trace: BuildTrace;
+}
+
+/** 命令ごとの記録 */
+export interface BuildTrace {
+  /** FROM の名前（土台の名前） */
+  base?: string;
+  /** FROM の後の命令（CMD・ENV などの、ファイルを変えない命令も）。cached は前に作った物を使い回したか。out は RUN の出力 */
+  steps: { raw: string; cached: boolean; out: string[]; id: string }[];
+  /** 失敗（parse: 書き方の誤り・no-from: FROM が無い・no-base: 土台が取れない・copy: 写す物が無い・run: RUN の失敗） */
+  failure?: { kind: 'parse' | 'no-from' | 'no-base' | 'copy' | 'run'; raw?: string; detail: string };
 }
 
 const INSTRUCTIONS = ['FROM', 'WORKDIR', 'COPY', 'ADD', 'RUN', 'CMD', 'ENTRYPOINT', 'ENV', 'EXPOSE', 'USER', 'LABEL', 'ARG'];
@@ -172,20 +184,24 @@ const pad = (text: string, time: string): string => `${text.padEnd(72)} ${time}`
 export function build(host: ContainerHost, input: BuildInput): BuildOutput {
   const head = (n: number, total: number, done: boolean, secs: number): string => `[+] Building ${secs.toFixed(1)}s (${String(n)}/${String(total)})${done ? ' FINISHED' : ''}`.padEnd(72) + ' docker:default';
   if (input.dockerfile === null) {
-    return { ok: false, host, stdout: [head(0, 1, false, 0), pad(' => ERROR [internal] load build definition from Dockerfile', '0.0s')], error: 'failed to read dockerfile: open Dockerfile: no such file or directory' };
+    return { ok: false, host, stdout: [head(0, 1, false, 0), pad(' => ERROR [internal] load build definition from Dockerfile', '0.0s')], error: 'failed to read dockerfile: open Dockerfile: no such file or directory', trace: { steps: [] } };
   }
   const lines = parse(input.dockerfile);
   const def = pad(' => [internal] load build definition from Dockerfile', '0.0s');
-  if (typeof lines === 'string') return { ok: false, host, stdout: [head(1, 1, false, 0), def], error: lines };
+  if (typeof lines === 'string') return { ok: false, host, stdout: [head(1, 1, false, 0), def], error: lines, trace: { steps: [], failure: { kind: 'parse', detail: lines } } };
   const first = lines.find((l) => l.op !== 'ARG');
-  if (first?.op !== 'FROM') return { ok: false, host, stdout: [head(1, 1, false, 0), def], error: 'no build stage in current context' };
+  if (first?.op !== 'FROM') return { ok: false, host, stdout: [head(1, 1, false, 0), def], error: 'no build stage in current context', trace: { steps: [], failure: { kind: 'no-from', detail: 'no FROM statement found' } } };
 
-  const baseRef = normalizeRef(first.args.split(/\s+/)[0] ?? '');
+  // 置き場の住所まで書いた名前（docker.io/library/node:20-alpine）も、同じイメージを指す
+  const baseRef = normalizeRef((first.args.split(/\s+/)[0] ?? '').replace(/^docker\.io\/library\//, '').replace(/^docker\.io\//, ''));
   const base = host.images.find((i) => i.ref === baseRef) ?? fromRegistry(baseRef);
   const qualified = baseRef.includes('/') ? `docker.io/${baseRef}` : `docker.io/library/${baseRef}`;
   const meta = pad(` => [internal] load metadata for ${qualified}`, '0.4s');
   if (!base) {
-    return { ok: false, host, stdout: [head(1, 2, false, 0.4), def, pad(` => ERROR [internal] load metadata for ${qualified}`, '0.4s')], error: `${baseRef}: failed to resolve source metadata for ${qualified}: ${qualified}: not found` };
+    return {
+      ok: false, host, stdout: [head(1, 2, false, 0.4), def, pad(` => ERROR [internal] load metadata for ${qualified}`, '0.4s')], error: `${baseRef}: failed to resolve source metadata for ${qualified}: ${qualified}: not found`,
+      trace: { base: baseRef, steps: [], failure: { kind: 'no-base', detail: baseRef } },
+    };
   }
 
   const steps = lines.filter((l) => STEP_KINDS.has(l.op));
@@ -193,10 +209,14 @@ export function build(host: ContainerHost, input: BuildInput): BuildOutput {
   const out = [def, meta, pad(` => [1/${String(total)}] FROM ${qualified}`, '0.0s')];
   const cache = new Set(host.buildCache ?? []);
   const added: string[] = [];
+  // 命令ごとの記録。ファイルを変えない命令は、それより前に作り直した段が無ければ使い回した物と数える
+  const trace: BuildTrace = { base: baseRef, steps: [] };
+  let rebuilt = false;
   let key = keyOf(`FROM ${base.id}`);
   const stage: Stage = { files: { ...(base.files ?? {}) }, workdir: base.workdir ?? '/', env: { ...(base.env ?? {}) }, cmd: base.cmd ?? [], installed: false };
   const alpine = /alpine/.test(base.ref) || base.tools === true;
   let n = 0;
+  let runOut: string[] = [];
   let secs = 0.4;
   let size = Number.parseFloat(base.size);
   for (const l of lines.slice(lines.indexOf(first) + 1)) {
@@ -204,19 +224,18 @@ export function build(host: ContainerHost, input: BuildInput): BuildOutput {
       case 'ENV': {
         const m = /^(\S+?)(?:=|\s+)(.*)$/.exec(l.args);
         if (m?.[1]) stage.env[m[1]] = (m[2] ?? '').replace(/^"(.*)"$/, '$1');
-        continue;
+        break;
       }
       case 'CMD':
       case 'ENTRYPOINT':
         stage.cmd = commandOf(l.args);
-        continue;
-      case 'EXPOSE':
-      case 'USER':
-      case 'LABEL':
-      case 'ARG':
-        continue;
+        break;
       default:
         break;
+    }
+    if (!STEP_KINDS.has(l.op)) {
+      trace.steps.push({ raw: l.raw, cached: !rebuilt, out: [], id: hexOf(keyOf(`${String(key)}|${l.raw}`), 64) });
+      continue;
     }
     n += 1;
     const label = `[${String(n + 1)}/${String(total)}] ${l.raw}`;
@@ -235,7 +254,8 @@ export function build(host: ContainerHost, input: BuildInput): BuildOutput {
         if (hits.length === 0) {
           out.push(pad(` => ERROR ${label}`, '0.0s'));
           const ref = `${hexOf(key, 25)}::${hexOf(key + 1, 25)}`;
-          return { ok: false, host, stdout: [head(n + 2, total + 2, false, secs), ...out], error: `failed to compute cache key: failed to calculate checksum of ref ${ref}: "/${rel}": not found` };
+          trace.failure = { kind: 'copy', raw: l.raw, detail: rel };
+          return { ok: false, host, stdout: [head(n + 2, total + 2, false, secs), ...out], error: `failed to compute cache key: failed to calculate checksum of ref ${ref}: "/${rel}": not found`, trace };
         }
         const intoDir = dest.endsWith('/') || dest === '.' || srcs.length > 1 || rel === '' || hits.length > 1 || hits[0]?.[0] !== rel;
         for (const [, content, name] of hits) copied.push([intoDir ? join(join(stage.workdir, dest), name) : join(stage.workdir, dest), content]);
@@ -246,23 +266,31 @@ export function build(host: ContainerHost, input: BuildInput): BuildOutput {
       key = keyOf(`${String(key)}|${l.raw}`);
       const cached = cache.has(String(key));
       let failed: { out: string[]; code: number } | null = null;
+      const said: string[] = [];
       for (const part of l.args.split('&&')) {
         const r = runOne(stage, part, alpine);
         if (r.code !== 0) {
           failed = { out: r.out, code: r.code };
           break;
         }
+        said.push(...r.out);
       }
       if (failed) {
         out.push(pad(` => ERROR ${label}`, '0.5s'));
         out.push('------', ` > ${label}:`, ...failed.out.map((x) => `0.512 ${x}`), '------');
-        return { ok: false, host, stdout: [head(n + 2, total + 2, false, secs + 0.5), ...out], error: `process "/bin/sh -c ${l.args}" did not complete successfully: exit code: ${String(failed.code)}` };
+        trace.steps.push({ raw: l.raw, cached: false, out: [...said, ...failed.out], id: hexOf(key, 64) });
+        trace.failure = { kind: 'run', raw: l.raw, detail: String(failed.code) };
+        return { ok: false, host, stdout: [head(n + 2, total + 2, false, secs + 0.5), ...out], error: `process "/bin/sh -c ${l.args}" did not complete successfully: exit code: ${String(failed.code)}`, trace };
       }
+      runOut = cached ? [] : said;
       if (!cached) secs += 2.1;
       if (stage.installed) size += 4.9;
     }
     const cached = cache.has(String(key));
     if (!cached) added.push(String(key));
+    if (!cached) rebuilt = true;
+    trace.steps.push({ raw: l.raw, cached, out: runOut, id: hexOf(key, 64) });
+    runOut = [];
     out.push(pad(` => ${cached ? 'CACHED ' : ''}${label}`, cached || l.op !== 'RUN' ? '0.0s' : '2.1s'));
   }
   out.push(pad(' => exporting to image', '0.1s'));
@@ -274,11 +302,12 @@ export function build(host: ContainerHost, input: BuildInput): BuildOutput {
   const made = (ref: string): Image => ({
     ref, id, size: `${String(Math.round(size * 10) / 10)}MB`, startLog: [], files: stage.files, cmd: stage.cmd, workdir: stage.workdir, env: stage.env,
     ...(base.tools ? { tools: true } : {}), command: argv === '' ? (base.command ?? 'node') : argv, procs: [{ command: argv === '' ? 'node' : argv, memory: 41.6 }],
+    local: true, built: trace.steps.map((x) => ({ step: x.raw, cached: x.cached })),
   });
   const refs = tags.length > 0 ? tags : ['<none>:<none>'];
   const images = [...host.images.filter((i) => !refs.includes(i.ref)), ...refs.map(made)];
   const next: ContainerHost = { ...host, images, buildCache: [...(host.buildCache ?? []), ...added] };
   const steps2 = out.filter((x) => !x.startsWith(' => => ')).length;
-  return { ok: true, host: next, stdout: [head(steps2, steps2, true, secs), ...out], image: made(refs[0] ?? '<none>:<none>') };
+  return { ok: true, host: next, stdout: [head(steps2, steps2, true, secs), ...out], image: made(refs[0] ?? '<none>:<none>'), trace };
 }
 

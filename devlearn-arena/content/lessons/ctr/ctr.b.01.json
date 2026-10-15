@@ -178,7 +178,10 @@
         },
         {
           "id": "kernel",
-          "label": "カーネル（OS の中心）"
+          "label": "カーネル（OS の中心）",
+          "refuse": {
+            "box": "カーネルは箱（イメージ）に入らない。箱は、動かす機械のカーネルを共有して動く"
+          }
         }
       ],
       "panels": [
@@ -220,14 +223,6 @@
         },
         {
           "kind": "log",
-          "title": "カーネルについて",
-          "when": "in kernel=box",
-          "lines": [
-            "コンテナの箱にカーネルは入れない。箱は、動かす機械のカーネルを共有して動く"
-          ]
-        },
-        {
-          "kind": "log",
           "title": "同じ箱を 3 台で動かした結果",
           "when": "in app=box lib=box conf=box kernel=host",
           "lines": [
@@ -252,7 +247,8 @@
           "「予約のアプリ 2.0」を「箱（イメージ）」へドラッグして入れる、「ライブラリ date-lib 2.3」を「箱（イメージ）」へドラッグして入れる。"
         ],
         "expectedErrors": [
-          "ctr-conf-outside"
+          "ctr-conf-outside",
+          "ctr-kernel-box"
         ],
         "actions": [
           {
@@ -281,7 +277,8 @@
           "「設定（予約の時間帯）」を「箱（イメージ）」へドラッグして入れる、「カーネル（OS の中心）」を「それぞれの機械に任せる」へドラッグして入れる。"
         ],
         "expectedErrors": [
-          "ctr-conf-outside"
+          "ctr-conf-outside",
+          "ctr-kernel-box"
         ],
         "actions": [
           {

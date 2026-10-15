@@ -169,7 +169,7 @@ export default async function domain(page, shot) {
       if (step.id === (process.env.FIRST_STEP ?? lesson.practice.steps[0].id)) {
         const bad = wrongAction(setup, step);
         if (bad) {
-          await perform(page, bad, setup);
+          for (const a of [bad].flat()) await perform(page, a, setup);
           console.log('エラー', await page.getAttribute('[data-testid="practice-error"]', 'data-guide'), await text(page, '[data-testid="practice-error"]'));
           await shot(`${tag}-error`);
           await page.click('[data-testid="practice-reset"]');

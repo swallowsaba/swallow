@@ -405,3 +405,50 @@
 - 残した事: `sim-taken`（`content/errors/found.json`）は今の模擬では出ないが、mon.b.01 が想定エラーに書いているので、mon の分野で直す
 
 検査: `npm run typecheck`・`npm run lint`・`npm run test`（167 ファイル・1821 件。試し台を除く）・`npm run content:check` が通った。
+
+## ctr（2026-10-15）
+
+10 本の実戦のうち、本物の道具がある 7 本が端末（ctr.b.03・b.05・i.02・i.03・i.04）と設定の編集（ctr.b.04・i.05）になった。コンテナの概念を Docker だけに結び付けないように、ctr.i.02 のほかは、機械に入っているコンテナの道具を Podman にした（setup の `containerCli: podman`。Docker の分野は docker のまま）。打つコマンドが無い概念の 3 本（ctr.b.01 箱に入れる物の仕分け・ctr.b.02 VM とコンテナの比べ・ctr.i.01 道具からカーネルまでの頼む順）は、画面の操作（置く・読み取って答える・つなぐ）のまま。
+
+| レッスン | 直す前 | 直した後 | 打つ物・書く物・直した所 |
+|---|---|---|---|
+| ctr.b.03 イメージとコンテナ | sim-config（直し方の欄） | terminal | `podman exec web sed -i 's/17:00/19:00/' /app/server.js`・`podman restart web`・`curl`・`podman diff web`（`C /app/server.js`）→ `podman rm -f web`・`podman run` で同じイメージから作り直すと 17:00 に戻る → `~/reserve/server.js` を直して `podman build -t reserve:1.1 reserve`、作り直しても 19:00 で `podman diff` は空 |
+| ctr.b.04 レイヤ | sim-order（層の札の並べ替え） | editor | `~/reserve/Containerfile` を `COPY package.json .` → `RUN npm install` → `COPY server.js .` の順に直す。保存すると `podman build -t reserve:1.1 .`、`server.js` を 1 行直して `podman build -t reserve:1.2 .` が走り、`RUN npm install` に `--> Using cache` が出る |
+| ctr.b.05 レジストリ | sim-config（版と指定の欄） | terminal | 本番の機械 `shop-prod` で `podman ps` の `IMAGE`（`registry.city.example/shop/web:latest`）・`podman search --list-tags registry.city.example/shop/web`・`podman pull …:1.3-rc1` と `podman images` の `IMAGE ID` から、`latest` が `1.3-rc1` と同じ中身だと答える → `podman rm -f shop`・`podman run -d --name shop -p 8080:3000 registry.city.example/shop/web:1.2` で「予約を確定する」が戻る |
+| ctr.i.03 コンテナのネットワーク | sim-config（網・宛先・公開の欄） | terminal | `podman logs web` の `ECONNREFUSED 127.0.0.1:5432` から `localhost` が指したコンテナ（`web`）を答える → `podman network connect front-net db`・`web` を `--network front-net -p 8080:3000 -e DATABASE_URL=postgres://postgres@db:5432/reserve` で作り直す → `db` を `-p` 無しで作り直し、`podman port db` が空 |
+| ctr.i.04 コンテナとデータ | sim-config（ボリュームと場所の欄） | terminal | `/data` に付けた `db-data` が空で、DB が書くのは別の場所だと `podman inspect db` の `Mounts`・`psql -c 'SHOW data_directory'`・`podman exec db ls` で調べて答える → `-v db-data:/var/lib/postgresql/data` で作り直して予約を `INSERT` → もう一度作り直し、`podman logs db` に `Skipping initialization`、4 件が残る |
+| ctr.i.05 複数コンテナで 1 つのサービス | sim-config（入れる物と宛先の欄） | editor | 画面・API・DB を 1 つに詰めた `city-reserve-all:1.0` の `compose.yaml` を、`web`（`city-reserve-ui:1.0`）・`api`（`city-reserve-api:1.0`）・`db`（`city-db:1.0`）に分ける。`localhost` のままだと `api` は止まり、`web` は 502 を答える → 相手をサービスの名前（`http://api:3000`・`db:5432`）で指し、`depends_on` を書く。保存すると `podman compose up -d`・`ps -a`・`logs`・`curl` が走る |
+| ctr.b.01 コンテナとは | sim-assign | sim-assign（そのまま） | 「カーネル（OS の中心）」に、箱（イメージ）へ入らない理由（`refuse`）を書いた。前は、カーネルを箱に入れても枠は何も示さず、全てを置き終えるまで誤りが見えなかった。今は、ドラッグすると枠が赤く光り「カーネルは箱（イメージ）に入らない。箱は、動かす機械のカーネルを共有して動く」が出る（エラーの案内 `ctr-kernel-box`） |
+| ctr.b.02・ctr.i.01 | sim-read・sim-connect | そのまま | b.02 は表を押すと拡大して読める。i.01 の引けない線（kubelet → Docker など）は前から理由が出る |
+| ctr.i.02 隔離の仕組み | terminal | terminal（そのまま） | 本物の docker・ps |
+
+模擬に足した物・直した物（単体テストあり。`src/engines/docker/podman.test.ts`・`cli.test.ts`）:
+
+- Podman の CLI（`src/engines/docker/podman.ts`）: Docker と同じコンテナの模型の上で、本物の podman の出し方で答える。本体（デーモン）を持たない（`podman ps` の機械からは、コンテナごとに `conmon` が親で、中の root は自分の利用者に見える）・置き場の住所まで書いた名前（`docker.io/library/…`。手元で作った住所の無い物は `localhost/`）・`podman build` は Buildah の形（`STEP n/m`・`--> Using cache`・`COMMIT`。設計図は `Containerfile` を先に探す）・既定の網は `podman`（一覧は名前の順）・ボリュームは利用者の家の下・誤りは本物の文（`Error: …`、多くは 125）・`compose` は外の compose の道具に任せる旨を先に言う。`podman` の機械には `docker` が無い（`command not found`）
+- `podman search --list-tags`（置き場のタグを文字の順に並べる。ログインしていなければ `authentication required`、タグ付きの名前は断る）・`rmi` に名前を並べる（同じ中身に名前が残る間は `Untagged` だけ）・同じ中身が手元にある `pull` は `skipped: already exists`。自分たちの置き場に無い名前は `name unknown: repository name not known to registry`、無いタグは `manifest unknown`。置き場に置いた物は、取った機械では作った物（`localhost/`・`2 seconds ago`）として扱わない
+- `docker diff`・`podman diff`（書き込みの層の `A`・`C`）・`docker port`・`podman port`、`exec` の `sed`（`-i` は書き込みの層に書き、動かし直すと直した物で動く）
+- `docker build`・`podman build` の命令ごとの記録（使い回したか・`RUN` の出力。`FROM docker.io/library/…` も同じイメージを指す）
+- psql の `SHOW 設定`（`data_directory`・`port`）。ボリュームを付けた空の場所は `ls` で何も出さない（前は `No such file or directory` と言っていた）
+- 役割ごとに分けたサービスのイメージ: 1 つに詰めた `city-reserve-all:1.0`・API だけの `city-reserve-api:1.0`（DB の場所を `DATABASE_URL`）・画面だけの `city-reserve-ui:1.0`（API の場所を `API_URL`）。画面は頼まれるたびに API に聞き、届けば API の答え（JSON）の値で画面を作り、届かなければ 502 と理由（`ECONNREFUSED`・`ENOTFOUND`）を答える（API を後から直しても、次の頼みで届く）
+- 達成条件 `container` に `body:コンテナ~文字列`・`log:コンテナ~文字列`・`changed:コンテナ`・`published:コンテナ[=ポート]`・`cached:名前:タグ=語` を足し、setup の `containerCli` とともに `docs/content-spec.md` 2.4 に書いた
+- 画面: 等幅の書体の続き字（`-->` を 1 字の矢印に描く）を止めた（`src/ui/global.css`）。撮影で、設定の編集の確かめた結果と左の文の `--> Using cache` が `⟶ Using cache` と描かれ、本物の出力と違う字に見えた（端末は前から `-->`）
+- 撮影の台本（`tools/scenarios/simDrive.mjs` の `wrongAction`）: 読み取って答える実戦の誤りは、手順の問いを全て答える（1 つ目だけ違う答え）。前は 1 つだけ答えて、何も示されない画面を撮っていた
+- 読み取って答える（`src/engines/sim/sim.ts` の `stepSettled`・`wrongAnswers`、`SimViews.tsx`）: 手順の式に出てくる問いに全て答えた所で、合っているかを知らせ、違う答えの問いを赤い縁で示す。前は、ほかの手順の問いまで全て答えるまで何も示さず、撮影で、1 つ目の手順を誤って答えても画面が変わらなかった（原則 4。`SimPractice.test.tsx`）
+
+内容: エラーの案内（`content/errors/ctr.json`）を本物の出力に当てた（`the container name … is already in use`・`as it is running`・`rootlessport … address already in use`・`--> Using cache` の無い `RUN npm install`・`while running runtime`・`copier: stat`・`parsing containerfile`・`manifest unknown`/`name unknown`/`authentication required`・`ECONNREFUSED 127.0.0.1`・`getaddrinfo ENOTFOUND`・`ETIMEDOUT`・`unable to find network`・`FATAL:  database … does not exist`・`missing environment variable`・`yaml: line`・`additional properties`）。画面の欄にしか無かった `ctr-container-only`・`ctr-split-order`・`ctr-connect-wrong` を消した。用語集に `containerfile`・`container-layer`（書き込みの層）を足した。`docs/lessons/ctr.md` の 7 本の実戦の設計、`docs/curriculum.md` の記号（模 → 端・編）、目録を直した。
+
+画面の確かめ（`tools/scenarios/rework.mjs`、1920×1080。端末は最後のヒントのコマンドを本物のキー入力で打ち、設定の編集は最後のヒントの中身を保存した。画面の操作は本物のマウスのドラッグ）:
+
+- `rw-ctr.b.03-start` / `-done`: 原則 1（`podman exec`・`sed -i`・`podman restart`・`curl` の 19:00 と 17:00・`podman diff` の `C /app/server.js`・`podman build` の `STEP n/m` と `--> Using cache`・`Successfully tagged localhost/reserve:1.1`）・原則 5（目的の `web`・`reserve:1.0`・`~/reserve`・`server.js`・`Containerfile` が端末に同じ名前で出る）を満たす。3 つの段が全て達成になる
+- `rw-ctr.b.04-start` / `-done`: 原則 1（Containerfile の命令・確かめた結果の `podman build` の `STEP`・`RUN npm install` の出力・`--> Using cache`）・原則 5（目的の `server.js`・`RUN npm install`・`reserve:1.1`・`reserve:1.2` が設定と結果に出る）を満たす。直す前の撮影で `-->` が矢印の 1 字に描かれていたので直し、撮り直して `-->` のまま出ることを確かめた
+- `rw-ctr.b.05-start` / `-done`: 原則 1（`podman search --list-tags` のタグの表・`podman pull` の `skipped: already exists`・`podman images` の同じ `IMAGE ID` の 2 行・`curl` の「予約を確定する」）・原則 5（目的の `shop-prod` がプロンプトに、`shop`・`registry.city.example/shop/web`・`1.2` が端末に同じ名前で出る）を満たす。2 つの段が達成になる
+- `rw-ctr.i.03-start` / `-done`: 原則 1（`podman logs web` の `ECONNREFUSED 127.0.0.1:5432`・`podman network connect`・`curl` の予約の数・`podman port db` が空・`podman ps` の PORTS）・原則 5（目的の `reserve-01`・`web`・`db`・`front-net`・`back-net`・`DATABASE_URL` が端末に同じ名前で出る）を満たす。3 つの段が全て達成になる
+- `rw-ctr.i.04-start` / `-done`: 原則 1（`podman inspect` の `Mounts`・`SHOW data_directory` の表・`SELECT` の 3 件と 4 件・`podman logs db` の `Skipping initialization`）・原則 5（目的の `db`・`city-db:1.0`・`db-data`・`/data` が端末に同じ名前で出る）を満たす。3 つの段が全て達成になる
+- `rw-ctr.i.05-start` / `-done`: 原則 1（compose.yaml の `services:`・`environment:`・`depends_on:`・`podman compose up -d` の `Running 3/3`・`ps -a`・`logs`・`curl` の予約の数）・原則 5（目的の `web`・`api`・`db`・`city-reserve-ui:1.0`・`city-reserve-api:1.0`・`API_URL`・`DATABASE_URL` が設定と結果に出る）を満たす。2 つの段が達成になる
+- `rw-ctr.b.01-start` / `-wrong` / `-drag` / `-done`: 原則 3（札を持ち上げて枠へ運ぶ）・原則 4（「カーネル（OS の中心）」を「箱（イメージ）」へ入れると、枠が赤く光り理由が 1 行出て、札は置き場に残る。入れた札は枠の中に移る）・原則 5（目的の「箱」「機械」と表の 3 台が、枠と札の名前に出る）を満たす。2 つの段が達成になる
+- `rw-ctr.b.02-start` / `-wrong` / `-done`: 原則 3（表を押すと拡大する。答えは押して選ぶ）・原則 4（1 つ目の手順の 2 問に答え、違う答えの問いが赤い縁で示され、エラーの案内 `ctr-vm-mix` が出る）・原則 5（目的の仮想マシン・コンテナが表と答えに出る）を満たす。2 つの段が達成になる
+- `rw-ctr.i.01-start` / `-wrong` / `-drag` / `-done`: 原則 3（部品から部品へドラッグして線を引く）・原則 4（kubelet → Docker は線が引けず、赤い印の理由「kubelet は CRI で話す…」が出る。つないだ線に光の粒が流れる）・原則 5（目的の Docker・kubelet・Podman・containerd・runc・カーネルが部品の名前に出る）を満たす。3 つの段が達成になる
+- `rw-ctr.i.02-start` / `-done`: 前から端末（docker・ps）。3 つの段が全て達成になる
+- 気付いた事（今回は直さない）: 目的の文の最後が用語の印（Podman など）で終わると、句点だけが次の行に送られることがある。用語の印が折り返しの単位になる、前からの表示の癖
+
+検査: `npm run typecheck`・`npm run lint`・`npm run test`（168 ファイル・1842 件。試し台を除く）・`npm run content:check` が通った。

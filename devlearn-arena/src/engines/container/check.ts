@@ -1,4 +1,4 @@
-import { engineOf, filesInside, findContainer, findNetwork, networksOf, normalizeRef, resolveName, serverOf, type ContainerHost } from './container';
+import { appAnswer, engineOf, filesInside, findContainer, findNetwork, networksOf, normalizeRef, resolveName, serverOf, type ContainerHost } from './container';
 import { readTables, TABLES_FILE } from './pg';
 
 /**
@@ -9,7 +9,9 @@ import { readTables, TABLES_FILE } from './pg';
  *   volume:名前（名前付きボリュームがある）/ mount:コンテナ=つなぐ物:中の場所 / rows:コンテナ/表=数（DB の表の行の数）/
  *   made:名前>=数・made:名前=数（その名前でコンテナを作った回数）/ network:名前（網がある）/ on:コンテナ=網（網に入っている）/
  *   reach:A>B（A から B に名前で届く。どちらも動いていて、同じ自作の網にいる）/ from:コンテナ=名前:タグ（そのイメージから作った）/
- *   pushed:住所/名前:タグ（自分たちの置き場にある）/ login:住所（ログインしている）。
+ *   pushed:住所/名前:タグ（自分たちの置き場にある）/ login:住所（ログインしている）/ body:コンテナ~文字列（動いているコンテナが答える中身にある）/
+ *   log:コンテナ~文字列（コンテナの記録にある）/ changed:コンテナ（中で書いた物が書き込みの層にある）/ published:コンテナ[=手元のポート]（公開している）/
+ *   cached:名前:タグ=語（そのイメージを作った時、その語を含む命令の段を使い回した）。
  *   @名前 で、それより後ろの条件を、その頼む先（docker context）の Engine で判定する（@default で手元に戻る）
  */
 
@@ -70,6 +72,38 @@ function termHolds(host: ContainerHost, term: string): boolean {
       const [from = '', to = ''] = arg.split('>');
       const a = findContainer(host, from);
       return a?.state === 'running' && resolveName(host, a, to) !== null;
+    }
+    case 'body': {
+      // body:コンテナ~文字列（動いているコンテナが答える中身に、その文字列がある）
+      const at = arg.indexOf('~');
+      if (at < 1) throw new Error(`コンテナの条件「${term}」は知らない形`);
+      const c = findContainer(host, arg.slice(0, at));
+      if (c?.state !== 'running') return false;
+      const body = c.app ? appAnswer(host, c).body : (host.images.find((i) => i.ref === c.image)?.serves?.body ?? '');
+      return body.includes(arg.slice(at + 1));
+    }
+    case 'log': {
+      // log:コンテナ~文字列（コンテナの記録（podman logs・docker logs）に、その文字列がある）
+      const at = arg.indexOf('~');
+      if (at < 1) throw new Error(`コンテナの条件「${term}」は知らない形`);
+      return findContainer(host, arg.slice(0, at))?.log.some((l) => l.includes(arg.slice(at + 1))) === true;
+    }
+    case 'changed':
+      // changed:コンテナ（中で書いた物が書き込みの層にある。podman diff・docker diff に出る）
+      return Object.keys(findContainer(host, arg)?.files ?? {}).length > 0;
+    case 'published': {
+      // published:コンテナ（手元のポートに公開している）・published:コンテナ=手元のポート
+      const [ref = '', port] = arg.split('=');
+      const c = findContainer(host, ref);
+      return c !== undefined && c.ports.some((p) => port === undefined || p.host === Number(port));
+    }
+    case 'cached': {
+      // cached:名前:タグ=語（そのイメージを作った時、その語を含む命令の段を、前に作った物から使い回した）
+      const at = arg.lastIndexOf('=');
+      if (at < 1) throw new Error(`コンテナの条件「${term}」は知らない形`);
+      const ref = normalizeRef(arg.slice(0, at));
+      const step = host.images.find((i) => i.ref === ref)?.built?.find((s) => s.step.includes(arg.slice(at + 1)));
+      return step?.cached === true;
     }
     case 'made': {
       // made:名前>=数（その名前でコンテナを作った回数。作り直したことを確かめる）

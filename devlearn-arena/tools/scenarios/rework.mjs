@@ -36,7 +36,7 @@ export default async function rework(page, shot) {
   if (p.mode === 'simulation') {
     const bad = wrongAction(p.setup, p.steps[0]);
     if (bad) {
-      await perform(page, bad, p.setup);
+      for (const a of [bad].flat()) await perform(page, a, p.setup);
       await wait(page, 900);
       const guide = await page.evaluate(() => document.querySelector('[data-testid="practice-error"]')?.getAttribute('data-guide') ?? null);
       console.log('誤り', guide, await text(page, '.sim-note, .sim-slot-why, .sim-stage-why, .sim-node-stuck, .sim-card.is-wrong'));

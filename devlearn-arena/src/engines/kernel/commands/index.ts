@@ -5,6 +5,7 @@ import { builtinCommands } from './builtins';
 import { cronCommands } from './cron';
 import { socketCommands } from './sockets';
 import { dhcpServerCommands } from './dhcpServer';
+import { podmanCommands } from '@/engines/docker/podman';
 import { editorCommands } from './editor';
 import { encodingCommands } from './encoding';
 import { fsCommands } from './fs';
@@ -56,6 +57,7 @@ export function createDefaultRegistry(): CommandRegistry {
     ...dhcpServerCommands,
     ...sshCommands,
     ...dockerCommands,
+    ...podmanCommands,
     ...miscCommands,
   ]);
 }

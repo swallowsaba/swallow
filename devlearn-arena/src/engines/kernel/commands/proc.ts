@@ -28,7 +28,7 @@ function psRows(shell: ShellState, wide: boolean): string {
   // 動いているコンテナのプロセスも、機械のプロセスとして見える（名前空間で区切られているのは、中から見た時だけ）
   const all = [
     ...sorted(shell).map((p) => ({ pid: p.pid, ppid: p.ppid, user: p.user, cpu: p.cpu, memory: p.memory, state: p.state, command: p.command })),
-    ...hostProcesses(shell.containers).map((p) => ({ ...p, cpu: 0, state: 'S' })),
+    ...hostProcesses(shell.containers, shell.vars.get('USER')).map((p) => ({ ...p, cpu: 0, state: 'S' })),
   ].sort((a, b) => a.pid - b.pid);
   for (const p of all) {
     const memPercent = ((p.memory / shell.procs.totalMemory) * 100).toFixed(1);

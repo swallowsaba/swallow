@@ -136,6 +136,8 @@ export const setupSchema = z.object({
   services: z.record(z.string().regex(/^[a-z][a-z0-9-]*$/), serviceSetup).optional(),
   /** 手元に取ってあるコンテナのイメージ */
   images: z.array(z.string()).optional(),
+  /** 機械に入っているコンテナの道具（無ければ docker。podman なら docker は無く、podman で操作する。ctr の実戦） */
+  containerCli: z.enum(['docker', 'podman']).optional(),
   /** 自分たちの置き場（docker login・push の相手。住所と、ログインできる利用者。初めは空。run の push で置く） */
   registries: z.array(z.object({ server: z.string().regex(/^[a-z0-9-]+(\.[a-z0-9-]+)+$/), user: z.string().regex(/^[a-z][a-z0-9-]*$/) }).strict()).optional(),
   /** 頼む先の、別の機械の Engine（docker --context 名前）。images はその機械に取ってあるイメージ */
@@ -410,6 +412,7 @@ export function shellOptions(environment: string, setup: unknown): SessionOption
   if (s.network) options.net = buildNetwork(s.network);
   if (s.images) {
     let host = createContainerHost(s.images);
+    if (s.containerCli === 'podman') host = { ...host, cli: 'podman' };
     for (const r of s.registries ?? []) host = addRegistry(host, r.server, r.user);
     for (const c of s.contexts ?? []) host = addContext(host, c.name, c.endpoint, c.description, c.images ?? []);
     options.containers = host;

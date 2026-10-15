@@ -25,7 +25,11 @@
     "web",
     "db",
     "port",
-    "app"
+    "app",
+    "podman",
+    "env-var",
+    "dns",
+    "default-bridge"
   ],
   "explain": {
     "what": "{{term:container}}は、仮想の{{term:network}}（網）につながる。同じ網のコンテナどうしは、相手のコンテナの名前で届く。外から届かせるには、機械の{{term:port}}をコンテナのポートにつなぐ{{term:port-publish}}をする。",
@@ -149,177 +153,88 @@
     }
   ],
   "practice": {
-    "mode": "simulation",
-    "purpose": "予約のアプリの web と db のコンテナを、正しくつなぐ。web から db に届き、外からは web だけに届くようにする。web は front-net にいる。",
-    "environment": "sim-config",
+    "mode": "terminal",
+    "purpose": "機械 `reserve-01` で、予約の{{term:app}}の{{term:web}}の{{term:container}} `web` が、動き出してすぐ止まった。`web` は{{term:network}} `front-net` にいて、DB の場所を{{term:env-var}} `DATABASE_URL`（`postgres://postgres@localhost:5432/reserve`）で受け取る。{{term:db}}のコンテナ `db` は `back-net` にいて、外に 5432 番を公開している。`web` から `db` に届き、外からは `web` だけに届くようにする。この機械のコンテナの道具は {{term:podman}}。",
+    "environment": "linux-basic",
     "setup": {
-      "fields": [
-        {
-          "id": "db網",
-          "label": "db がいる網",
-          "options": [
-            "back-net",
-            "front-net"
-          ],
-          "value": "back-net"
-        },
-        {
-          "id": "宛先",
-          "label": "web が DB を指す宛先",
-          "options": [
-            "localhost:5432",
-            "172.18.0.3:5432",
-            "db:5432"
-          ],
-          "value": "localhost:5432"
-        },
-        {
-          "id": "web公開",
-          "label": "web の公開",
-          "options": [
-            "しない",
-            "8080:80"
-          ],
-          "value": "しない"
-        },
-        {
-          "id": "db公開",
-          "label": "db の公開",
-          "options": [
-            "5432:5432",
-            "しない"
-          ],
-          "value": "5432:5432"
-        }
+      "hostname": "reserve-01",
+      "containerCli": "podman",
+      "images": [
+        "city-db:1.0",
+        "city-reserve:2.0"
       ],
-      "settle": "!field db網=back-net && !field web公開=しない && !field db公開=5432:5432",
-      "panels": [
-        {
-          "kind": "log",
-          "title": "web → DB",
-          "when": "field db網=back-net",
-          "lines": [
-            "届かない（web は front-net、db は back-net。別の網）"
-          ]
-        },
-        {
-          "kind": "log",
-          "title": "web → DB",
-          "when": "field db網=front-net && field 宛先=localhost:5432",
-          "lines": [
-            "localhost:5432: Connection refused",
-            "（localhost は web のコンテナ自身。web の中に DB は無い）"
-          ]
-        },
-        {
-          "kind": "log",
-          "title": "web → DB",
-          "when": "field db網=front-net && field 宛先=172.18.0.3:5432",
-          "lines": [
-            "172.18.0.3:5432: 今はつながった",
-            "（db を作り直すとアドレスが変わり、届かなくなる）"
-          ]
-        },
-        {
-          "kind": "log",
-          "title": "web → DB",
-          "when": "field db網=front-net && field 宛先=db:5432",
-          "lines": [
-            "db:5432: つながった（同じ網の中で、名前 db が引けた）"
-          ]
-        },
-        {
-          "kind": "log",
-          "title": "外 → db",
-          "when": "field db公開=5432:5432",
-          "lines": [
-            "外から 5432 番で DB に届いてしまう"
-          ]
-        },
-        {
-          "kind": "log",
-          "title": "外 → web",
-          "when": "field web公開=しない",
-          "lines": [
-            "届かない（web を公開していない）"
-          ]
-        },
-        {
-          "kind": "log",
-          "title": "外から",
-          "when": "field web公開=8080:80 && field db公開=しない",
-          "lines": [
-            "8080 番: web に届いた",
-            "5432 番: 届かない（DB は網の中に隠れた）"
-          ]
-        }
+      "run": [
+        "podman network create front-net",
+        "podman network create back-net",
+        "podman run -d --name db --network back-net -p 5432:5432 city-db:1.0",
+        "podman run -d --name web --network front-net -e DATABASE_URL=postgres://postgres@localhost:5432/reserve city-reserve:2.0"
       ]
     },
     "steps": [
       {
-        "id": "reach",
-        "purpose": "web から DB に届くようにする。db を web と同じ網に入れ、web から DB を指す宛先を直す。",
+        "id": "why",
+        "purpose": "`podman ps -a` で `web` が止まっていることを見て、`podman logs web` で止まった理由を読む。`web` が DB だと思ってつなごうとした `localhost`（`127.0.0.1`）は、どのコンテナを指していたか。コンテナの名前で答える。",
         "check": {
-          "kind": "sim",
-          "expr": "field db網=front-net 宛先=db:5432"
+          "kind": "answer",
+          "equals": "web"
         },
-        "afterward": "db が front-net に入り、web から名前 db で届いた。名前で指すので、db を作り直しても届く。",
+        "afterward": "コンテナの中の `localhost` は、そのコンテナ自身。`web` の中には DB がいないので、5432 番は断られた（`ECONNREFUSED`）。同じ機械で動いていても、コンテナごとに別の箱になっている。",
         "hints": [
-          "web と db が別の網にいる。同じ網にいれば、相手の名前で届く。",
-          "web の中の localhost は web 自身。アドレスは作り直すと変わる。DB はコンテナの名前で指す。",
-          "`set db網 front-net` `set 宛先 db:5432` の順に入れる。"
+          "止まったコンテナの記録は `podman logs 名前` で読める。最後の方の `Error:` の行を見る。",
+          "`ECONNREFUSED 127.0.0.1:5432` は、`127.0.0.1`（`localhost`）の 5432 番に断られたという意味。コンテナの中から見た `localhost` は、誰のことか。",
+          "`podman ps -a` `podman logs web` を打ち、`web` と答える。"
         ],
         "expectedErrors": [
           "ctr-net-wrong"
-        ],
-        "actions": [
-          {
-            "op": "set",
-            "field": "db網",
-            "value": "front-net"
-          },
-          {
-            "op": "set",
-            "field": "宛先",
-            "value": "db:5432"
-          }
         ]
       },
       {
-        "id": "publish",
-        "purpose": "外からは web だけに届くように、公開を決める。",
+        "id": "reach",
+        "purpose": "`podman network connect front-net db` で `db` を `web` と同じ網に入れる。止まった `web` を `podman rm web` で消し、DB の場所をコンテナの名前 `db` で書いて（`postgres://postgres@db:5432/reserve`）、外の 8080 番を `web` の 3000 番につなぐ{{term:port-publish}}を付けて作り直す（`-p 8080:3000`）。`curl -s http://localhost:8080/` で予約の数が出るかを見る。",
         "check": {
-          "kind": "sim",
-          "expr": "field db網=front-net 宛先=db:5432 web公開=8080:80 db公開=しない"
+          "kind": "container",
+          "expr": "running:web reach:web>db on:db=front-net published:web=8080"
         },
-        "afterward": "外からは 8080 番で web に届き、DB には届かない。DB に用があるのは、同じ網の web だけ。",
+        "afterward": "`podman logs web` に `connected to the database at db:5432` が出た。同じ自作の網の中では、podman の中の{{term:dns}}がコンテナの名前を引く。名前で指すので、`db` を作り直してアドレスが変わっても届く。",
         "hints": [
-          "外から使うのは web。DB は web から届けば足りる。",
-          "web の 80 番を機械の 8080 番で公開する。db の公開はやめる。",
-          "`set web公開 8080:80` `set db公開 しない` の順に入れる。"
+          "`web` と `db` は別の網にいる。名前で届くのは、同じ自作の網の中だけ。`podman network connect 網 コンテナ` で、動いているコンテナを網に足せる。",
+          "環境変数は作る時に決まる。`-e DATABASE_URL=…` を直すには、`web` を消して作り直す。DB の場所の `localhost` を、相手のコンテナの名前 `db` にする。",
+          "`podman network connect front-net db` `podman rm web` `podman run -d --name web --network front-net -p 8080:3000 -e DATABASE_URL=postgres://postgres@db:5432/reserve city-reserve:2.0` `curl -s http://localhost:8080/` を打つ。"
         ],
         "expectedErrors": [
-          "ctr-net-wrong"
+          "ctr-net-notfound",
+          "ctr-net-localhost",
+          "ctr-net-timeout",
+          "ctr-no-network",
+          "ctr-name-in-use",
+          "ctr-running-rm",
+          "ctr-port-in-use"
+        ]
+      },
+      {
+        "id": "hide",
+        "purpose": "`podman port db` で、`db` がまだ外の 5432 番に公開されていることを見る。DB に用があるのは同じ網の `web` だけ。`db` を、公開せずに `front-net` で作り直し、`web` から届いたままかを確かめる。",
+        "check": {
+          "kind": "container",
+          "expr": "!published:db running:db reach:web>db published:web=8080"
+        },
+        "afterward": "`podman port db` は何も出さなくなった。外から届くのは 8080 番の `web` だけで、DB は網の中に隠れた。`web` からは、名前 `db` で今までどおり届く。",
+        "hints": [
+          "公開は作る時の `-p` で決まる。公開をやめるには、`-p` を付けずに作り直す。",
+          "作り直す `db` も、`web` と同じ網 `front-net` に入れる（`--network front-net`）。網を書かないと{{term:default-bridge}} `podman` に入り、名前で届かない。",
+          "`podman rm -f db` `podman run -d --name db --network front-net city-db:1.0` `podman port db` `podman ps` を打つ。"
         ],
-        "actions": [
-          {
-            "op": "set",
-            "field": "web公開",
-            "value": "8080:80"
-          },
-          {
-            "op": "set",
-            "field": "db公開",
-            "value": "しない"
-          }
+        "expectedErrors": [
+          "ctr-name-in-use",
+          "ctr-running-rm"
         ]
       }
     ]
   },
   "result": {
-    "success": "web と db を同じ網に入れて名前でつなぎ、外には web だけを公開できた。",
-    "partial": "ヒントを使ってつなげた。次は、localhost とコンテナの名前の違いを、自分の言葉で説明してみよう。",
-    "retry": "まだ web から DB に届かないか、外から DB に届いてしまう。web → DB と外からの記録を見よう。"
+    "success": "`localhost` はコンテナ自身だと記録から読み取り、`web` と `db` を同じ網に入れて名前でつなぎ、外には `web` だけを公開できた。",
+    "partial": "ヒントを使ってつなげた。次は、`localhost`・アドレス・コンテナの名前のどれで指すと、作り直しても届くのかを説明してみよう。",
+    "retry": "まだ `web` から `db` に届かないか、外から `db` に届いてしまう。`podman logs web` の最後の行と、`podman port db` を見よう。"
   },
   "summary": {
     "points": [

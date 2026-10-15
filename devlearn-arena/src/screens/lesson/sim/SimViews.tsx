@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import type { ConfigState, ReadState, SimState } from '@/engines/sim/types';
+import { wrongAnswers } from '@/engines/sim/sim';
 import { Icon } from '@/ui/icons/Icon';
 import { AssignBoard } from './AssignBoard';
 import type { BoardProps } from './boardTypes';
@@ -23,12 +24,19 @@ export function SimView({ s, act, expr }: BoardProps<SimState>) {
 
 /* ---------- 読み取って答える ---------- */
 
-function ReadView({ s, act }: BoardProps<ReadState>) {
+function ReadView({ s, act, expr }: BoardProps<ReadState>) {
+  // 手順の問いに全て答えて合っていない時は、違う答えの問いを赤く示す
+  let wrong: string[] = [];
+  try {
+    wrong = wrongAnswers(s, expr);
+  } catch {
+    wrong = [];
+  }
   return (
     <div className="sim-read" data-testid="sim-read">
       <p className="sim-how">情報を読み、問いの答えを押して選ぶ。読む所を押すと、その部分が大きく出る。答え直してもよい。</p>
       {s.setup.questions.map((q) => (
-        <div key={q.id} className="sim-question">
+        <div key={q.id} className={`sim-question${wrong.includes(q.id) ? ' is-wrong' : ''}`}>
           <p className="sim-question-prompt">{q.prompt}</p>
           <div className="sim-question-options" role="group" aria-label={q.prompt}>
             {q.options.map((o) => (

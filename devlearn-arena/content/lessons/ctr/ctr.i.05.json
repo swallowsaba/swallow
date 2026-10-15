@@ -24,7 +24,12 @@
     "db",
     "service",
     "kubernetes",
-    "program"
+    "program",
+    "podman",
+    "compose",
+    "yaml",
+    "env-var",
+    "image"
   ],
   "explain": {
     "what": "1 つの{{term:service}}を、役割ごとに別々の{{term:container}}に分けて組み合わせる設計。画面（{{term:web}}）・{{term:api}}・{{term:db}}をそれぞれ 1 つのコンテナにし、網の中で名前でつなぐ。",
@@ -148,177 +153,86 @@
     }
   ],
   "practice": {
-    "mode": "simulation",
-    "purpose": "予約のサービスは、画面・API・DB を全て 1 つのコンテナ web に入れている。役割ごとに web・api・db の 3 つに分け、同じ網の中でつなぐ。",
-    "environment": "sim-config",
+    "mode": "editor",
+    "purpose": "予約の{{term:service}}は、画面・{{term:api}}・{{term:db}}の全てを 1 つの{{term:container}} `web`（`city-reserve-all:1.0`）に入れている。1 つのコンテナの中なので、画面は API を `localhost:3000`、API は DB を `localhost:5432` で指していた。`~/reserve/compose.yaml` を書き直し、役割ごとに 3 つのサービス `web`（画面だけの `city-reserve-ui:1.0`）・`api`（API だけの `city-reserve-api:1.0`）・`db`（`city-db:1.0`）に分けてつなぐ。画面は API の場所を{{term:env-var}} `API_URL` で、API は DB の場所を `DATABASE_URL` で受け取る。保存すると、{{term:podman}} の `podman compose up -d` で動かし、様子と記録と 8080 番の答えを確かめる。",
+    "environment": "linux-basic",
     "setup": {
-      "fields": [
-        {
-          "id": "api",
-          "label": "コンテナ api に入れる物",
-          "options": [
-            "使わない",
-            "API"
-          ],
-          "value": "使わない"
-        },
-        {
-          "id": "db",
-          "label": "コンテナ db に入れる物",
-          "options": [
-            "使わない",
-            "DB"
-          ],
-          "value": "使わない"
-        },
-        {
-          "id": "web",
-          "label": "コンテナ web に入れる物",
-          "options": [
-            "画面・API・DB",
-            "画面"
-          ],
-          "value": "画面・API・DB",
-          "requires": [
-            {
-              "value": "画面",
-              "expr": "field api=API db=DB",
-              "message": "API と DB の置き場所が無い。先に api と db のコンテナを用意する"
-            }
-          ]
-        },
-        {
-          "id": "画面から",
-          "label": "画面が API を指す宛先",
-          "options": [
-            "localhost:3000",
-            "web:3000",
-            "api:3000"
-          ],
-          "value": "localhost:3000"
-        },
-        {
-          "id": "APIから",
-          "label": "API が DB を指す宛先",
-          "options": [
-            "localhost:5432",
-            "db:5432"
-          ],
-          "value": "localhost:5432"
-        }
+      "hostname": "reserve-01",
+      "containerCli": "podman",
+      "cwd": "/home/learner/reserve",
+      "dirs": [
+        "/home/learner/reserve"
       ],
-      "panels": [
-        {
-          "kind": "text",
-          "title": "今の困りごと",
-          "body": "画面の 1 行を直すだけでも、API と DB ごと止めて作り直している。夕方は API だけが忙しいのに、全部を増やすしかない。"
-        },
-        {
-          "kind": "log",
-          "title": "画面 → API",
-          "when": "field web=画面 && field 画面から=localhost:3000",
-          "lines": [
-            "localhost:3000: Connection refused（localhost は web 自身。API は別のコンテナ api にいる）"
-          ]
-        },
-        {
-          "kind": "log",
-          "title": "画面 → API",
-          "when": "field web=画面 && field 画面から=web:3000",
-          "lines": [
-            "web:3000: Connection refused（web は画面のコンテナ自身。API がいるのは api）"
-          ]
-        },
-        {
-          "kind": "log",
-          "title": "API → DB",
-          "when": "field web=画面 && field APIから=localhost:5432",
-          "lines": [
-            "localhost:5432: Connection refused（DB は別のコンテナ db にいる）"
-          ]
-        },
-        {
-          "kind": "log",
-          "title": "3 つで動かした結果",
-          "when": "field web=画面 api=API db=DB 画面から=api:3000 APIから=db:5432",
-          "lines": [
-            "画面 → api:3000: つながった",
-            "API → db:5432: つながった",
-            "画面の直しは web だけを作り直す。夕方は api だけを 3 つに増やせる"
-          ]
-        }
-      ]
+      "images": [
+        "city-reserve-all:1.0",
+        "city-reserve-ui:1.0",
+        "city-reserve-api:1.0",
+        "city-db:1.0"
+      ],
+      "files": {
+        "/home/learner/reserve/compose.yaml": "# 予約のサービス（画面・API・DB を、1 つのコンテナ web に入れている）\nservices:\n  web:\n    image: city-reserve-all:1.0\n    ports:\n      - \"8080:80\"\n"
+      },
+      "run": [
+        "podman compose up -d"
+      ],
+      "edit": {
+        "path": "/home/learner/reserve/compose.yaml",
+        "apply": [
+          "podman compose up -d",
+          "podman compose ps -a",
+          "podman compose logs",
+          "curl -s http://localhost:8080/"
+        ]
+      }
     },
     "steps": [
       {
         "id": "split",
-        "purpose": "画面・API・DB を、それぞれ別のコンテナ（web・api・db）に分ける。",
+        "purpose": "{{term:compose}} の `services:` の下に、`web`・`api`・`db` の 3 つのサービスを、役割ごとの{{term:image}}で書く。外に公開するのは画面の `web` の 8080 番だけ。まずは前と同じく `localhost` で指したまま分けて、確かめた結果で何が起きるかを見る。",
         "check": {
-          "kind": "sim",
-          "expr": "field web=画面 api=API db=DB"
+          "kind": "container",
+          "expr": "from:reserve-web-1=city-reserve-ui:1.0 from:reserve-api-1=city-reserve-api:1.0 from:reserve-db-1=city-db:1.0 published:reserve-web-1=8080 !published:reserve-api-1 !published:reserve-db-1"
         },
-        "afterward": "web には画面だけ、api には API、db には DB が入った。それぞれを別々に作り直せる。",
+        "afterward": "3 つのコンテナに分かれた。でも `api` は `Exited (1)` で止まり（記録に `ECONNREFUSED 127.0.0.1:5432`）、`web` は動いているのに、8080 番は `502 Bad Gateway` と `ECONNREFUSED 127.0.0.1:3000` を答えた。分けた後の `localhost` は、それぞれのコンテナ自身。`web` の中に API は、`api` の中に DB はもういない。",
         "hints": [
-          "1 つのコンテナに 1 つの役割。先に、API と DB の置き場所を作る。",
-          "api に API を、db に DB を入れてから、web を画面だけにする。",
-          "`set api API` `set db DB` `set web 画面` の順に入れる。"
+          "1 つのサービスに 1 つの役割。`web` の下と同じ深さに `api:` と `db:` を足し、それぞれ `image:` を書く。",
+          "画面は `environment:` の `API_URL`、API は `DATABASE_URL` で、相手の場所を受け取る。`ports:` は `web` にだけ書く。",
+          "`# 予約のサービス（画面・API・DB を、役割ごとのコンテナに分ける）\nservices:\n  web:\n    image: city-reserve-ui:1.0\n    ports:\n      - \"8080:80\"\n    environment:\n      API_URL: http://localhost:3000\n  api:\n    image: city-reserve-api:1.0\n    environment:\n      DATABASE_URL: postgres://postgres@localhost:5432/reserve\n  db:\n    image: city-db:1.0` と保存する。"
         ],
         "expectedErrors": [
-          "ctr-split-order"
-        ],
-        "actions": [
-          {
-            "op": "set",
-            "field": "api",
-            "value": "API"
-          },
-          {
-            "op": "set",
-            "field": "db",
-            "value": "DB"
-          },
-          {
-            "op": "set",
-            "field": "web",
-            "value": "画面"
-          }
+          "ctr-compose-file",
+          "ctr-compose-key",
+          "ctr-split-localhost",
+          "ctr-split-env"
         ]
       },
       {
         "id": "connect",
-        "purpose": "分けたコンテナどうしを、正しい宛先でつなぐ。",
+        "purpose": "分けたサービスどうしを、相手のサービスの名前でつなぐ。画面からは `api` の 3000 番、API からは `db` の 5432 番。相手が先に動いているように、`depends_on:` で動かす順も書く。確かめた結果で、8080 番が予約の数を答えることを見る。",
         "check": {
-          "kind": "sim",
-          "expr": "field web=画面 api=API db=DB 画面から=api:3000 APIから=db:5432"
+          "kind": "container",
+          "expr": "running:reserve-api-1 running:reserve-db-1 body:reserve-web-1~件 reach:reserve-web-1>api reach:reserve-api-1>db published:reserve-web-1=8080 !published:reserve-api-1 !published:reserve-db-1"
         },
-        "afterward": "画面は api:3000 に、API は db:5432 に、相手のコンテナの名前で届いた。3 つが 1 つのサービスとして動いている。",
+        "afterward": "`web` は `api:3000` に、`api` は `db:5432` に、サービスの名前で届き、8080 番が予約の数を答えた。Compose が作った網 `reserve_default` の中では、サービスの名前が引ける。これで、画面の直しは `web` だけ、夕方に忙しい API は `api` だけを作り直し・増やせる。",
         "hints": [
-          "分けた後は、localhost では相手に届かない。localhost は自分のコンテナ。",
-          "相手のコンテナの名前で指す。画面からは API のいる api、API からは DB のいる db。",
-          "`set 画面から api:3000` `set APIから db:5432` の順に入れる。"
+          "分けた後は、`localhost` では相手に届かない。同じ構成の中では、相手のサービスの名前で指す。",
+          "`API_URL` は `http://api:3000`、`DATABASE_URL` は `postgres://postgres@db:5432/reserve`。`web` に `depends_on:` と `- api`、`api` に `depends_on:` と `- db` を足す。",
+          "`# 予約のサービス（画面・API・DB を、役割ごとのコンテナに分ける）\nservices:\n  web:\n    image: city-reserve-ui:1.0\n    ports:\n      - \"8080:80\"\n    environment:\n      API_URL: http://api:3000\n    depends_on:\n      - api\n  api:\n    image: city-reserve-api:1.0\n    environment:\n      DATABASE_URL: postgres://postgres@db:5432/reserve\n    depends_on:\n      - db\n  db:\n    image: city-db:1.0` と保存する。"
         ],
         "expectedErrors": [
-          "ctr-connect-wrong"
-        ],
-        "actions": [
-          {
-            "op": "set",
-            "field": "画面から",
-            "value": "api:3000"
-          },
-          {
-            "op": "set",
-            "field": "APIから",
-            "value": "db:5432"
-          }
+          "ctr-split-localhost",
+          "ctr-split-name",
+          "ctr-split-env",
+          "ctr-compose-file",
+          "ctr-compose-key"
         ]
       }
     ]
   },
   "result": {
-    "success": "画面・API・DB を 3 つのコンテナに分け、相手の名前でつないで 1 つのサービスとして動かせた。",
-    "partial": "ヒントを使って分けられた。次は、分けると何が良くなるかを、更新と増やし方の両方で説明してみよう。",
-    "retry": "まだ 3 つがつながっていない。画面 → API・API → DB の記録で、どこを指しているかを見よう。"
+    "success": "画面・API・DB を 3 つのサービスに分け、`localhost` ではなく相手のサービスの名前でつないで、1 つのサービスとして動かせた。",
+    "partial": "ヒントを使って分けられた。次は、1 つのコンテナの中では `localhost` で届いたのに、分けた後は届かなかった理由を説明してみよう。",
+    "retry": "まだ 3 つがつながっていない。確かめた結果の `podman compose logs` の、止まったサービスの最後の行を見よう。"
   },
   "summary": {
     "points": [

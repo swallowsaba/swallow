@@ -18,6 +18,8 @@ body,
   font-size: var(--fs-14);
   line-height: 1.6;
   -webkit-font-smoothing: antialiased;
+  /* 等幅の書体の続き字（--> を 1 字の矢印に描くなど）を止める。打つ文字と出力を、本物と同じ字で見せる */
+  font-variant-ligatures: no-contextual;
 }
 
 button {

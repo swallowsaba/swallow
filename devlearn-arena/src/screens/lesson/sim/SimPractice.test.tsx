@@ -236,6 +236,35 @@ describe('模擬環境（置く・読み取って答える）の実戦', () => {
     act(() => [...host.querySelectorAll<HTMLButtonElement>('.sim-option')].find((b) => b.textContent === 'Linux')?.click());
     expect($('[data-step="os"]').dataset.done).toBe('true');
   });
+
+  it('読み取って答える: 手順の問いに全て答えた所で、ほかの手順の問いが残っていても、合っていない事を知らせ、違う問いを赤く示す', () => {
+    mount({
+      mode: 'simulation',
+      purpose: '読む',
+      environment: 'sim-read',
+      setup: {
+        panels: [{ kind: 'kv', title: 'サーバの情報', rows: [['OS', 'Linux 6.8'], ['版', '24.04']] }],
+        questions: [
+          { id: 'os', prompt: 'OS は', options: ['Linux', 'Windows'] },
+          { id: 'cpu', prompt: 'CPU は', options: ['x86', 'arm'] },
+          { id: 'ver', prompt: '版は', options: ['22.04', '24.04'] },
+        ],
+      },
+      steps: [
+        { id: 'a', purpose: '答える', check: { kind: 'sim', expr: 'answered os=Linux cpu=x86' }, afterward: '読めた', hints: ['a', 'b', '「OS は」に「Linux」、「CPU は」に「x86」を選ぶ。'], actions: [{ op: 'answer', question: 'os', value: 'Linux' }, { op: 'answer', question: 'cpu', value: 'x86' }] },
+        { id: 'b', purpose: '答える', check: { kind: 'sim', expr: 'answered ver=24.04' }, afterward: '読めた', hints: ['a', 'b', '「版は」に「24.04」を選ぶ。'], actions: [{ op: 'answer', question: 'ver', value: '24.04' }] },
+      ],
+    });
+    const pick = (text: string): void => act(() => [...host.querySelectorAll<HTMLButtonElement>('.sim-option')].find((b) => b.textContent === text)?.click());
+    pick('Windows');
+    expect(host.querySelector('[data-testid="practice-error"]')).toBeNull();
+    pick('x86');
+    expect($('[data-testid="practice-error"]').dataset.guide).toBe('not-yet');
+    expect([...host.querySelectorAll('.sim-question.is-wrong .sim-question-prompt')].map((e) => e.textContent)).toEqual(['OS は']);
+    pick('Linux');
+    expect($('[data-step="a"]').dataset.done).toBe('true');
+    expect(host.querySelectorAll('.sim-question.is-wrong')).toHaveLength(0);
+  });
 });
 
 describe('模擬環境（並べる）の実戦', () => {

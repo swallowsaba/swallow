@@ -2,7 +2,7 @@
  * DB のコンテナ（PostgreSQL）の中身の模型。純粋な関数（docs/lessons/docker.md docker.i.03・i.06）。
  *
  * - DB は、データを書く場所（/var/lib/postgresql/data）の base/tables.json に表を持つ。最初に動いた時に、その場所が空なら作る（init）
- * - psql -c の文は、よく使う形だけを模す: SELECT count(*) / SELECT * / INSERT INTO … VALUES … / CREATE TABLE。出力は本物の psql の形
+ * - psql -c の文は、よく使う形だけを模す: SELECT count(*) / SELECT * / INSERT INTO … VALUES … / CREATE TABLE / SHOW 設定。出力は本物の psql の形
  * 本物の SQL を学ぶ実戦は、ブラウザ内 SQL（src/engines/db）で行う。ここは「データがどこに残るか」を確かめるための物
  */
 
@@ -74,10 +74,18 @@ export interface PsqlResult {
 }
 
 /** psql -c の 1 つの文 */
-export function psql(tables: Tables, raw: string): PsqlResult {
+export function psql(tables: Tables, raw: string, settings: Readonly<Record<string, string>> = {}): PsqlResult {
   const sql = raw.trim().replace(/;\s*$/, '');
   const missing = (name: string): PsqlResult => ({ err: errorAt(sql, `relation "${name}" does not exist`, sql.indexOf(name)) });
-  let m = /^select\s+count\(\*\)\s+from\s+(\w+)$/i.exec(sql);
+  // SHOW 設定の名前（data_directory など。設定の値を 1 行の表で答える）
+  let m = /^show\s+(\w+)$/i.exec(sql);
+  if (m) {
+    const name = (m[1] ?? '').toLowerCase();
+    const value = settings[name];
+    return value === undefined ? { err: `ERROR:  unrecognized configuration parameter "${name}"
+` } : { out: render([name], [[value]]) };
+  }
+  m = /^select\s+count\(\*\)\s+from\s+(\w+)$/i.exec(sql);
   if (m) {
     const t = tables[(m[1] ?? '').toLowerCase()];
     if (!t) return missing(m[1] ?? '');

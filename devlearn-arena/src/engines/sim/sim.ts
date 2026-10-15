@@ -460,6 +460,29 @@ export function isSettled(s: SimState): boolean {
   }
 }
 
+/** 手順の式（answered 問い=値 …）に出てくる問い */
+function askedIn(expr: string): string[] {
+  return expr.split(/\s+/).filter((t) => t.includes('=')).map((t) => t.slice(0, t.indexOf('=')).replace(/^!/, ''));
+}
+
+/**
+ * 今の手順の分が出来上がったか。読み取って答えるは、手順の式に出てくる問いに全て答えたら出来上がり
+ * （手順ごとに、答え終えた所で合っているかを知らせる）。ほかの型は isSettled と同じ
+ */
+export function stepSettled(s: SimState, expr: string | null | undefined): boolean {
+  if (isSettled(s)) return true;
+  if (s.type !== 'read' || !expr) return false;
+  const asked = askedIn(expr);
+  return asked.length > 0 && asked.every((q) => (s.answers[q] ?? '') !== '');
+}
+
+/** 手順の式と違う答えをした問い（手順の問いに全て答えた時だけ。読み取って答える） */
+export function wrongAnswers(s: SimState, expr: string | null | undefined): string[] {
+  if (s.type !== 'read' || !expr || !stepSettled(s, expr)) return [];
+  const want = new Map(expr.split(/\s+/).filter((t) => t.includes('=') && !t.startsWith('!')).map((t) => [t.slice(0, t.indexOf('=')), t.slice(t.indexOf('=') + 1)]));
+  return [...want].filter(([q, v]) => !same(s.answers[q] ?? '', v)).map(([q]) => q);
+}
+
 /* ---------- 操作を日本語で言う（記録と、エラーの小窓の「何をしたか」） ---------- */
 
 /** 操作を、画面に出ている名前で言い表す（「予約のアプリ」を「箱」に入れた、など） */

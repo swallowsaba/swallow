@@ -23,7 +23,10 @@
     "layer",
     "os",
     "library",
-    "app"
+    "app",
+    "containerfile",
+    "podman",
+    "nodejs"
   ],
   "explain": {
     "what": "{{term:image}}は、{{term:layer}}（層）を下から積み重ねて作る。土台の{{term:os}}の中身、{{term:library}}、設定、{{term:app}}のコードのように重ねる。同じ層は、ほかのイメージと共有できる。",
@@ -132,202 +135,60 @@
     }
   ],
   "practice": {
-    "mode": "simulation",
-    "purpose": "予約のアプリのイメージは、コードを直すたびに 3 分かけて作り直し、180MB を送っている。層の順番を並べ替えて、コードの直しでは一番上の 1 層だけを作り直すようにする。",
-    "environment": "sim-order",
+    "mode": "editor",
+    "purpose": "予約の窓口のアプリ（`server.js`）は、コードを 1 行直すたびに、`podman build` が `RUN npm install` をやり直し、部品（express）を全て入れ直している。`~/reserve/Containerfile` の命令の順を直し、コードだけを直した時は、`npm install` の{{term:layer}}を使い回す（`--> Using cache`）ようにする。保存すると、`podman build -t reserve:1.1 .` で作り、`server.js` を 1 行直してから `podman build -t reserve:1.2 .` で作り直す。",
+    "environment": "linux-basic",
     "setup": {
-      "items": [
-        {
-          "id": "base",
-          "label": "土台（OS の中身 debian）",
-          "note": "年に数回変わる"
-        },
-        {
-          "id": "lib",
-          "label": "ライブラリを入れる",
-          "note": "月に 1 回変わる",
-          "needs": [
-            "base"
-          ]
-        },
-        {
-          "id": "conf",
-          "label": "設定を置く",
-          "note": "週に 1 回変わる",
-          "needs": [
-            "base"
-          ]
-        },
-        {
-          "id": "code",
-          "label": "アプリのコードを置く",
-          "note": "1 日に何度も変わる",
-          "needs": [
-            "base"
-          ]
-        }
+      "hostname": "reserve-dev",
+      "containerCli": "podman",
+      "images": [
+        "node:20-alpine"
       ],
-      "initial": [
-        [
-          "base"
-        ],
-        [
-          "code"
-        ],
-        [
-          "conf"
-        ],
-        [
-          "lib"
+      "cwd": "/home/learner/reserve",
+      "files": {
+        "/home/learner/reserve/package.json": "{\n  \"name\": \"reserve\",\n  \"version\": \"1.0.0\",\n  \"dependencies\": { \"express\": \"^4.21.0\" }\n}\n",
+        "/home/learner/reserve/server.js": "// 市の予約の窓口\nconst express = require('express');\nconst app = express();\napp.get('/', (req, res) => res.send('市の予約の窓口 本日の閉館 17:00'));\napp.listen(3000, () => console.log('reserve: listening on :3000'));\n",
+        "/home/learner/reserve/Containerfile": "# 予約の窓口のイメージの設計図\nFROM docker.io/library/node:20-alpine\nWORKDIR /app\nCOPY . .\nRUN npm install\nCMD [\"node\", \"server.js\"]\n"
+      },
+      "run": [
+        "podman build -t reserve:1.0 ."
+      ],
+      "edit": {
+        "path": "/home/learner/reserve/Containerfile",
+        "apply": [
+          "podman build -t reserve:1.1 .",
+          "echo '// 閉館の時刻の表示を直した' >> server.js",
+          "podman build -t reserve:1.2 ."
         ]
-      ],
-      "panels": [
-        {
-          "kind": "table",
-          "title": "層と、変わる回数",
-          "columns": [
-            "層",
-            "変わる回数",
-            "作り直し"
-          ],
-          "rows": [
-            [
-              "土台",
-              "年に数回",
-              "1 分"
-            ],
-            [
-              "ライブラリ",
-              "月に 1 回",
-              "3 分"
-            ],
-            [
-              "設定",
-              "週に 1 回",
-              "10 秒"
-            ],
-            [
-              "コード",
-              "毎日何度も",
-              "5 秒"
-            ]
-          ]
-        },
-        {
-          "kind": "log",
-          "title": "コードを 1 行直して作り直した時",
-          "when": "seq code<lib",
-          "lines": [
-            "コードの層から上を全て作り直した",
-            "ライブラリの層も毎回入れ直す（3 分・転送 180MB）"
-          ]
-        },
-        {
-          "kind": "log",
-          "title": "コードを 1 行直して作り直した時",
-          "when": "seq code<conf && !seq code<lib",
-          "lines": [
-            "コードの層と、その上の設定の層を作り直した（15 秒）"
-          ]
-        },
-        {
-          "kind": "log",
-          "title": "コードを 1 行直して作り直した時",
-          "when": "seq lib<code && seq conf<code",
-          "lines": [
-            "作り直したのはコードの層だけ（5 秒・転送 2MB）",
-            "下の層は使い回した"
-          ]
-        },
-        {
-          "kind": "log",
-          "title": "設定を変えた週",
-          "when": "seq conf<lib",
-          "lines": [
-            "設定の層から上を作り直し、ライブラリも入れ直す（3 分）"
-          ]
-        }
-      ]
+      }
     },
     "steps": [
       {
-        "id": "top",
-        "purpose": "1 日に何度も変わるアプリのコードを、一番上の層にする。",
-        "check": {
-          "kind": "sim",
-          "expr": "deps && seq lib<code && seq conf<code"
-        },
-        "afterward": "コードが一番上になり、コードを直した時に作り直すのはコードの層だけ（5 秒）になった。",
-        "hints": [
-          "変えた層と、その上が作り直しになる。毎日変わる物の上に、ほかの層を積まない。",
-          "土台を一番下に置き、コードを一番上に置く。",
-          "上から 「土台（OS の中身 debian）」 → 「設定を置く」 → 「ライブラリを入れる」 → 「アプリのコードを置く」 の順に、札をドラッグして並べる。"
-        ],
-        "expectedErrors": [
-          "ctr-layer-order"
-        ],
-        "actions": [
-          {
-            "op": "arrange",
-            "stages": [
-              [
-                "base"
-              ],
-              [
-                "conf"
-              ],
-              [
-                "lib"
-              ],
-              [
-                "code"
-              ]
-            ]
-          }
-        ]
-      },
-      {
         "id": "order",
-        "purpose": "残りの層も、変わる回数の少ない順に、下から積む。",
+        "purpose": "{{term:containerfile}}の命令を、変わる回数の少ない順に上から並べる。`npm install` が読むのは `package.json` だけ。確かめた結果で、最後の `podman build -t reserve:1.2 .` の `RUN npm install` の下に `--> Using cache` が出ることを見る。",
         "check": {
-          "kind": "sim",
-          "expr": "deps && placed && seq base<lib<conf<code"
+          "kind": "container",
+          "expr": "cached:reserve:1.2=npm image:reserve:1.2"
         },
-        "afterward": "土台 → ライブラリ → 設定 → コードの順になった。設定を変えた週も、ライブラリを入れ直さずに済む。",
+        "afterward": "コードの直しの後の `reserve:1.2` では、`COPY package.json .` と `RUN npm install` に `--> Using cache` が出て、作り直したのは `COPY server.js .` から上だけになった。下の層が同じなら使い回せるので、作る時間も、置き場に送る量も小さくなる。",
         "hints": [
-          "表の「変わる回数」を見る。ライブラリと設定では、どちらが変わる回数が少ないか。",
-          "月に 1 回のライブラリを、週に 1 回の設定より下に置く。",
-          "上から 「土台（OS の中身 debian）」 → 「ライブラリを入れる」 → 「設定を置く」 → 「アプリのコードを置く」 の順に、札をドラッグして並べる。"
+          "層は上から順に積む。ある段の中身が変わると、その段から下（後の命令）は全て作り直しになる。よく変わる物ほど後に置く。",
+          "`COPY . .` は server.js も写すので、コードを直すたびに変わる。`COPY package.json .` → `RUN npm install` → `COPY server.js .` の順に分ける。",
+          "`# 予約の窓口のイメージの設計図\nFROM docker.io/library/node:20-alpine\nWORKDIR /app\nCOPY package.json .\nRUN npm install\nCOPY server.js .\nCMD [\"node\", \"server.js\"]` と保存する。"
         ],
         "expectedErrors": [
-          "ctr-layer-order"
-        ],
-        "actions": [
-          {
-            "op": "arrange",
-            "stages": [
-              [
-                "base"
-              ],
-              [
-                "lib"
-              ],
-              [
-                "conf"
-              ],
-              [
-                "code"
-              ]
-            ]
-          }
+          "ctr-layer-order",
+          "ctr-build-run",
+          "ctr-build-copy",
+          "ctr-build-parse"
         ]
       }
     ]
   },
   "result": {
-    "success": "変わる回数の少ない順に層を積み、コードの直しでは一番上の層だけを作り直すようにできた。",
-    "partial": "ヒントを使って並べ替えられた。次は、なぜ下の層を変えると上が全て作り直しになるのかを、自分の言葉で説明してみよう。",
-    "retry": "まだ、コードを直すたびに大きな層まで作り直している。表の「変わる回数」と、作り直した時の記録を見比べよう。"
+    "success": "変わる回数の少ない物（package.json と npm install）を先に、よく変わるコードを後に置き、コードの直しでは `npm install` の層を使い回せた。",
+    "partial": "ヒントを使って並べ替えられた。次は、なぜ上の段を変えると下の段が全て作り直しになるのかを、`--> Using cache` の出方で説明してみよう。",
+    "retry": "まだ、コードを直すたびに `RUN npm install` をやり直している。確かめた結果の、最後の作り直しの `STEP` の行を見比べよう。"
   },
   "summary": {
     "points": [

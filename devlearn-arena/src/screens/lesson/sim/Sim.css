@@ -961,6 +961,14 @@
   color: var(--navy);
   background: linear-gradient(180deg, var(--gold-light), var(--gold));
 }
+/* 手順の問いに全て答えて合っていない問い: 赤い縁で示し、選んだ答えを一度揺らす（置き違えた札と同じ示し方） */
+.sim-question.is-wrong {
+  border-left-color: var(--bad);
+  box-shadow: inset 0 0 0 2px var(--bad);
+}
+.sim-question.is-wrong .sim-option.is-picked {
+  animation: sim-shake 0.4s ease-in-out 1;
+}
 
 /* ---------- 端末と SQL の「調べて答える」欄（実戦の左の答えの形。src/screens/lesson/PracticeStage.tsx） ---------- */
 .sim-command {

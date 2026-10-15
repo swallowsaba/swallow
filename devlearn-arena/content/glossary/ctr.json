@@ -232,6 +232,38 @@
       "lessons": [
         "ctr.i.02"
       ]
+    },
+    {
+      "id": "containerfile",
+      "word": "Containerfile",
+      "reading": "こんてなふぁいる",
+      "plain": "イメージの作り方を、上から順の命令（FROM・COPY・RUN・CMD など）で書いた設計図のファイル。Dockerfile と同じ書き方。",
+      "why": "設計図を直して作り直せば、何度でも同じイメージができる。Podman・Buildah は Containerfile を、Docker は Dockerfile という名前を先に探す。",
+      "related": [
+        "image",
+        "dockerfile",
+        "podman"
+      ],
+      "lessons": [
+        "ctr.b.03",
+        "ctr.b.04"
+      ]
+    },
+    {
+      "id": "container-layer",
+      "word": "書き込みの層",
+      "reading": "かきこみのそう",
+      "plain": "コンテナが動いている間に中で書いた物を入れておく、コンテナごとの薄い層。イメージの層の上に重なる。",
+      "why": "コンテナを消すと、この層も一緒に消える。中で直した物を残したいなら、イメージを作り直すか、ボリュームに置く。",
+      "related": [
+        "container",
+        "layer",
+        "volume"
+      ],
+      "lessons": [
+        "ctr.b.03",
+        "ctr.i.04"
+      ]
     }
   ]
 }

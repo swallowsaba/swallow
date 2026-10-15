@@ -24,7 +24,10 @@
     "volume",
     "db",
     "file",
-    "directory"
+    "directory",
+    "podman",
+    "container-layer",
+    "postgresql"
   ],
   "explain": {
     "what": "{{term:container}}の中には、{{term:image}}の層の上に、書き込める層がある。中で書いた物はこの層に入り、コンテナを作り直すと消える。残したい物は{{term:volume}}に置く。ボリュームはコンテナの外にあり、中の決まった場所に付けて使う。",
@@ -131,144 +134,84 @@
     }
   ],
   "practice": {
-    "mode": "simulation",
-    "purpose": "新しく動かす予約の DB のコンテナ（postgres:16）で、データが作り直しても残るようにする。試しに 3 件の予約を入れてから、作り直して確かめる。",
-    "environment": "sim-config",
+    "mode": "terminal",
+    "purpose": "機械 `reserve-01` で、予約の{{term:db}}の{{term:container}} `db`（{{term:image}} `city-db:1.0`。{{term:postgresql}} 16）を、{{term:volume}} `db-data` を `/data` に付けて動かしている。試しに予約を 1 件足して、4 件になった。版を上げる時はコンテナを作り直すが、作り直しても予約が残るかを確かめ、残らないなら直す。この機械のコンテナの道具は {{term:podman}}。",
+    "environment": "linux-basic",
     "setup": {
-      "fields": [
-        {
-          "id": "ボリューム",
-          "label": "付けるボリューム",
-          "options": [
-            "付けない",
-            "db-data"
-          ],
-          "value": "付けない"
-        },
-        {
-          "id": "場所",
-          "label": "付ける場所（コンテナの中）",
-          "options": [
-            "/data",
-            "/var/lib/postgresql/data"
-          ],
-          "value": "/data"
-        },
-        {
-          "id": "操作",
-          "label": "操作",
-          "options": [
-            "そのまま",
-            "作り直す"
-          ],
-          "value": "そのまま"
-        }
+      "hostname": "reserve-01",
+      "containerCli": "podman",
+      "images": [
+        "city-db:1.0"
       ],
-      "settle": "field 操作=作り直す",
-      "panels": [
-        {
-          "kind": "kv",
-          "title": "DB のコンテナ（postgres:16）",
-          "rows": [
-            [
-              "データを書く場所",
-              "/var/lib/postgresql/data"
-            ],
-            [
-              "試しに入れた予約",
-              "3 件"
-            ]
-          ]
-        },
-        {
-          "kind": "log",
-          "title": "作り直した結果",
-          "when": "field 操作=作り直す && field ボリューム=付けない",
-          "lines": [
-            "postgres:16 から作り直した",
-            "予約: 0 件（データは書き込み層にあり、前のコンテナと一緒に消えた）"
-          ]
-        },
-        {
-          "kind": "log",
-          "title": "作り直した結果",
-          "when": "field 操作=作り直す && field ボリューム=db-data && field 場所=/data",
-          "lines": [
-            "postgres:16 から作り直し、db-data を /data に付けた",
-            "予約: 0 件（DB が書くのは /var/lib/postgresql/data。/data には何も書いていない）"
-          ]
-        },
-        {
-          "kind": "log",
-          "title": "作り直した結果",
-          "when": "field 操作=作り直す && field ボリューム=db-data && field 場所=/var/lib/postgresql/data",
-          "lines": [
-            "postgres:16 から作り直し、db-data を /var/lib/postgresql/data に付けた",
-            "予約: 3 件（データは db-data に残っていた）"
-          ]
-        }
+      "run": [
+        "podman run -d --name db -v db-data:/data city-db:1.0",
+        "podman exec db psql -U postgres -d reserve -c \"INSERT INTO reservations VALUES (4, '市民ホール')\""
       ]
     },
     "steps": [
       {
-        "id": "mount",
-        "purpose": "DB がデータを書く場所に、ボリューム db-data を付ける。",
+        "id": "where",
+        "purpose": "`podman inspect db` の `Mounts` で、`db-data` を付けた中の場所（`Destination`）を見る。DB がデータを書いている{{term:directory}}を `podman exec db psql -U postgres -d reserve -c 'SHOW data_directory'` で調べ、`podman exec db ls` で 2 つの場所の中身を見比べて、DB がデータを書いている場所を答える。",
         "check": {
-          "kind": "sim",
-          "expr": "field ボリューム=db-data 場所=/var/lib/postgresql/data"
+          "kind": "answer",
+          "equals": "/var/lib/postgresql/data"
         },
-        "afterward": "db-data を、DB がデータを書く /var/lib/postgresql/data に付けた。そこに書いた物は、コンテナの外の db-data に入る。",
+        "afterward": "DB が書くのは `/var/lib/postgresql/data` で、`db-data` を付けた `/data` は空のまま。予約のデータはボリュームではなく、コンテナの{{term:container-layer}}に書かれている。このまま作り直すと、データは前のコンテナと一緒に消える。",
         "hints": [
-          "DB のコンテナの情報で、データを書く場所を見る。",
-          "ボリュームは、DB がデータを書く場所そのものに付ける。違う場所に付けても、DB はそこに書かない。",
-          "`set ボリューム db-data` `set 場所 /var/lib/postgresql/data` の順に入れる。"
+          "ボリュームを付けた場所は、`podman inspect db` の `Mounts` の `Destination`。",
+          "PostgreSQL は、データを書く場所を `data_directory` という設定で持つ。`SHOW 設定の名前` で読める。",
+          "`podman inspect db` `podman exec db psql -U postgres -d reserve -c 'SHOW data_directory'` `podman exec db ls /data` を打ち、`/var/lib/postgresql/data` と答える。"
         ],
         "expectedErrors": [
-          "ctr-volume-path"
+          "ctr-volume-path",
+          "ctr-psql-db"
+        ]
+      },
+      {
+        "id": "mount",
+        "purpose": "`db` を消して、`db-data` を DB がデータを書く場所 `/var/lib/postgresql/data` に付けて作り直す。`podman exec db psql … -c 'SELECT * FROM reservations'` で予約の数を見て、消えた試しの予約（`市民ホール`）をもう一度足す。",
+        "check": {
+          "kind": "container",
+          "expr": "running:db mount:db=db-data:/var/lib/postgresql/data rows:db/reservations=4"
+        },
+        "afterward": "作り直した直後は 3 件だった。試しの 1 件は、前のコンテナの書き込みの層と一緒に消えていた。今度は DB が書く場所そのものに `db-data` が付いているので、足した 1 件は、コンテナの外の `db-data` に入った。",
+        "hints": [
+          "ボリュームは `-v ボリューム:中の場所` で付ける。付ける場所は、前の段で答えた、DB がデータを書く場所。",
+          "付け直すには、`podman rm -f db` で消して作り直す。足すのは `INSERT INTO reservations VALUES (4, '市民ホール')`。",
+          "`podman rm -f db` `podman run -d --name db -v db-data:/var/lib/postgresql/data city-db:1.0` `podman exec db psql -U postgres -d reserve -c \"INSERT INTO reservations VALUES (4, '市民ホール')\"` を打つ。"
         ],
-        "actions": [
-          {
-            "op": "set",
-            "field": "ボリューム",
-            "value": "db-data"
-          },
-          {
-            "op": "set",
-            "field": "場所",
-            "value": "/var/lib/postgresql/data"
-          }
+        "expectedErrors": [
+          "ctr-volume-path",
+          "ctr-name-in-use",
+          "ctr-running-rm",
+          "ctr-psql-db"
         ]
       },
       {
         "id": "recreate",
-        "purpose": "コンテナを作り直して、試しに入れた 3 件が残るかを確かめる。",
+        "purpose": "もう一度 `db` を消して、同じボリュームを同じ場所に付けて作り直す。`podman logs db` で DB が前のデータを見つけたかを読み、`SELECT count(*) FROM reservations` で 4 件が残ったことを確かめる。",
         "check": {
-          "kind": "sim",
-          "expr": "field ボリューム=db-data 場所=/var/lib/postgresql/data 操作=作り直す"
+          "kind": "container",
+          "expr": "running:db mount:db=db-data:/var/lib/postgresql/data rows:db/reservations=4 log:db~Skipping"
         },
-        "afterward": "作り直しても 3 件が残った。データはコンテナの外の db-data にあり、新しいコンテナに付け直された。",
+        "afterward": "`podman logs db` に `Database directory appears to contain a database; Skipping initialization` が出た。新しいコンテナは、付け直した `db-data` の中に前のデータを見つけ、最初の表を作り直さずにそのまま使った。コンテナは何度作り直しても、データはボリュームに残る。",
         "hints": [
-          "残ったかは、作り直してみないと分からない。",
-          "操作の欄で、作り直す方を選ぶ。",
-          "`set 操作 作り直す` と入れる。"
+          "作り直す時も、同じボリュームを同じ場所に付ける（付けないと、新しい空のデータで動き出す）。",
+          "DB が動き出す時の記録は `podman logs db` で読める。データが既にあれば、初めの表を作る手順を飛ばす。",
+          "`podman rm -f db` `podman run -d --name db -v db-data:/var/lib/postgresql/data city-db:1.0` `podman logs db` `podman exec db psql -U postgres -d reserve -c 'SELECT count(*) FROM reservations'` を打つ。"
         ],
         "expectedErrors": [
-          "ctr-volume-path"
-        ],
-        "actions": [
-          {
-            "op": "set",
-            "field": "操作",
-            "value": "作り直す"
-          }
+          "ctr-volume-path",
+          "ctr-name-in-use",
+          "ctr-running-rm"
         ]
       }
     ]
   },
   "result": {
-    "success": "DB が書く場所にボリュームを付け、作り直してもデータが残ることを確かめられた。",
-    "partial": "ヒントを使って残せた。次は、ボリュームを違う場所に付けると、なぜ残らないのかを説明してみよう。",
-    "retry": "まだ作り直すとデータが消える。DB のデータを書く場所と、ボリュームを付けた場所を見比べよう。"
+    "success": "`SHOW data_directory` で DB がデータを書く場所を調べ、そこに `db-data` を付けて、作り直しても予約が残ることを `podman logs` と `SELECT` で確かめられた。",
+    "partial": "ヒントを使って残せた。次は、ボリュームを `/data` に付けても、なぜ予約が残らなかったのかを説明してみよう。",
+    "retry": "まだ作り直すと予約が消える。`podman inspect db` の `Destination` と、`SHOW data_directory` の答えを見比べよう。"
   },
   "summary": {
     "points": [

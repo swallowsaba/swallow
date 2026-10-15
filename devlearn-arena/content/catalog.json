@@ -3148,7 +3148,7 @@
       "title": "イメージとコンテナ",
       "goal": "設計図と実体の関係を説明できる",
       "practice": [
-        "simulation"
+        "terminal"
       ],
       "prerequisites": [
         "ctr.b.01"
@@ -3171,7 +3171,7 @@
       "title": "レイヤ",
       "goal": "重ねて作る仕組みと、共有による節約を説明できる",
       "practice": [
-        "simulation"
+        "editor"
       ],
       "prerequisites": [
         "ctr.b.03"
@@ -3194,7 +3194,7 @@
       "title": "レジストリ",
       "goal": "イメージを置いて配る場所と、名前とタグを読める",
       "practice": [
-        "simulation"
+        "terminal"
       ],
       "prerequisites": [
         "ctr.b.03"
@@ -3259,7 +3259,7 @@
       "title": "コンテナのネットワーク",
       "goal": "コンテナどうし・外との通信の仕組みを説明できる",
       "practice": [
-        "simulation"
+        "terminal"
       ],
       "prerequisites": [
         "ctr.b.03",
@@ -3282,7 +3282,7 @@
       "title": "コンテナとデータ",
       "goal": "消える領域と残す領域（ボリューム）を使い分けられる",
       "practice": [
-        "simulation"
+        "terminal"
       ],
       "prerequisites": [
         "ctr.b.04"
@@ -3305,7 +3305,7 @@
       "title": "複数コンテナで 1 つのサービス",
       "goal": "役割を分けて組み合わせる設計ができる",
       "practice": [
-        "simulation"
+        "editor"
       ],
       "prerequisites": [
         "ctr.i.03",

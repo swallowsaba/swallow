@@ -8,17 +8,21 @@ import { composeCommand } from './compose';
 import { resolve } from '@/engines/kernel/path';
 import type { CommandResult, CommandSpec, ShellState } from '@/engines/kernel/registry';
 import { exists, isDir, list, readFile, type VfsState } from '@/engines/kernel/vfs';
+import { fromLines, parseArgs, toLines } from '@/engines/kernel/commands/args';
+import { applySed, parseSedScript } from '@/engines/kernel/commands/textTools';
 
 /**
  * Docker の CLI（コンテナの模型 src/engines/container の上に作る）。出力とエラーの文は本物に寄せる。
  * 対応: run（-d・--name・-p・-v・-e・-m / --memory）・ps（-a）・images・pull・stop・start・restart・rm（-f）・rmi・logs・
  * exec（ps・cat・ls・hostname・psql -c）・stats・inspect（-f / --format）・build（-t・-f。src/engines/container/build.ts）・tag・
  * volume（create・ls・inspect・rm）・network（create・ls・inspect・connect・disconnect・rm）。run の --network・
- * login・logout・push・context（ls・use・show）と --context（頼む先の Engine。src/engines/container/container.ts）・compose（./compose.ts）
+ * login・logout・push・context（ls・use・show）と --context（頼む先の Engine。src/engines/container/container.ts）・compose（./compose.ts）・
+ * diff（中で変えた物）・port（公開したポート）。exec は sed（-i で中のファイルを書き換える）も打てる。
+ * 機械に入っている道具が podman（setup の containerCli）なら、docker は無い（command not found）。podman は ./podman.ts
  */
 
 /** 置き場所（コンテキスト）の中の全てのファイル（置き場所からの相対パス → 中身） */
-function contextFiles(vfs: VfsState, dir: string): Record<string, string> {
+export function contextFiles(vfs: VfsState, dir: string): Record<string, string> {
   const out: Record<string, string> = {};
   const walk = (path: string, rel: string): void => {
     for (const name of list(vfs, path)) {
@@ -90,7 +94,7 @@ const engineStopped = (shell: ShellState): boolean => {
   const svc = shell.services?.services.get('docker');
   return svc !== undefined && svc.active !== 'active';
 };
-const lines = (xs: readonly string[]): string => (xs.length === 0 ? '' : `${xs.join('\n')}\n`);
+export const lines = (xs: readonly string[]): string => (xs.length === 0 ? '' : `${xs.join('\n')}\n`);
 
 /** 表（本物の docker と同じ tabwriter の形: 欄の間は 3 字、欄の幅は 10 字以上） */
 function table(rows: string[][]): string {
@@ -152,7 +156,7 @@ function daemonError(e: ContainerError, verb: string): CommandResult {
 }
 
 /** 置き場の名前（docker.io/library/nginx:1.27。自分の置き場の名前はそのまま） */
-const qualified = (ref: string): string => (repoOf(ref).includes('/') ? (repoOf(ref).split('/')[0]?.includes('.') ? ref : `docker.io/${ref}`) : `docker.io/library/${ref}`);
+export const qualified = (ref: string): string => (repoOf(ref).includes('/') ? (repoOf(ref).split('/')[0]?.includes('.') ? ref : `docker.io/${ref}`) : `docker.io/library/${ref}`);
 
 /** pull の出力（層ごとの Pull complete と digest。層と digest はイメージの ID から決める） */
 function pullLines(image: Image, had: boolean, layersHad = had): string[] {
@@ -175,19 +179,19 @@ function commandOf(host: ContainerHost, c: Container): string {
   return `"${command.length > 20 ? `${command.slice(0, 19)}…` : command}"`;
 }
 
-function status(c: Container): string {
+export function status(c: Container): string {
   if (c.state === 'running') return 'Up 2 seconds';
   if (c.state === 'created') return 'Created';
   return `Exited (${String(c.exitCode)}) 2 seconds ago`;
 }
 
-const portsOf = (c: Container): string => (c.state === 'running' ? c.ports.map((p) => `0.0.0.0:${String(p.host)}->${String(p.container)}/tcp`).join(', ') : '');
+export const portsOf = (c: Container): string => (c.state === 'running' ? c.ports.map((p) => `0.0.0.0:${String(p.host)}->${String(p.container)}/tcp`).join(', ') : '');
 
 /** 64 字の ID（模型の ID は 12 字。run -d が出す物と同じ） */
 export const fullId = (c: Container): string => longId(c.id);
 
 /** 大きさの読み方（-m 256m など。単位は b・k・m・g・t。docker の RAMInBytes と同じく 1024 倍ずつ） */
-function parseBytes(raw: string): number | null {
+export function parseBytes(raw: string): number | null {
   const m = /^(\d+(?:\.\d+)?) ?([kmgtp])?i?b?$/i.exec(raw);
   if (!m) return null;
   const power = { k: 1, m: 2, g: 3, t: 4, p: 5 }[(m[2] ?? '').toLowerCase()] ?? 0;
@@ -218,7 +222,7 @@ interface RunArgs {
   error?: string;
 }
 
-function parseRun(args: readonly string[]): RunArgs {
+export function parseRun(args: readonly string[]): RunArgs {
   const out: RunArgs = { detach: false, ports: [], volumes: [], env: {} };
   for (let i = 0; i < args.length; i += 1) {
     const a = args[i] ?? '';
@@ -253,22 +257,42 @@ function parseRun(args: readonly string[]): RunArgs {
 }
 
 /** docker の最小のメモリの上限（6MB） */
-const MIN_MEMORY = 6 * 1024 * 1024;
+export const MIN_MEMORY = 6 * 1024 * 1024;
 
 /**
- * コンテナの中で打つ（docker exec）。名前空間の中なので、ps は自分のプロセスだけを見せ、主のプロセスは PID 1。
- * 中の道具は busybox（alpine）の物。道具の無いイメージで ps を打つと、実行するファイルが無いと言う
+ * コンテナの中で打つ（docker exec・podman exec）。名前空間の中なので、ps は自分のプロセスだけを見せ、主のプロセスは PID 1。
+ * 中の道具は busybox（alpine）の物。道具の無いイメージで ps を打つと、実行するファイルが無いと言う。
+ * sed は中のファイルを読み、-i なら書き込みの層（名前付きボリュームをつないだ場所ならボリューム）に書き戻す
  */
-function execIn(host: ContainerHost, c: Container, cmd: readonly string[]): CommandResult {
+export function execIn(host: ContainerHost, c: Container, cmd: readonly string[], tool: 'docker' | 'podman' = 'docker'): CommandResult {
   const image = host.images.find((i) => i.ref === c.image);
   const [bin = '', ...args] = cmd;
   const missing = (): CommandResult => ({
-    stderr: `OCI runtime exec failed: exec failed: unable to start container process: exec: "${bin}": executable file not found in $PATH: unknown\n`, code: 127,
+    stderr: tool === 'podman'
+      ? `Error: runc: exec failed: unable to start container process: exec: "${bin}": executable file not found in $PATH: OCI runtime attempted to invoke a command that was not found\n`
+      : `OCI runtime exec failed: exec failed: unable to start container process: exec: "${bin}": executable file not found in $PATH: unknown\n`,
+    code: 127,
   });
   if (bin === 'sh' || bin === 'bash' || bin === '/bin/sh' || bin === '/bin/bash') {
-    return { stderr: 'この練習の端末では、コンテナの中の対話の端末は開けない。docker exec 名前 コマンド の形で、1 つずつ打つ\n', code: 1 };
+    return { stderr: `この練習の端末では、コンテナの中の対話の端末は開けない。${tool} exec 名前 コマンド の形で、1 つずつ打つ\n`, code: 1 };
   }
   switch (bin) {
+    case 'sed': {
+      const { flags, operands } = parseArgs(['sed', ...args]);
+      const [script, file] = operands;
+      if (script === undefined) return { stderr: image?.tools ? 'sed: no script specified\n' : 'Usage: sed [OPTION]... {script-only-if-no-other-script} [input-file]...\n', code: 1 };
+      if (file === undefined) return { stderr: 'この練習の端末では、コンテナの中の sed に読ませるファイルを書く（sed 式 ファイル）\n', code: 1 };
+      const content = filesInside(host, c)[file];
+      if (content === undefined) return { stderr: image?.tools ? `sed: ${file}: No such file or directory\n` : `sed: can't read ${file}: No such file or directory\n`, code: image?.tools ? 1 : 2 };
+      let result: string;
+      try {
+        result = fromLines(applySed(toLines(content), parseSedScript(script), flags.has('n')));
+      } catch (e) {
+        return { stderr: `sed: ${e instanceof Error ? e.message : String(e)}\n`, code: 1 };
+      }
+      if (flags.has('i')) return result === content ? {} : { patch: { containers: writeInside(host, c, { [file]: result }) } };
+      return { stdout: result };
+    }
     case 'ps': {
       if (!image?.tools) return missing();
       const procs = procsOf(image);
@@ -289,6 +313,8 @@ function execIn(host: ContainerHost, c: Container, cmd: readonly string[]): Comm
       const dir = (args.find((a) => !a.startsWith('-')) ?? '/').replace(/(.)\/+$/, '$1');
       const prefix = dir === '/' ? '/' : `${dir}/`;
       const names = [...new Set(Object.keys(filesInside(host, c)).filter((p) => p.startsWith(prefix)).map((p) => p.slice(prefix.length).split('/')[0] ?? ''))].sort();
+      // つないだボリュームの場所は、空でもディレクトリとして在る
+      if (names.length === 0 && c.volumes.some((v) => v.container.replace(/(.)\/+$/, '$1') === dir)) return {};
       if (names.length === 0) return { stderr: image?.tools ? `ls: ${dir}: No such file or directory\n` : `ls: cannot access '${dir}': No such file or directory\n`, code: image?.tools ? 1 : 2 };
       return { stdout: lines(names) };
     }
@@ -318,11 +344,33 @@ function psqlIn(host: ContainerHost, c: Container, pg: NonNullable<Image['pg']>,
   if (db !== pg.db) return fatal(`database "${db}" does not exist`);
   if (sql === null) return { stderr: 'この練習の端末では、psql の対話の画面は開けない。-c "文" の形で、1 つずつ打つ\n', code: 1 };
   const path = `${pg.dataDir}/${TABLES_FILE}`;
-  const r = psql(readTables(filesInside(host, c)[path]), sql);
+  const r = psql(readTables(filesInside(host, c)[path]), sql, { data_directory: pg.dataDir, port: '5432' });
   if (r.err !== undefined) return { stderr: r.err, code: 1 };
   if (!r.tables) return { stdout: r.out ?? '' };
   return { stdout: r.out ?? '', patch: { containers: writeInside(host, c, { [path]: `${JSON.stringify(r.tables)}\n` }) } };
 }
+
+/**
+ * コンテナの中で変わった物（docker diff・podman diff）。書き込みの層にある物で、A はイメージに無かった物、C は変えた物。
+ * 変えた物を含むディレクトリも C（イメージに無かったディレクトリは A）。名前付きボリュームの中は層ではないので出ない
+ */
+export function diffLines(host: ContainerHost, c: Container): string[] {
+  const base = host.images.find((i) => i.ref === c.image)?.files ?? {};
+  const inImage = (dir: string): boolean => Object.keys(base).some((p) => p.startsWith(`${dir}/`));
+  const out = new Map<string, 'A' | 'C'>();
+  for (const path of Object.keys(c.files ?? {})) {
+    let dir = '';
+    for (const part of path.split('/').slice(1, -1)) {
+      dir += `/${part}`;
+      if (!out.has(dir)) out.set(dir, inImage(dir) ? 'C' : 'A');
+    }
+    out.set(path, path in base ? 'C' : 'A');
+  }
+  return [...out.entries()].sort(([a], [b]) => (a < b ? -1 : 1)).map(([p, k]) => `${k} ${p}`);
+}
+
+/** 公開したポート（docker port・podman port。中のポート/tcp -> 手元の住所:ポート） */
+export const portLines = (c: Container): string[] => c.ports.map((p) => `${String(p.container)}/tcp -> 0.0.0.0:${String(p.host)}`);
 
 /** docker network（create・ls・inspect・connect・disconnect・rm） */
 function networkCommand(host: ContainerHost, args: readonly string[]): CommandResult {
@@ -560,6 +608,8 @@ export const dockerCommands: CommandSpec[] = [
     summary: 'コンテナを動かす・止める・一覧する（Docker）',
     handler: ({ argv, shell }) => {
       const world = shell.containers;
+      // podman だけを入れた機械には docker が無い
+      if (world?.cli === 'podman') return { stderr: 'docker: command not found\n', code: 127 };
       const down = world === null || engineStopped(shell);
       // 本物と同じく、本体につながらなくても、CLI の版（Client の段）は出す
       if (argv[1] === 'version') return down ? { stdout: lines(CLIENT_SECTION), stderr: NO_DOCKER, stderrLast: true, code: 1 } : { stdout: lines([...CLIENT_SECTION, '', ...SERVER_SECTION]) };
@@ -638,6 +688,14 @@ function dockerOn(host: ContainerHost, verb: string | undefined, rest: readonly 
         }
         case 'inspect':
           return inspect(host, rest);
+        case 'diff':
+        case 'port': {
+          const ref = rest.filter((a) => !a.startsWith('-'))[0];
+          if (!ref) return { stderr: `"docker ${verb}" requires ${verb === 'diff' ? 'exactly 1 argument' : 'at least 1 argument'}.\n`, code: 1 };
+          const c = findContainer(host, ref);
+          if (!c) return daemonError({ kind: 'no-such-container', ref }, verb);
+          return { stdout: lines(verb === 'diff' ? diffLines(host, c) : portLines(c)) };
+        }
         case 'volume':
           return volumeCommand(host, rest);
         case 'network':

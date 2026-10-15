@@ -23,7 +23,10 @@
     "server",
     "memory",
     "authentication",
-    "app"
+    "app",
+    "podman",
+    "container",
+    "port"
   ],
   "explain": {
     "what": "{{term:registry}}は、{{term:image}}を置いて配る場所。イメージは「レジストリの場所/イメージの名前:タグ」の形の名前で指す。{{term:image-tag}}は版の名札で、タグを省くと latest という名札の物を取る。",
@@ -130,155 +133,92 @@
     }
   ],
   "practice": {
-    "mode": "simulation",
-    "purpose": "本番のサーバで、予約の{{term:app}}の確定ボタンが出なくなった。イメージの指定を読み、今動いている版を答えて、確かめた版 1.2 に固定する。",
-    "environment": "sim-config",
+    "mode": "terminal",
+    "purpose": "商店街の予約の{{term:app}}を動かす本番の機械 `shop-prod` で、予約のページから「予約を確定する」が消えた。{{term:container}} `shop` は、自分たちの{{term:registry}} `registry.city.example` の {{term:image}} `registry.city.example/shop/web` を、{{term:image-tag}}を書かずに動かしている。今動いている版を調べて答え、検証で確かめた版 `1.2` に固定して動かし直す。この機械のコンテナの道具は {{term:podman}}。",
+    "environment": "linux-basic",
     "setup": {
-      "fields": [
+      "hostname": "shop-prod",
+      "containerCli": "podman",
+      "images": [
+        "node:20-alpine"
+      ],
+      "registries": [
         {
-          "id": "今の版",
-          "label": "本番で今動いている版（表を読む）",
-          "options": [
-            "まだ",
-            "1.1",
-            "1.2",
-            "1.3-rc1"
-          ],
-          "value": "まだ"
-        },
-        {
-          "id": "指定",
-          "label": "本番で動かすイメージ",
-          "options": [
-            "registry.example/shop/web",
-            "registry.example/shop/web:v1.2",
-            "registry.example/shop/wbe:1.2",
-            "registry.example/shop/web:1.2"
-          ],
-          "value": "registry.example/shop/web",
-          "requires": [
-            {
-              "value": "registry.example/shop/web:v1.2",
-              "expr": "field 指定=registry.example/shop/web:v1.2",
-              "message": "Error response from daemon: manifest for registry.example/shop/web:v1.2 not found: manifest unknown: manifest unknown"
-            },
-            {
-              "value": "registry.example/shop/wbe:1.2",
-              "expr": "field 指定=registry.example/shop/wbe:1.2",
-              "message": "Error response from daemon: pull access denied for registry.example/shop/wbe, repository does not exist or may require 'docker login'"
-            }
-          ]
+          "server": "registry.city.example",
+          "user": "learner"
         }
       ],
-      "panels": [
-        {
-          "kind": "table",
-          "title": "レジストリにある shop/web のタグ",
-          "columns": [
-            "タグ",
-            "置いた日",
-            "中身"
-          ],
-          "rows": [
-            [
-              "1.1",
-              "08-01",
-              "前の版"
-            ],
-            [
-              "1.2",
-              "09-10",
-              "検証で確かめた版"
-            ],
-            [
-              "1.3-rc1",
-              "10-05",
-              "試験中（確定ボタンを作り直している）"
-            ],
-            [
-              "latest",
-              "10-05",
-              "1.3-rc1 と同じ物（10-05 に付け替えた）"
-            ]
-          ]
-        },
-        {
-          "kind": "log",
-          "title": "本番で起きたこと",
-          "when": "field 指定=registry.example/shop/web",
-          "lines": [
-            "タグを書かずに取った → latest の付いた物を取った",
-            "予約のページ: 確定ボタンが出ない"
-          ]
-        },
-        {
-          "kind": "log",
-          "title": "本番で起きたこと",
-          "when": "field 指定=registry.example/shop/web:1.2",
-          "lines": [
-            "registry.example/shop/web:1.2 を取った",
-            "動いた版: 1.2。予約のページに確定ボタンが出る",
-            "3 台とも同じ 1.2"
-          ]
-        }
+      "files": {
+        "/tmp/shop/Containerfile": "FROM docker.io/library/node:20-alpine\nWORKDIR /app\nCOPY server.js .\nCMD [\"node\", \"server.js\"]\n",
+        "/tmp/shop/server.js": "const http = require('http');\nhttp.createServer((req, res) => {\n  res.end('商店街の予約 空き 3 件 [予約を確定する]');\n}).listen(3000);\nconsole.log('shop-web 1.1: listening on :3000');\n"
+      },
+      "run": [
+        "podman login registry.city.example",
+        "cd /tmp/shop",
+        "podman build -t registry.city.example/shop/web:1.1 .",
+        "podman push registry.city.example/shop/web:1.1",
+        "sed -i 's/1.1:/1.2:/' server.js",
+        "sed -i 's/空き 3 件/空き 3 件（日付で選べる）/' server.js",
+        "podman build -t registry.city.example/shop/web:1.2 .",
+        "podman push registry.city.example/shop/web:1.2",
+        "sed -i 's/1.2:/1.3-rc1:/' server.js",
+        "sed -i 's/ \\[予約を確定する\\]//' server.js",
+        "podman build -t registry.city.example/shop/web:1.3-rc1 .",
+        "podman push registry.city.example/shop/web:1.3-rc1",
+        "podman tag registry.city.example/shop/web:1.3-rc1 registry.city.example/shop/web:latest",
+        "podman push registry.city.example/shop/web:latest",
+        "podman rmi registry.city.example/shop/web:1.1 registry.city.example/shop/web:1.2 registry.city.example/shop/web:1.3-rc1 registry.city.example/shop/web:latest",
+        "podman pull registry.city.example/shop/web:1.2",
+        "cd /home/learner",
+        "rm -r /tmp/shop",
+        "podman run -d --name shop -p 8080:3000 registry.city.example/shop/web"
       ]
     },
     "steps": [
       {
         "id": "now",
-        "purpose": "イメージの指定とタグの表を読み、本番で今動いている版を答える。",
+        "purpose": "`podman ps` の `IMAGE` の欄で、`shop` を作った名前とタグを読む。`podman search --list-tags registry.city.example/shop/web` で置き場にあるタグを並べ、`podman pull` と `podman images` の `IMAGE ID` で、今のタグがどの版と同じ中身かを確かめて、その版のタグを答える。",
         "check": {
-          "kind": "sim",
-          "expr": "field 今の版=1.3-rc1"
+          "kind": "answer",
+          "equals": "1.3-rc1"
         },
-        "afterward": "指定にタグが無いので latest を取っていた。latest は 10-05 に 1.3-rc1（試験中）へ付け替えられていた。",
+        "afterward": "タグを書かずに動かすと、`latest` という名札の付いた物を取る。置き場の `latest` は、試験中の `1.3-rc1` と同じ `IMAGE ID`（同じ中身）に付け替えられていた。`latest` は「最新の安定版」という意味ではなく、ただの名札の 1 つ。",
         "hints": [
-          "今の指定には、: の後ろのタグが無い。タグを省くと、どの名札の物を取るか。",
-          "表の latest の行を見る。latest は、どの版と同じ物か。",
-          "`set 今の版 1.3-rc1` と入れる。"
+          "`podman ps` の `IMAGE` の欄の、`:` の後ろがタグ。タグを書かずに動かすと、`latest` という名札の物になる。",
+          "置き場のタグは `podman search --list-tags 名前` で並ぶ。タグは名札で、同じ中身に何枚も付けられる。同じ中身かは `podman images` の `IMAGE ID` で見比べる。",
+          "`podman search --list-tags registry.city.example/shop/web` `podman pull registry.city.example/shop/web:1.3-rc1` `podman images` を打ち、latest と同じ中身の `1.3-rc1` と答える。"
         ],
         "expectedErrors": [
-          "ctr-latest"
-        ],
-        "actions": [
-          {
-            "op": "set",
-            "field": "今の版",
-            "value": "1.3-rc1"
-          }
+          "ctr-latest",
+          "ctr-pull-not-found"
         ]
       },
       {
         "id": "pin",
-        "purpose": "本番で動かすイメージを、検証で確かめた版に固定する。",
+        "purpose": "`shop` を、タグ `1.2` を書いた名前で作り直す。`podman rm -f shop` で消し、前と同じく名前 `shop`・{{term:port}} `-p 8080:3000` で `registry.city.example/shop/web:1.2` から動かす。`curl -s http://localhost:8080/` で「予約を確定する」が戻ったことを確かめる。",
         "check": {
-          "kind": "sim",
-          "expr": "field 指定=registry.example/shop/web:1.2"
+          "kind": "container",
+          "expr": "running:shop from:shop=registry.city.example/shop/web:1.2 published:shop=8080 body:shop~予約を確定する"
         },
-        "afterward": "タグ 1.2 を書いて固定した。3 台とも同じ 1.2 が動き、確定ボタンが戻った。",
+        "afterward": "タグ `1.2` を書いて固定した。置き場の `latest` が誰かに付け替えられても、`shop` は検証で確かめた `1.2` のまま。台数を増やしても、どの機械も同じ名前から同じ中身を取る。",
         "hints": [
-          "検証で確かめたのは、表のどのタグか。",
-          "名前の後ろに : を付けて、表にあるとおりのタグを書く。v は付かない。",
-          "`set 指定 registry.example/shop/web:1.2` と入れる。"
+          "名前は「置き場の住所/名前:タグ」。タグは置き場にあるとおりに書く（`v` は付かない）。",
+          "動いているコンテナは `podman rm -f shop` で止めて消せる。作る時は、前と同じ名前と公開するポートを書く。",
+          "`podman rm -f shop` `podman run -d --name shop -p 8080:3000 registry.city.example/shop/web:1.2` `curl -s http://localhost:8080/` を打つ。"
         ],
         "expectedErrors": [
           "ctr-pull-not-found",
-          "ctr-latest"
-        ],
-        "actions": [
-          {
-            "op": "set",
-            "field": "指定",
-            "value": "registry.example/shop/web:1.2"
-          }
+          "ctr-name-in-use",
+          "ctr-running-rm",
+          "ctr-port-in-use"
         ]
       }
     ]
   },
   "result": {
-    "success": "タグを省くと latest を取ることを読み取り、確かめた版 1.2 にタグで固定できた。",
-    "partial": "ヒントを使って版を固定できた。次は、名前の 3 つの部分（場所・名前・タグ）を自分で読み分けてみよう。",
-    "retry": "まだ確かめた版が動いていない。タグの表と、指定に書いたタグを 1 字ずつ見比べよう。"
+    "success": "タグを書かないと `latest` の名札の物を取ること、`latest` が試験中の `1.3-rc1` に付け替えられていたことを `IMAGE ID` で確かめ、タグ `1.2` を書いて固定できた。",
+    "partial": "ヒントを使って版を固定できた。次は、名前の 3 つの部分（置き場の住所・名前・タグ）を、`podman ps` の `IMAGE` の欄で読み分けてみよう。",
+    "retry": "まだ確かめた版が動いていない。`podman ps` の `IMAGE` の欄のタグと、`podman search --list-tags` のタグを 1 字ずつ見比べよう。"
   },
   "summary": {
     "points": [

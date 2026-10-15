@@ -153,7 +153,7 @@ export function parseSedScript(script: string): SedCommand[] {
     });
 }
 
-function applySed(lines: readonly string[], commands: readonly SedCommand[], quiet: boolean): string[] {
+export function applySed(lines: readonly string[], commands: readonly SedCommand[], quiet: boolean): string[] {
   const out: string[] = [];
   lines.forEach((original, index) => {
     let line = original;

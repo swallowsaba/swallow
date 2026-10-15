@@ -232,3 +232,16 @@ describe('curl（手元のサービス）', () => {
     expect(sh('curl -I http://localhost/').stdout).toMatch(/^HTTP\/1\.1 200 OK\nServer: web\n/);
   });
 });
+
+describe('docker diff・docker port・exec の sed', () => {
+  it('exec の sed -i は中のファイルを書き換え、diff は変えた物を C で示す。port は公開した対応を出す', () => {
+    const { sh } = shell();
+    sh('docker run -d --name web -p 8080:80 nginx:1.27-alpine');
+    expect(sh('docker diff web').stdout).toBe('');
+    sh("docker exec web sed -i 's/localhost/shop.example/' /etc/nginx/conf.d/default.conf");
+    expect(sh('docker exec web cat /etc/nginx/conf.d/default.conf').stdout).toContain('server_name  shop.example;');
+    expect(sh('docker diff web').stdout).toBe('C /etc\nC /etc/nginx\nC /etc/nginx/conf.d\nC /etc/nginx/conf.d/default.conf\n');
+    expect(sh('docker port web').stdout).toBe('80/tcp -> 0.0.0.0:8080\n');
+    expect(sh('docker exec web sed -n p /nope').stderr).toBe('sed: /nope: No such file or directory\n');
+  });
+});

@@ -21,15 +21,21 @@
   "terms": [
     "image",
     "container",
-    "config-file",
     "volume",
-    "app"
+    "app",
+    "podman",
+    "containerfile",
+    "container-layer",
+    "docker",
+    "file",
+    "port",
+    "directory"
   ],
   "explain": {
     "what": "{{term:image}}は、変わらない設計図。{{term:container}}は、イメージから作って動かす実体。1 つのイメージから、同じ中身のコンテナを何個でも作れる。コンテナの中で変えた事は、そのコンテナだけの物で、イメージには戻らない。",
     "why": "同じ設計図から何個でも同じ物を作れるので、増やすのも作り直すのも簡単。その代わり、動いているコンテナの中だけを直すと、作り直した時に設計図の中身に戻る。",
     "use": "配布と、台数を増やす時。コンテナは更新や故障のたびに作り直す前提で使う。残したい変更は、設計図を直すか、外に置く。",
-    "when": "予約の{{term:app}}のコンテナに入り、{{term:config-file}}の閉館を 19 時に直した。翌朝、更新のためにコンテナを作り直したら、17 時に戻っていた。",
+    "when": "予約の{{term:app}}のコンテナの中で、閉館の時刻を 19 時に直した。翌朝、更新のためにコンテナを作り直したら、17 時に戻っていた。",
     "figures": [
       "ctr-b03-image"
     ]
@@ -130,130 +136,88 @@
     }
   ],
   "practice": {
-    "mode": "simulation",
-    "purpose": "予約のアプリのコンテナで直した閉館の時刻が、作り直すと 17 時に戻ってしまう。消えた理由を答え、作り直しても 19 時が残る直し方を選ぶ。",
-    "environment": "sim-config",
+    "mode": "terminal",
+    "purpose": "市の予約の窓口のコンテナ `web` は、{{term:image}} `reserve:1.0` から作って動いている。本日の閉館の時刻を 17:00 から 19:00 に変えたい。{{term:container}}の中で直す方法と、設計図（`~/reserve` の {{term:containerfile}} と `server.js`）を直してイメージを作り直す方法を試し、作り直しても 19:00 が残るのはどちらかを確かめる。この機械のコンテナの道具は {{term:podman}}（{{term:docker}} と同じ形の命令で、同じイメージを動かす）。",
+    "environment": "linux-basic",
     "setup": {
-      "fields": [
-        {
-          "id": "理由",
-          "label": "直した設定が消えた理由",
-          "options": [
-            "まだ",
-            "直したのはコンテナだけ",
-            "作り直しで壊れた",
-            "権限が足りない"
-          ],
-          "value": "まだ"
-        },
-        {
-          "id": "直し方",
-          "label": "閉館を 19 時にする直し方",
-          "options": [
-            "コンテナの中で直す",
-            "作り直すたびに中で直す",
-            "設計図を直してイメージを作り直す"
-          ],
-          "value": "コンテナの中で直す"
-        }
+      "hostname": "reserve-dev",
+      "containerCli": "podman",
+      "images": [
+        "node:20-alpine"
       ],
-      "panels": [
-        {
-          "kind": "log",
-          "title": "前回の作業",
-          "lines": [
-            "10:00 動いているコンテナ shop-1 の中に入り、/app/config.yml の閉館を 19:00 に直した",
-            "10:05 予約のページ: 19 時まで予約できる",
-            "翌 03:00 更新のため shop-1 を消し、イメージ shop:1.4 から作り直した",
-            "翌 09:00 予約のページ: 17 時までに戻った"
-          ]
-        },
-        {
-          "kind": "kv",
-          "title": "イメージ shop:1.4 の中の /app/config.yml",
-          "rows": [
-            [
-              "閉館",
-              "17:00（作った時のまま）"
-            ]
-          ]
-        },
-        {
-          "kind": "log",
-          "title": "この直し方で、作り直した結果",
-          "when": "field 直し方=作り直すたびに中で直す",
-          "lines": [
-            "作り直すたびに 17 時に戻り、中に入って直すまでの間は 17 時のまま",
-            "直し忘れた朝は、一日中 17 時"
-          ]
-        },
-        {
-          "kind": "log",
-          "title": "この直し方で、作り直した結果",
-          "when": "field 直し方=設計図を直してイメージを作り直す",
-          "lines": [
-            "設計図の config.yml を 19:00 に直し、イメージ shop:1.5 を作った",
-            "shop:1.5 からコンテナを作った → 19 時まで予約できる",
-            "もう一度作り直しても → 19 時のまま"
-          ]
-        }
+      "files": {
+        "/home/learner/reserve/Containerfile": "# 予約の窓口のイメージの設計図\nFROM docker.io/library/node:20-alpine\nWORKDIR /app\nCOPY server.js .\nCMD [\"node\", \"server.js\"]\n",
+        "/home/learner/reserve/server.js": "// 市の予約の窓口（本日の閉館の時刻を答える）\nconst http = require('http');\nhttp.createServer((req, res) => {\n  res.end('市の予約の窓口 本日の閉館 17:00');\n}).listen(3000);\nconsole.log('reserve: listening on :3000');\n"
+      },
+      "run": [
+        "podman build -t reserve:1.0 reserve",
+        "podman run -d --name web -p 8080:3000 reserve:1.0"
       ]
     },
     "steps": [
       {
-        "id": "why",
-        "purpose": "前回の作業の記録と、イメージの中身を読み、直した設定が消えた理由を選ぶ。",
+        "id": "inside",
+        "purpose": "まず、動いているコンテナ `web` の中の `/app/server.js` を `podman exec web sed -i` で直し、`podman restart web` で動かし直す。`curl -s http://localhost:8080/` で 19:00 になったことを見て、`podman diff web` で中で変えた物を見る。",
         "check": {
-          "kind": "sim",
-          "expr": "field 理由=直したのはコンテナだけ"
+          "kind": "http",
+          "url": "http://localhost:8080/",
+          "status": 200,
+          "contains": "19:00"
         },
-        "afterward": "直したのは動いていたコンテナ shop-1 の中だけ。作り直しの元のイメージ shop:1.4 は、17 時のままだった。",
+        "afterward": "19:00 になった。`podman diff web` の `C /app/server.js` は、イメージから変わった（`Changed`）ファイルの印。直した物はイメージではなく、コンテナの{{term:container-layer}}に書かれている。",
         "hints": [
-          "前回の作業の記録で、どこを直したかと、作り直しの元が何かを見る。",
-          "直したのは動いているコンテナの中。作り直しの元のイメージは、17 時のまま変わっていない。",
-          "`set 理由 直したのはコンテナだけ` と入れる。"
+          "コンテナの中で命令を打つのは `podman exec コンテナ 命令`。`sed -i 's/前/後/' ファイル` で、{{term:file}}の中の文字を置き換える。",
+          "アプリは動き出す時に `server.js` を読む。直したら `podman restart web` で動かし直す。",
+          "`podman exec web sed -i 's/17:00/19:00/' /app/server.js` `podman restart web` `curl -s http://localhost:8080/` `podman diff web` を打つ。"
         ],
         "expectedErrors": [
-          "ctr-container-only"
-        ],
-        "actions": [
-          {
-            "op": "set",
-            "field": "理由",
-            "value": "直したのはコンテナだけ"
-          }
+          "ctr-name-in-use"
         ]
       },
       {
-        "id": "keep",
-        "purpose": "作り直しても 19 時が残る直し方を選ぶ。",
+        "id": "recreate",
+        "purpose": "更新のたびに、コンテナは消して作り直す。`podman rm -f web` で消し、同じイメージ `reserve:1.0` から `podman run` で作り直して、閉館の時刻がどうなるかを `curl` で見る。",
         "check": {
-          "kind": "sim",
-          "expr": "field 直し方=設計図を直してイメージを作り直す"
+          "kind": "container",
+          "expr": "made:web>=2 running:web body:web~17:00"
         },
-        "afterward": "設計図を直して新しいイメージ shop:1.5 を作った。そこから作るコンテナは、何度作り直しても 19 時のまま。",
+        "afterward": "17:00 に戻った。`podman diff web` も何も出さない。作り直しの元はいつもイメージ `reserve:1.0` で、中で直した物は、消したコンテナの書き込みの層と一緒に消えた。",
         "hints": [
-          "作り直す時の元は、いつもイメージ。元が 17 時のままなら、作り直すと 17 時に戻る。",
-          "元のイメージの中身を変えるには、設計図を直してイメージを作り直す。",
-          "`set 直し方 設計図を直してイメージを作り直す` と入れる。"
+          "`podman rm -f web` は、動いているコンテナを止めて消す。",
+          "作る時は、前と同じく名前 `--name web`・公開する{{term:port}} `-p 8080:3000`・イメージ `reserve:1.0` を書く。",
+          "`podman rm -f web` `podman run -d --name web -p 8080:3000 reserve:1.0` `curl -s http://localhost:8080/` を打つ。"
         ],
         "expectedErrors": [
-          "ctr-container-only"
+          "ctr-name-in-use",
+          "ctr-running-rm",
+          "ctr-port-in-use"
+        ]
+      },
+      {
+        "id": "rebuild",
+        "purpose": "作り直しても残すには、元のイメージを変える。手元の設計図の `~/reserve/server.js` を `sed -i` で 19:00 に直し、`podman build -t reserve:1.1 reserve` で新しいイメージ `reserve:1.1` を作る。`web` を `reserve:1.1` から作り直し、19:00 になったことを `curl` で確かめる。",
+        "check": {
+          "kind": "container",
+          "expr": "from:web=reserve:1.1 running:web body:web~19:00 !changed:web"
+        },
+        "afterward": "`reserve:1.1` の中の `server.js` が 19:00 になった。`podman diff web` は何も出さない（コンテナの中は何も直していない）。何度作り直しても、元のイメージが 19:00 なので 19:00 のまま。`reserve:1.0` も残っているので、前の版にも戻せる。",
+        "hints": [
+          "直すのは、コンテナの中ではなく、イメージを作る元のファイル（`~/reserve` の中）。",
+          "`podman build -t 名前:タグ ディレクトリ` は、{{term:directory}}の `Containerfile` を読んでイメージを作る。新しいタグ `1.1` を付けて、前の版と分ける。",
+          "`sed -i 's/17:00/19:00/' reserve/server.js` `podman build -t reserve:1.1 reserve` `podman rm -f web` `podman run -d --name web -p 8080:3000 reserve:1.1` `curl -s http://localhost:8080/` を打つ。"
         ],
-        "actions": [
-          {
-            "op": "set",
-            "field": "直し方",
-            "value": "設計図を直してイメージを作り直す"
-          }
+        "expectedErrors": [
+          "ctr-name-in-use",
+          "ctr-running-rm",
+          "ctr-port-in-use"
         ]
       }
     ]
   },
   "result": {
-    "success": "消えた理由がコンテナだけを直したことだと分かり、設計図を直して新しいイメージを作る方法を選べた。",
-    "partial": "ヒントを使って直し方を選べた。次は、イメージとコンテナのどちらを直すと残るのかを、自分の言葉で説明してみよう。",
-    "retry": "まだ作り直すと 17 時に戻る。前回の作業の記録で、作り直しの元が何かを見よう。"
+    "success": "コンテナの中で直した物は書き込みの層にあり、作り直すと消えることを `podman diff` と `curl` で確かめ、設計図を直して新しいイメージ `reserve:1.1` を作る方法で 19:00 を残せた。",
+    "partial": "ヒントを使って直せた。次は、イメージとコンテナのどちらを直すと残るのかを、`podman diff` の印を使って自分の言葉で説明してみよう。",
+    "retry": "まだ作り直すと 17:00 に戻る。直したのがコンテナの中（`podman diff web` に出る）か、設計図（`~/reserve`）かを見直そう。"
   },
   "summary": {
     "points": [

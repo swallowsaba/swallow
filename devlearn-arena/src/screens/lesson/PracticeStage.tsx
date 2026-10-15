@@ -7,7 +7,7 @@ import { createClock } from '@/engines/kernel/clock';
 import { createDefaultRegistry } from '@/engines/kernel/commands';
 import type { ShellState } from '@/engines/kernel/registry';
 import { restoreShell, snapshotShell, type SessionOptions, type ShellSnapshotData } from '@/engines/kernel/session';
-import { applyAction, createSim, describeAction, isSettled } from '@/engines/sim/sim';
+import { applyAction, createSim, describeAction, stepSettled } from '@/engines/sim/sim';
 import type { SimAction, SimOutcome, SimState } from '@/engines/sim/types';
 import type { SqlDb } from '@/engines/db/check';
 import type { PracticeAttempt, PracticeSession } from '@/game/types';
@@ -298,7 +298,8 @@ function SimPractice({ practice: p, sessionId, saved, onSave, onFinish, onTerm, 
     const said = describeAction(before, a);
     simRef.current = out.state;
     setSim(out.state);
-    const outcome = afterCommand(p, r.runRef.current, { line: said, stderr: out.error ?? '', sim: out.state, settled: out.error === null && isSettled(out.state) }, ERROR_GUIDES);
+    const check = currentStep(p, r.runRef.current)?.check;
+    const outcome = afterCommand(p, r.runRef.current, { line: said, stderr: out.error ?? '', sim: out.state, settled: out.error === null && stepSettled(out.state, check?.kind === 'sim' ? check.expr : null) }, ERROR_GUIDES);
     save(r.took(outcome, out.error ?? '', said), out.state);
     return out;
   };

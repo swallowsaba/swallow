@@ -67,13 +67,25 @@ export interface Image {
   tools?: boolean;
   /** DB（PostgreSQL）のイメージ: データを書く場所・DB の名前・最初の表（src/engines/container/pg.ts） */
   pg?: { dataDir: string; db: string; seed: Tables };
-  /** 動き出す時に DB につなぐアプリ: DB の場所（postgres://利用者@名前:ポート/DB）を受け取る環境変数 */
-  database?: { env: string };
+  /**
+   * 動き出す時に DB につなぐアプリ: DB の場所（postgres://利用者@名前:ポート/DB）を受け取る環境変数。
+   * who は記録の行の頭（無ければ reserve）。body はつながった後に 3000 番で答える中身（{count} は予約の数。無ければ予約の窓口の画面）
+   */
+  database?: { env: string; who?: string; body?: string };
+  /**
+   * 動き出す時に、ほかのコンテナの API（http://名前:ポート）につなぐアプリ（画面だけのコンテナ）。env は API の場所を受け取る環境変数。
+   * つながれば port で待ち受け、body で答える（{名前} は、API が答えた JSON のその名前の値）。つなげなければ止まる
+   */
+  upstream?: { env: string; who: string; port: number; body: string };
   /**
    * 動いている間、環境変数の URL（http://Service の名前）に頼みを送り続ける道具（クラスタの負荷）。
    * millicores は、受ける側の Ready の Pod 全体に掛かる CPU の仕事の量（m。Pod の数で等しく分ける。src/engines/k8s/metrics.ts）
    */
   sends?: { env: string; millicores: number };
+  /** 手元で作った（build）。podman は localhost/ を付けて出す */
+  local?: boolean;
+  /** 作った時の命令ごとの、前に作った物を使い回したか（FROM の後の命令の順） */
+  built?: readonly { step: string; cached: boolean }[];
 }
 
 /** 網（決まって在る bridge・host・none と、自分で作った網） */
@@ -155,6 +167,8 @@ export interface ContainerHost {
   contexts?: readonly EngineContext[];
   /** 今の頼む先（無ければ default = 手元の Engine） */
   context?: string;
+  /** 機械に入っているコンテナの道具（無ければ docker。podman は本体（デーモン）を持たず、利用者の権限で動かす） */
+  cli?: 'docker' | 'podman';
 }
 
 /** 自分たちの置き場。置けるのは、ログインした利用者（user）だけ */
@@ -329,6 +343,29 @@ export const REGISTRY: readonly Image[] = [
     startLog: ['reserve: listening on :3000'],
     database: { env: 'DATABASE_URL' },
   },
+  {
+    // 予約のサービスを 1 つに詰めた物（画面の nginx・API の Node.js・DB の PostgreSQL を、1 つのコンテナの中で台本が全て動かす。ctr.i.05）
+    ref: 'city-reserve-all:1.0', id: '3e9a6c0d2b57', size: '612MB', command: '/start-all.sh',
+    serves: { port: 80, body: '<html><body><h1>市の予約</h1><p>予約 3 件</p></body></html>' },
+    startLog: ['start-all: starting postgres (data in /var/lib/postgresql/data)', 'start-all: starting api on :3000', 'start-all: starting nginx on :80'],
+    procs: [{ command: '/bin/sh /start-all.sh', memory: 1.2 }, { command: 'postgres', memory: 28.6, user: 'postgres' }, { command: 'node /api/server.js', memory: 46.2 }, { command: 'nginx: master process nginx', memory: 3.4 }],
+  },
+  {
+    // 予約の API だけのコンテナ（Node.js）。DB の場所を DATABASE_URL で受け取り、3000 番で予約の数を JSON で答える（ctr.i.05）
+    ref: 'city-reserve-api:1.0', id: '9b1d4f7a3c60', size: '151MB', command: 'docker-entrypoint.sh node server.js',
+    bootLog: ['api: version 1.0.0'],
+    requiresEnv: { name: 'DATABASE_URL', error: ['Error: missing environment variable DATABASE_URL', '    at main (/app/server.js:6:11)'] },
+    startLog: ['api: listening on :3000'],
+    database: { env: 'DATABASE_URL', who: 'api', body: '{"reservations":{count}}' },
+  },
+  {
+    // 予約の画面だけのコンテナ（Node.js が画面を作る）。API の場所を API_URL で受け取り、API の答えから画面を作って 80 番で答える（ctr.i.05）
+    ref: 'city-reserve-ui:1.0', id: '5c7e2a9f1d48', size: '139MB', command: 'docker-entrypoint.sh node ui.js',
+    bootLog: ['ui: version 1.0.0'],
+    requiresEnv: { name: 'API_URL', error: ['Error: missing environment variable API_URL', '    at main (/app/ui.js:5:11)'] },
+    startLog: ['ui: listening on :80'],
+    upstream: { env: 'API_URL', who: 'ui', port: 80, body: '<html><body><h1>市の予約</h1><p>予約 {reservations} 件</p></body></html>' },
+  },
   { ref: 'node:20-alpine', id: '1f3d7a9c4e21', size: '135MB', tools: true, command: 'docker-entrypoint.sh node', cmd: ['node'], workdir: '/', startLog: [] },
   { ref: 'alpine:3.20', id: '91ef0af61f39', size: '7.8MB', command: '/bin/sh', oneShot: true, startLog: [] },
   { ref: 'hello-world:latest', id: 'd2c94e258dcb', size: '13.3kB', command: '/hello', oneShot: true, startLog: ['Hello from Docker!', 'This message shows that your installation appears to be working correctly.'] },
@@ -428,7 +465,7 @@ export function pull(host: ContainerHost, raw: string): Result<Image> {
     if (!reg) return { ok: false, host, error: { kind: 'registry-unknown', server } };
     // ログインしていなければ、あるかどうかも教えない（本物と同じ）
     const image = host.logins?.[server] === undefined ? undefined : reg.images.find((i) => i.ref === ref);
-    if (!image) return { ok: false, host, error: { kind: 'image-not-found', ref, known: host.logins?.[server] !== undefined } };
+    if (!image) return { ok: false, host, error: { kind: 'image-not-found', ref, known: host.logins?.[server] !== undefined && reg.images.some((i) => repoOf(i.ref) === repoOf(ref)) } };
     return { ok: true, host: { ...host, images: [...host.images, image] }, value: image };
   }
   const image = fromRegistry(ref);
@@ -453,7 +490,8 @@ function boot(c: Container, image: Image): Container {
   const head = [...c.log, ...(image.bootLog ?? [])];
   if (image.requiresEnv && !(image.requiresEnv.name in c.env)) return { ...c, state: 'exited', exitCode: 1, log: [...head, ...image.requiresEnv.error] };
   if (image.cmd) {
-    const app = runNodeApp(image.cmd, image.workdir ?? '/', image.files ?? {});
+    // 中のファイルは、イメージの物に書き込みの層を重ねて読む（中で直してから動かし直すと、直した物で動く）
+    const app = runNodeApp(image.cmd, image.workdir ?? '/', { ...image.files, ...c.files });
     if (app) {
       if (app.exitCode !== null) return { ...c, state: 'exited', exitCode: app.exitCode, log: [...head, ...app.log] };
       return { ...c, state: 'running', exitCode: 0, oomKilled: false, log: [...head, ...app.log], ...(app.serves ? { app: app.serves } : {}) };
@@ -482,9 +520,19 @@ export const PG_SKIP = ['', 'PostgreSQL Database directory appears to contain a 
  * localhost はコンテナ自身。届いた先が DB（5432 番で待ち受け）でなければ断られる。出す文は Node.js の pg の物
  */
 function connectDb(host: ContainerHost, c: Container, url: string): { target: string; error?: string[]; db?: Container } {
+  return connectTo(host, c, url, 5432, (to, port) => host.images.find((i) => i.ref === to.image)?.pg !== undefined && port === 5432);
+}
+
+/** API の場所（http://名前:ポート）につなぐ。届いた先が、そのポートで待ち受けて答えるコンテナでなければ断られる */
+function connectApi(host: ContainerHost, c: Container, url: string): { target: string; error?: string[]; db?: Container } {
+  return connectTo(host, c, url, 80, (to, port) => (to.app?.port ?? host.images.find((i) => i.ref === to.image)?.serves?.port) === port);
+}
+
+/** 場所の URL の名前（コンテナの名前・localhost・アドレス）を引いて、届いた先が listens なら、その先のコンテナ */
+function connectTo(host: ContainerHost, c: Container, url: string, defaultPort: number, listens: (to: Container, port: number) => boolean): { target: string; error?: string[]; db?: Container } {
   const m = /^[a-z]+:\/\/(?:[^@/]*@)?([^:/]+)(?::(\d+))?/.exec(url);
   const name = m?.[1] ?? url;
-  const port = Number(m?.[2] ?? 5432);
+  const port = Number(m?.[2] ?? defaultPort);
   const target = `${name}:${String(port)}`;
   const refused = (ip: string): string[] => [`Error: connect ECONNREFUSED ${ip}:${String(port)}`, '    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1555:16)'];
   if (name === 'localhost' || name === '127.0.0.1') return { target, error: refused('127.0.0.1') };
@@ -493,8 +541,7 @@ function connectDb(host: ContainerHost, c: Container, url: string): { target: st
     if (/^\d+\.\d+\.\d+\.\d+$/.test(name)) return { target, error: [`Error: connect ETIMEDOUT ${name}:${String(port)}`, '    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1555:16)'] };
     return { target, error: [`Error: getaddrinfo ENOTFOUND ${name}`, '    at GetAddrInfoReqWrap.onlookup [as oncomplete] (node:dns:107:26)'] };
   }
-  const listens = host.images.find((i) => i.ref === to.c.image)?.pg !== undefined && port === 5432;
-  return listens ? { target, db: to.c } : { target, error: refused(to.ip) };
+  return listens(to.c, port) ? { target, db: to.c } : { target, error: refused(to.ip) };
 }
 
 /** 動かす。DB のイメージは、データを書く場所が空なら最初の表を作り（init）、あればそのまま使う。DB につなぐアプリは、つなげなければ止まる */
@@ -502,16 +549,21 @@ function bootIn(host: ContainerHost, c: Container, image: Image): Result<Contain
   const booted = boot(c, image);
   if (image.database && booted.state === 'running') {
     const r = connectDb(host, booted, c.env[image.database.env] ?? '');
-    const head = [...c.log, ...(image.bootLog ?? []), `reserve: connecting to the database at ${r.target}`];
+    const who = image.database.who ?? 'reserve';
+    const head = [...c.log, ...(image.bootLog ?? []), `${who}: connecting to the database at ${r.target}`];
     // つながったら、3000 番で待ち受け、DB にある予約の数を答える
     const pg = r.db ? host.images.find((i) => i.ref === r.db?.image)?.pg : undefined;
     const count = r.db && pg ? (readTables(filesInside(host, r.db)[`${pg.dataDir}/${TABLES_FILE}`]).reservations?.rows.length ?? 0) : 0;
+    const body = (image.database.body ?? '<html><body><h1>市の予約の窓口</h1><p>予約 {count} 件</p></body></html>').replace('{count}', String(count));
     const next: Container = r.error
       ? { ...booted, state: 'exited', exitCode: 1, log: [...head, ...r.error] }
-      : {
-        ...booted, log: [...head, `reserve: connected to the database at ${r.target}`, ...image.startLog],
-        app: { port: 3000, body: `<html><body><h1>市の予約の窓口</h1><p>予約 ${String(count)} 件</p></body></html>` },
-      };
+      : { ...booted, log: [...head, `${who}: connected to the database at ${r.target}`, ...image.startLog], app: { port: 3000, body } };
+    return { ok: true, host: replace(host, next), value: next };
+  }
+  if (image.upstream && booted.state === 'running') {
+    // 画面のアプリは、頼まれるたびに API に聞く（appAnswer）。動き出す時は、聞きに行く場所を記録に書いて待ち受ける
+    const up = image.upstream;
+    const next: Container = { ...booted, log: [...c.log, ...(image.bootLog ?? []), `${up.who}: the API is at ${c.env[up.env] ?? ''}`, ...image.startLog], app: { port: up.port, body: '' } };
     return { ok: true, host: replace(host, next), value: next };
   }
   if (!image.pg || booted.state !== 'running') return { ok: true, host: replace(host, booted), value: booted };
@@ -702,7 +754,10 @@ export function push(host: ContainerHost, raw: string): Result<Image> {
   const reg = host.registries?.find((r) => r.server === server);
   if (!reg) return { ok: false, host, error: { kind: 'registry-unknown', server } };
   if (host.logins?.[server] === undefined) return { ok: false, host, error: { kind: 'push-unauthorized', ref } };
-  const next: PrivateRegistry = { ...reg, images: [...reg.images.filter((i) => i.ref !== ref), image] };
+  // 置き場から取った物は、取った機械で作った物ではない
+  const stored: Image = { ...image };
+  delete stored.local;
+  const next: PrivateRegistry = { ...reg, images: [...reg.images.filter((i) => i.ref !== ref), stored] };
   return { ok: true, host: { ...host, registries: (host.registries ?? []).map((r) => (r === reg ? next : r)) }, value: image };
 }
 
@@ -756,15 +811,22 @@ const UIDS: Readonly<Record<string, string>> = { nginx: '101', postgres: '999' }
  * コンテナごとに containerd-shim が親になり、その子が主のプロセス（docker inspect の .State.Pid）。
  * 機械にいない利用者（nginx・postgres）は、番号（101・999）で出る
  */
-export function hostProcesses(host: ContainerHost | null): { pid: number; ppid: number; user: string; command: string; memory: number }[] {
+export function hostProcesses(host: ContainerHost | null, me = 'learner'): { pid: number; ppid: number; user: string; command: string; memory: number }[] {
   const out: { pid: number; ppid: number; user: string; command: string; memory: number }[] = [];
+  const podman = host?.cli === 'podman';
   for (const c of host?.containers ?? []) {
     if (c.state !== 'running') continue;
     const image = host?.images.find((i) => i.ref === c.image);
     const shim = c.pid - 1;
-    out.push({ pid: shim, ppid: 1, user: 'root', command: `/usr/bin/containerd-shim-runc-v2 -namespace moby -id ${longId(c.id)} -address /run/containerd/containerd.sock`, memory: 12 });
+    // podman は本体を持たず、コンテナごとに見張り役の conmon が親になる。利用者の権限で動かすので、中の root は機械では自分、
+    // ほかの利用者は自分に割り当てた番号（100000 から）で見える
+    out.push(podman
+      ? { pid: shim, ppid: 1, user: me, command: `/usr/bin/conmon --api-version 1 -c ${longId(c.id)} -u ${longId(c.id)} -r /usr/bin/runc`, memory: 2 }
+      : { pid: shim, ppid: 1, user: 'root', command: `/usr/bin/containerd-shim-runc-v2 -namespace moby -id ${longId(c.id)} -address /run/containerd/containerd.sock`, memory: 12 });
     procsOf(image).forEach((p, i) => {
-      out.push({ pid: c.pid + i, ppid: i === 0 ? shim : c.pid, user: p.user === undefined || p.user === 'root' ? 'root' : (UIDS[p.user] ?? '1000'), command: p.command, memory: p.memory });
+      const root = p.user === undefined || p.user === 'root';
+      const user = podman ? (root ? me : String(99999 + Number(UIDS[p.user ?? ''] ?? '1000'))) : root ? 'root' : (UIDS[p.user ?? ''] ?? '1000');
+      out.push({ pid: c.pid + i, ppid: i === 0 ? shim : c.pid, user, command: p.command, memory: p.memory });
     });
   }
   return out;
@@ -823,6 +885,25 @@ export function removeVolume(host: ContainerHost, name: string): Result<Volume> 
   return { ok: true, host: { ...host, volumes: (host.volumes ?? []).filter((x) => x !== v) }, value: v };
 }
 
+/**
+ * 動いているアプリが答える物。画面だけのアプリ（upstream）は、頼まれた時に API に聞き、API の答え（JSON）の値を画面に入れる。
+ * API に届かなければ 502 と、届かなかった理由を答える
+ */
+export function appAnswer(host: ContainerHost, c: Container): { status: number; body: string } {
+  const up = host.images.find((i) => i.ref === c.image)?.upstream;
+  if (!up) return { status: 200, body: c.app?.body ?? '' };
+  const r = connectApi(host, c, c.env[up.env] ?? '');
+  if (r.error) return { status: 502, body: `<html><body><h1>502 Bad Gateway</h1><p>${up.who}: cannot reach the API at ${r.target}</p><pre>${r.error[0] ?? ''}</pre></body></html>` };
+  let data: Record<string, unknown> = {};
+  try {
+    const parsed: unknown = JSON.parse(r.db?.app?.body ?? '{}');
+    if (typeof parsed === 'object' && parsed !== null) data = parsed as Record<string, unknown>;
+  } catch {
+    data = {};
+  }
+  return { status: 200, body: up.body.replace(/\{(\w+)\}/g, (all, key: string) => (typeof data[key] === 'number' || typeof data[key] === 'string' ? String(data[key]) : all)) };
+}
+
 /** 中身を読む場所を持つイメージが、中身を見つけられない時の答え */
 const FORBIDDEN = '<html><head><title>403 Forbidden</title></head><body><h1>403 Forbidden</h1></body></html>';
 
@@ -836,7 +917,7 @@ export function servedAt(host: ContainerHost | null, port: number, read: (path: 
   if (!c) return null;
   const image = host.images.find((i) => i.ref === c.image);
   const map = c.ports.find((p) => p.host === port);
-  if (c.app) return map?.container === c.app.port ? { container: c, body: c.app.body, status: 200 } : null;
+  if (c.app) return map?.container === c.app.port ? { container: c, ...appAnswer(host, c) } : null;
   if (!image?.serves || map?.container !== image.serves.port) return null;
   const root = image.serves.root;
   if (root === undefined) return { container: c, body: image.serves.body, status: 200 };
