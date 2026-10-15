@@ -62,7 +62,7 @@
 1. main に変更が入る
 2. `ci.yml` が通っていることを確かめる
 3. `deploy.yml` が公開する
-4. 公開 URL に対して E2E と撮影を実行する
+4. 公開 URL に対して E2E と撮影を実行する（`E2E_URL=<公開 URL> npx playwright test`。撮影は `SHOOT_URL=<公開 URL> npm run shoot -- <名前> <パス>`。どちらも手元のサーバを立てない）
 5. 結果を `docs/progress/` に記録する
 
 ## 8. 公開前の確認

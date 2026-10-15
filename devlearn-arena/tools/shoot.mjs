@@ -6,6 +6,8 @@
 // 1920×1080 で撮り、shots/<名前>.png に保存する。開発用のサーバを自分で立てて、自分で片付ける。
 // 環境変数:
 //   SHOOT_SIZE=1280x720   画面の大きさを変える
+//   SHOOT_URL=https://swallowsaba.github.io/swallow/devlearn-arena/
+//                         公開した所を撮る（docs/deployment.md 7 章）
 //   SHOOT_DPR=2           画素の倍率（小さい部品を細かく撮る。ミニマップなど）
 //   SHOOT_FPS=1           都市を毎フレーム描き直させ、3 秒間の fps を測って表示する
 //   SHOOT_EVAL='...'      撮る前にページで実行する式（カメラを動かすなど）
@@ -22,11 +24,14 @@ import { setTimeout as sleep } from 'node:timers/promises';
 const [name = 'shot', path = '#/city', waitMs = '1500'] = process.argv.slice(2);
 const [width, height] = (process.env.SHOOT_SIZE ?? '1920x1080').split('x').map(Number);
 
-const server = await createServer({ server: { port: 0, strictPort: false }, logLevel: 'error' });
-await server.listen();
-const address = server.httpServer?.address();
+// SHOOT_URL があれば、公開した所を撮る（開発用のサーバを立てない）
+const site = process.env.SHOOT_URL;
+const server = site ? null : await createServer({ server: { port: 0, strictPort: false }, logLevel: 'error' });
+await server?.listen();
+const address = server?.httpServer?.address();
 const port = typeof address === 'object' && address ? address.port : 5173;
-const url = `http://localhost:${String(port)}/${path.startsWith('#') ? path : path.replace(/^\//, '')}`;
+const root = site ? (site.endsWith('/') ? site : `${site}/`) : `http://localhost:${String(port)}/`;
+const url = `${root}${path.startsWith('#') ? path : path.replace(/^\//, '')}`;
 
 const browser = await chromium.launch();
 try {
@@ -78,5 +83,5 @@ try {
   }
 } finally {
   await browser.close();
-  await server.close();
+  await server?.close();
 }
