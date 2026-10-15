@@ -150,7 +150,7 @@ export function bootMarkup(): string {
     + `<div id="boot" role="status" aria-label="都市を読み込んでいる"><svg viewBox="0 0 480 300" aria-hidden="true">${paths}</svg></div>`;
 }
 
-/** 都市が描けたら、読み込み中の演出を薄れさせて消す（動きを減らす設定では、すぐ消す） */
+/** 都市が描けたら（レッスン・ミッションの画面が都市を覆って開いた時は、その画面が出たら）、読み込み中の演出を薄れさせて消す（動きを減らす設定では、すぐ消す） */
 export function finishBoot(doc: Document = document): void {
   const el = doc.getElementById('boot');
   if (!el || el.classList.contains('is-done')) return;

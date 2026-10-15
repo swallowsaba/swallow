@@ -164,6 +164,8 @@ export function CityScreen({ session, active = true, covered = false, current, d
   // レッスン・ミッションの実戦が都市を覆っている間は描かない（描く物を作り直した時も写し直す）
   useEffect(() => {
     rendererRef.current?.setCovered(covered);
+    // 直リンクやリロードで、初めから覆う画面が開いた時は、都市を描かないので、読み込み中の演出をここで下げる（覆う画面を見せる）
+    if (covered) finishBoot();
   }, [covered, store, session.settings]);
 
   // 名札は、都市の上に重ねた知らせと表示切替の所を避ける（描き直しのたびに、出ている部品の位置を測って渡す）

@@ -17,3 +17,13 @@ test('本体が届く前から都市の輪郭を描き、都市が描けたら�
   await expect(boot).toHaveCount(0);
   await expect(page.getByTestId('topbar')).toBeVisible();
 });
+
+test('レッスン・ミッションの画面を直リンクで開いた時（リロードを含む）も、演出が消えてその画面が出る', async ({ page }) => {
+  for (const hash of ['#/lesson/found.b.04', '#/mission/web-server']) {
+    await page.goto(`./${hash}`);
+    await expect(page.locator('#boot')).toHaveCount(0);
+    await page.reload();
+    await expect(page.locator('#boot')).toHaveCount(0);
+  }
+  await expect(page.getByTestId('mission-exit')).toBeVisible();
+});
