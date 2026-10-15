@@ -1,7 +1,6 @@
-import { ipToInt, parseCidr } from '@/engines/net/subnet';
 import {
-  assignSetupSchema, configSetupSchema, connectSetupSchema, orderSetupSchema, readSetupSchema,
-  type AssignState, type ConfigState, type ConnectState, type OrderState, type Panel, type ReadState, type SimAction, type SimOutcome, type SimState,
+  assignSetupSchema, connectSetupSchema, orderSetupSchema, readSetupSchema,
+  type AssignState, type ConnectState, type OrderState, type Panel, type ReadState, type SimAction, type SimOutcome, type SimState,
 } from './types';
 
 /**
@@ -18,7 +17,6 @@ export const SIM_TYPES = {
   'sim-connect': 'connect',
   'sim-order': 'order',
   'sim-assign': 'assign',
-  'sim-config': 'config',
   'sim-read': 'read',
 } as const;
 
@@ -31,7 +29,6 @@ const OPS: Record<SimState['type'], readonly SimAction['op'][]> = {
   connect: ['connect', 'cut', 'start', 'send'],
   order: ['arrange'],
   assign: ['put', 'take'],
-  config: ['set', 'add', 'del'],
   read: ['answer'],
 };
 
@@ -83,33 +80,6 @@ export function createSim(environment: string, setup: unknown): SimState {
       checkPanels(state);
       return state;
     }
-    case 'config': {
-      const s = configSetupSchema.parse(setup);
-      unique([...(s.fields ?? []).map((f) => f.id), ...(s.tables ?? []).map((t) => t.id)], '欄と表');
-      const fields: Record<string, string> = {};
-      for (const f of s.fields ?? []) {
-        if (f.value !== undefined && f.options && !f.options.some((o) => same(o, f.value ?? ''))) throw new Error(`欄 ${f.id} の初めの値 ${f.value} が選べる値に無い`);
-        fields[f.id] = f.value ?? '';
-      }
-      const tables: Record<string, Record<string, string>[]> = {};
-      for (const t of s.tables ?? []) {
-        const cols = unique(t.columns.map((c) => c.id), `表 ${t.id} の列`);
-        for (const row of t.rows ?? []) need(cols, Object.keys(row), `表 ${t.id} の行`);
-        tables[t.id] = (t.rows ?? []).map((r) => ({ ...r }));
-      }
-      const state: ConfigState = { type: 'config', setup: s, fields, tables };
-      checkPanels(state);
-      const settle = s.settle === undefined ? [] : exprProblems(state, s.settle);
-      if (settle.length > 0) throw new Error(`出来上がりの式（settle）: ${settle.join('・')}`);
-      for (const f of s.fields ?? []) {
-        for (const r of f.requires ?? []) {
-          if (f.options && !f.options.some((o) => same(o, r.value))) throw new Error(`欄 ${f.id} の条件（requires）: ${r.value} が選べる値に無い`);
-          const problems = exprProblems(state, r.expr);
-          if (problems.length > 0) throw new Error(`欄 ${f.id} の条件（requires）: ${problems.join('・')}`);
-        }
-      }
-      return state;
-    }
     case 'read': {
       const s = readSetupSchema.parse(setup);
       unique(s.questions.map((q) => q.id), '問い');
@@ -157,7 +127,6 @@ export function applyAction(state: SimState, action: SimAction): SimOutcome {
     case 'connect': return connectOp(state, action);
     case 'order': return action.op === 'arrange' ? arrange(state, action.stages) : fail(state, `この画面ではできない操作: ${action.op}`);
     case 'assign': return assignOp(state, action, false);
-    case 'config': return configOp(state, action);
     case 'read': return action.op === 'answer' ? readOp(state, action.question, action.value) : fail(state, `この画面ではできない操作: ${action.op}`);
   }
 }
@@ -407,41 +376,6 @@ export function misplaced(s: AssignState, expr: string): string[] {
   return out;
 }
 
-/* 設定する（作り直しの間だけ） */
-
-function configOp(s: ConfigState, action: SimAction): SimOutcome {
-  if (action.op === 'set') {
-    const field = s.setup.fields?.find((f) => f.id === action.field);
-    if (!field) return fail(s, `「${action.field}」という欄は無い`);
-    const value = action.value.trim();
-    const option = field.options?.find((o) => same(o, value));
-    if (field.options && !option) return fail(s, `「${field.label}」に「${value}」は選べない（選べる値: ${field.options.join('・')}）`);
-    const blocked = field.requires?.find((r) => same(r.value, value) && !holds(s, r.expr));
-    if (blocked) return fail(s, blocked.message);
-    return ok({ ...s, fields: { ...s.fields, [field.id]: option ?? value } });
-  }
-  if (action.op !== 'add' && action.op !== 'del') return fail(s, `この画面ではできない操作: ${action.op}`);
-  const table = s.setup.tables?.find((t) => t.id === action.table);
-  if (!table) return fail(s, `「${action.table}」という表は無い`);
-  const rows = s.tables[table.id] ?? [];
-  if (action.op === 'del') {
-    if (action.index > rows.length) return fail(s, `「${table.label}」に ${String(action.index)} 行目は無い`);
-    return ok({ ...s, tables: { ...s.tables, [table.id]: rows.filter((_, i) => i !== action.index - 1) } });
-  }
-  const row: Record<string, string> = {};
-  for (const [colId, raw] of Object.entries(action.row)) {
-    const col = table.columns.find((c) => c.id === colId);
-    if (!col) return fail(s, `「${table.label}」に列「${colId}」は無い`);
-    const value = raw.trim();
-    if (value === '') continue;
-    const option = col.options?.find((o) => same(o, value));
-    if (col.options && !option) return fail(s, `列「${col.label}」に「${value}」は選べない（選べる値: ${col.options.join('・')}）`);
-    row[col.id] = option ?? value;
-  }
-  if (Object.keys(row).length === 0) return fail(s, `「${table.label}」に足す行が空`);
-  return ok({ ...s, tables: { ...s.tables, [table.id]: [...rows, row] } });
-}
-
 /* 読み取って答える */
 
 function readOp(s: ReadState, qId: string, raw: string): SimOutcome {
@@ -453,7 +387,7 @@ function readOp(s: ReadState, qId: string, raw: string): SimOutcome {
 }
 
 /**
- * 出来上がったか（札を全て並べた・入れた、問いに全て答えた、欄を全て初めの値から変えた。設定するは settle の式でも決められる）。
+ * 出来上がったか（札を全て並べた・入れた、問いに全て答えた）。
  * 出来上がったのに達成条件を満たさなければ、実戦は「合っていない」と知らせる（src/learning/practice.ts）。つなぐには出来上がりが無い
  */
 export function isSettled(s: SimState): boolean {
@@ -461,11 +395,6 @@ export function isSettled(s: SimState): boolean {
     case 'order': return s.setup.items.every((i) => i.extra === true || stageOf(s, i.id) >= 0);
     case 'assign': return s.setup.items.every((i) => i.extra === true || (s.placed[i.id] ?? []).length > 0);
     case 'read': return s.setup.questions.every((q) => (s.answers[q.id] ?? '') !== '');
-    case 'config': {
-      if (s.setup.settle !== undefined) return holds(s, s.setup.settle);
-      const fields = s.setup.fields ?? [];
-      return fields.length > 0 && fields.every((f) => (s.fields[f.id] ?? '') !== '' && !same(s.fields[f.id] ?? '', f.value ?? ''));
-    }
     case 'connect':
       return false;
   }
@@ -521,9 +450,6 @@ export function describeAction(s: SimState, action: SimAction): string {
     case 'put': return s.type === 'assign' ? `${q(itemLabel(s, action.item))}を${q(slotLabel(s, action.slot))}に入れた` : '入れた';
     case 'take': return s.type === 'assign' ? `${q(itemLabel(s, action.item))}を置き場に戻した` : '戻した';
     case 'answer': return s.type === 'read' ? `${q(s.setup.questions.find((x) => x.id === action.question)?.prompt ?? action.question)}に${q(action.value)}と答えた` : '答えた';
-    case 'set': return `${q(action.field)}を${q(action.value)}にした`;
-    case 'add': return `${q(action.table)}に行を足した`;
-    case 'del': return `${q(action.table)}の ${String(action.index)} 行目を消した`;
   }
 }
 
@@ -542,10 +468,6 @@ export function actionNames(s: SimState, action: SimAction): string[] {
     case 'put': return s.type === 'assign' ? [itemLabel(s, action.item), slotLabel(s, action.slot)] : [];
     case 'take': return s.type === 'assign' ? [itemLabel(s, action.item)] : [];
     case 'answer': return [action.value];
-    case 'set':
-    case 'add':
-    case 'del':
-      return [];
   }
 }
 
@@ -685,30 +607,6 @@ function evalClause(state: SimState, clause: string): boolean {
       if (c?.name === 'time' && args.length === 0) return c.op(assignTime(s), c.n);
       return bad('割り振るの式は in・count・fits・placed・time<=N');
     }
-    case 'config': {
-      const s = state;
-      if (head === 'field') {
-        const ps = pairs(args) ?? bad('field 欄=値 …');
-        idsOf(s.setup.fields, ps.map(([f]) => f), '欄');
-        return ps.every(([f, v]) => same(s.fields[f] ?? '', v));
-      }
-      if (head === 'row') {
-        const [tableId = '', ...rest] = args;
-        idsOf(s.setup.tables, [tableId], '表');
-        const ps = pairs(rest) ?? bad('row 表 列=値 …');
-        const table = s.setup.tables?.find((t) => t.id === tableId);
-        idsOf(table?.columns, ps.map(([c]) => c), `表 ${tableId} の列`);
-        return (s.tables[tableId] ?? []).some((r) => ps.every(([c, v]) => same(r[c] ?? '', v)));
-      }
-      if (head === 'rows') {
-        const c = (args.length === 1 ? comparison(args[0] ?? '') : null) ?? bad('rows 表<=N');
-        idsOf(s.setup.tables, [c.name], '表');
-        return c.op((s.tables[c.name] ?? []).length, c.n);
-      }
-      if (head === 'samenet') return sameNet(s, args, bad);
-      if (head === 'pool') return poolHolds(s, args, bad);
-      return bad('設定するの式は field・row・rows・samenet・pool');
-    }
     case 'read': {
       const s = state;
       if (head !== 'answered') return bad('読み取って答えるの式は answered');
@@ -717,80 +615,4 @@ function evalClause(state: SimState, clause: string): boolean {
       return ps.every(([q, v]) => same(s.answers[q] ?? '', v));
     }
   }
-}
-
-/* ---------- ネットワークの設定の式（net の分野） ---------- */
-
-/** 欄の ID ならその値、そうでなければ書いた値そのもの（決まったアドレス）。欄でもアドレスでもなければ式の誤り */
-function valueOf(s: ConfigState, ref: string, bad: (why: string) => never): string {
-  if (s.setup.fields?.some((f) => f.id === ref)) return s.fields[ref] ?? '';
-  if (/^[\d.]+(\/\d+)?$/.test(ref)) return ref;
-  return bad(`欄 ${ref} が無い`);
-}
-
-/** IPv4 のアドレスを数にする。読めなければ null */
-function ipNumber(ip: string): bigint | null {
-  try {
-    return /^\d+\.\d+\.\d+\.\d+$/.test(ip.trim()) ? ipToInt(ip.trim()) : null;
-  } catch {
-    return null;
-  }
-}
-
-/**
- * samenet A B …: 全て「アドレス/区切り」の形で、同じ網（網の部分と区切りが同じ）にあり、互いに重ならず、
- * 網そのもの・全体宛てのアドレスでない（そのまま機械に振って、互いに届く）
- */
-function sameNet(s: ConfigState, args: string[], bad: (why: string) => never): boolean {
-  if (args.length < 2) bad('samenet 欄 欄 …（2 つ以上）');
-  const values = args.map((a) => valueOf(s, a, bad).trim());
-  const nets = new Set<string>();
-  const seen = new Set<string>();
-  for (const v of values) {
-    if (!/^\d+\.\d+\.\d+\.\d+\/\d+$/.test(v)) return false;
-    let c;
-    try {
-      c = parseCidr(v);
-    } catch {
-      return false;
-    }
-    if (c.prefix > 30 || c.address === c.network || c.address === c.broadcast || seen.has(c.address)) return false;
-    seen.add(c.address);
-    nets.add(`${c.network}/${String(c.prefix)}`);
-  }
-  return nets.size === 1;
-}
-
-/** pool 始め 終わり in=網 size>=N avoid=a,b: 配る範囲が網の中（網そのもの・全体宛てを除く）で、数が足り、固定のアドレスを含まない */
-function poolHolds(s: ConfigState, args: string[], bad: (why: string) => never): boolean {
-  const [startRef = '', endRef = '', ...rest] = args;
-  if (args.length < 3) bad('pool 始め 終わり in=網 size>=N avoid=a,b');
-  const start = ipNumber(valueOf(s, startRef, bad));
-  const end = ipNumber(valueOf(s, endRef, bad));
-  let net: { network: bigint; broadcast: bigint } | null = null;
-  let size: { op: Compare; n: number } | null = null;
-  const avoid: bigint[] = [];
-  for (const a of rest) {
-    if (a.startsWith('in=')) {
-      try {
-        const c = parseCidr(a.slice(3));
-        net = { network: ipToInt(c.network), broadcast: ipToInt(c.broadcast) };
-      } catch {
-        bad(`網 ${a.slice(3)} が読めない（10.0.0.0/8 の形）`);
-      }
-      continue;
-    }
-    if (a.startsWith('avoid=')) {
-      for (const ip of a.slice(6).split(',')) avoid.push(ipNumber(ip) ?? bad(`アドレス ${ip} が読めない`));
-      continue;
-    }
-    const c = comparison(a);
-    if (c?.name === 'size') size = c;
-    else bad(`「${a}」は書けない（in=網・size>=N・avoid=a,b）`);
-  }
-  if (!net) return bad('in=網 が要る');
-  if (start === null || end === null || start > end) return false;
-  if (start <= net.network || end >= net.broadcast) return false;
-  if (avoid.some((x) => x >= start && x <= end)) return false;
-  return size === null || size.op(Number(end - start + 1n), size.n);
 }

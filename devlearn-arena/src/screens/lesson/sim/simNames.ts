@@ -5,6 +5,5 @@ export const SIM_NAMES: Record<SimState['type'], string> = {
   connect: 'つなぐ',
   order: '並べる',
   assign: '割り振る',
-  config: '設定する',
   read: '読み取って答える',
 };

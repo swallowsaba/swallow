@@ -198,8 +198,6 @@ function practiceProblems(practice: Practice, ctx: Pick<ValidateContext, 'errors
  */
 function simAnswerProblems(practice: Practice, initial: SimState): string[] {
   const p: string[] = [];
-  // 設定する（sim-config）は作り直しの間だけ残す型。最後のヒントは前の形のまま（作り直す時に、この型ごと消す）
-  if (initial.type === 'config') return p;
   for (const s of practice.steps) {
     const last = s.hints[2];
     if (parseRich(last).some((x) => x.kind === 'code')) p.push(`実戦 ${s.id}: 最後のヒントに打つ文（\`...\`）を書いている（画面の操作は、何をどこへ置く・つなぐ・並べるを日本語で書く）`);

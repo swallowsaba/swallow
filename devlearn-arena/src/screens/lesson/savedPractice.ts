@@ -128,15 +128,6 @@ function simStateSchema(fresh: SimState): ZodType<SimState> {
       return base.extend({ placed: keyed(fresh.setup.items.map((i) => i.id), z.array(slot)) })
         .transform((v) => ({ ...fresh, placed: v.placed })) as unknown as ZodType<SimState>;
     }
-    case 'config': {
-      const tables = fresh.setup.tables ?? [];
-      const columnsOf = (id: string) => tables.find((t) => t.id === id)?.columns.map((c) => c.id) ?? [];
-      return base.extend({
-        fields: keyed((fresh.setup.fields ?? []).map((f) => f.id), z.string()),
-        tables: keyed(tables.map((t) => t.id), z.array(z.record(z.string(), z.string())))
-          .refine((r) => Object.entries(r).every(([id, rows]) => rows.every((row) => Object.keys(row).every((c) => columnsOf(id).includes(c))))),
-      }).transform((v) => ({ ...fresh, fields: v.fields, tables: v.tables })) as unknown as ZodType<SimState>;
-    }
     case 'read':
       return base.extend({ answers: keyed(fresh.setup.questions.map((q) => q.id), z.string()) })
         .transform((v) => ({ ...fresh, answers: v.answers })) as unknown as ZodType<SimState>;

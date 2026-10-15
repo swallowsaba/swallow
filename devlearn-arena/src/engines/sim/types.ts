@@ -123,30 +123,6 @@ export const assignSetupSchema = z.object({
   ...panels,
 }).strict();
 
-/* ---------- 設定する（作り直しの間だけ残す。全ての実戦を作り直したら消す。REWORK-PRACTICE.txt (2)） ---------- */
-
-export const configSetupSchema = z.object({
-  fields: z.array(z.object({
-    id,
-    label: z.string().min(1),
-    /** 選べる値（無ければ自由に入れる） */
-    options: z.array(z.string().min(1)).optional(),
-    value: z.string().optional(),
-    note: z.string().optional(),
-    /** その値を選ぶ前に満たす条件（判定の式）。満たさなければ message の文で断る（検査が通るまで取り込めない、など） */
-    requires: z.array(z.object({ value: z.string().min(1), expr: z.string().min(1), message: z.string().min(1) }).strict()).optional(),
-  }).strict()).optional(),
-  tables: z.array(z.object({
-    id,
-    label: z.string().min(1),
-    columns: z.array(z.object({ id, label: z.string().min(1), options: z.array(z.string().min(1)).optional() }).strict()).min(1),
-    rows: z.array(z.record(id, z.string())).optional(),
-  }).strict()).optional(),
-  /** 出来上がりの式（判定の式）。無ければ「全ての欄を初めの値から変えた」。表に行を足す設定で、答えが合っていない時を知らせる */
-  settle: z.string().min(1).optional(),
-  ...panels,
-}).strict().refine((s) => (s.fields?.length ?? 0) + (s.tables?.length ?? 0) > 0, '欄か表が 1 つ以上要る');
-
 /* ---------- 読み取って答える ---------- */
 
 export const readSetupSchema = z.object({
@@ -163,7 +139,6 @@ export type Panel = z.infer<typeof panelSchema>;
 export type ConnectSetup = z.infer<typeof connectSetupSchema>;
 export type OrderSetup = z.infer<typeof orderSetupSchema>;
 export type AssignSetup = z.infer<typeof assignSetupSchema>;
-export type ConfigSetup = z.infer<typeof configSetupSchema>;
 export type ReadSetup = z.infer<typeof readSetupSchema>;
 
 /* ---------- 状態（そのまま JSON にでき、途中の保存に使う） ---------- */
@@ -171,10 +146,9 @@ export type ReadSetup = z.infer<typeof readSetupSchema>;
 export interface ConnectState { type: 'connect'; setup: ConnectSetup; links: [string, string][]; up: string[]; sent: [string, string][] }
 export interface OrderState { type: 'order'; setup: OrderSetup; stages: string[][] }
 export interface AssignState { type: 'assign'; setup: AssignSetup; placed: Record<string, string[]> }
-export interface ConfigState { type: 'config'; setup: ConfigSetup; fields: Record<string, string>; tables: Record<string, Record<string, string>[]> }
 export interface ReadState { type: 'read'; setup: ReadSetup; answers: Record<string, string> }
 
-export type SimState = ConnectState | OrderState | AssignState | ConfigState | ReadState;
+export type SimState = ConnectState | OrderState | AssignState | ReadState;
 
 /* ---------- 操作（画面の操作と、最後のヒントの再生が同じ形を通る） ---------- */
 
@@ -200,10 +174,6 @@ export const simActionSchema = z.discriminatedUnion('op', [
   z.object({ op: z.literal('take'), item: id, slot: id.optional() }).strict(),
   /** 読み取って答える: 答えを押して選ぶ */
   z.object({ op: z.literal('answer'), question: id, value: z.string().min(1) }).strict(),
-  /** 設定する（作り直しの間だけ） */
-  z.object({ op: z.literal('set'), field: id, value: z.string().min(1) }).strict(),
-  z.object({ op: z.literal('add'), table: id, row: z.record(id, z.string()) }).strict(),
-  z.object({ op: z.literal('del'), table: id, index: z.number().int().min(1) }).strict(),
 ]);
 
 export type SimAction = z.infer<typeof simActionSchema>;

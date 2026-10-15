@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
-  actionNames, applyAction, connectProblem, createSim, describeAction, exprProblems, holds, isSettled, misplaced, orderStop, sendRoute, shownPanels, stepSettled, wrongAnswers,
+  actionNames, applyAction, connectProblem, createSim, describeAction, exprProblems, holds, isSettled, isSimEnvironment, misplaced, orderStop, sendRoute, shownPanels, stepSettled, wrongAnswers,
   type SimEnvironmentId,
 } from './sim';
 import type { SimAction, SimState } from './types';
@@ -338,28 +338,10 @@ describe('置く: 枠が埋まった時の文', () => {
   });
 });
 
-describe('設定する（sim-config。作り直しの間だけ残す型）', () => {
-  const set = (field: string, value: string): SimAction => ({ op: 'set', field, value });
-  const office = { fields: [{ id: 'pc1', label: '1 台目' }, { id: 'pc2', label: '2 台目' }, { id: 'start', label: '始め' }, { id: 'end', label: '終わり' }] };
-
-  it('欄の値を判定する。条件（requires）を満たさない値は断る', () => {
-    const s = sim('sim-config', {
-      fields: [
-        { id: '修正', label: '指摘への対応', options: ['まだ', '直した'], value: 'まだ' },
-        { id: '取り込み', label: '取り込み', options: ['まだ', '取り込む'], value: 'まだ', requires: [{ value: '取り込む', expr: 'field 修正=直した', message: '取り込めない' }] },
-      ],
-    });
-    expect(applyAction(s, set('取り込み', '取り込む')).error).toBe('取り込めない');
-    expect(holds(run(s, [set('修正', '直した'), set('取り込み', '取り込む')]).state, 'field 取り込み=取り込む')).toBe(true);
-  });
-
-  it('samenet と pool', () => {
-    const s = sim('sim-config', office);
-    expect(holds(run(s, [set('pc1', '192.168.10.11/24'), set('pc2', '192.168.10.12/24')]).state, 'samenet 192.168.10.1/24 pc1 pc2')).toBe(true);
-    expect(holds(run(s, [set('pc1', '192.168.10.11/24'), set('pc2', '192.168.20.12/24')]).state, 'samenet 192.168.10.1/24 pc1 pc2')).toBe(false);
-    const expr = 'pool start end in=192.168.1.0/24 size>=5 avoid=192.168.1.1,192.168.1.10';
-    expect(holds(run(s, [set('start', '192.168.1.100'), set('end', '192.168.1.150')]).state, expr)).toBe(true);
-    expect(holds(run(s, [set('start', '192.168.1.5'), set('end', '192.168.1.50')]).state, expr)).toBe(false);
+describe('廃止した型', () => {
+  it('設定する（sim-config）は、知らない模擬環境として断る（欄に値を入れる形は作らない。REWORK-PRACTICE.txt (2)）', () => {
+    expect(() => createSim('sim-config', { fields: [{ id: 'a', label: 'A' }] })).toThrow('知らない模擬環境 sim-config');
+    expect(isSimEnvironment('sim-config')).toBe(false);
   });
 });
 

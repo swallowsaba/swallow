@@ -627,3 +627,15 @@
 - lab は今の公開範囲にレッスンが無い（(1) の表）
 
 検査: `npm run typecheck`・`npm run lint`・`npm run test`（171 ファイル・1886 件。試し台を除く）・`npm run content:check` が通った。
+
+## 設定する（sim-config）の型を消した（2026-10-16）
+
+全ての分野の作り直しを終え、sim-config を使う実戦が 0 本になったので、「共通の作り直し」に書いたとおり型ごと消した（REWORK-PRACTICE.txt (2)）。
+
+- 模擬（`src/engines/sim`）: `sim-config` の型・欄と表の setup（`configSetupSchema`）・状態（`ConfigState`）・操作（`set`・`add`・`del`）・判定の式（`field`・`row`・`rows`・`samenet`・`pool`）・出来上がり（`settle`）を消した。`sim-config` は知らない模擬環境として断る（`src/engines/sim/sim.test.ts`）
+- 画面: 欄に値を入れる画面（`ConfigView`・自由に打つ欄・表に行を足す欄）を消した。型の名前の表（`simNames.ts`）と、途中の保存の読み戻し（`savedPractice.ts`）からも消した
+- 内容の検証: 最後のヒントを前の形のまま許していた例外を消した。画面の操作の実戦は全て、最後のヒントが「何をどこへ置く・つなぐ・並べる」の日本語で、操作に出てくる物の名前が全て書いてあるかを確かめる
+- 実戦の形の数（131 本）: 端末 85・設定の編集 20・SQL 5（本物の道具 110）、置く 9・つなぐ 5・読み取って答える 4・並べる 3（画面の操作 21）。(1) の表の「直した後の予定」と同じ
+- 画面の確かめ: `rw-final-mon.b.03-start` / `-wrong` / `-done`（読み取って答える）で、消した後も型の画面が出て、誤りが赤く示され、2 つの段が達成になる
+
+検査: `npm run typecheck`・`npm run lint`・`npm run test`（171 ファイル・1885 件。試し台を除く）・`npm run content:check` が通った。
