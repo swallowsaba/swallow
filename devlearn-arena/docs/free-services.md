@@ -22,6 +22,7 @@
 | フォント（M PLUS 1・Noto Sans JP・Barlow Condensed・JetBrains Mono、@fontsource 経由） | SIL Open Font License 1.1 | 表示 |
 | sql.js | MIT | DB の実戦 |
 | React・Vite・Zustand・zod・Vitest・Playwright | MIT / Apache-2.0 | 開発と実行 |
+| xterm.js・js-yaml・@noble/hashes | MIT | 実戦の端末・設定ファイル（YAML）の読み取り・模擬環境のハッシュ |
 
 ライセンスの記録は `CREDITS.md`（`docs/asset-policy.md`）。
 
