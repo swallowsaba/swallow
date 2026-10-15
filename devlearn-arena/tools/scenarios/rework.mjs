@@ -10,6 +10,7 @@
 //   -done    最後のヒントの操作を全てした後（動きの終わり。原則 4）
 // 端末・設定の編集の実戦は、最後のヒントのコマンドを打って -start・-done を撮る（原則 1: 本物の道具が出ているか）。
 // REDUCED=1 を付けると、動きを減らす設定で撮る（動きが即時になるか）。
+// 端末の「調べて答える」手順は、WRONG_ANSWER=手順=値 で、その手順に先に誤った答えを入れた所を -wrong に撮る。
 import { readFileSync } from 'node:fs';
 import { perform, wrongAction } from './simDrive.mjs';
 
@@ -74,6 +75,15 @@ export default async function rework(page, shot) {
           await page.fill('[data-testid="editor-text"]', line);
           await page.click('[data-testid="editor-save"]');
         } else if (answerStep && j === lines.length - 1) {
+          // WRONG_ANSWER=手順=値 なら、その手順で先に誤った答えを入れた所（想定エラーの案内）を -wrong に撮る
+          const [wrongStep, wrongValue] = (process.env.WRONG_ANSWER ?? '').split('=');
+          if (wrongStep === step.id && wrongValue) {
+            await page.fill('#practice-answer', wrongValue);
+            await page.press('#practice-answer', 'Enter');
+            await wait(page, 700);
+            console.log('誤り', await page.evaluate(() => document.querySelector('[data-testid="practice-error"]')?.getAttribute('data-guide') ?? null));
+            await shot(`${name}-wrong`);
+          }
           await page.fill('#practice-answer', line);
           await page.press('#practice-answer', 'Enter');
         } else if (p.mode === 'sql') {

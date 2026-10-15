@@ -2351,7 +2351,7 @@
       "title": "切り分けの型",
       "goal": "症状 → 範囲 → 仮説 → 確認 → 対処 → 再確認、を回せる",
       "practice": [
-        "simulation"
+        "terminal"
       ],
       "prerequisites": [
         "linux.b.04"

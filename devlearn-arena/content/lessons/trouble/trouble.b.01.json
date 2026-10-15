@@ -26,7 +26,8 @@
     "status-code",
     "web-server",
     "log",
-    "memory"
+    "memory",
+    "kernel"
   ],
   "explain": {
     "what": "{{term:troubleshooting}}の型は、症状 → 範囲 → 仮説 → 確認 → 対処 → 再確認、の順に進める決まった手順。何が起きたかを聞き、どこまで同じかを絞り、原因を 1 つ決めて確かめてから直す。",
@@ -157,339 +158,118 @@
     }
   ],
   "practice": {
-    "mode": "simulation",
-    "purpose": "市民窓口から「予約サイトが見えない」と電話が来た。型に沿って、症状 → 範囲 → 仮説 → 確認 → 対処 → 再確認の順に進め、原因を見つけて直す。",
-    "environment": "sim-config",
+    "mode": "terminal",
+    "purpose": "市民窓口から「予約サイトが見えない」と電話が来た（10:20）。予約サイトの{{term:web-server}} `reserve-web` に入った。手前の `nginx` は、案内のページ（`/info/`）を自分で返し、ほかの頼みは後ろの予約アプリ（`reserve`）に渡している。型に沿って、症状 → 範囲 → 仮説 → 確認 → 対処 → 再確認 の順に、`curl`・`systemctl`・`journalctl` で切り分けて直す。",
+    "environment": "linux-basic",
     "setup": {
-      "fields": [
-        {
-          "id": "症状",
-          "label": "1 症状を聞く",
-          "options": [
-            "まだ",
-            "「見えない」とだけ控える",
-            "画面の文といつからを聞く"
-          ],
-          "value": "まだ"
-        },
-        {
-          "id": "範囲",
-          "label": "2 範囲を絞る",
-          "options": [
-            "まだ",
-            "自分の画面で開いてみるだけ",
-            "ほかの人とほかのページを比べる"
-          ],
-          "value": "まだ",
-          "requires": [
-            {
-              "value": "自分の画面で開いてみるだけ",
-              "expr": "field 症状=画面の文といつからを聞く",
-              "message": "段を飛ばした: まだ症状が分からない。「見えない」だけでは、何を比べればよいか決まらない"
-            },
-            {
-              "value": "ほかの人とほかのページを比べる",
-              "expr": "field 症状=画面の文といつからを聞く",
-              "message": "段を飛ばした: まだ症状が分からない。「見えない」だけでは、何を比べればよいか決まらない"
-            }
-          ]
-        },
-        {
-          "id": "仮説",
-          "label": "3 仮説を 1 つ立てる",
-          "options": [
-            "まだ",
-            "回線が切れている",
-            "手前のサーバ（nginx）が止まっている",
-            "後ろの予約アプリが止まっている"
-          ],
-          "value": "まだ",
-          "requires": [
-            {
-              "value": "回線が切れている",
-              "expr": "field 範囲=ほかの人とほかのページを比べる",
-              "message": "段を飛ばした: 範囲がまだ絞れていない。自分の画面だけでは、全員に起きるのか、どのページで起きるのかが分からない"
-            },
-            {
-              "value": "手前のサーバ（nginx）が止まっている",
-              "expr": "field 範囲=ほかの人とほかのページを比べる",
-              "message": "段を飛ばした: 範囲がまだ絞れていない。自分の画面だけでは、全員に起きるのか、どのページで起きるのかが分からない"
-            },
-            {
-              "value": "後ろの予約アプリが止まっている",
-              "expr": "field 範囲=ほかの人とほかのページを比べる",
-              "message": "段を飛ばした: 範囲がまだ絞れていない。自分の画面だけでは、全員に起きるのか、どのページで起きるのかが分からない"
-            }
-          ]
-        },
-        {
-          "id": "確認",
-          "label": "4 仮説を確かめる",
-          "options": [
-            "まだ",
-            "手前のサーバの状態とエラーログを見る",
-            "予約アプリの状態とログを見る"
-          ],
-          "value": "まだ",
-          "requires": [
-            {
-              "value": "手前のサーバの状態とエラーログを見る",
-              "expr": "!field 仮説=まだ",
-              "message": "段を飛ばした: 仮説を立てずに調べ始めた。何を確かめるのかを先に決める"
-            },
-            {
-              "value": "予約アプリの状態とログを見る",
-              "expr": "!field 仮説=まだ",
-              "message": "段を飛ばした: 仮説を立てずに調べ始めた。何を確かめるのかを先に決める"
-            }
-          ]
-        },
-        {
-          "id": "対処",
-          "label": "5 直す",
-          "options": [
-            "まだ",
-            "手前のサーバを動かし直す",
-            "予約アプリを動かし直す"
-          ],
-          "value": "まだ",
-          "requires": [
-            {
-              "value": "手前のサーバを動かし直す",
-              "expr": "!field 確認=まだ",
-              "message": "段を飛ばした: 範囲も原因も確かめずに直し始めた（遠回り）。仮説を立てて確かめてから直す"
-            },
-            {
-              "value": "予約アプリを動かし直す",
-              "expr": "!field 確認=まだ",
-              "message": "段を飛ばした: 範囲も原因も確かめずに直し始めた（遠回り）。仮説を立てて確かめてから直す"
-            }
-          ]
-        },
-        {
-          "id": "再確認",
-          "label": "6 再確認する",
-          "options": [
-            "まだ",
-            "確かめずに終える",
-            "開き直して窓口に知らせる"
-          ],
-          "value": "まだ",
-          "requires": [
-            {
-              "value": "確かめずに終える",
-              "expr": "!field 対処=まだ",
-              "message": "段を飛ばした: まだ何も直していない。直してから確かめる"
-            },
-            {
-              "value": "開き直して窓口に知らせる",
-              "expr": "!field 対処=まだ",
-              "message": "段を飛ばした: まだ何も直していない。直してから確かめる"
-            }
-          ]
-        }
+      "hostname": "reserve-web",
+      "dirs": [
+        "/var/www/info",
+        "/var/log/nginx"
       ],
-      "panels": [
-        {
-          "kind": "text",
-          "title": "窓口からの電話（10:20）",
-          "body": "「予約サイトが見えない」と、市民から何件も電話が来ている。"
+      "files": {
+        "/etc/hosts": "127.0.0.1\tlocalhost reserve.example\n",
+        "/etc/nginx/conf.d/reserve.conf": "# 予約サイト: 案内のページは nginx が自分で返し、ほかは後ろの予約アプリに渡す\nserver {\n  listen 80;\n  server_name reserve.example;\n\n  location /info/ {\n    root /var/www;\n  }\n\n  location / {\n    proxy_pass http://127.0.0.1:8080;\n  }\n}\n",
+        "/var/www/info/index.html": "<html><body><h1>予約の案内</h1><p>受付は 9:00〜17:00。電話は 0120-000-000。</p></body></html>\n",
+        "/var/log/nginx/error.log": "2026/10/15 09:00:01 [notice] 812#812: start worker processes\n2026/10/15 10:05:12 [error] 812#812: *41 connect() failed (111: Connection refused) while connecting to upstream, client: 192.0.2.51, server: reserve.example, request: \"GET / HTTP/1.1\", upstream: \"http://127.0.0.1:8080/\", host: \"reserve.example\"\n2026/10/15 10:05:40 [error] 812#812: *47 connect() failed (111: Connection refused) while connecting to upstream, client: 192.0.2.57, server: reserve.example, request: \"GET /reserve HTTP/1.1\", upstream: \"http://127.0.0.1:8080/reserve\", host: \"reserve.example\"\n2026/10/15 10:09:03 [error] 812#812: *63 connect() failed (111: Connection refused) while connecting to upstream, client: 192.0.2.73, server: reserve.example, request: \"GET / HTTP/1.1\", upstream: \"http://127.0.0.1:8080/\", host: \"reserve.example\"\n2026/10/15 10:14:28 [error] 812#812: *88 connect() failed (111: Connection refused) while connecting to upstream, client: 192.0.2.98, server: reserve.example, request: \"GET / HTTP/1.1\", upstream: \"http://127.0.0.1:8080/\", host: \"reserve.example\"\n2026/10/15 10:18:55 [error] 812#812: *104 connect() failed (111: Connection refused) while connecting to upstream, client: 192.0.2.114, server: reserve.example, request: \"GET /reserve HTTP/1.1\", upstream: \"http://127.0.0.1:8080/reserve\", host: \"reserve.example\"\n"
+      },
+      "services": {
+        "nginx": {
+          "description": "A high performance web server and a reverse proxy server",
+          "enabled": true,
+          "config": "/etc/nginx/conf.d/reserve.conf"
         },
-        {
-          "kind": "kv",
-          "title": "聞き取った症状",
-          "rows": [
-            [
-              "画面の文",
-              "502 Bad Gateway"
-            ],
-            [
-              "いつから",
-              "今朝 10:05 ごろから"
-            ],
-            [
-              "何をすると",
-              "トップを開くだけで出る"
-            ]
-          ],
-          "when": "field 症状=画面の文といつからを聞く"
-        },
-        {
-          "kind": "table",
-          "title": "範囲（ページごと・場所ごと）",
-          "columns": [
-            "ページ（返す物）",
-            "庁内の PC・家のスマホ"
-          ],
-          "rows": [
-            [
-              "トップ（予約アプリ）",
-              "どちらも 502"
-            ],
-            [
-              "予約の画面（予約アプリ）",
-              "どちらも 502"
-            ],
-            [
-              "案内のページ（手前のサーバ）",
-              "どちらも見える"
-            ]
-          ],
-          "when": "field 範囲=ほかの人とほかのページを比べる"
-        },
-        {
-          "kind": "log",
-          "title": "手前のサーバ（nginx）の状態とエラーログ",
-          "lines": [
-            "nginx: active (running)  動いている",
-            "10:05:12 [error] connect() failed (111: Connection refused) while connecting to upstream",
-            "  upstream: http://127.0.0.1:8080/  （後ろの予約アプリ）"
-          ],
-          "when": "field 確認=手前のサーバの状態とエラーログを見る"
-        },
-        {
-          "kind": "log",
-          "title": "予約アプリ（reserve）の状態とログ",
-          "lines": [
-            "reserve: failed  10:04 から止まっている",
-            "10:04:51 Out of memory: Killed process 2311 (reserve)",
-            "10:04:51 reserve.service: Failed with result 'oom-kill'"
-          ],
-          "when": "field 確認=予約アプリの状態とログを見る"
-        },
-        {
-          "kind": "text",
-          "title": "直した結果",
-          "body": "手前のサーバを動かし直したが、トップはまだ 502。手前のサーバは元から動いていた。仮説に戻って確かめ直そう。",
-          "when": "field 対処=手前のサーバを動かし直す"
-        },
-        {
-          "kind": "text",
-          "title": "直した結果",
-          "body": "予約アプリを動かし直した。reserve: active（動いている）。",
-          "when": "field 対処=予約アプリを動かし直す"
-        },
-        {
-          "kind": "kv",
-          "title": "再確認",
-          "rows": [
-            [
-              "トップ",
-              "200（見える）"
-            ],
-            [
-              "予約の画面",
-              "200（予約できる）"
-            ],
-            [
-              "窓口",
-              "10:35 に直ったと知らせた"
-            ],
-            [
-              "残ったこと",
-              "止まった理由（メモリ不足）を調べ、再発を防ぐ"
-            ]
-          ],
-          "when": "field 対処=予約アプリを動かし直す && field 再確認=開き直して窓口に知らせる"
+        "reserve": {
+          "description": "予約のアプリ",
+          "enabled": true,
+          "failed": true,
+          "result": "oom-kill",
+          "port": 8080,
+          "address": "127.0.0.1",
+          "program": "node",
+          "routes": {
+            "/": {
+              "status": 200,
+              "headers": {
+                "Content-Type": "text/html"
+              },
+              "body": "<html><body><h1>港の予約</h1><p>空いている日を選んでください。</p></body></html>"
+            }
+          },
+          "log": [
+            "Oct 15 09:00:03 reserve-web systemd[1]: Started reserve.service - 予約のアプリ.",
+            "Oct 15 09:00:04 reserve-web node[2311]: listening on 127.0.0.1:8080",
+            "Oct 15 10:04:50 reserve-web node[2311]: warn: heap used 1.9 GB of 2.0 GB",
+            "Oct 15 10:04:51 reserve-web systemd[1]: reserve.service: A process of this unit has been killed by the OOM killer.",
+            "Oct 15 10:04:51 reserve-web systemd[1]: reserve.service: Main process exited, code=killed, status=9/KILL",
+            "Oct 15 10:04:51 reserve-web systemd[1]: reserve.service: Failed with result 'oom-kill'."
+          ]
         }
+      },
+      "run": [
+        "systemctl start nginx"
       ]
     },
     "steps": [
       {
         "id": "scope",
-        "purpose": "報告の症状を正確に聞き、どこまで同じことが起きているか（範囲）を絞る。",
+        "purpose": "症状と範囲。利用者と同じ所から `curl -i` で、トップ（`http://reserve.example/`）と案内のページ（`http://reserve.example/info/`）を開いて比べる。トップが返す{{term:status-code}}を答える。",
         "check": {
-          "kind": "sim",
-          "expr": "field 症状=画面の文といつからを聞く && field 範囲=ほかの人とほかのページを比べる"
+          "kind": "answer",
+          "equals": "502"
         },
-        "afterward": "画面には {{term:status-code}} 502 が出て、10:05 から全員に起きている。手前の{{term:web-server}}が自分で返す案内のページは見えるので、回線と手前のサーバは届いている。",
+        "afterward": "トップは `502 Bad Gateway`、案内のページは `200 OK`。案内のページは nginx が自分で返すので、回線と nginx は届いている。見えないのは、nginx が後ろに渡すページだけ。仮説を 1 つ立てる: 後ろの予約アプリに届いていない。",
         "hints": [
-          "「見えない」だけでは何も比べられない。画面に何が出るか・いつからかを聞き、起きる所と起きない所を探す。",
-          "自分の画面だけでは、全員に起きるのかが分からない。ほかの場所・ほかのページと比べる。",
-          "`set 症状 画面の文といつからを聞く` と `set 範囲 ほかの人とほかのページを比べる` を順に入れる。"
+          "「見えない」だけでは何も比べられない。画面に何が返るか（状態コード）と、見えるページ・見えないページを分ける。`-i` を付けると、返事の 1 行目に状態コードが出る。",
+          "トップと案内のページを、どちらも `curl -i` で開く。1 行目の `HTTP/1.1` の後ろの 3 桁の数が状態コード。",
+          "`curl -i http://reserve.example/` `curl -i http://reserve.example/info/` を打ち、`502` と答える。"
         ],
         "expectedErrors": [
-          "trouble-skip"
-        ],
-        "actions": [
-          {
-            "op": "set",
-            "field": "症状",
-            "value": "画面の文といつからを聞く"
-          },
-          {
-            "op": "set",
-            "field": "範囲",
-            "value": "ほかの人とほかのページを比べる"
-          }
+          "trouble-scope-misread"
         ]
       },
       {
         "id": "cause",
-        "purpose": "範囲から仮説を 1 つ立て、その仮説に合った所を見て確かめる。",
+        "purpose": "仮説を確かめる。nginx のエラーログ（`/var/log/nginx/error.log`）の最後の行で後ろの宛先（`upstream`）と断られた理由を見て、その宛先のアプリ `reserve` の状態を `systemctl status`、記録を `journalctl -u` で確かめる。予約アプリが止まった理由（`Result:` の後ろの語）を答える。",
         "check": {
-          "kind": "sim",
-          "expr": "field 仮説=後ろの予約アプリが止まっている && field 確認=予約アプリの状態とログを見る"
+          "kind": "answer",
+          "equals": "oom-kill"
         },
-        "afterward": "予約アプリは 10:04 に{{term:memory}}が足りなくなって止まっていた。手前のサーバは後ろに届かず、502 を返していた。",
+        "afterward": "nginx は 10:05 から `connect() failed (111: Connection refused) while connecting to upstream`（後ろの `127.0.0.1:8080` に断られた）を出し続けていた。予約アプリ `reserve` は `failed`。10:04:51 に{{term:memory}}が足りなくなり、{{term:kernel}}に止められていた（`killed by the OOM killer`・`Failed with result 'oom-kill'`）。仮説は当たった。",
         "hints": [
-          "案内のページは見える。見えないのは、予約アプリが返すページだけ。",
-          "仮説は 1 つずつ確かめる。外れたら次の仮説へ。確かめるのは、仮説に挙げた物の状態と{{term:log}}。",
-          "`set 仮説 後ろの予約アプリが止まっている` と `set 確認 予約アプリの状態とログを見る` を順に入れる。"
+          "502 は、手前の nginx が後ろに頼めなかった印。nginx のエラーログで、どこに頼もうとして何と言われたかを見る。次に、その宛先で待っているはずのアプリの状態と記録を見る。",
+          "`tail -n 3 /var/log/nginx/error.log` で最後の 3 行を読む。`systemctl status reserve` の `Active:` の行と、`journalctl -u reserve` の最後の行を見る。",
+          "`tail -n 3 /var/log/nginx/error.log` `systemctl status reserve` `journalctl -u reserve -n 4` を打ち、`oom-kill` と答える。"
         ],
         "expectedErrors": [
-          "trouble-skip",
           "trouble-cause-misread"
-        ],
-        "actions": [
-          {
-            "op": "set",
-            "field": "仮説",
-            "value": "後ろの予約アプリが止まっている"
-          },
-          {
-            "op": "set",
-            "field": "確認",
-            "value": "予約アプリの状態とログを見る"
-          }
         ]
       },
       {
         "id": "fix",
-        "purpose": "原因に合った手で直し、直ったことを確かめて窓口に知らせる。",
+        "purpose": "対処と再確認。止まっていた物だけを動かし直し、利用者と同じ所から `curl -i` でトップを開いて `200` が返ることを確かめる。",
         "check": {
-          "kind": "sim",
-          "expr": "field 対処=予約アプリを動かし直す && field 再確認=開き直して窓口に知らせる"
+          "kind": "http",
+          "url": "http://reserve.example/",
+          "status": 200,
+          "contains": "港の予約"
         },
-        "afterward": "トップも予約の画面も 200 に戻り、窓口に知らせた。止まった理由（メモリ不足）は記録に残し、再発を防ぐ手を考える。",
+        "afterward": "予約アプリを動かし直すと、トップが `200 OK` で「港の予約」を返した。窓口に直ったと知らせる。止まった理由（メモリ不足）は記録に残し、再発を防ぐ手（メモリの使い方を測る・上限を決める）を考える。",
         "hints": [
-          "止まっていた物だけを動かし直す。直したら、利用者と同じ画面で確かめる。",
-          "手前のサーバは元から動いていた。動かし直しても直らない。直した後に確かめなければ、本当に直ったかは分からない。",
-          "`set 対処 予約アプリを動かし直す` と `set 再確認 開き直して窓口に知らせる` を順に入れる。"
+          "原因は予約アプリが止まったこと。nginx は動いているので、nginx を動かし直しても直らない。直したら、利用者と同じ所から確かめる。",
+          "`systemctl restart reserve` で予約アプリを動かし直し、`curl -i http://reserve.example/` で状態コードを見る。",
+          "`systemctl restart reserve` `curl -i http://reserve.example/` を打つ。"
         ],
         "expectedErrors": [
-          "trouble-skip",
-          "trouble-fix-misread"
-        ],
-        "actions": [
-          {
-            "op": "set",
-            "field": "対処",
-            "value": "予約アプリを動かし直す"
-          },
-          {
-            "op": "set",
-            "field": "再確認",
-            "value": "開き直して窓口に知らせる"
-          }
+          "trouble-still-502"
         ]
       }
     ]
   },
   "result": {
     "success": "型に沿って、症状と範囲から原因を予約アプリに絞り、確かめてから直し、直ったことを確かめて知らせた。勘で触らずに解けた。",
-    "partial": "ヒントを使って直せた。次は、範囲の表のどこから「予約アプリが怪しい」と分かるかを、自分の言葉で説明してみよう。",
-    "retry": "まだ直っていない。どの段で止まっているかを左の手順で確かめ、飛ばした段があれば、そこに戻ろう。"
+    "partial": "ヒントを使って直せた。次は、トップと案内のページの違いから、なぜ「後ろの予約アプリが怪しい」と分かるかを、自分の言葉で説明してみよう。",
+    "retry": "まだ直っていない。型のどの段を飛ばしたかを見直そう。症状（状態コード）→ 範囲（見えるページ・見えないページ）→ 仮説（後ろのアプリ）→ 確認（エラーログ・`systemctl`・`journalctl`）→ 対処 → 再確認（`curl`）。"
   },
   "summary": {
     "points": [

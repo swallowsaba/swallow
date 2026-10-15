@@ -58,6 +58,8 @@ export interface Service {
   dhcp?: { config: string; leases: string; iface: string; clients: readonly DhcpClient[]; inUse: readonly string[] };
   /** 動かした時に貸した記録（リースのファイルの中身。systemctl がファイルに書く） */
   dhcpLeases?: string;
+  /** 落ちた理由（状態が failed の時。systemctl status の Result。無ければ exit-code） */
+  result?: 'exit-code' | 'oom-kill' | 'signal' | 'core-dump' | 'timeout';
   /** ログ（journalctl で読む） */
   log: readonly string[];
 }
@@ -128,7 +130,7 @@ export function portsOf(s: Service): number[] {
 }
 
 function fail(table: ServiceTable, s: Service, why: LogLine | LogLine[]): ServiceResult {
-  const t = update(table, { ...s, active: 'failed' }, [
+  const t = update(table, { ...s, active: 'failed', result: 'exit-code' }, [
     `Starting ${s.name}.service - ${s.description}...`,
     ...(Array.isArray(why) ? why : [why]),
     `${s.name}.service: Main process exited, code=exited, status=1/FAILURE`,

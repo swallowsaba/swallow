@@ -53,7 +53,7 @@ function status(table: ServiceTable, raw: string): CommandResult {
   if (!s) return { stderr: `Unit ${unitOf(raw)} could not be found.\n`, code: 4 };
   const active = s.active === 'active'
     ? 'active (running)'
-    : s.active === 'failed' ? 'failed (Result: exit-code)' : 'inactive (dead)';
+    : s.active === 'failed' ? `failed (Result: ${s.result ?? 'exit-code'})` : 'inactive (dead)';
   const lines = [
     `${s.active === 'active' ? '●' : s.active === 'failed' ? '×' : '○'} ${s.name}.service - ${s.description}`,
     `     Loaded: loaded (/etc/systemd/system/${s.name}.service; ${s.enabled ? 'enabled' : 'disabled'}; preset: disabled)`,
@@ -115,14 +115,18 @@ export const systemctlCommands: CommandSpec[] = [
     summary: 'サービスの状態を見る・動かす・止める・起動時に動くようにする',
     handler: ({ argv, shell }) => {
       if (shell.services === null) return { stderr: NO_SYSTEMD, code: 1 };
-      const args = argv.slice(1).filter((a) => a !== '--no-pager');
+      const all = argv.slice(1).filter((a) => a !== '--no-pager');
+      // --failed・--state=failed は、落ちたサービスだけを並べる（本物と同じく、動詞が無ければ list-units）
+      const onlyFailed = all.some((a) => a === '--failed' || a === '--state=failed');
+      const args = all.filter((a) => a !== '--failed' && a !== '--state=failed');
       const now = args.includes('--now');
-      const [verb, ...units] = args.filter((a) => a !== '--now');
+      const [verb = onlyFailed ? 'list-units' : undefined, ...units] = args.filter((a) => a !== '--now');
       if (verb === undefined) return { stderr: 'usage: systemctl <status|start|stop|restart|reload|enable|disable|is-active|is-enabled> <サービス>\n', code: 1 };
       if (verb === 'daemon-reload') return {};
       if (verb === 'list-units') {
-        const rows = [...shell.services.services.values()].map((s) => `${`${s.name}.service`.padEnd(20)} loaded ${s.active.padEnd(8)} ${s.description}`);
-        return { stdout: fromLines(['UNIT                 LOAD   ACTIVE   DESCRIPTION', ...rows]) };
+        const listed = [...shell.services.services.values()].filter((s) => !onlyFailed || s.active === 'failed');
+        const rows = listed.map((s) => `${s.active === 'failed' ? '●' : ' '} ${`${s.name}.service`.padEnd(20)} loaded ${s.active.padEnd(8)} ${s.description}`);
+        return { stdout: fromLines(['  UNIT                 LOAD   ACTIVE   DESCRIPTION', ...rows, '', `${String(listed.length)} loaded units listed.`]) };
       }
       if (units.length === 0) return { stderr: `Too few arguments.\n`, code: 1 };
       switch (verb) {

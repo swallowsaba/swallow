@@ -85,6 +85,31 @@ describe('systemctl（サービスの状態と操作）', () => {
     expect(run('journalctl -xeu db.service').stdout).toContain("Failed with result 'exit-code'");
   });
 
+  it('メモリが足りずに止められた物は、status の Result に oom-kill と出る。保存から戻しても残り、動かし直すと active になる', () => {
+    const s = createSession({
+      services: createServiceTable([
+        { name: 'app', description: 'App', active: 'failed', enabled: true, port: 8080, body: 'ok', result: 'oom-kill' },
+      ]),
+    });
+    const run = (st: ShellState, line: string) => execute(st, line, s.registry, s.clock);
+    expect(run(s.state, 'systemctl status app').chunks.map((c) => c.text).join('')).toContain('Active: failed (Result: oom-kill)');
+    const back = restoreShell(JSON.parse(JSON.stringify(snapshotShell(s.state))) as ReturnType<typeof snapshotShell>);
+    expect(serviceOf(back.services, 'app')?.result).toBe('oom-kill');
+    const after = run(s.state, 'systemctl restart app').state;
+    expect(run(after, 'systemctl status app').chunks.map((c) => c.text).join('')).toContain('Active: active (running)');
+  });
+
+  it('--failed は、落ちたサービスだけを印（●）付きで並べ、数を言う', () => {
+    const { run } = server();
+    run('systemctl start web');
+    run('systemctl start db');
+    const r = run('systemctl --failed');
+    expect(r.stdout).toContain('● db.service');
+    expect(r.stdout).not.toContain('web.service');
+    expect(r.stdout).toContain('1 loaded units listed.');
+    expect(run('systemctl list-units').stdout).toContain('2 loaded units listed.');
+  });
+
   it('同じ操作からは同じログ（時刻も決まる）', () => {
     const a = server();
     const b = server();

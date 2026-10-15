@@ -42,6 +42,8 @@ const serviceSetup = z.object({
   broken: z.string().optional(),
   /** 落ちた後（状態が failed）から始める */
   failed: z.boolean().optional(),
+  /** 落ちた理由（systemctl status の Result。メモリが足りずにカーネルに止められたなら oom-kill。無ければ exit-code） */
+  result: z.enum(['exit-code', 'oom-kill', 'signal', 'core-dump', 'timeout']).optional(),
   /** それまでのログ（journalctl で読める行。「Oct 03 02:13:44 server web[812]: …」の形） */
   log: z.array(z.string()).optional(),
   port: z.number().int().optional(),
@@ -404,6 +406,7 @@ export function shellOptions(environment: string, setup: unknown): SessionOption
       ...(v.dhcp !== undefined ? { dhcp: v.dhcp } : {}),
       // 初めから動いているアプリは、置いたファイルの php.ini を読んだ状態で始める
       ...(v.session !== undefined ? { session: v.session, ...(v.active ? { cookie: readSessionIni(s.files?.[v.session.ini] ?? '') } : {}) } : {}),
+      ...(v.result !== undefined ? { result: v.result } : {}),
       ...(v.log !== undefined ? { log: v.log } : {}),
     })), s.hostname);
   }

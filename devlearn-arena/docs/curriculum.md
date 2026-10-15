@@ -428,7 +428,7 @@ lab は複数分野の組み合わせ
 
 | ID | 難易度 | テーマ | レッスン | 到達目標 | 実戦 | 推奨前提 | 関連 | 次に学ぶとよい |
 |---|---|---|---|---|---|---|---|---|
-| trouble.b.01 | 初級 | 型 | 切り分けの型 | 症状 → 範囲 → 仮説 → 確認 → 対処 → 再確認、を回せる | 模 | linux.b.04 | net.a.01, mon.i.03 | trouble.b.02, mon.i.03, net.a.01 |
+| trouble.b.01 | 初級 | 型 | 切り分けの型 | 症状 → 範囲 → 仮説 → 確認 → 対処 → 再確認、を回せる | 端 | linux.b.04 | net.a.01, mon.i.03 | trouble.b.02, mon.i.03, net.a.01 |
 | trouble.b.02 | 初級 | 読む | エラーメッセージを読む | どこが何と言っているかを読み取れる | 端 | trouble.b.01 | linux.b.01, cicd.i.04 | trouble.b.03, cicd.i.04 |
 | trouble.b.03 | 初級 | 読む | ログを読む | 時刻と文脈で手掛かりを集められる | 端 | trouble.b.02 | linux.i.02, mon.b.02 | web.a.02 |
 | trouble.i.01 | 中級 | Linux | サーバの障害 | ディスク満杯・権限・サービス停止を直せる | 端 | linux.i.05, linux.i.01 | linux.a.01, db.a.02 | devops.i.03, sec.a.03, docker.a.02 |

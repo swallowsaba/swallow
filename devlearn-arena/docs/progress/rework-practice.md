@@ -600,3 +600,30 @@
 - `rw-devops.b.03-start` / `-wrong` / `-drag` / `-done`: 原則 4（逆に並べると「配って見張る」が赤くなり「先に「週 1 回の承認会議を待つ」か「検査が通れば、その場で承認」が要る」が出て、`devops-flow-order` の案内が開く。直すと「最後まで流れた（合計 4 日）」）・原則 5（目的の「一番長い待ち」が札の 9 日と、合計の日数に出る）を満たす。2 つの段が達成になる
 
 検査: `npm run typecheck`・`npm run lint`・`npm run test`（171 ファイル・1884 件。試し台を除く）・`npm run content:check` が通った。
+
+## trouble（2026-10-16）
+
+3 本の実戦が全て端末になり、本物の道具（`curl`・`systemctl`・`journalctl`・`tail`・`cat`・`ls`・`grep`・`sort`）で行う。設定する（sim-config）の trouble.b.01 を端末に作り直した。
+
+| レッスン | 直す前 | 直した後 | 打つ物・直した所 |
+|---|---|---|---|
+| trouble.b.01 切り分けの型 | sim-config（6 段の欄を順に選ぶ） | terminal | 「予約サイトが見えない」と電話が来た Web サーバ `reserve-web`。手前の `nginx` は案内のページ（`/info/`）を自分で返し、ほかは後ろの予約アプリ `reserve`（`127.0.0.1:8080`）に渡す。症状と範囲: `curl -i` でトップ（`502 Bad Gateway`）と案内のページ（`200 OK`）を比べ、`502` を答える → 確認: `tail -n 3 /var/log/nginx/error.log` の `connect() failed (111: Connection refused) while connecting to upstream`・`systemctl status reserve` の `Active: failed (Result: oom-kill)`・`journalctl -u reserve` の `killed by the OOM killer` から `oom-kill` を答える → 対処と再確認: `systemctl restart reserve` の後、`curl -i` でトップが `200 OK` で「港の予約」を返す（判定 `http`）。nginx を動かし直しても `502` のまま。前の 6 段の欄を選ぶ形は、型の段を本物の道具で 1 つずつ確かめる手順にした |
+| trouble.b.02 エラーメッセージを読む | terminal | terminal（そのまま） | 本物の `cat`・`ls`・`curl`・`sh` のエラー |
+| trouble.b.03 ログを読む | terminal | terminal（そのまま） | 本物の `grep`・`sort` で 2 つのログを時刻で並べる |
+
+模擬に足した物（単体テストあり。`src/engines/kernel/commands/systemctl.test.ts`）:
+
+- サービスの落ちた理由（setup の `services.名前.result`。`exit-code`・`oom-kill`・`signal`・`core-dump`・`timeout`）: `systemctl status` の `Active: failed (Result: oom-kill)` に出る。保存から戻しても残る。前は落ちた物が全て `exit-code` だった
+- `systemctl --failed`（`--state=failed`）: 本物と同じく、動詞が無ければ `list-units` として、落ちたサービスだけを `●` の印付きで並べ、`N loaded units listed.` と数を言う。`list-units` も同じ形にした
+- 撮影の台本（`tools/scenarios/rework.mjs`）: 端末の「調べて答える」手順で、`WRONG_ANSWER=手順=値` なら、先に誤った答えを入れた所を `-wrong` に撮る
+
+内容: エラーの案内（`content/errors/trouble.json`）を本物の出力と答えに当てた（`trouble-scope-misread`: 案内のページの `200` や `Bad Gateway` を答えた・`trouble-cause-misread`: `failed` や `Connection refused` を答えた・`trouble-still-502`: 直した後の `curl` がまだ `502 Bad Gateway`（手順の想定エラーの時だけ出力に当てる））。6 段の欄の頃の `trouble-skip`（段を飛ばした）・`trouble-fix-misread` を消した。`docs/lessons/trouble.md` の trouble.b.01 の実戦の設計、`docs/curriculum.md` の記号（模 → 端）、目録を直した。
+
+画面の確かめ（`tools/scenarios/rework.mjs`、1920×1080。最後のヒントのコマンドを本物のキー入力で打った）:
+
+- `rw-trouble.b.01-start` / `-s1` / `-wrong` / `-s2` / `-done`: 原則 1（`curl -i` の `HTTP/1.1 502 Bad Gateway` と `200 OK`・nginx のエラーログの `upstream: "http://127.0.0.1:8080/"`・`systemctl status` の `× reserve.service` と `Active: failed (Result: oom-kill)`・`journalctl -u reserve -n 4` の `Failed with result 'oom-kill'`・`systemctl restart reserve` の後の `200 OK` と「港の予約」）・原則 5（目的の `reserve-web`・`nginx`・`/info/`・`reserve`・`curl`・`systemctl`・`journalctl` が、端末のプロンプト・出力に同じ名前で出る）を満たす。確認の段に `failed` と答えると `trouble-cause-misread` が開き、「`Active:` の行の `failed`（今の状態）を答えた。止まった理由は、その後ろの `Result:` の語」と、次に読む所（`Active: failed (Result: …)` の括弧の中・`Failed with result '…'`）が出る。3 つの段が全て達成になる
+- `rw-trouble.b.02-start` / `-done`・`rw-trouble.b.03-start` / `-done`: 前から端末。どちらも全ての段が達成になる
+- 原則 3・4 は画面の操作の決まりなので、端末だけの trouble の分野には当たらない
+- lab は今の公開範囲にレッスンが無い（(1) の表）
+
+検査: `npm run typecheck`・`npm run lint`・`npm run test`（171 ファイル・1886 件。試し台を除く）・`npm run content:check` が通った。
