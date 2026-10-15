@@ -319,7 +319,10 @@ describe('操作を画面の名前で言う（記録・エラーの小窓・最�
     expect(actionNames(a, put('app', 'box'))).toEqual(['予約のアプリ', '箱（イメージ）']);
     const o = sim('sim-order', { items: [{ id: 'a', label: '取る' }, { id: 'b', label: '組む' }] });
     expect(describeAction(o, arrange(['a'], ['b']))).toBe('上から 「取る」 → 「組む」 の順に並べた');
-    const c = sim('sim-connect', { nodes: [{ id: 'pc', label: 'パソコン', x: 0, y: 0 }, { id: 'srv', label: 'サーバ', x: 9, y: 9 }], sends: [{ from: 'pc', to: 'srv', label: 'ping サーバ' }] });
+    // 札を全て並びから外した時・空の段がある時も、文が崩れない（「上から  の順に並べた」にしない）
+    expect(describeAction(o, arrange())).toBe('並びから全ての札を外した');
+    expect(describeAction(o, arrange([], ['b']))).toBe('上から 「組む」 の順に並べた');
+    const c =sim('sim-connect', { nodes: [{ id: 'pc', label: 'パソコン', x: 0, y: 0 }, { id: 'srv', label: 'サーバ', x: 9, y: 9 }], sends: [{ from: 'pc', to: 'srv', label: 'ping サーバ' }] });
     expect(describeAction(c, link('pc', 'srv'))).toBe('「パソコン」から「サーバ」へ線を引いた');
     expect(actionNames(c, send('pc', 'srv'))).toEqual(['ping サーバ']);
   });

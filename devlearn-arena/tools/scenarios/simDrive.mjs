@@ -11,10 +11,25 @@ async function centerOf(page, selector) {
   return { x: box.x + box.width / 2, y: box.y + box.height / 2 };
 }
 
+/** 要素の真ん中が、画面の中に見えているか */
+async function inView(page, selector) {
+  // 真ん中の点で一番上にある物が、その要素か中の物なら見えている（窓の縁で切られていない）
+  return page.locator(selector).first().evaluate((el) => {
+    const r = el.getBoundingClientRect();
+    const top = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
+    return top !== null && (top === el || el.contains(top));
+  });
+}
+
 /**
  * from の物を押さえ、to の受け口まで動かして放す。midShot を渡すと、放す前（指先が受け口の上にある時）に撮る
  */
 export async function dragTo(page, from, to, midShot) {
+  // 人と同じく、持つ物と受け口が両方見えるように巻いてから運ぶ（1280×720 では置き場が窓の下に隠れている）。
+  // 両方を同時に見られなければ、画面の作りの問題として止める
+  await page.locator(from).first().scrollIntoViewIfNeeded();
+  if (!(await inView(page, to))) await page.locator(to).first().scrollIntoViewIfNeeded();
+  if (!(await inView(page, from)) || !(await inView(page, to))) throw new Error(`${from} と ${to} を同時に見られない（ドラッグで運べない）`);
   const a = await centerOf(page, from);
   const b = await centerOf(page, to);
   await page.mouse.move(a.x, a.y);

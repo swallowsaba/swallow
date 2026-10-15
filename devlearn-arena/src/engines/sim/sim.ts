@@ -446,7 +446,12 @@ export function describeAction(s: SimState, action: SimAction): string {
     case 'cut': return s.type === 'connect' ? `${q(nodeLabel(s, action.a))}と${q(nodeLabel(s, action.b))}の線を外した` : '線を外した';
     case 'start': return s.type === 'connect' ? `${q(nodeLabel(s, action.node))}を動かした` : '動かした';
     case 'send': return s.type === 'connect' ? (s.setup.sends?.find((x) => x.from === action.from && x.to === action.to)?.label ?? `${q(nodeLabel(s, action.from))}から${q(nodeLabel(s, action.to))}へ送った`) : '送った';
-    case 'arrange': return s.type === 'order' ? `上から ${action.stages.map((g) => g.map((i) => q(itemLabel(s, i))).join('と')).join(' → ')} の順に並べた` : '並べた';
+    case 'arrange': {
+      if (s.type !== 'order') return '並べた';
+      // 空の段は言わない。札が 1 枚も並んでいなければ、並びから外したと言う
+      const stages = action.stages.filter((g) => g.length > 0);
+      return stages.length === 0 ? '並びから全ての札を外した' : `上から ${stages.map((g) => g.map((i) => q(itemLabel(s, i))).join('と')).join(' → ')} の順に並べた`;
+    }
     case 'put': return s.type === 'assign' ? `${q(itemLabel(s, action.item))}を${q(slotLabel(s, action.slot))}に入れた` : '入れた';
     case 'take': return s.type === 'assign' ? `${q(itemLabel(s, action.item))}を置き場に戻した` : '戻した';
     case 'answer': return s.type === 'read' ? `${q(s.setup.questions.find((x) => x.id === action.question)?.prompt ?? action.question)}に${q(action.value)}と答えた` : '答えた';
