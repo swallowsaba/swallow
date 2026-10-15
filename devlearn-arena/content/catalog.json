@@ -4279,7 +4279,7 @@
       "title": "アラート",
       "goal": "しきい値と通知の設計ができる",
       "practice": [
-        "simulation"
+        "editor"
       ],
       "prerequisites": [
         "mon.b.03"

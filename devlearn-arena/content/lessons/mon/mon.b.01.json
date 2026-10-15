@@ -204,18 +204,29 @@
         {
           "id": "CPU",
           "label": "CPU の使用率",
-          "size": 1
+          "size": 1,
+          "refuse": {
+            "入口": "CPU の使用率は機械の資源。入口（利用者から見た所）で測っても、利用者が困っているかは分からない。資源は、それを使う機械の所で測る"
+          }
         },
         {
           "id": "ディスク",
           "label": "ディスクの空き",
-          "size": 1
+          "size": 1,
+          "refuse": {
+            "入口": "ディスクの空きは機械の資源。入口（利用者から見た所）で測っても、利用者が困っているかは分からない。資源は、それを使う機械の所で測る"
+          }
         },
         {
           "id": "壁紙",
           "label": "画面の背景の色",
           "size": 1,
-          "extra": true
+          "extra": true,
+          "refuse": {
+            "入口": "画面の背景の色は、利用者が困っているかも、資源の余りも表さない。測っても障害に気付けない",
+            "web": "画面の背景の色は、利用者が困っているかも、資源の余りも表さない。測っても障害に気付けない",
+            "db": "画面の背景の色は、利用者が困っているかも、資源の余りも表さない。測っても障害に気付けない"
+          }
         }
       ],
       "panels": [
@@ -364,9 +375,9 @@
         ],
         "expectedErrors": [
           "sim-overflow",
-          "sim-no-such",
-          "sim-taken",
-          "mon-no-user-metric"
+          "mon-no-user-metric",
+          "mon-resource-entrance",
+          "mon-not-a-metric"
         ],
         "actions": [
           {
@@ -396,9 +407,9 @@
         ],
         "expectedErrors": [
           "sim-overflow",
-          "sim-no-such",
-          "sim-taken",
-          "mon-wrong-place"
+          "mon-wrong-place",
+          "mon-resource-entrance",
+          "mon-not-a-metric"
         ],
         "actions": [
           {

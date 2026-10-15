@@ -542,3 +542,36 @@
 - 一時の試し台 `src/__tests__/zz-try.test.ts`（コミットしない物）を、調べるのに上書きしてから消した
 
 検査: `npm run typecheck`・`npm run lint`・`npm run test`（169 ファイル・1863 件。試し台を除く）・`npm run content:check` が通った。
+
+## mon（2026-10-15）
+
+4 本の実戦のうち、本物の道具がある 2 本が端末（mon.b.02 は前から）と設定の編集（mon.b.04 を作り直した）になった。打つコマンドが無い概念の 2 本（mon.b.01 測る点をどこに置くか・mon.b.03 グラフの推移を読む）は、画面の操作（置く・読み取って答える）のまま、原則 3〜5 に合わせて直した。
+
+| レッスン | 直す前 | 直した後 | 書く物・直した所 |
+|---|---|---|---|
+| mon.b.04 アラート | sim-config（しきい値・継続・通知先・手順の欄） | editor | 監視の機械 `mon-01` の Prometheus の規則 `/etc/prometheus/rules/reserve.yml`（`ReserveErrorRate`。`reserve:error_ratio > 0.01` ですぐ鳴り、`severity: warning` で全員のメール `all-mail` に届く）を、昨日の記録で試す単体テスト `tests/yesterday.test.yml` が通るように直す。保存すると `promtool check rules`・`promtool test rules`・`amtool config routes show` が走る → `expr: reserve:error_ratio > 0.05` と `for: 5m` で、10:03 の 1 分の跳ね・昼の混み 1.2%・15:00 からの失敗の始まり 3 分では鳴らず、15:06 に鳴る → ラベル `severity: page`（Alertmanager の木で当番の電話 `oncall-phone` に届く）と注釈 `runbook_url` を足して `SUCCESS` |
+| mon.b.01 監視とは | sim-assign | sim-assign（そのまま） | 資源の札（CPU の使用率・ディスクの空き）を入口へ、「画面の背景の色」をどの枠へ入れても、入らない理由（`refuse`）を書いた。前は、全てを置き終えるまで誤りが見えなかった。今は、ドラッグすると枠が赤く光り「CPU の使用率は機械の資源。入口（利用者から見た所）で測っても、利用者が困っているかは分からない…」が出る |
+| mon.b.03 メトリクス | sim-read | sim-read（そのまま） | 手順の問いを答え終えた所で違う問いを赤く示す働き（ctr で直した）で、原則 4 を満たす |
+| mon.b.02 ログ | terminal | terminal（そのまま） | 本物の grep・jq・sort・uniq |
+
+模擬に足した物（単体テストあり。`src/engines/monitor/monitor.test.ts`・`src/engines/kernel/commands/prom.test.ts`）:
+
+- PromQL の一部（`src/engines/monitor/promql.ts`）: 時系列の選び出しとラベルの条件（`=`・`!=`・`=~`・`!~`）・四則（名前を外し、時系列どうしはラベルの同じ物を組にする）・比べ（満たす物だけが残る）・かっこ。読めない式は本物と同じく `1:24: parse error: unexpected character: '%'` の形で断る。関数と集計は読めない式として断る（`unknown function with name`）
+- 規則のファイル（`src/engines/monitor/rules.ts`）: `groups` の下の `alert`・`record`・`expr`・`for`・`labels`・`annotations`。誤りは `promtool check rules` と同じ言い方（`ファイル: 行:桁: group "名前", rule 番号, "名前": could not parse expression: …`・`not a valid duration string`・知らない鍵は `yaml: unmarshal errors: line N: field X not found in type rulefmt.RuleNode`）。注釈の `{{ $labels.名前 }}`・`{{ $value }}`
+- `promtool test rules`（`src/engines/monitor/unittest.ts`）: 本物の書式のテストのファイル（`rule_files` はテストのファイルの場所から読む・`input_series` の `0.005x602 0.12`・`a+bxn`・`_` の書き方・`alert_rule_test` の `exp_alerts`）。規則を時刻 0 から `evaluation_interval` ごとに動かし、式の結果に出た時系列ごとに待ち（pending）にし、`for` の間ずっと出続けたら鳴らす（firing）。値は 5 分より古いと見えない。出し方は本物と同じ（`Unit Testing:`・`SUCCESS`・`FAILED:` と時刻ごとの `exp:[…]`・`got:[…]`）
+- Alertmanager の振り分け（`src/engines/monitor/alertmanager.ts`）: `route` の木（`matchers`・古い書き方の `match`・`match_re`・`continue`）と `receivers`。無い知らせる先を指す枝は `undefined receiver "…" used in route`
+- `promtool check rules`・`promtool test rules`・`amtool config routes [show | test]`（`src/engines/kernel/commands/prom.ts`）
+- 達成条件 `alert`（`src/engines/monitor/check.ts`）: `rules:`・`test:`・`times:`（鳴った数だけを期待と比べる）・`fire:テスト@時刻=名前`（`docs/content-spec.md` 2.4）
+- 画面: 設定の編集のエラーの小窓は、長いエラーの文（promtool の `FAILED` の段）を、案内が当たった所から 8 行だけ示す（全ては確かめた結果に出ている）。撮影で、小窓が出力で埋まり「何と言われたか・考えられる理由・次に確かめること」が見えなかった（`LessonScreen.test.tsx`）
+- 画面: 置くの盤（`AssignBoard`）は、札が全て大きさ 1（枠は札の数を数えるだけ）なら、札に「1」を出さない。撮影で、mon.b.01 の 5 枚の札の下に意味の分からない「1」が並んでいた
+
+内容: エラーの案内（`content/errors/mon.json`）を本物の出力に当てた（`could not parse expression`・`not a valid duration string`・YAML の誤り、`promtool test rules` の `FAILED` の段の時刻ごとの形: 10:03・15:03 に鳴った（`for` が無い・短い）・12:30 に鳴った（しきい値が低い）・15:06 に鳴らない（`got:[]`。しきい値が高い・`for` が長い）・15:06 のラベルと注釈が違う（`severity` が `warning` のまま・`runbook_url` が無い））。画面の欄にしか無かった `mon-alert-condition`・`mon-alert-nobody` を消し、mon.b.01 の断る理由に当たる `mon-resource-entrance`・`mon-not-a-metric` を足した。文の入力の頃の案内 `sim-taken`・`sim-usage`・`sim-no-such`（`content/errors/found.json`。「入力欄の下の使える操作」などを言う）は、どの実戦も想定エラーに書かなくなったので消した。用語集に `prometheus`・`promql`・`alertmanager` を足した。`docs/lessons/mon.md` の 2 本の実戦の設計、`docs/curriculum.md` の記号（mon.b.04: 模 → 編）、`docs/content-spec.md` 2.4（`alert` の式）、`docs/architecture.md` 3 章（`monitor/`）、目録を直した。
+
+画面の確かめ（`tools/scenarios/rework.mjs`、1920×1080。設定の編集は最後のヒントの中身を保存し、端末は最後のヒントのコマンドを本物のキー入力で打った。画面の操作は本物のマウスのドラッグ）:
+
+- `rw-mon.b.04-start` / `-wrong` / `-s1` / `-done`: 原則 1（本物の書式の Prometheus の規則・`promtool check rules` の `SUCCESS: 1 rules found`・`promtool test rules` の `FAILED:` と `time: 10h3m` などの `exp`・`got` と `Labels`・`Annotations`・`SUCCESS`・`amtool` の `Routing tree:` と `{severity="page"}  receiver: oncall-phone`）・原則 5（目的の `rules/reserve.yml`・`reserve:error_ratio`・`severity: warning`・`tests/yesterday.test.yml`・`oncall-phone`・`all-mail`・`runbook_url` が編集欄のパスと中身と確かめた結果に同じ名前で出る）を満たす。初めの中身のまま保存すると `mon-alert-spike` の案内が出て、小窓に 10h3m の段だけと内容・原因候補が見える。手順 1 の後は `FAILED` が 15h6m の 1 つ（期待の `severity="page"` と `runbook_url`）だけになる。2 つの段が達成になる
+- `rw-mon.b.01-start` / `-wrong` / `-drag` / `-done`: 原則 3（札を持ち上げると受け口の枠が光る）・原則 4（「CPU の使用率」を入口へ入れると、枠が赤く光り理由が 1 行出て、札は置き場に残る。入れると枠の数（2 / 2 など）が動き、その場で昨夜のグラフが出る）・原則 5（目的の入口・Web サーバ・DB サーバが枠の名前に出る）を満たす。2 つの段が達成になる
+- `rw-mon.b.03-start` / `-wrong` / `-done`: 原則 3（グラフは押すと拡大する。答えは押して選ぶ）・原則 4（1 つ目の手順に「10:00」と答えると、問いが赤い縁で示され `mon-start-misread` が出る）・原則 5（目的の応答時間・4 つのグラフが表題と答えに出る）を満たす。2 つの段が達成になる
+- `rw-mon.b.02-start` / `-done`: 前から端末（`grep '"level":"ERROR"' app.log | wc -l`・`jq -r .service | sort | uniq -c | sort -rn`）。2 つの段が達成になる
+
+検査: `npm run typecheck`・`npm run lint`・`npm run test`（171 ファイル・1883 件。試し台を除く）・`npm run content:check` が通った。

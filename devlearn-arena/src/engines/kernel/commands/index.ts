@@ -9,6 +9,7 @@ import { podmanCommands } from '@/engines/docker/podman';
 import { editorCommands } from './editor';
 import { encodingCommands } from './encoding';
 import { opensslCommands } from './openssl';
+import { promCommands } from './prom';
 import { fsCommands } from './fs';
 import { ghCommands } from './gh';
 import { gitCommands } from './git';
@@ -50,6 +51,7 @@ export function createDefaultRegistry(): CommandRegistry {
     ...textToolCommands,
     ...encodingCommands,
     ...opensslCommands,
+    ...promCommands,
     ...jqCommands,
     ...permCommands,
     ...shellRunCommands,

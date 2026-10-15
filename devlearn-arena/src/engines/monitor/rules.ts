@@ -51,6 +51,9 @@ export function formatDuration(seconds: number): string {
   return out;
 }
 
+/** YAML の値の語（文字・数・真偽）。それ以外（表・並び・無い）は空 */
+export const scalarText = (v: unknown): string => (typeof v === 'string' ? v : typeof v === 'number' || typeof v === 'boolean' ? String(v) : '');
+
 const isRecord = (v: unknown): v is Record<string, unknown> => typeof v === 'object' && v !== null && !Array.isArray(v);
 const strMap = (v: unknown): Record<string, string> => (isRecord(v) ? Object.fromEntries(Object.entries(v).map(([k, x]) => [k, String(x)])) : {});
 
@@ -81,15 +84,16 @@ export function readRules(file: string, text: string): RuleFile {
   let from = 0;
   for (const g of doc['groups'] as unknown[]) {
     if (!isRecord(g)) continue;
-    const group = String(g['name'] ?? '');
+    const group = scalarText(g['name']);
     const rules = Array.isArray(g['rules']) ? (g['rules'] as unknown[]) : [];
     rules.forEach((r, i) => {
       if (!isRecord(r)) return;
       count += 1;
-      const name = String(r['alert'] ?? r['record'] ?? '');
+      const name = scalarText(r['alert'] ?? r['record']);
       const head = (key: string): string => `${file}: ${at(lines, key, from)}: group "${group}", rule ${String(i + 1)}, "${name}"`;
       for (const k of Object.keys(r)) {
-        if (!['alert', 'record', 'expr', 'for', 'keep_firing_for', 'labels', 'annotations'].includes(k)) errors.push(`${file}: ${at(lines, k, from)}: field ${k} not found in type rulefmt.RuleNode`);
+        // 本物は YAML を厳しく読み、知らない鍵を unmarshal の誤りとして言う
+        if (!['alert', 'record', 'expr', 'for', 'keep_firing_for', 'labels', 'annotations'].includes(k)) errors.push(`${file}: yaml: unmarshal errors:\n  line ${at(lines, k, from).split(':')[0] ?? '1'}: field ${k} not found in type rulefmt.RuleNode`);
       }
       let expr: Node | null = null;
       if (typeof r['expr'] !== 'string' && typeof r['expr'] !== 'number') errors.push(`${head('expr')}: field 'expr' must be set in rule`);
@@ -103,8 +107,8 @@ export function readRules(file: string, text: string): RuleFile {
       }
       let forSeconds = 0;
       if (r['for'] !== undefined) {
-        const d = parseDuration(String(r['for']));
-        if (d === null) errors.push(`${file}: ${at(lines, 'for', from)}: not a valid duration string: "${String(r['for'])}"`);
+        const d = parseDuration(scalarText(r['for']));
+        if (d === null) errors.push(`${file}: ${at(lines, 'for', from)}: not a valid duration string: "${scalarText(r['for'])}"`);
         else forSeconds = d;
       }
       if (expr) {

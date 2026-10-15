@@ -1,6 +1,6 @@
 import { load } from 'js-yaml';
 import { evaluate, parsePromql, PromqlError, type Labels, type Sample } from './promql';
-import { expandTemplate, formatDuration, parseDuration, readRules, type ActiveAlert, type AlertRule } from './rules';
+import { expandTemplate, formatDuration, parseDuration, readRules, scalarText, type ActiveAlert, type AlertRule } from './rules';
 
 /**
  * promtool test rules（Prometheus の規則の単体テスト）。純粋な関数。
@@ -118,16 +118,16 @@ export function readTestFile(text: string): TestFile | string {
     return `yaml: ${String((e as { reason?: string }).reason ?? e)}`;
   }
   if (!isRecord(doc)) return 'yaml: the test file is empty';
-  const dur = (v: unknown, fallback: number): number => (v === undefined ? fallback : parseDuration(String(v)) ?? fallback);
+  const dur = (v: unknown, fallback: number): number => (v === undefined ? fallback : parseDuration(scalarText(v)) ?? fallback);
   const groups: TestGroup[] = [];
   for (const g of Array.isArray(doc['tests']) ? (doc['tests'] as unknown[]) : []) {
     if (!isRecord(g)) continue;
     const series: Series[] = [];
     for (const s of Array.isArray(g['input_series']) ? (g['input_series'] as unknown[]) : []) {
       if (!isRecord(s)) continue;
-      const labels = seriesLabels(String(s['series'] ?? ''));
-      const values = expandValues(String(s['values'] ?? ''));
-      if (!labels || !values) return `bad input series: ${String(s['series'] ?? '')}`;
+      const labels = seriesLabels(scalarText(s['series']));
+      const values = expandValues(scalarText(s['values']));
+      if (!labels || !values) return `bad input series: ${scalarText(s['series'])}`;
       series.push({ labels, values });
     }
     const cases: TestCase[] = [];
@@ -135,7 +135,7 @@ export function readTestFile(text: string): TestFile | string {
       if (!isRecord(c)) continue;
       cases.push({
         evalTime: dur(c['eval_time'], 0),
-        alertname: String(c['alertname'] ?? ''),
+        alertname: scalarText(c['alertname']),
         exp: (Array.isArray(c['exp_alerts']) ? (c['exp_alerts'] as unknown[]) : []).filter(isRecord).map((a) => ({ labels: strMap(a['exp_labels']), annotations: strMap(a['exp_annotations']) })),
       });
     }
@@ -163,20 +163,23 @@ export interface TestRun {
   firing: Map<number, ActiveAlert[]>;
 }
 
-/** テストのファイルを動かす。read は、テストのファイルの場所から見た規則のファイルを読む（無ければ null） */
-export function runTestFile(testText: string, read: (path: string) => string | null): TestRun {
+/**
+ * テストのファイルを動かす。read は、テストのファイルの rule_files に書いた場所を、テストのファイルのディレクトリから読む
+ * （本物の promtool と同じ。path は誤りの文に出す名前。無ければ null）
+ */
+export function runTestFile(testText: string, read: (path: string) => { path: string; text: string } | null): TestRun {
   const test = readTestFile(testText);
   if (typeof test === 'string') return { failures: null, errors: [test], firing: new Map() };
   const alerts: AlertRule[] = [];
   const records: { record: string; expr: ReturnType<typeof parsePromql>; labels: Record<string, string> }[] = [];
   const errors: string[] = [];
   for (const f of test.ruleFiles) {
-    const text = read(f);
-    if (text === null) {
+    const file = read(f);
+    if (file === null) {
       errors.push(`open ${f}: no such file or directory`);
       continue;
     }
-    const r = readRules(f, text);
+    const r = readRules(file.path, file.text);
     if (!r.ok) errors.push(...r.errors);
     else {
       alerts.push(...r.alerts);

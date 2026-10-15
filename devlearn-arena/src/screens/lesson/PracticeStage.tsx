@@ -437,9 +437,30 @@ function SqlPracticeStage({ practice: p, sessionId, saved, onSave, onFinish, onT
 /** 確かめた結果のうち、エラーとして示す物: 打った行と、言われたこと（標準エラー。出力に出たエラーは当たった行だけ。端末と同じ） */
 function errorSource(results: readonly EditResult[], guide: ErrorGuide): { line: string; said: string } | undefined {
   const err = results.find((x) => x.stderr.trim() !== '');
-  if (err) return { line: err.line, said: err.stderr };
+  if (err) return { line: err.line, said: excerpt(err.stderr, guide.match) };
   const out = results.find((x) => safeTest(guide.match, x.stdout));
   return out ? { line: out.line, said: out.stdout.split('\n').find((l) => safeTest(guide.match, l)) ?? out.stdout } : undefined;
+}
+
+const EXCERPT_LINES = 8;
+
+/**
+ * 長いエラーの文（promtool の FAILED の段など）は、案内が当たった所から 8 行だけを示す。
+ * 全ては確かめた結果に出ているので、小窓では内容・原因候補・ヒントを隠さない
+ */
+function excerpt(text: string, match: string): string {
+  const lines = text.trimEnd().split('\n');
+  if (lines.length <= EXCERPT_LINES) return text;
+  let at = 0;
+  try {
+    const m = new RegExp(match).exec(text);
+    if (m) at = text.slice(0, m.index).split('\n').length - 1;
+  } catch {
+    // 正規表現でない match は、先頭から示す
+  }
+  const from = Math.max(0, Math.min(at - 1, lines.length - EXCERPT_LINES));
+  const part = lines.slice(from, from + EXCERPT_LINES);
+  return [...(from > 0 ? ['…'] : []), ...part, ...(from + EXCERPT_LINES < lines.length ? ['…'] : [])].join('\n');
 }
 
 /** 確かめた結果の空の時の文に出す、保存の後に打つコマンドの名前（重ねない） */

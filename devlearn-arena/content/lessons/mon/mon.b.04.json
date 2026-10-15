@@ -25,12 +25,18 @@
     "metrics",
     "server",
     "log",
-    "cpu"
+    "cpu",
+    "prometheus",
+    "promql",
+    "alertmanager",
+    "file",
+    "yaml",
+    "test"
   ],
   "explain": {
     "what": "{{term:alert}}は、測った値が条件を満たした時に、人へ知らせる仕組み。条件は{{term:threshold}}（5% を超えた）と継続時間（5 分続いた）で書き、通知先（{{term:on-call}}）と、受けた人が何をするかの{{term:runbook}}を一緒に決める。",
     "why": "画面を見続けなくても、夜中や休みの日の異常に気付ける。ただし鳴りすぎると、皆が慣れて見なくなり、本当の異常を見逃す。一瞬の跳ねでは鳴らさず、人が動く必要がある時だけ知らせる。",
-    "use": "夜間・休日の見張り。利用者が困っていることを示す数値（{{term:error-rate}}など）に、しきい値と継続時間を付ける。知らせる先は、必ず動く人に決める。",
+    "use": "夜間・休日の見張り。利用者が困っていることを示す数値（{{term:error-rate}}など）に、しきい値と継続時間を付ける。{{term:prometheus}}では、規則の{{term:file}}（{{term:yaml}}）に条件（{{term:promql}}の式）と継続時間を書き、{{term:alertmanager}}がラベルで知らせる先を振り分ける。知らせる先は、必ず動く人に決める。",
     "when": "予約サイトのアラートが一日に何十回も鳴り、皆が無視するようになった。昨日の 15:00 からの本当の失敗も、誰も見に行かなかった。",
     "figures": [
       "mon-b04-alert"
@@ -149,185 +155,77 @@
     }
   ],
   "practice": {
-    "mode": "simulation",
-    "purpose": "予約サイトのエラーの割合にアラートを付ける。昨日の記録（1 分だけの跳ねと、15:00 から 20 分続いた失敗）で試すと、設定ごとに、いつ鳴ったかが見える。15:00 からの失敗だけで鳴り、受けた人がすぐ動けるようにする。",
-    "environment": "sim-config",
+    "mode": "editor",
+    "purpose": "予約サイトの{{term:alert}}の規則（`rules/reserve.yml`）は、{{term:error-rate}}（`reserve:error_ratio`）が 1% を超えるとすぐ鳴り、`severity: warning` なので全員のメールに届く。一日に何十回も鳴り、皆が見なくなった。昨日の記録（10:03 の 1 分だけの跳ね・昼の混み・15:00 から 20 分続いた本当の失敗）で試す{{term:test}}（`tests/yesterday.test.yml`）が通るように直す。保存すると `promtool check rules` で書き方を確かめ、`promtool test rules` で昨日の記録を流し、`amtool` で知らせる先の振り分けを見る。",
+    "environment": "linux-basic",
     "setup": {
-      "fields": [
-        {
-          "id": "しきい値",
-          "label": "しきい値（エラーの割合）",
-          "options": [
-            "1%",
-            "5%",
-            "50%"
-          ]
-        },
-        {
-          "id": "継続",
-          "label": "継続時間",
-          "options": [
-            "すぐ",
-            "5分",
-            "1時間"
-          ]
-        },
-        {
-          "id": "通知先",
-          "label": "通知先",
-          "options": [
-            "全員のメール",
-            "画面に出すだけ",
-            "当番の電話"
-          ]
-        },
-        {
-          "id": "手順",
-          "label": "対応の手順書",
-          "options": [
-            "付けない",
-            "付ける"
-          ]
-        }
+      "hostname": "mon-01",
+      "cwd": "/etc/prometheus",
+      "dirs": [
+        "/etc/prometheus/rules",
+        "/etc/prometheus/tests",
+        "/etc/alertmanager"
       ],
-      "settle": "!field しきい値= && !field 継続=",
-      "panels": [
-        {
-          "kind": "table",
-          "title": "昨日のエラーの割合（1 分ごとの記録から）",
-          "columns": [
-            "時刻",
-            "割合",
-            "その時"
-          ],
-          "rows": [
-            [
-              "10:03",
-              "12%",
-              "1 分だけ。すぐ戻った"
-            ],
-            [
-              "12:00〜13:00",
-              "1.0〜1.4%",
-              "昼の混みで少し増えた"
-            ],
-            [
-              "15:00〜15:20",
-              "6〜8%",
-              "予約の 15 件に 1 件が失敗"
-            ],
-            [
-              "ほかの時間",
-              "0.2〜0.8%",
-              "いつもの揺れ"
-            ]
-          ]
-        },
-        {
-          "kind": "text",
-          "title": "試した結果",
-          "body": "しきい値 1%: 昼の混み（1.0〜1.4%）のたびに鳴った。いつもの揺れに近い値なので、鳴っても誰も見なくなる。",
-          "when": "field しきい値=1%"
-        },
-        {
-          "kind": "text",
-          "title": "試した結果",
-          "body": "しきい値 50%: 一度も鳴らなかった。15:00 からの失敗（6〜8%）を見逃した。",
-          "when": "field しきい値=50%"
-        },
-        {
-          "kind": "text",
-          "title": "試した結果",
-          "body": "すぐ鳴る: 2 回鳴った。10:03 は見に行った時にはもう直っていた（1 分の跳ね）。15:00 は本当の失敗。",
-          "when": "field しきい値=5% 継続=すぐ"
-        },
-        {
-          "kind": "text",
-          "title": "試した結果",
-          "body": "5 分続いたら: 1 回だけ鳴った（15:05）。10:03 の跳ねでは鳴らない。",
-          "when": "field しきい値=5% 継続=5分"
-        },
-        {
-          "kind": "text",
-          "title": "試した結果",
-          "body": "1 時間続いたら: 一度も鳴らなかった。15:00 からの失敗は 20 分で終わり、終わってから利用者の声で知った。",
-          "when": "field しきい値=5% 継続=1時間"
-        },
-        {
-          "kind": "text",
-          "title": "鳴った後",
-          "body": "全員に届いたが、皆が「誰かが見る」と思い、誰も動かなかった。",
-          "when": "field 通知先=全員のメール"
-        },
-        {
-          "kind": "text",
-          "title": "鳴った後",
-          "body": "15:05 に当番の電話が鳴り、手順書の 1 番（直前に配った版を戻す）で、15:12 に直った。",
-          "when": "field しきい値=5% 継続=5分 通知先=当番の電話 手順=付ける"
-        }
-      ]
+      "files": {
+        "/etc/prometheus/prometheus.yml": "# Prometheus の設定（一部）\nglobal:\n  scrape_interval: 15s\n  evaluation_interval: 1m\n\nrule_files:\n  - rules/*.yml\n\nalerting:\n  alertmanagers:\n    - static_configs:\n        - targets: ['localhost:9093']\n",
+        "/etc/prometheus/rules/reserve.yml": "# 予約サイトのアラート（Prometheus の規則）\n# reserve:error_ratio は、1 分ごとのエラーの割合（失敗した頼み ÷ 全ての頼み。0.05 が 5%）\ngroups:\n  - name: reserve\n    rules:\n      - alert: ReserveErrorRate\n        expr: reserve:error_ratio > 0.01\n        labels:\n          severity: warning\n        annotations:\n          summary: 予約のエラーが増えている\n",
+        "/etc/prometheus/tests/yesterday.test.yml": "# 昨日（10 月 14 日）の予約サイトの記録で、アラートの規則を試す（promtool test rules）\n# 時刻 0 は昨日の 0:00。記録は 1 分ごと\nrule_files:\n  - ../rules/reserve.yml\n\nevaluation_interval: 1m\n\ntests:\n  - interval: 1m\n    input_series:\n      # 0:00〜 いつもの揺れ 0.5% / 10:03 の 1 分だけ 12% / 12:00〜13:00 昼の混み 1.2% / 15:00〜15:20 本当の失敗 6〜8% / 15:21〜 戻った\n      - series: 'reserve:error_ratio{job=\"reserve\"}'\n        values: '0.005x602 0.12 0.005x115 0.012x60 0.005x118 0.06+0.001x20 0.005x158'\n    alert_rule_test:\n      # 10:03 の 1 分だけの跳ね（見に行く前に直っている）では鳴らない\n      - eval_time: 10h3m\n        alertname: ReserveErrorRate\n        exp_alerts: []\n      # 昼の混みでは鳴らない\n      - eval_time: 12h30m\n        alertname: ReserveErrorRate\n        exp_alerts: []\n      # 15:00 からの失敗も、始まって 3 分はまだ鳴らない（続くかを見る）\n      - eval_time: 15h3m\n        alertname: ReserveErrorRate\n        exp_alerts: []\n      # 15:06 には、当番の電話に知らせ、手順書が付いている\n      - eval_time: 15h6m\n        alertname: ReserveErrorRate\n        exp_alerts:\n          - exp_labels:\n              job: reserve\n              severity: page\n            exp_annotations:\n              summary: 予約のエラーが増えている\n              runbook_url: https://wiki.city.example/runbooks/reserve-error-rate\n      # 15:21 に戻った後は鳴りやむ\n      - eval_time: 15h30m\n        alertname: ReserveErrorRate\n        exp_alerts: []\n",
+        "/etc/alertmanager/alertmanager.yml": "# 知らせる先の振り分け（Alertmanager）\nroute:\n  receiver: all-mail\n  group_by: [alertname]\n  routes:\n    - matchers: ['severity=\"page\"']\n      receiver: oncall-phone\n    - matchers: ['severity=\"info\"']\n      receiver: dashboard\n\nreceivers:\n  # 全員のメール\n  - name: all-mail\n    email_configs:\n      - to: reserve-team@city.example\n  # 当番の電話（その週の当番 1 人に電話をかける）\n  - name: oncall-phone\n    webhook_configs:\n      - url: https://oncall.city.example/hooks/phone\n  # 監視の画面に出すだけ\n  - name: dashboard\n    webhook_configs:\n      - url: https://board.city.example/hooks/alerts\n"
+      },
+      "edit": {
+        "path": "/etc/prometheus/rules/reserve.yml",
+        "apply": [
+          "promtool check rules rules/reserve.yml",
+          "promtool test rules tests/yesterday.test.yml",
+          "amtool config routes show --config.file=/etc/alertmanager/alertmanager.yml"
+        ]
+      }
     },
     "steps": [
       {
         "id": "condition",
-        "purpose": "条件を決める。15:00 からの失敗では鳴り、10:03 の 1 分の跳ねや、昼の混みでは鳴らないようにする。",
+        "purpose": "条件を直す。`expr` のしきい値を、昼の混み（1.2%）より上で本当の失敗（6〜8%）より下の 5%（`0.05`）にし、`for: 5m`（5 分続いたら）を足す。テストの 10:03・12:30・15:03・15:30 に鳴らず、15:06 に鳴れば、条件は合っている。",
         "check": {
-          "kind": "sim",
-          "expr": "field しきい値=5% 継続=5分"
+          "kind": "alert",
+          "expr": "rules:rules/reserve.yml times:tests/yesterday.test.yml"
         },
-        "afterward": "しきい値 5% は、昼の混み（1.4% まで）より上で、本当の失敗（6〜8%）より下。継続時間 5 分で、10:03 の 1 分の跳ねでは鳴らず、15:05 に 1 回だけ鳴った。",
+        "afterward": "テストの `FAILED` は 15:06（`time: 15h6m`）の 1 つだけになった。10:03 の跳ねは 1 分で消えるので、5 分の `for` を待つ間に鳴りやみ、昼の 1.2% は 5% を超えない。15:00 からの失敗は 15:00 に待ち（pending）になり、5 分続いた 15:05 に鳴った（firing）。残った `FAILED` は、鳴った時刻ではなく、期待（`exp`）と鳴った物（`got`）の `Labels` と `Annotations` が違うと言っている。",
         "hints": [
-          "しきい値は、いつもの揺れと昼の混みより上、本当の失敗より下に置く。表の割合を見比べる。",
-          "しきい値は 5%。一瞬の跳ねで鳴らさないために、継続時間を足す。15:00 からの失敗は 20 分続いた。",
-          "`set しきい値 5%` `set 継続 5分` の順に入れる。"
+          "promtool の `FAILED` の段は、時刻（`time:`）ごとに、期待（`exp`）と実際に鳴った物（`got`）を並べる。`exp:[]` なのに `got` に出た時刻が、鳴りすぎた所。",
+          "`expr: reserve:error_ratio > 0.05` にし、その下に `for: 5m` の行を足す（`expr` と同じ字下げ）。割合は 0〜1 の数で書く（5% は `0.05`）。",
+          "`# 予約サイトのアラート（Prometheus の規則）\n# reserve:error_ratio は、1 分ごとのエラーの割合（失敗した頼み ÷ 全ての頼み。0.05 が 5%）\ngroups:\n  - name: reserve\n    rules:\n      - alert: ReserveErrorRate\n        expr: reserve:error_ratio > 0.05\n        for: 5m\n        labels:\n          severity: warning\n        annotations:\n          summary: 予約のエラーが増えている\n` と保存する。"
         ],
         "expectedErrors": [
-          "mon-alert-condition",
-          "sim-no-such",
-          "sim-usage"
-        ],
-        "actions": [
-          {
-            "op": "set",
-            "field": "しきい値",
-            "value": "5%"
-          },
-          {
-            "op": "set",
-            "field": "継続",
-            "value": "5分"
-          }
+          "mon-rule-parse",
+          "mon-rule-duration",
+          "mon-rule-yaml",
+          "mon-alert-spike",
+          "mon-alert-lunch",
+          "mon-alert-missed",
+          "mon-alert-labels"
         ]
       },
       {
         "id": "response",
-        "purpose": "鳴った時に、必ず誰かがすぐ動けるようにする（通知先と、対応の手順）。",
+        "purpose": "鳴った時に、必ず誰かがすぐ動けるようにする。`amtool` の木では、`severity=\"page\"` のアラートだけが当番の電話（`oncall-phone`）に届き、ほかは全員のメール（`all-mail`）に届く。ラベルを `severity: page` にし、受けた当番が開く{{term:runbook}}の場所を、注釈の `runbook_url`（`https://wiki.city.example/runbooks/reserve-error-rate`）に書く。",
         "check": {
-          "kind": "sim",
-          "expr": "field 通知先=当番の電話 手順=付ける"
+          "kind": "alert",
+          "expr": "test:tests/yesterday.test.yml"
         },
-        "afterward": "15:05 に当番の電話が鳴った。手順書の 1 番（直前に配った版を戻す）を読んで、7 分後の 15:12 に直った。通知先を 1 人に決め、何から見るかを書いておいたので、迷わずに動けた。",
+        "afterward": "`promtool test rules` が `SUCCESS` になった。15:06 に鳴るアラートは `severity=\"page\"` を持つので、Alertmanager の木の `{severity=\"page\"}` の枝に当たり、当番の電話（`oncall-phone`）に届く。知らせには手順書の場所（`runbook_url`）が付き、当番は 1 番の「直前に配った版を戻す」から始められる。全員のメールに送ると、皆が「誰かが見る」と思って誰も動かない。",
         "hints": [
-          "鳴った時に動く人を決める。皆に送ると、皆が誰かが見ると思う。",
-          "通知先は当番の電話。受けた当番が迷わないよう、手順書を付ける。",
-          "`set 通知先 当番の電話` `set 手順 付ける` の順に入れる。"
+          "知らせる先は、Alertmanager がアラートのラベルで振り分ける。`amtool` の木で、`oncall-phone` に届く枝の条件を見る。",
+          "`labels:` の `severity: warning` を `severity: page` にする。`annotations:` に `runbook_url: https://wiki.city.example/runbooks/reserve-error-rate` の行を足す（`summary` と同じ字下げ）。",
+          "`# 予約サイトのアラート（Prometheus の規則）\n# reserve:error_ratio は、1 分ごとのエラーの割合（失敗した頼み ÷ 全ての頼み。0.05 が 5%）\ngroups:\n  - name: reserve\n    rules:\n      - alert: ReserveErrorRate\n        expr: reserve:error_ratio > 0.05\n        for: 5m\n        labels:\n          severity: page\n        annotations:\n          summary: 予約のエラーが増えている\n          runbook_url: https://wiki.city.example/runbooks/reserve-error-rate\n` と保存する。"
         ],
         "expectedErrors": [
-          "mon-alert-nobody",
-          "sim-no-such",
-          "sim-usage"
-        ],
-        "actions": [
-          {
-            "op": "set",
-            "field": "通知先",
-            "value": "当番の電話"
-          },
-          {
-            "op": "set",
-            "field": "手順",
-            "value": "付ける"
-          }
+          "mon-rule-parse",
+          "mon-rule-duration",
+          "mon-rule-yaml",
+          "mon-alert-labels",
+          "mon-alert-spike",
+          "mon-alert-lunch",
+          "mon-alert-missed"
         ]
       }
     ]
@@ -335,7 +233,7 @@
   "result": {
     "success": "一瞬の跳ねでは鳴らず、本当の失敗で 1 回だけ鳴り、当番が手順書で 7 分で直せるアラートを作った。",
     "partial": "ヒントを使って作った。次は、なぜ継続時間を足すと鳴りすぎが減るのかを、自分の言葉で説明してみよう。",
-    "retry": "まだ合っていない。「試した結果」の文を見て、鳴った回数と時刻が、15:00 からの失敗の 1 回だけかを確かめよう。"
+    "retry": "まだ合っていない。`promtool test rules` の `FAILED` の段を見て、どの時刻（`time:`）で、期待（`exp`）と鳴った物（`got`）がどう違うかを確かめよう。"
   },
   "summary": {
     "points": [

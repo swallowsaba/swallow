@@ -114,6 +114,8 @@ export const checkSchema = z.discriminatedUnion('kind', [
   z.object({ kind: z.literal('container'), expr: z.string().min(1) }).strict(),
   /** GitHub Actions の実行の記録と配る先の状態。式は docs/content-spec.md 2.4（src/engines/cicd/check.ts） */
   z.object({ kind: z.literal('ci'), expr: z.string().min(1) }).strict(),
+  /** Prometheus の規則と、その単体テスト（promtool test rules）の結果。式は docs/content-spec.md 2.4（src/engines/monitor/check.ts） */
+  z.object({ kind: z.literal('alert'), expr: z.string().min(1) }).strict(),
   /**
    * contains を書けば、返事の本文にその文字列がある（API の資源が変わったか）。
    * header を「名前: 値」で書けば、返事にその名前の見出しがあり、値が同じ（名前の大文字・小文字は問わない）。

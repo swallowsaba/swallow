@@ -1,4 +1,5 @@
 import { ciHolds } from '@/engines/cicd/check';
+import { alertHolds } from '@/engines/monitor/check';
 import { dnat } from '@/engines/net/firewall';
 import type { CheckSpec, ErrorGuide, Practice, PracticeStep } from '@/content/schema';
 import { parseRich } from '@/content/rich';
@@ -37,7 +38,7 @@ import type { PracticeAttempt } from '@/game/types';
 /* ---------- 状態による判定 ---------- */
 
 /** 端末の実戦で判定できる形 */
-export const SHELL_CHECKS: ReadonlySet<CheckSpec['kind']> = new Set(['fs', 'cwd', 'service', 'http', 'tls', 'git', 'k8s', 'net', 'container', 'ci', 'answer']);
+export const SHELL_CHECKS: ReadonlySet<CheckSpec['kind']> = new Set(['fs', 'cwd', 'service', 'http', 'tls', 'git', 'k8s', 'net', 'container', 'ci', 'alert', 'answer']);
 
 /** 模擬環境（模）の実戦で判定できる形（docs/content-spec.md 2.4.1） */
 export const SIM_CHECKS: ReadonlySet<CheckSpec['kind']> = new Set(['sim']);
@@ -141,6 +142,8 @@ export function checkState(check: CheckSpec, input: CheckInput): boolean {
       return containerHolds(shell.containers, check.expr);
     case 'ci':
       return ciHolds(shell, check.expr);
+    case 'alert':
+      return alertHolds(shell, check.expr);
   }
 }
 

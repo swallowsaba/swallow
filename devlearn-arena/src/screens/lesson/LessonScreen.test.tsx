@@ -753,6 +753,32 @@ describe('見本の 2 本を最後まで通せる（docs/development-plan.md Pha
     expect($(host, '[data-testid="result-commands"]').textContent).toBe(api(3000).trimEnd());
   });
 
+  it('mon.b.04（設定の編集）: promtool の長い FAILED の段は、小窓では案内が当たった所だけを示し、内容・原因候補・ヒントを隠さない', async () => {
+    const session = createSession(1);
+    const id = 'mon.b.04';
+    const l = await lesson(id);
+    const { host } = await toPractice(session, id, l);
+    // 初めの規則のまま保存すると、10:03・12:30・15:03・15:06 の 4 つの時刻で期待と違う
+    click($(host, '[data-testid="editor-save"]'));
+    expect($(host, '[data-testid="editor-results"]').textContent).toContain('time: 15h6m');
+    expect($(host, '[data-testid="practice-error"]').dataset.guide).toBe('mon-alert-spike');
+    const said = $(host, '.practice-error-said').textContent;
+    expect(said).toContain('time: 10h3m');
+    expect(said).not.toContain('time: 15h6m');
+    expect(said).toContain('…');
+    expect($(host, '.practice-error-flow').textContent).toContain('for を書いていない');
+    // 最後のヒントの規則を保存すると、2 つの手順が続けて通る
+    const area = $<HTMLTextAreaElement>(host, '[data-testid="editor-text"]');
+    const answer = /`([^`]+)`/.exec(l.practice.steps[1]?.hints[2] ?? '')?.[1] ?? '';
+    act(() => {
+      Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, 'value')?.set?.call(area, answer);
+      area.dispatchEvent(new Event('input', { bubbles: true }));
+    });
+    click($(host, '[data-testid="editor-save"]'));
+    expect($(host, '[data-testid="editor-results"]').textContent).toContain('SUCCESS');
+    expect(host.querySelectorAll('[data-testid="practice-afterward"]')).toHaveLength(2);
+  });
+
   it('linux.i.01: ヒントを 3 段まで開き、最後のヒントをそのまま打てば通る（結果はヒントあり）', async () => {
     const session = createSession(1);
     const id = 'linux.i.01';

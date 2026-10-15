@@ -342,9 +342,7 @@
           "「利用者が遅いと感じ始めた時刻は？」は「12:00」を押す。"
         ],
         "expectedErrors": [
-          "mon-start-misread",
-          "sim-no-such",
-          "sim-usage"
+          "mon-start-misread"
         ],
         "actions": [
           {
@@ -368,9 +366,7 @@
           "「遅さの原因の資源は？」は「メモリ」を押す。"
         ],
         "expectedErrors": [
-          "mon-result-as-cause",
-          "sim-no-such",
-          "sim-usage"
+          "mon-result-as-cause"
         ],
         "actions": [
           {

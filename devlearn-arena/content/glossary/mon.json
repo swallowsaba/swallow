@@ -56,7 +56,8 @@
       "why": "画面を見続けなくても、夜中や休みの日の異常に気付ける。知らせすぎると、本当の異常を見逃す。",
       "related": [
         "monitoring",
-        "metrics"
+        "metrics",
+        "alertmanager"
       ],
       "lessons": [
         "mon.b.01",
@@ -174,7 +175,8 @@
       "why": "知らせる先を決まった 1 人にすると、「誰かが見る」と思って誰も動かない、が無くなる。",
       "related": [
         "alert",
-        "runbook"
+        "runbook",
+        "alertmanager"
       ],
       "lessons": [
         "mon.b.04"
@@ -187,6 +189,51 @@
       "plain": "アラートを受けた時に、何から確かめ、何をすれば直るかを順に書いた物。",
       "why": "夜中に起こされた人でも、迷わずに動ける。同じ障害で、毎回同じ調べ方をやり直さずに済む。",
       "related": [
+        "alert",
+        "on-call"
+      ],
+      "lessons": [
+        "mon.b.04"
+      ]
+    },
+    {
+      "id": "prometheus",
+      "word": "Prometheus",
+      "reading": "プロメテウス",
+      "plain": "メトリクスを集めて時系列として貯め、式で問い合わせ、決めた条件でアラートを出す、無料の監視の道具。条件は規則のファイル（YAML）に書く。",
+      "why": "広く使われている監視の道具で、Kubernetes の監視でもよく使う。条件をファイルに書くので、変更を Git で記録し、`promtool` で試してから入れられる。",
+      "related": [
+        "metrics",
+        "alert",
+        "promql",
+        "alertmanager"
+      ],
+      "lessons": [
+        "mon.b.04"
+      ]
+    },
+    {
+      "id": "promql",
+      "word": "PromQL",
+      "reading": "プロムキューエル",
+      "plain": "Prometheus に貯めた時系列を問い合わせる式の言葉。`reserve:error_ratio > 0.05` は「エラーの割合が 0.05（5%）を超えている時系列」を選ぶ。",
+      "why": "グラフに描く値も、アラートの条件も、同じ式で書く。比べる値は 0〜1 の割合や秒などの数で書き、`%` は使わない。",
+      "related": [
+        "prometheus",
+        "threshold"
+      ],
+      "lessons": [
+        "mon.b.04"
+      ]
+    },
+    {
+      "id": "alertmanager",
+      "word": "Alertmanager",
+      "reading": "アラートマネージャー",
+      "plain": "Prometheus が出したアラートを受け取り、ラベル（`severity` など）で知らせる先（当番の電話・メールなど）に振り分ける道具。まとめる・黙らせる働きもある。",
+      "why": "どのアラートを誰に知らせるかを、規則と分けて 1 か所で決められる。`amtool` で振り分けの木を見て、どこに届くかを確かめられる。",
+      "related": [
+        "prometheus",
         "alert",
         "on-call"
       ],
