@@ -234,6 +234,11 @@
   padding: 18px;
   background: var(--hud-bg);
 }
+/* 段の中身が無い時（準備中・読み込み中・読めなかった時）は、右の窓と境を出さない */
+.lesson-right[hidden],
+.lesson-split[hidden] {
+  display: none;
+}
 .lesson-split {
   align-self: center;
   justify-self: center;

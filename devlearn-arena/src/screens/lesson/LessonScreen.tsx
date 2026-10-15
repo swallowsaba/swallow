@@ -149,6 +149,8 @@ export function LessonScreen({ session, lessonId, onExit, onLesson, onGlossary, 
 
   if (!entry) return null;
   const open = openStages(reached);
+  // 右の窓（図・端末）は、段の中身がある時だけ出す。準備中・読み込み中・読めなかった時に、中身の無い枠だけを残さない
+  const hasRight = authored && !loadFailed && lesson !== null && view !== null;
 
   return (
     <div
@@ -249,6 +251,7 @@ export function LessonScreen({ session, lessonId, onExit, onLesson, onGlossary, 
         <div
           className="lesson-split"
           role="separator"
+          hidden={!hasRight}
           aria-orientation="vertical"
           aria-label="左右の境（矢印で動かす）"
           aria-valuemin={SPLIT_MIN}
@@ -272,7 +275,7 @@ export function LessonScreen({ session, lessonId, onExit, onLesson, onGlossary, 
             window.addEventListener('pointerup', up);
           }}
         />
-        <aside className={`lesson-right${view === 'practice' ? ' is-console' : ''}`} ref={setRight} aria-label={view === 'practice' ? '仮想端末' : '図'} />
+        <aside className={`lesson-right${view === 'practice' ? ' is-console' : ''}`} ref={setRight} hidden={!hasRight} aria-label={view === 'practice' ? '仮想端末' : '図'} />
       </div>
 
       <footer className="lesson-foot">

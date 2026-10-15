@@ -196,6 +196,7 @@ describe('レッスン画面の枠（docs/ui-design.md 7 章）', () => {
     const { host } = await open(session, 'k8s.a.04');
     expect(host.querySelector('[data-testid="lesson-preparing"]')).not.toBeNull();
     expect(session.progress.getState().progress.lessons['k8s.a.04']).toBeUndefined();
+    expect($(host, '.lesson-right').hidden).toBe(true);
     expect($(host, '[data-testid="lesson-backdrop"]').dataset.facility).toBe('cluster');
   });
 
@@ -214,8 +215,34 @@ describe('レッスン画面の枠（docs/ui-design.md 7 章）', () => {
       '回線につないでから「もう一度読む」を押す。一度開いたレッスンは、回線が無くても開ける。',
     ]);
     expect(host.querySelector('.stage-text.is-sub')?.textContent).not.toBe('読み込み中');
+    // 右の窓は、中身が無いので出さない（中身の無い枠だけを残さない）
+    expect($(host, '.lesson-right').hidden).toBe(true);
     click($(host, '[data-testid="lesson-load-retry"]'));
     expect(onReload).toHaveBeenCalledTimes(1);
+  });
+
+  it('右の窓は、読み込みの間は出さず、段の中身が来たら出す', async () => {
+    const session = createSession(1);
+    const host = document.createElement('div');
+    document.body.append(host);
+    const root = createRoot(host);
+    roots.push(root);
+    act(() => {
+      root.render(
+        <SettingsContext.Provider value={session.settings}>
+          <LessonScreen session={session} lessonId="found.b.04" onExit={vi.fn()} onLesson={vi.fn()} onGlossary={vi.fn()} />
+        </SettingsContext.Provider>,
+      );
+    });
+    expect(host.querySelector('.stage-text.is-sub')?.textContent).toBe('読み込み中');
+    expect($(host, '.lesson-right').hidden).toBe(true);
+    for (let i = 0; i < 100 && !host.querySelector('.stage'); i += 1) {
+      await act(async () => {
+        await new Promise((r) => setTimeout(r, 10));
+      });
+    }
+    expect($(host, '.lesson-right').hidden).toBe(false);
+    expect($(host, '.lesson-right').childElementCount).toBeGreaterThan(0);
   });
 
   it('Esc と「中断して都市へ」で都市へ戻る', async () => {
