@@ -7,7 +7,8 @@ import { setTimeout as sleep } from 'node:timers/promises';
 export default async function boot(page) {
   const context = await page.context().browser().newContext({ viewport: page.viewportSize() });
   const p = await context.newPage();
-  await p.route(/\/src\/main\.tsx/, async (route) => {
+  // 本体: 開発用のサーバでは src/main.tsx、build した物（公開 URL）では assets/index-*.js
+  await p.route(/\/src\/main\.tsx|\/assets\/index-[^/]+\.js$/, async (route) => {
     await sleep(3000);
     await route.continue();
   });

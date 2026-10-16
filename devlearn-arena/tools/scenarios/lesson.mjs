@@ -5,6 +5,10 @@
 //
 // 学習ライブラリの入口の札から found.b.04 を始める → 解説の 5 画面（用語の小窓）→ 理解（図を押す・結ぶ・はい／いいえ。わざと誤る）→
 // クイズ（わざと誤ってから正す）→ 実戦の入口 → 中断して都市へ → 開き直すと続きから → linux.i.01 を情報パネルの直リンクで。
+import { readFileSync } from 'node:fs';
+
+/** 答えは手元のファイルから読む（本番の build では、中身は JSON のまま配信されない） */
+const local = (path) => JSON.parse(readFileSync(new URL(`../../content/${path}`, import.meta.url), 'utf8'));
 const text = (page, sel) => page.evaluate((s) => document.querySelector(s)?.innerText.replace(/\s+/g, ' ') ?? null, sel);
 const next = (page) => page.click('[data-testid="lesson-next"]');
 const wait = (page, ms = 250) => page.waitForTimeout(ms);
@@ -77,13 +81,13 @@ export default async function lesson(page, shot) {
   console.log('解説の順', titles.join(' → '));
 
   // 理解の答え（結ぶ問題のため、中身と用語集を読んで、画面に出る語と説明の組を渡す）
-  await page.evaluate(async () => {
-    const [l, g] = await Promise.all(['/content/lessons/found/found.b.04.json', '/content/glossary/found.json'].map((u) => fetch(u).then((r) => r.json())));
+  {
+    const [l, g] = [local('lessons/found/found.b.04.json'), local('glossary/found.json')];
     const word = Object.fromEntries(g.terms.map((t) => [t.id, t.word]));
     const truth = {};
     for (const u of l.understand) if (u.kind === 'match') for (const [a, b] of u.pairs) truth[a.replace(/\{\{term:([a-z-]+)\}\}/g, (_, id) => word[id] ?? id)] = b;
-    window.__lessonTruth = truth;
-  });
+    await page.evaluate((t) => { window.__lessonTruth = t; }, truth);
+  }
 
   // 理解: 1 問目は図をわざと誤って押す → 解説の箇所 → 正しく押す
   await understand(page, 'found.b.04', true, async () => {
