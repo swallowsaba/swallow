@@ -208,6 +208,18 @@ export const errorGuideSchema = z.object({
   terms: z.array(termId).optional(),
   /** 出力（標準出力）にも当てる。HTTP の 4xx・5xx のように、失敗でも標準エラーに出ない物。手順の想定エラー（expectedErrors）の時だけ当てる */
   output: z.boolean().optional(),
+  /**
+   * 読めない場所などを飛ばして、命令が続けたことを言うエラーの行（正規表現。grep・find の Permission denied）。
+   * 結果（標準出力）が出ていて、エラーの行が全てこれに当たれば、命令は目的を果たしているので案内を出さない
+   */
+  skipped: z.string().min(1).refine((s) => {
+    try {
+      new RegExp(s);
+      return true;
+    } catch {
+      return false;
+    }
+  }, '正規表現として読めない').optional(),
 }).strict();
 
 export const errorFileSchema = z.object({ domain: domainId, errors: z.array(errorGuideSchema) }).strict();

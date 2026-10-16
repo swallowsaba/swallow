@@ -85,7 +85,8 @@ export const editorSaved = (p: Practice, raw: unknown): Restored<EditorSaved> =>
       shell,
       run: runSchema(p),
       draft: z.string(),
-      results: z.array(z.object({ line: z.string(), stdout: z.string(), stderr: z.string() }).strict()),
+      // 終了の状態は、記録し始める前の保存には無い
+      results: z.array(z.object({ line: z.string(), stdout: z.string(), stderr: z.string(), code: z.number().int().optional() }).strict()),
     }).strict(),
     (v) => restoreShell(v.shell),
   );

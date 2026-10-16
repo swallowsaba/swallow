@@ -14,12 +14,23 @@ export interface OutputChunk {
   text: string;
 }
 
+/** 1 行のうち、; && || で区切った 1 つ（パイプはまとめて 1 つ。終了の状態は最後の命令の物）の結果 */
+export interface CommandPart {
+  stdout: string;
+  stderr: string;
+  code: number;
+  /** 後ろが || で、失敗をその行の中で受けている */
+  handled: boolean;
+}
+
 export interface ExecOutcome {
   state: ShellState;
   chunks: OutputChunk[];
   exitCode: number;
   /** 画面側にエディタを開かせる要求 */
   editor: EditorRequest | null;
+  /** 動いた区切りごとの結果（打った順。&& や || で飛ばした物は含まない） */
+  parts?: CommandPart[];
 }
 
 export const EXIT_NOT_FOUND = 127;
@@ -377,9 +388,11 @@ function runList(
   let exitCode = 0;
   let skipNext = false;
   let editor: EditorRequest | null = null;
+  const parts: CommandPart[] = [];
 
   for (const item of list.items) {
     if (!skipNext) {
+      const from = chunks.length;
       let pipedStdin = '';
       // パイプの各段はサブシェル。ファイルシステムへの変更は残るが、
       // cwd と変数はパイプライン全体の外へ漏らさない（bash と同じ）
@@ -407,6 +420,9 @@ function runList(
         state = { ...state, lastExit: exitCode };
         if (exiting(state)) break;
       }
+      const own = chunks.slice(from);
+      const of = (stream: OutputChunk['stream']): string => own.filter((c) => c.stream === stream).map((c) => c.text).join('');
+      parts.push({ stdout: of('stdout'), stderr: of('stderr'), code: exitCode, handled: item.connector === '||' });
       if (exiting(state)) {
         exitCode = Number(state.vars.get(EXIT_VAR));
         break;
@@ -423,7 +439,7 @@ function runList(
     else skipNext = false;
   }
 
-  return { state, chunks, exitCode, editor };
+  return { state, chunks, exitCode, editor, parts };
 }
 
 /** 1行（またはヒアドキュメント付き複数行）を実行する。 */

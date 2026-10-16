@@ -6,10 +6,17 @@ import {
 } from '@/engines/kernel/journal';
 import type { CommandRegistry, ShellState } from '@/engines/kernel/registry';
 import { createShellState, type SessionOptions } from '@/engines/kernel/session';
-import { execute, type OutputChunk } from '@/engines/kernel/shell';
+import { execute, type CommandPart, type OutputChunk } from '@/engines/kernel/shell';
 import type { EditorRequest } from '@/engines/kernel/registry';
 import { writeFile } from '@/engines/kernel/vfs';
 import { useConst } from './useConst';
+
+export interface ShellRun {
+  chunks: OutputChunk[];
+  exitCode: number;
+  editor: EditorRequest | null;
+  parts: CommandPart[];
+}
 
 export interface ShellSession {
   state: ShellState;
@@ -17,8 +24,8 @@ export interface ShellSession {
   clock: MutableClock;
   journal: Journal<ShellState>;
   atLatest: boolean;
-  /** 1行実行して出力と終了コードを返す。状態はジャーナルに積まれる。 */
-  run: (line: string) => { chunks: OutputChunk[]; exitCode: number; editor: EditorRequest | null };
+  /** 1行実行して出力と終了コード（; && || で区切った物ごとの結果も）を返す。状態はジャーナルに積まれる。 */
+  run: (line: string) => ShellRun;
   /** 編集パネルの保存。仮想FSへ書き戻し、履歴に1つ積む */
   saveFile: (path: string, content: string) => void;
   /** 現在の状態を同期で取り出す（xterm のコールバックから使う） */
@@ -51,12 +58,12 @@ export function useShellSession(options: SessionOptions = {}): ShellSession {
   );
 
   const run = useCallback(
-    (line: string): { chunks: OutputChunk[]; exitCode: number; editor: EditorRequest | null } => {
+    (line: string): ShellRun => {
       const journal = journalRef.current;
       const outcome = execute(current(journal), line, registry, clock);
       journalRef.current = push(journal, outcome.state, line.split('\n')[0] ?? line);
       bump();
-      return { chunks: outcome.chunks, exitCode: outcome.exitCode, editor: outcome.editor };
+      return { chunks: outcome.chunks, exitCode: outcome.exitCode, editor: outcome.editor, parts: outcome.parts ?? [] };
     },
     [registry, clock, journalRef],
   );

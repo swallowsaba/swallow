@@ -6,13 +6,14 @@ import { ENVIRONMENTS, initialShell, isEnvironmentId } from '@/engines/environme
 import { createClock } from '@/engines/kernel/clock';
 import { createDefaultRegistry } from '@/engines/kernel/commands';
 import type { ShellState } from '@/engines/kernel/registry';
+import type { CommandPart } from '@/engines/kernel/shell';
 import { restoreShell, snapshotShell, type SessionOptions, type ShellSnapshotData } from '@/engines/kernel/session';
 import { applyAction, createSim, describeAction, stepSettled } from '@/engines/sim/sim';
 import type { SimAction, SimOutcome, SimState } from '@/engines/sim/types';
 import type { SqlDb } from '@/engines/db/check';
 import type { PracticeAttempt, PracticeSession } from '@/game/types';
 import {
-  afterCommand, attemptOf, commandCandidates, currentStep, editedText, editOf, isFinished, openHint, saveEdit, startRun,
+  afterCommand, attemptOf, commandCandidates, currentStep, editedText, editOf, failedCommand, isFinished, openHint, saveEdit, startRun,
   type CommandOutcome, type EditResult, type EditSpec, type PracticeRun,
 } from '@/learning/practice';
 import { Icon } from '@/ui/icons/Icon';
@@ -224,11 +225,11 @@ function TerminalPractice({ practice: p, sessionId, saved, onSave, onFinish, onT
     onSave({ lessonId: sessionId, stepIndex: next.stepIndex, engineState: { shell: snapshotShell(shell.getState()), run: next } satisfies TerminalSaved, savedAt: nowIso() });
   };
 
-  const onExecuted = (line: string, _code: number, stderr: string, stdout: string): void => {
-    const outcome = afterCommand(p, r.runRef.current, { line, stderr, stdout, shell: shell.getState() }, ERROR_GUIDES);
-    // 出力に出たエラー（HTTP の 4xx・5xx）は、その行を「言われたこと」として示す
+  const onExecuted = (line: string, code: number, stderr: string, stdout: string, parts: readonly CommandPart[]): void => {
+    const outcome = afterCommand(p, r.runRef.current, { line, stderr, stdout, code, parts, shell: shell.getState() }, ERROR_GUIDES);
+    // 出力に出たエラー（HTTP の 4xx・5xx）は、その行を「言われたこと」として示す（標準エラーが警告だけの時も）
     const match = outcome.error?.match ?? '';
-    const said = stderr.trim() !== '' || !outcome.error ? stderr : (stdout.split('\n').find((l) => l.includes(match) || safeTest(match, l)) ?? stdout);
+    const said = failedCommand({ stderr, stdout, code, parts }, ERROR_GUIDES) || !outcome.error ? stderr : (stdout.split('\n').find((l) => l.includes(match) || safeTest(match, l)) ?? stdout);
     save(r.took(outcome, said, line));
   };
 
@@ -436,7 +437,7 @@ function SqlPracticeStage({ practice: p, sessionId, saved, onSave, onFinish, onT
 
 /** 確かめた結果のうち、エラーとして示す物: 打った行と、言われたこと（標準エラー。出力に出たエラーは当たった行だけ。端末と同じ） */
 function errorSource(results: readonly EditResult[], guide: ErrorGuide): { line: string; said: string } | undefined {
-  const err = results.find((x) => x.stderr.trim() !== '');
+  const err = results.find((x) => failedCommand(x, ERROR_GUIDES));
   if (err) return { line: err.line, said: excerpt(err.stderr, guide.match) };
   const out = results.find((x) => safeTest(guide.match, x.stdout));
   return out ? { line: out.line, said: out.stdout.split('\n').find((l) => safeTest(guide.match, l)) ?? out.stdout } : undefined;
@@ -502,7 +503,8 @@ function EditorPractice({ practice: p, edit, sessionId, saved, onSave, onFinish,
     setSavedText(text);
     setDraft(text);
     setResults(out.results);
-    const stderr = out.results.map((x) => x.stderr).join('');
+    // エラーとして扱うのは、目的を果たせなかった行の標準エラーだけ（警告や、飛ばしただけの行は除く）
+    const stderr = out.results.filter((x) => failedCommand(x, ERROR_GUIDES)).map((x) => x.stderr).join('');
     const stdout = out.results.map((x) => x.stdout).join('');
     const outcome = afterCommand(p, r.runRef.current, { line: text, stderr, stdout, shell: out.state }, ERROR_GUIDES);
     const src = outcome.error ? errorSource(out.results, outcome.error) : undefined;

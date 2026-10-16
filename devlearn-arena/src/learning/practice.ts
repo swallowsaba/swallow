@@ -13,7 +13,7 @@ import { resolve } from '@/engines/kernel/path';
 import { matchesExpected, type SqlDb } from '@/engines/db/check';
 import type { CommandRegistry, ShellState } from '@/engines/kernel/registry';
 import { portsOf, serviceOf } from '@/engines/kernel/services';
-import { execute } from '@/engines/kernel/shell';
+import { execute, type CommandPart } from '@/engines/kernel/shell';
 import { sshHolds } from '@/engines/kernel/commands/ssh';
 import { exists, isDir, metaOf, readFile, writeFile } from '@/engines/kernel/vfs';
 import { initialShell, resolveSetup } from '@/engines/environments';
@@ -31,7 +31,8 @@ import type { PracticeAttempt } from '@/game/types';
  * - 1 つの操作で手順を続けて満たしてもよい（満たした手順は先へ進む）
  * - ヒントは手順ごとに 3 段（方向 → 具体 → そのまま通る答え）。使っても失敗にはしない。
  *   画面で操作する実戦の答えは「何をどこへ置く・つなぐ・並べる」の日本語と、同じ意味の操作（actions）
- * - エラーが出たら、エラーの解説（errorGuides）を探して「内容 → 原因候補 → ヒント」を示す。ゲームオーバーにしない
+ * - エラーが出たら、エラーの解説（errorGuides）を探して「内容 → 原因候補 → ヒント」を示す。ゲームオーバーにしない。
+ *   出すのは命令が目的を果たせなかった時だけ（failedCommand）。警告や、読めない場所を飛ばしただけの時は出さない
  * - エラーの後にヒント無しで成功したら「エラーから自力で回復した」と記録する（トラブルシューティング）
  */
 
@@ -253,6 +254,44 @@ function guideMatches(g: ErrorGuide, text: string): boolean {
   }
 }
 
+/**
+ * 命令が目的を果たせなかったか（エラーの案内を出すか。docs/learning-design.md 7 章、docs/content-spec.md 2.5）。
+ * - 標準エラーが空なら、果たしている
+ * - 終了の状態が 0 なら、果たしている。標準エラーの文は警告や途中経過（curl -v・kubectl の Warning:・
+ *   パイプの前の命令が飛ばした場所。パイプの終了の状態は、本物と同じく最後の命令の物）
+ * - 0 でなくても、結果（標準出力）が出ていて、エラーの行が全て「飛ばして続けた」物（解説の skipped）なら、果たしている
+ *   （grep -r・find が読めない場所を飛ばした。本物の grep はこの時 2、find は 1 を返す）
+ * - 終了の状態を渡さない操作（画面の操作・SQL・保存の後の確かめ）は、標準エラーがあれば果たせていない
+ * - 1 行に ; && || で区切った命令が並ぶ時（parts）は、区切りごとに確かめ、どれかが果たせなければ果たせていない。
+ *   後ろが || の物は、失敗をその行の中で受けているので数えない
+ */
+export function failedCommand(a: CommandResultLike, guides: readonly ErrorGuide[]): boolean {
+  return failureOf(a, guides) !== null;
+}
+
+/** 目的を果たせなかった命令の標準エラー（解説を探すのに使う）。果たしていれば null */
+export function failureOf(a: CommandResultLike, guides: readonly ErrorGuide[]): string | null {
+  if (a.parts !== undefined) {
+    const failed = a.parts.filter((p) => !p.handled && failureOf(p, guides) !== null);
+    return failed.length > 0 ? failed.map((p) => p.stderr).join('') : null;
+  }
+  if (a.stderr.trim() === '') return null;
+  if (a.code === undefined) return a.stderr;
+  if (a.code === 0) return null;
+  if ((a.stdout ?? '').trim() === '') return a.stderr;
+  const skips = guides.flatMap((g) => (g.skipped === undefined ? [] : [g.skipped]));
+  const onlySkipped = a.stderr.split('\n').filter((l) => l.trim() !== '').every((l) => skips.some((s) => new RegExp(s).test(l)));
+  return onlySkipped ? null : a.stderr;
+}
+
+/** 命令の結果（標準エラー・出力・終了の状態・区切りごとの結果） */
+export interface CommandResultLike {
+  stderr: string;
+  stdout?: string | undefined;
+  code?: number | undefined;
+  parts?: readonly CommandPart[] | undefined;
+}
+
 /** エラーの文に当たる解説。手順で想定したエラーを先に探し、無ければ全ての解説から、それも無ければ一般的な案内 */
 export function findGuide(stderr: string, step: PracticeStep | undefined, guides: readonly ErrorGuide[]): ErrorGuide {
   const expected = (step?.expectedErrors ?? []).map((id) => guides.find((g) => g.id === id)).filter((g): g is ErrorGuide => g !== undefined);
@@ -307,7 +346,7 @@ export interface CommandOutcome {
 }
 
 /**
- * 1 行打った後に呼ぶ。エラー（エラーの文が出た）の扱いと、状態による手順の判定をする。
+ * 1 行打った後に呼ぶ。エラー（命令が目的を果たせなかった。failedCommand）の扱いと、状態による手順の判定をする。
  * 終了の値が 0 でなくても、エラーの文が無ければエラーとしない（systemctl status は止まっていれば 3 を返す）
  */
 export function afterCommand(
@@ -318,6 +357,10 @@ export function afterCommand(
     stderr: string;
     /** 出力（標準出力）。想定エラーのうち output の物だけを当てる（HTTP の 4xx・5xx） */
     stdout?: string;
+    /** 終了の状態（端末で打った行）。渡さなければ、標準エラーがあればエラー */
+    code?: number;
+    /** ; && || で区切った物ごとの結果（端末で打った行） */
+    parts?: readonly CommandPart[];
     shell?: ShellState;
     sim?: SimState;
     answer?: string;
@@ -335,8 +378,9 @@ export function afterCommand(
   if (danger && !next.dangerousUsed.includes(danger.id)) next = { ...next, dangerousUsed: [...next.dangerousUsed, danger.id] };
 
   let error: ErrorGuide | null = null;
-  if (a.stderr.trim() !== '') {
-    error = findGuide(a.stderr, currentStep(practice, next), guides);
+  const failure = failureOf(a, guides);
+  if (failure !== null) {
+    error = findGuide(failure, currentStep(practice, next), guides);
     next = { ...next, errors: [...next.errors, error.id], errorOpen: true };
   } else if (a.stdout !== undefined && a.stdout.trim() !== '') {
     const step = currentStep(practice, next);
@@ -420,9 +464,10 @@ export function replayAnswers(practice: Practice, guides: readonly ErrorGuide[] 
       }
       const out = execute(shell, line, registry, clock);
       shell = out.state;
-      const err = out.chunks.filter((c) => c.stream === 'stderr').map((c) => c.text).join('');
+      const of = (stream: 'stdout' | 'stderr'): string => out.chunks.filter((c) => c.stream === stream).map((c) => c.text).join('');
+      const err = of('stderr');
       const expected = (step.expectedErrors ?? []).some((id) => guides.some((g) => g.id === id && guideMatches(g, err)));
-      if (err.trim() && !expected) problems.push(`実戦 ${step.id}: 答え「${line}」でエラー: ${err.trim()}`);
+      if (failedCommand({ stderr: err, stdout: of('stdout'), code: out.exitCode, parts: out.parts }, guides) && !expected) problems.push(`実戦 ${step.id}: 答え「${line}」でエラー: ${err.trim()}`);
     }
     if (!checkState(step.check, { shell, answer })) problems.push(`実戦 ${step.id}: 最後のヒントを打っても達成条件を満たさない`);
   }
@@ -451,7 +496,7 @@ function replayEditor(practice: Practice, guides: readonly ErrorGuide[]): string
     shell = out.state;
     for (const r of out.results) {
       const expected = (step.expectedErrors ?? []).some((id) => guides.some((g) => g.id === id && guideMatches(g, r.stderr)));
-      if (r.stderr.trim() && !expected) problems.push(`実戦 ${step.id}: 保存の後の「${r.line}」でエラー: ${r.stderr.trim()}`);
+      if (failedCommand(r, guides) && !expected) problems.push(`実戦 ${step.id}: 保存の後の「${r.line}」でエラー: ${r.stderr.trim()}`);
     }
     if (!checkState(step.check, { shell })) problems.push(`実戦 ${step.id}: 最後のヒントを保存しても達成条件を満たさない`);
   }
@@ -538,6 +583,8 @@ export interface EditResult {
   line: string;
   stdout: string;
   stderr: string;
+  /** 終了の状態（記録し始める前の保存には無い） */
+  code?: number;
 }
 
 /**
@@ -552,7 +599,7 @@ export function saveEdit(shell: ShellState, edit: EditSpec, content: string, reg
     const out = execute(state, line, registry, clock);
     state = out.state;
     const of = (stream: 'stdout' | 'stderr'): string => out.chunks.filter((c) => c.stream === stream).map((c) => c.text).join('');
-    results.push({ line, stdout: of('stdout'), stderr: of('stderr') });
+    results.push({ line, stdout: of('stdout'), stderr: of('stderr'), code: out.exitCode });
   }
   return { state, results };
 }

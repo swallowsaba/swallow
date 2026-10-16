@@ -75,6 +75,10 @@ describe('grep', () => {
     const r = t.run('grep -r timeout /var/log');
     expect(r.out).toBe('/var/log/app/a.log:timeout 1\n/var/log/app/b.log:timeout 3\n');
     expect(r.err).toBe('grep: /var/log/secure: Permission denied\n');
+    // 一致があっても、誤りがあれば 2（本物の GNU grep と同じ）。パイプの終了の状態は最後の命令の物
+    expect(r.code).toBe(2);
+    expect(t.run('grep -r timeout /var/log | wc -l')).toEqual({ out: '2\n', err: 'grep: /var/log/secure: Permission denied\n', code: 0 });
+    expect(t.run('grep -r nothing /var/log').code).toBe(2);
   });
 });
 

@@ -11,7 +11,7 @@ import { initialShell, shellOptions } from '@/engines/environments';
 import { applyAction, createSim, describeAction } from '@/engines/sim/sim';
 import type { SimAction } from '@/engines/sim/types';
 import {
-  afterCommand, answerOf, attemptOf, checkState, commandCandidates, currentStep, findGuide, GENERIC_GUIDE, hintsUsed, isFinished,
+  afterCommand, answerOf, attemptOf, checkState, commandCandidates, currentStep, failedCommand, findGuide, GENERIC_GUIDE, hintsUsed, isFinished,
   editedText, editOf, openHint, replayAnswers, replaySqlAnswers, resultKind, saveEdit, startRun, type PracticeRun,
 } from './practice';
 
@@ -19,14 +19,20 @@ import {
 function player(practice: Practice) {
   const registry = createDefaultRegistry();
   const clock = createClock();
-  let shell: ShellState = createShellState(shellOptions(practice.environment, practice.setup));
+  let shell: ShellState = initialShell(practice.environment, practice.setup);
   let run: PracticeRun = startRun();
   return {
     type(line: string) {
       const out = execute(shell, line, registry, clock);
       shell = out.state;
-      const stderr = out.chunks.filter((c) => c.stream === 'stderr').map((c) => c.text).join('');
-      const r = afterCommand(practice, run, { line, stderr, shell }, ERROR_GUIDES);
+      const of = (stream: 'stdout' | 'stderr'): string => out.chunks.filter((c) => c.stream === stream).map((c) => c.text).join('');
+      const r = afterCommand(practice, run, { line, stderr: of('stderr'), stdout: of('stdout'), code: out.exitCode, parts: out.parts, shell }, ERROR_GUIDES);
+      run = r.run;
+      return { ...r, stdout: of('stdout'), stderr: of('stderr'), code: out.exitCode };
+    },
+    /** 「端末で調べて答える」の欄に入れて「答える」を押す（端末の状態は変えない） */
+    answer(answer: string) {
+      const r = afterCommand(practice, run, { line: `（答え）${answer}`, stderr: '', shell, answer }, ERROR_GUIDES);
       run = r.run;
       return r;
     },
@@ -345,6 +351,107 @@ describe('答える形と、出来上がったのに満たさない時の知ら�
     const p = player(practice);
     p.type('ps aux');
     expect([...p.shell.procs.processes.values()].find((x) => x.command === 'video-encoder')?.pid).toBe(101);
+  });
+});
+
+describe('目的を果たした命令はエラーにしない（docs/learning-design.md 7 章、docs/content-spec.md 2.5）', () => {
+  it('linux.b.04: grep -r timeout /var/log | wc -l は 3 を出す。読めない場所の Permission denied があっても案内を出さず、3 と答えて手順を満たす', async () => {
+    const { practice } = await lesson('linux.b.04');
+    const p = player(practice);
+    const r = p.type('grep -r timeout /var/log | wc -l');
+    expect(r.stdout.trim()).toBe('3');
+    expect(r.stderr).toContain('Permission denied');
+    expect(r.error).toBeNull();
+    expect(p.run.errorOpen).toBe(false);
+    expect(p.run.errors).toEqual([]);
+    const answered = p.answer('3');
+    expect(answered.error).toBeNull();
+    expect(answered.done.map((s) => s.id)).toEqual(['count']);
+  });
+
+  it('linux.b.04: パイプ無しの grep -r（一致あり・読めない場所あり。終了の状態は 2）も、結果の行が出ていれば案内を出さない', async () => {
+    const { practice } = await lesson('linux.b.04');
+    const p = player(practice);
+    const r = p.type('grep -r timeout /var/log');
+    expect(r.code).toBe(2);
+    expect(r.stdout.split('\n').filter((l) => l.includes('timeout'))).toHaveLength(3);
+    expect(r.error).toBeNull();
+  });
+
+  it('linux.b.04: find / -name app.conf（見つかった・読めない場所あり）は案内を出さず、場所を答えて手順を満たす', async () => {
+    const { practice } = await lesson('linux.b.04');
+    const p = player(practice);
+    p.type('grep -r timeout /var/log | wc -l');
+    p.answer('3');
+    const r = p.type('find / -name app.conf');
+    expect(r.stdout).toContain('/etc/app/app.conf');
+    expect(r.stderr).toContain('Permission denied');
+    expect(r.error).toBeNull();
+    expect(p.answer('/etc/app/app.conf').done.map((s) => s.id)).toEqual(['where']);
+    expect(isFinished(practice, p.run)).toBe(true);
+    expect(attemptOf(practice, p.run).errors).toEqual([]);
+  });
+
+  it('linux.b.04: 読めない場所だけを探して何も出なかった時は、目的を果たせていないので案内を出す', async () => {
+    const { practice } = await lesson('linux.b.04');
+    const p = player(practice);
+    const r = p.type('grep timeout /var/log/secure');
+    expect(r.stdout).toBe('');
+    expect(r.error?.id).toBe('perm-denied-search');
+    expect(p.run.errorOpen).toBe(true);
+  });
+
+  it('1 行に ; で並べた時は区切りごとに確かめる。前の命令が果たせなければ、最後が通っても案内を出す', async () => {
+    const { practice } = await lesson('found.b.04');
+    const p = player(practice);
+    const r = p.type('cd /srv/ap; ls');
+    expect(r.code).toBe(0);
+    expect(r.error?.id).toBe('enoent');
+  });
+
+  it('後ろが || の命令の失敗は、その行の中で受けているので案内を出さない', async () => {
+    const { practice } = await lesson('linux.b.04');
+    const p = player(practice);
+    expect(p.type('cat /var/log/secure || echo 読めない').error).toBeNull();
+    expect(p.type('cat /var/log/secure && echo 読めた').error?.id).toBe('perm-denied-search');
+  });
+
+  it('前に案内が出ていても、正しい答えはエラーの状態に引きずられずに通る', async () => {
+    const { practice } = await lesson('linux.b.04');
+    const p = player(practice);
+    expect(p.type('cat /var/log/secure').error?.id).toBe('perm-denied-search');
+    const answered = p.answer('3');
+    expect(answered.error).toBeNull();
+    expect(answered.done.map((s) => s.id)).toEqual(['count']);
+    expect(p.run.errorOpen).toBe(false);
+  });
+});
+
+describe('目的を果たせなかったか（failedCommand）', () => {
+  const g = ERROR_GUIDES;
+  it('終了の状態が 0 なら、標準エラーは警告や途中経過（curl -v・kubectl の Warning:）', () => {
+    expect(failedCommand({ stderr: '* Connected to localhost\n> GET / HTTP/1.1\n', stdout: 'hello\n', code: 0 }, g)).toBe(false);
+    expect(failedCommand({ stderr: 'Warning: resource deployments/web is missing the last-applied annotation\n', stdout: 'deployment.apps/web configured\n', code: 0 }, g)).toBe(false);
+  });
+
+  it('0 でなく、結果が出ていても、エラーの行が「飛ばした」物でなければ果たせていない（kubectl drain が断った）', () => {
+    expect(failedCommand({ stderr: 'error: unable to drain node "node-2"\n', stdout: 'node/node-2 cordoned\n', code: 1 }, g)).toBe(true);
+  });
+
+  it('0 でなく、結果が出ていて、エラーの行が全て「飛ばした」物なら果たしている。結果が無ければ果たせていない', () => {
+    const skipped = "find: '/root': Permission denied\n";
+    expect(failedCommand({ stderr: skipped, stdout: '/etc/app/app.conf\n', code: 1 }, g)).toBe(false);
+    expect(failedCommand({ stderr: skipped, stdout: '', code: 1 }, g)).toBe(true);
+    expect(failedCommand({ stderr: `${skipped}find: missing argument\n`, stdout: '/etc/app/app.conf\n', code: 1 }, g)).toBe(true);
+  });
+
+  it('同じ Permission denied でも、飛ばしたのでなく断られた物（ssh-copy-id の鍵）は果たせていない', () => {
+    expect(failedCommand({ stderr: 'deploy@web01: Permission denied (publickey).\n', stdout: '/usr/bin/ssh-copy-id: INFO: attempting to log in\n', code: 1 }, g)).toBe(true);
+  });
+
+  it('終了の状態の無い操作（画面の操作・SQL）は、標準エラーがあれば果たせていない', () => {
+    expect(failedCommand({ stderr: 'つなげない' }, g)).toBe(true);
+    expect(failedCommand({ stderr: '' }, g)).toBe(false);
   });
 });
 

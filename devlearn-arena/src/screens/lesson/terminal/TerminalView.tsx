@@ -3,6 +3,7 @@ import { FitAddon } from '@xterm/addon-fit';
 import { Terminal } from '@xterm/xterm';
 import '@xterm/xterm/css/xterm.css';
 import { forDisplay } from '@/engines/kernel/bytes';
+import type { CommandPart } from '@/engines/kernel/shell';
 import { complete } from '@/engines/kernel/completion';
 import {
   backspace, createLineState, deleteForward, displayWidth, expandBang, historyMove, insert,
@@ -27,7 +28,7 @@ export interface TerminalHandle {
 interface Props {
   session: ShellSession;
   /** コマンド実行後に呼ばれる（実戦の判定に使う） */
-  onExecuted?: (line: string, exitCode: number, stderr: string, stdout: string) => void;
+  onExecuted?: (line: string, exitCode: number, stderr: string, stdout: string, parts: readonly CommandPart[]) => void;
   /** vi などがエディタを要求したときに呼ばれる */
   onEditor?: (request: { path: string; content: string; tool: string }) => void;
   /** 最初に出す 1 行 */
@@ -147,7 +148,7 @@ export const TerminalView = forwardRef<TerminalHandle, Props>(function TerminalV
         return;
       }
       pendingRef.current = null;
-      const { chunks, exitCode, editor } = sessionRef.current.run(expanded);
+      const { chunks, exitCode, editor, parts } = sessionRef.current.run(expanded);
       let errorText = '';
       let outText = '';
       for (const chunk of chunks) {
@@ -159,7 +160,7 @@ export const TerminalView = forwardRef<TerminalHandle, Props>(function TerminalV
       }
       if (editor !== null) editorRef.current?.(editor);
       // 失敗の中身も渡す。画面側で「なぜ通らないか」を出すのに使う
-      executedRef.current?.(expanded, exitCode, errorText, outText);
+      executedRef.current?.(expanded, exitCode, errorText, outText, parts);
       lineRef.current = createLineState();
       writePrompt();
     };

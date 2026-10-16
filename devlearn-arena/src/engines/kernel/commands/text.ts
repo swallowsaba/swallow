@@ -137,7 +137,8 @@ export const textCommands: CommandSpec[] = [
           out.push(named ? `${src.name}${sep}${numbered}` : numbered);
         }
       }
-      const code = errors.length > 0 && total === 0 ? 2 : total > 0 ? 0 : 1;
+      // 本物の GNU grep と同じ: 読めない場所などの誤りがあれば、一致があっても 2。無ければ一致で 0、無しで 1
+      const code = errors.length > 0 ? 2 : total > 0 ? 0 : 1;
       return {
         ...(out.length > 0 ? { stdout: fromLines(out) } : {}),
         ...(errors.length > 0 ? { stderr: fromLines(errors) } : {}),
