@@ -89,6 +89,7 @@
       "id": "git-nothing-to-commit",
       "match": "nothing to commit|no changes added to commit",
       "output": true,
+      "outputOf": "\\bgit\\b.*\\bcommit\\b",
       "meaning": "記録する変更が無い、と言われた（`nothing to commit`）。ファイルは何も変わっていない。",
       "causes": [
         "`sed -i 's/前/後/'` の「前」が、ファイルの中身と 1 字でも違い、何も置き換わらなかった。",

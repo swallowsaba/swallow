@@ -19,7 +19,7 @@ import { exists, isDir, metaOf, readFile, writeFile } from '@/engines/kernel/vfs
 import { initialShell, resolveSetup } from '@/engines/environments';
 import { request } from '@/engines/http/http';
 import { resolveName, roundTrip } from '@/engines/net/probe';
-import { applyAction, createSim, describeAction, holds } from '@/engines/sim/sim';
+import { applyAction, createSim, describeAction, holds, stepSettled } from '@/engines/sim/sim';
 import type { SimState } from '@/engines/sim/types';
 import { verify } from '@/engines/tls/tls';
 import type { PracticeAttempt } from '@/game/types';
@@ -427,7 +427,7 @@ export function afterCommand(
     next = { ...next, errors: [...next.errors, error.id], errorOpen: true };
   } else if (a.stdout !== undefined && a.stdout.trim() !== '') {
     const step = currentStep(practice, next);
-    const inOutput = (step?.expectedErrors ?? []).map((id) => guides.find((g) => g.id === id)).find((g) => g?.output === true && guideMatches(g, a.stdout ?? ''));
+    const inOutput = (step?.expectedErrors ?? []).map((id) => guides.find((g) => g.id === id)).find((g) => g?.output === true && (g.outputOf === undefined || new RegExp(g.outputOf).test(line)) && guideMatches(g, a.stdout ?? ''));
     if (inOutput) {
       error = inOutput;
       next = { ...next, errors: [...next.errors, inOutput.id], errorOpen: true };
@@ -599,6 +599,101 @@ function replaySim(practice: Practice, guides: readonly ErrorGuide[]): string[] 
   return problems;
 }
 
+/** 最後のヒントの通りに操作した時に、画面に出たエラーの案内 */
+export interface ShownGuide {
+  /** その時の今の手順（前の手順の最後のヒントの行で、次の手順に移った後のこともある） */
+  step: string;
+  /** その行を最後のヒントに書いた手順 */
+  from: string;
+  line: string;
+  guide: string;
+  /** 命令が本当に失敗した（failedCommand か、終了の状態が 0 でない）。false なら、うまくいった命令の出力に、出力に当てる解説（output）が当たった */
+  failed: boolean;
+}
+
+/**
+ * 最後のヒントの通りに操作して出るエラーの案内が、許される物か（docs/content-spec.md 2.4）。許されるのは、
+ * その手順で想定したエラー（expectedErrors）で、その手順の間に、本当に失敗した命令（衝突・拒否・届かないことを見せる）の物だけ。
+ * うまくいった命令の出力に当たった案内・次の手順に移ってから出た案内・想定していない案内は問題。最後に満たせない手順も問題
+ */
+export function hintGuideProblems(practice: Practice, guides: readonly ErrorGuide[]): string[] {
+  // ブラウザ内 SQL は、SQLite を開く replaySqlAnswers の中で同じことを確かめる
+  if (practice.mode === 'sql') return [];
+  const { shown, missed } = playHints(practice, guides);
+  return [...shownProblems(practice, shown), ...missed.map((id) => `実戦 ${id}: 最後のヒントの通りに操作しても、この手順を満たさない`)];
+}
+
+function shownProblems(practice: Practice, shown: readonly ShownGuide[]): string[] {
+  return shown.flatMap((s) => {
+    const from = practice.steps.find((x) => x.id === s.from);
+    const why = !s.failed ? 'うまくいった命令の出力に当たった'
+      : s.step !== s.from ? `次の手順 ${s.step} に移ってから出た`
+        : !(from?.expectedErrors ?? []).includes(s.guide) ? 'その手順の想定エラーに無い' : null;
+    return why ? [`実戦 ${s.from}: 最後のヒントの「${s.line}」で、エラーの案内（${s.guide}）が出る（${why}）`] : [];
+  });
+}
+
+/**
+ * 最後のヒントの通りに、人と同じ順で操作する（VERIFY-ALL.txt【1】の f）。画面と同じ関数（afterCommand）を通し、
+ * 出たエラーの案内と、最後に満たせなかった手順を返す。前の手順の操作で満たした手順は飛ばす（画面でも、もう今の手順ではない）。
+ * 端末・設定の編集・画面の操作（模）の実戦。ブラウザ内 SQL は playSqlHints
+ */
+export function playHints(practice: Practice, guides: readonly ErrorGuide[]): { shown: ShownGuide[]; missed: string[] } {
+  const shown: ShownGuide[] = [];
+  let run = startRun();
+  const took = (from: PracticeStep, line: string, out: CommandOutcome, failed: boolean): void => {
+    if (out.error) shown.push({ step: currentStep(practice, run)?.id ?? '', from: from.id, line, guide: out.error.id, failed });
+    run = out.run;
+  };
+  if (practice.mode === 'simulation') {
+    let sim = createSim(practice.environment, practice.setup);
+    for (const step of practice.steps) {
+      if (run.stepsDone.includes(step.id)) continue;
+      for (const action of step.actions ?? []) {
+        const said = describeAction(sim, action);
+        const out = applyAction(sim, action);
+        sim = out.state;
+        const check = currentStep(practice, run)?.check;
+        const settled = out.error === null && stepSettled(sim, check?.kind === 'sim' ? check.expr : null);
+        took(step, said, afterCommand(practice, run, { line: said, stderr: out.error ?? '', sim, settled }, guides), out.error !== null);
+      }
+    }
+  } else if (practice.mode === 'editor') {
+    const edit = editOf(practice);
+    let shell = initialShell(practice.environment, practice.setup);
+    const clock = createClock();
+    for (const step of practice.steps) {
+      if (!edit || run.stepsDone.includes(step.id)) continue;
+      for (const content of answerOf(step)) {
+        const out = saveEdit(shell, edit, content, REGISTRY, clock);
+        shell = out.state;
+        const stderr = out.results.filter((x) => failedCommand(x, guides)).map((x) => x.stderr).join('');
+        const stdout = out.results.map((x) => x.stdout).join('');
+        took(step, edit.path, afterCommand(practice, run, { line: editedText(shell, edit), stderr, stdout, shell }, guides), stderr !== '');
+      }
+    }
+  } else if (practice.mode === 'terminal') {
+    let shell = initialShell(practice.environment, practice.setup);
+    const clock = createClock();
+    for (const step of practice.steps) {
+      if (run.stepsDone.includes(step.id)) continue;
+      const lines = answerOf(step);
+      for (const [i, line] of lines.entries()) {
+        if (step.check.kind === 'answer' && i === lines.length - 1) {
+          took(step, line, afterCommand(practice, run, { line: `（答え）${line}`, stderr: '', shell, answer: line }, guides), false);
+          continue;
+        }
+        const out = execute(shell, line, REGISTRY, clock);
+        shell = out.state;
+        const of = (stream: 'stdout' | 'stderr'): string => out.chunks.filter((c) => c.stream === stream).map((c) => c.text).join('');
+        const a = { line, stderr: of('stderr'), stdout: of('stdout'), code: out.exitCode, parts: out.parts, shell };
+        took(step, line, afterCommand(practice, run, a, guides), failedCommand(a, guides) || out.exitCode !== 0);
+      }
+    }
+  }
+  return { shown, missed: practice.steps.filter((s) => !run.stepsDone.includes(s.id)).map((s) => s.id) };
+}
+
 /**
  * ブラウザ内 SQL（S）の実戦: 初期状態の SQL で開いた DB に、最後のヒントの SQL を順に実行し、全ての手順を満たすか。
  * SQLite の本体（WebAssembly）を読むので非同期。内容の検証（validate.test.ts・scripts/validate-content.mts）が使う
@@ -633,7 +728,38 @@ export async function replaySqlAnswers(practice: Practice, guides: readonly Erro
   } finally {
     db.close();
   }
-  return problems;
+  // 手順ごとに通る時だけ、人と同じ順に通した時の案内と満たし方も確かめる（同じ誤りを 2 度言わない）
+  return problems.length > 0 ? problems : playSqlHints(practice, guides);
+}
+
+/** ブラウザ内 SQL の最後のヒントを、画面と同じ関数（afterCommand）で人と同じ順に通し、出たエラーの案内と満たせない手順を問題にする（hintGuideProblems と同じ） */
+async function playSqlHints(practice: Practice, guides: readonly ErrorGuide[]): Promise<string[]> {
+  const { openDb } = await import('@/engines/db/db');
+  const db = await openDb(resolveSetup(practice.environment, practice.setup).sql ?? '');
+  const shown: ShownGuide[] = [];
+  let run = startRun();
+  try {
+    for (const step of practice.steps) {
+      if (run.stepsDone.includes(step.id)) continue;
+      const lines = answerOf(step);
+      for (const [i, line] of lines.entries()) {
+        let failed = false;
+        let out: CommandOutcome;
+        if (step.check.kind === 'answer' && i === lines.length - 1) {
+          out = afterCommand(practice, run, { line: `（答え）${line}`, stderr: '', db, answer: line }, guides);
+        } else {
+          const r = db.exec(line);
+          failed = !r.ok;
+          out = afterCommand(practice, run, { line, stderr: r.ok ? '' : r.error, db, parts: sqlParts(line, r) }, guides);
+        }
+        if (out.error) shown.push({ step: currentStep(practice, run)?.id ?? '', from: step.id, line, guide: out.error.id, failed });
+        run = out.run;
+      }
+    }
+  } finally {
+    db.close();
+  }
+  return [...shownProblems(practice, shown), ...practice.steps.filter((s) => !run.stepsDone.includes(s.id)).map((s) => `実戦 ${s.id}: 最後のヒントの通りに操作しても、この手順を満たさない`)];
 }
 
 /* ---------- 設定の編集（編。docs/content-spec.md 2.4.2） ---------- */

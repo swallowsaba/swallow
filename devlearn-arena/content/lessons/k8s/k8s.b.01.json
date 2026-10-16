@@ -176,7 +176,7 @@
         "hints": [
           "{{term:kubectl}}の `get pods -o wide` は、Pod の一覧に、動いている Node（`NODE` の欄）を足して出す。Node を空けるのは `kubectl drain Node の名前`。",
           "`kubectl drain node-2` は「持ち主の無い Pod は消すと戻らない」と断る。それでも空けるなら `--force` を付ける。",
-          "`kubectl get pods -o wide` `kubectl drain node-2` `kubectl drain node-2 --force` を順に打つ。"
+          "`kubectl get pods -o wide` `kubectl drain node-2` を打つ。手で置いた Pod があると断られるので、続けて `kubectl drain node-2 --force` を打つ。"
         ],
         "expectedErrors": [
           "k8s-no-controller"

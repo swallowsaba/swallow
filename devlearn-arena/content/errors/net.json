@@ -364,6 +364,7 @@
       "id": "net-seg-same",
       "match": "Nmap scan report for 10\\.0\\.20\\.50[\\s\\S]*445/tcp +open",
       "output": true,
+      "outputOf": "netns exec guest\\b",
       "meaning": "来客の網から、まだサーバの共有（445 番）に届く。網は分かれたが、ルータが網の間を中継している。",
       "causes": [
         "`FORWARD` の鎖に、来客の網（`eth3`）から入る荷物を止める規則が無い。",

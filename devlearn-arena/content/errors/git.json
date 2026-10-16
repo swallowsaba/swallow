@@ -46,6 +46,7 @@
       "id": "git-nothing-added",
       "match": "nothing added to commit|no changes added to commit|nothing to commit \\(create",
       "output": true,
+      "outputOf": "\\bgit\\b.*\\bcommit\\b",
       "meaning": "記録する物が選ばれていないので、何も記録しなかった。",
       "causes": [
         "`git add` で選ばずに `git commit` した。",

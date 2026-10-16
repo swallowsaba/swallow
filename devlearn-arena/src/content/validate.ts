@@ -1,7 +1,7 @@
 import { ENVIRONMENTS, isEnvironmentId, resolveSetup } from '@/engines/environments';
 import { actionNames, createSim, exprProblems, isSimEnvironment } from '@/engines/sim/sim';
 import type { SimState } from '@/engines/sim/types';
-import { replayAnswers } from '@/learning/practice';
+import { hintGuideProblems, replayAnswers } from '@/learning/practice';
 import { areaOf, hitBoxOf, isLargeArea, MIN_HIT, type Box } from './figures';
 import { parseRich, termsIn } from './rich';
 import type { CatalogEntry, ErrorGuide, Lesson, Mission, Practice, Term } from './schema';
@@ -171,7 +171,7 @@ function practiceProblems(practice: Practice, ctx: Pick<ValidateContext, 'errors
       const initial = createSim(practice.environment, practice.setup);
       for (const s of practice.steps) if (s.check.kind === 'sim') for (const e of exprProblems(initial, s.check.expr)) p.push(`実戦 ${s.id}: ${e}`);
       p.push(...simAnswerProblems(practice, initial));
-      p.push(...replayAnswers(practice, ctx.guides));
+      p.push(...replayPractice(practice, ctx.guides ?? []));
     } catch (e) {
       p.push(`実戦: 初期状態（setup）の形が違う: ${e instanceof Error ? e.message : String(e)}`);
     }
@@ -185,7 +185,7 @@ function practiceProblems(practice: Practice, ctx: Pick<ValidateContext, 'errors
     try {
       resolveSetup(practice.environment, practice.setup);
       // 全実戦の最後のヒントを模擬環境で実行すると、達成条件を満たす
-      p.push(...replayAnswers(practice, ctx.guides));
+      p.push(...replayPractice(practice, ctx.guides ?? []));
     } catch (e) {
       p.push(`実戦: 初期状態（setup）の形が違う: ${e instanceof Error ? e.message : String(e)}`);
     }
@@ -327,6 +327,15 @@ export function validateFigure(svg: string, allowedColors: ReadonlySet<string>, 
   }
   p.push(...partHits(svg));
   return p;
+}
+
+/**
+ * 全実戦の最後のヒントを模擬環境で実行すると、達成条件を満たす。手順ごとに通る時は、人と同じ順に画面と同じ関数で通し、
+ * 出るエラーの案内が想定した失敗だけかも確かめる（同じ誤りを 2 度言わない）
+ */
+function replayPractice(practice: Practice, guides: readonly ErrorGuide[]): string[] {
+  const steps = replayAnswers(practice, guides);
+  return steps.length > 0 ? steps : hintGuideProblems(practice, guides);
 }
 
 /** 押して当たる所。描いた順に、持ち主の部分（無ければ null）と並べる */

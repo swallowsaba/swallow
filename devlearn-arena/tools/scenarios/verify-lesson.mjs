@@ -222,7 +222,9 @@ export async function verifyLesson(page, id, opts = {}) {
       const g = await errorGuide(page);
       if (!g) return;
       const current = await page.evaluate(() => document.querySelector('.practice-step.is-current')?.getAttribute('data-step') ?? null);
-      if (rec.errors.length === 0) {
+      // 想定した失敗の案内（下の designed）は撮らない。最初の、想定していない案内の瞬間を撮る
+      const expected = current === step.id && (step.expectedErrors ?? []).includes(g.guide);
+      if (!expected && !rec.shot) {
         mkdirSync(shotDir, { recursive: true });
         rec.shot = `${shotDir}/${id}.png`;
         await page.screenshot({ path: rec.shot });
@@ -286,6 +288,14 @@ export async function verifyLesson(page, id, opts = {}) {
       }
     }
     const unfinished = await page.evaluate(() => [...document.querySelectorAll('.practice-step')].filter((s) => s.dataset.done !== 'true').map((s) => s.querySelector('.practice-step-text')?.innerText.replace(/\s+/g, ' ').trim()));
+    // 想定した失敗（衝突・拒否・届かないことを見せる手順）の案内は、その手順の想定エラーで、その手順の間に出た物だけ。
+    // 命令が本当に失敗したかは、同じ関数で最後のヒントを通す内容の検証（npm run content:check）が確かめる
+    const designed = (e) => {
+      const step = p.steps.find((x) => x.id === e.step);
+      return e.current === e.step && (step?.expectedErrors ?? []).includes(e.guide);
+    };
+    for (const e of rec.errors.filter(designed)) rec.notes.push(`想定した失敗の案内 ${e.guide}（${e.line}）`);
+    rec.errors = rec.errors.filter((e) => !designed(e));
     if (rec.errors.length > 0) rec.saw = `正しい操作でエラーの案内が出た: ${rec.errors.map((e) => `${e.line} → ${e.text.slice(0, 160)}`).join(' ／ ')}`;
     if (unfinished.length > 0) {
       const term = p.mode === 'terminal' ? await page.evaluate(() => document.querySelector('.term-host .xterm-rows')?.innerText ?? null) : null;

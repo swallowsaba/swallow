@@ -242,7 +242,7 @@
       },
       {
         "id": "web",
-        "purpose": "443 番の許可を、「全て `DROP`」より上に並べ直す。`outside` から `nmap` で 443 番が `open` になったことを確かめる。",
+        "purpose": "443 番の許可を、「全て `DROP`」より上に並べ直す（`open` になったことは、次の手順で 22 番を直した後に `nmap` でまとめて確かめる）。",
         "check": {
           "kind": "net",
           "expr": "reach 203.0.113.10:443 from outside && reach 203.0.113.10:80 from outside"
@@ -251,7 +251,7 @@
         "hints": [
           "規則の場所は動かせないので、消して（`-D INPUT 番号`）、入れ直す（`-I INPUT 番号 規則`。その番号の所に差し込む）。",
           "6 番（443 の許可）を消し、5 番（`DROP`）の所に `-p tcp --dport 443 -j ACCEPT` を差し込む。消すと下の番号が 1 つずつ詰まることに気を付ける。",
-          "`iptables -D INPUT 6` `iptables -I INPUT 5 -p tcp --dport 443 -j ACCEPT` `ip netns exec outside nmap -p 22,80,443 203.0.113.10` の順に打つ。"
+          "`iptables -D INPUT 6` `iptables -I INPUT 5 -p tcp --dport 443 -j ACCEPT` の順に打つ。"
         ],
         "expectedErrors": [
           "net-fw-syntax"
@@ -259,7 +259,7 @@
       },
       {
         "id": "ssh",
-        "purpose": "誰からでも入れる SSH の許可（`tcp dpt:22`）を消し、社内の網（`10.0.0.0/8`）からだけ 22 番を許す規則を、`DROP` より上に入れる。`outside` からは 22 番が `filtered`、`office-pc` からは `open` になることを確かめる。",
+        "purpose": "誰からでも入れる SSH の許可（`tcp dpt:22`）を消し、社内の網（`10.0.0.0/8`）からだけ 22 番を許す規則を、`DROP` より上に入れる。`outside` からは 22 番が `filtered` で 443 番が `open`、`office-pc` からは 22 番が `open` になることを確かめる。",
         "check": {
           "kind": "net",
           "expr": "!reach 203.0.113.10:22 from outside && reach 203.0.113.10:22 from office-pc && reach 203.0.113.10:443 from outside"

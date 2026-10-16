@@ -292,7 +292,7 @@
         "hints": [
           "来客からの荷物は、`gw` の `eth3` から入る。行き先の口で、止める物と通す物を分ける。",
           "`iptables -A FORWARD -i eth3 -o eth1 -j DROP`（来客 → 社内）と `iptables -A FORWARD -i eth3 -o eth2 -j DROP`（来客 → サーバ）を足す。`eth0` へ出る荷物は止めない。",
-          "`ip netns exec guest nmap -p 445 10.0.20.50` `iptables -A FORWARD -i eth3 -o eth1 -j DROP` `iptables -A FORWARD -i eth3 -o eth2 -j DROP` `ip netns exec guest nmap -p 445 10.0.20.50` `ip netns exec guest nmap -p 443 198.51.100.80` `ip netns exec pc1 nmap -p 445 10.0.20.50` の順に打つ。"
+          "`iptables -A FORWARD -i eth3 -o eth1 -j DROP` `iptables -A FORWARD -i eth3 -o eth2 -j DROP` `ip netns exec guest nmap -p 445 10.0.20.50` `ip netns exec guest nmap -p 443 198.51.100.80` `ip netns exec pc1 nmap -p 445 10.0.20.50` の順に打つ。"
         ],
         "expectedErrors": [
           "net-seg-same",

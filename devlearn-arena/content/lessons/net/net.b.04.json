@@ -229,7 +229,7 @@
         "hints": [
           "`listen 8080;` を `listen 80;` に直し、`nginx -t` で確かめて `systemctl restart nginx`。失敗したら `systemctl status nginx` の記録を読む。",
           "`bind() to 0.0.0.0:80 failed (98: Address already in use)` は、80 番を別のプログラムが使っているという意味。`systemctl stop preview` で止め、`systemctl disable preview` で起動の時にも動かないようにしてから、もう一度 `systemctl restart nginx`。",
-          "`sed -i 's/listen 8080;/listen 80;/' /etc/nginx/conf.d/site.conf` `nginx -t` `systemctl restart nginx` `systemctl stop preview` `systemctl disable preview` `systemctl restart nginx` `curl http://localhost/` の順に打つ。"
+          "`sed -i 's/listen 8080;/listen 80;/' /etc/nginx/conf.d/site.conf` `nginx -t` `systemctl restart nginx` の順に打つ（80 番が使われていて失敗する）。続けて `systemctl stop preview` `systemctl disable preview` `systemctl restart nginx` `curl http://localhost/` の順に打つ。"
         ],
         "expectedErrors": [
           "net-port-in-use",

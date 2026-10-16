@@ -13,7 +13,7 @@ import { applyAction, createSim, describeAction } from '@/engines/sim/sim';
 import type { SimAction } from '@/engines/sim/types';
 import {
   afterCommand, answerOf, attemptOf, checkState, commandCandidates, currentStep, failedCommand, findGuide, GENERIC_GUIDE, hintsUsed, isFinished,
-  editedText, editOf, openHint, replayAnswers, replaySqlAnswers, resultKind, saveEdit, sqlParts, startRun, type PracticeRun,
+  editedText, editOf, hintGuideProblems, openHint, playHints, replayAnswers, replaySqlAnswers, resultKind, saveEdit, sqlParts, startRun, type PracticeRun,
 } from './practice';
 
 /** 端末で 1 行打ち、実戦を進める（画面と同じ道筋） */
@@ -597,6 +597,51 @@ describe('出力に出るエラー（HTTP の 4xx・5xx。docs/content-spec.md 2
   it('output の無い解説は出力に当てない（systemctl status の「failed」でエラーにしない）', () => {
     const r = afterCommand(practice, startRun(), { line: 'systemctl status web', stderr: '', stdout: 'Active: failed\n', shell }, guides);
     expect(r.error).toBeNull();
+  });
+
+  it('outputOf のある解説は、その形の行を打った時の出力だけに当てる（git status の様子を「何も記録しなかった」にしない。docs/progress/verify-all.md の git.b.02）', async () => {
+    const { practice: git } = await lesson('git.b.02');
+    const p = player(git);
+    p.type('git init');
+    // 選ぶ前の様子を見るだけ: git status も同じ文を出すが、記録しようとしていない
+    expect(p.type('git status').error).toBeNull();
+    // 選ばずに記録しようとした時は、今までどおり案内を出す
+    expect(p.type('git commit -m "説明"').error?.id).toBe('git-nothing-added');
+  });
+
+  it('outputOf のある解説は、別の機械からの nmap に当てない（社内の pc1 が共有に届くのは正しい。net.i.06）', async () => {
+    const { practice: seg } = await lesson('net.i.06');
+    const p = player(seg);
+    for (const line of [...seg.steps[0]?.hints[2].matchAll(/`([^`]+)`/g) ?? []].map((m) => m[1] ?? '').filter((l) => !l.includes('nmap') && !l.includes('ping'))) p.type(line);
+    expect(p.type('ip netns exec pc1 nmap -p 445 10.0.20.50').error).toBeNull();
+    // 来客から届くのは、まだ網の間を中継しているから（この手順で直すこと）
+    expect(p.type('ip netns exec guest nmap -p 445 10.0.20.50').error?.id).toBe('net-seg-same');
+  });
+});
+
+describe('最後のヒントの通りに打つ（画面と同じ関数で通す。docs/progress/verify-all.md の C2）', () => {
+  const okGuide = { id: 'denied-test', match: 'No such file or directory', meaning: '無い', causes: ['a', 'b'], hint: 'c' };
+  const openGuide = { id: 'open-test', match: 'notes.txt', output: true, meaning: 'まだ開いている', causes: ['a', 'b'], hint: 'c' };
+  const step = (id: string, hint: string, path: string, errs: string[] = []): Practice['steps'][number] => ({
+    id, purpose: id, check: { kind: 'fs', path }, afterward: id, hints: ['a', 'b', hint], expectedErrors: errs,
+  });
+  const two = (first: string, second: string, errs: string[] = []): Practice => ({
+    mode: 'terminal', purpose: 'p', environment: 'linux-basic',
+    steps: [step('make', first, '/tmp/a'), step('more', second, '/tmp/b', errs)],
+  });
+
+  it('うまくいった命令の出力に、出力に当てる解説が当たれば問題（前の手順の確かめが、次の手順の案内を出した）', () => {
+    const p = two('`touch /tmp/a` `ls /home/learner` と打つ。', '`touch /tmp/b` と打つ。', ['open-test']);
+    const { shown } = playHints({ ...p, setup: { files: { '/home/learner/notes.txt': 'x' } } }, [openGuide]);
+    expect(shown).toEqual([{ step: 'more', from: 'make', line: 'ls /home/learner', guide: 'open-test', failed: false }]);
+    expect(hintGuideProblems({ ...p, setup: { files: { '/home/learner/notes.txt': 'x' } } }, [openGuide]).join()).toContain('実戦 make: 最後のヒントの「ls /home/learner」で、エラーの案内（open-test）が出る');
+  });
+
+  it('その手順で想定した、本当に失敗する命令（衝突・拒否を見せる）の案内は、問題にしない', () => {
+    const p = two('`touch /tmp/a` と打つ。', '`cat /root/x` を打つと無いと言われる。`touch /tmp/b` と打つ。', ['denied-test']);
+    expect(hintGuideProblems(p, [okGuide])).toEqual([]);
+    // 想定していない手順で失敗すれば問題
+    expect(hintGuideProblems(two('`touch /tmp/a` と打つ。', '`cat /root/x` `touch /tmp/b` と打つ。'), [okGuide]).join()).toContain('（denied-test）が出る');
   });
 });
 
