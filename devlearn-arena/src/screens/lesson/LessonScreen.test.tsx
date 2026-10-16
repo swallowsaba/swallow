@@ -829,6 +829,28 @@ describe('見本の 2 本を最後まで通せる（docs/development-plan.md Pha
     throughEnd(opened, session, id, l);
   });
 
+  it('linux.b.04: grep と wc で 3、find で場所が出た時点で手順を満たす。答えの欄は出ず、結果に「できたこと」が 2 つ並ぶ（docs/progress/urgent-03.md）', async () => {
+    const session = createSession(1);
+    const id = 'linux.b.04';
+    const l = await lesson(id);
+    const opened = await toPractice(session, id, l);
+    const { host } = opened;
+    expect(host.querySelector('[data-testid="practice-answer"]')).toBeNull();
+    typeLine('grep -r timeout /var/log/ | wc -l');
+    expect(host.querySelector('[data-testid="practice-error"]')).toBeNull();
+    expect(host.querySelectorAll('[data-testid="practice-afterward"]')).toHaveLength(1);
+    expect(host.querySelector('[data-testid="practice-answer"]')).toBeNull();
+    typeLine('find / -name app.conf');
+    expect(host.querySelector('[data-testid="practice-error"]')).toBeNull();
+    expect(host.querySelectorAll('[data-testid="practice-afterward"]')).toHaveLength(2);
+    next(host);
+    const result = $(host, '[data-testid="stage-result"]');
+    expect(result.dataset.result).toBe('success');
+    expect(result.querySelectorAll('.result-list.is-ok li')).toHaveLength(2);
+    expect(result.textContent).not.toContain('まだ達成した手順は無い');
+    throughEnd(opened, session, id, l);
+  });
+
   it('未達のまま終えても責めず、もう一度挑戦すると模擬環境は初めから。途中で中断して開き直すと、打った所から続く', async () => {
     const session = createSession(1);
     const id = 'found.b.04';

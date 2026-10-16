@@ -21,6 +21,8 @@ export interface CommandPart {
   code: number;
   /** 後ろが || で、失敗をその行の中で受けている */
   handled: boolean;
+  /** パイプでつないだコマンドの名前（打った順。sudo の後ろのコマンドも入れる）。実戦の判定 ran で使う */
+  commands: string[];
 }
 
 export interface ExecOutcome {
@@ -52,6 +54,16 @@ function vfsMessage(command: string, error: VfsError): string {
 }
 
 const isCompound = (c: Command): c is CompoundCommand => c.kind !== undefined;
+
+/** 打ったコマンドの名前（先頭の代入は飛ばす）。sudo の時は、その後ろのコマンドの名前も入れる */
+function commandNames(command: Command): string[] {
+  if (isCompound(command)) return [];
+  const words = command.words.map((w) => w.raw.replace(/^['"]|['"]$/g, ''));
+  const [name, ...args] = words.slice(words.findIndex((w) => !/^[A-Za-z_][A-Za-z0-9_]*=/.test(w)));
+  if (name === undefined || /^[A-Za-z_][A-Za-z0-9_]*=/.test(name)) return [];
+  const inner = name === 'sudo' ? args.find((a) => !a.startsWith('-')) : undefined;
+  return inner === undefined ? [name] : [name, inner];
+}
 
 function makeExpandContext(state: ShellState, registry: CommandRegistry, clock: MutableClock): ExpandContext {
   return {
@@ -422,7 +434,7 @@ function runList(
       }
       const own = chunks.slice(from);
       const of = (stream: OutputChunk['stream']): string => own.filter((c) => c.stream === stream).map((c) => c.text).join('');
-      parts.push({ stdout: of('stdout'), stderr: of('stderr'), code: exitCode, handled: item.connector === '||' });
+      parts.push({ stdout: of('stdout'), stderr: of('stderr'), code: exitCode, handled: item.connector === '||', commands: item.pipeline.commands.flatMap(commandNames) });
       if (exiting(state)) {
         exitCode = Number(state.vars.get(EXIT_VAR));
         break;

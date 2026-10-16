@@ -94,12 +94,12 @@
     {
       "id": "found-encoding-misread",
       "match": "答えが合っていない",
-      "meaning": "答えた文字コードは、`matsuri.txt` を書いた側の文字コードではない。",
+      "meaning": "nkf で調べたが、出た物は、`matsuri.txt` を書いた側の文字コードの名前ではない。",
       "causes": [
-        "この端末の文字コード（`UTF-8`）を答えた。端末が UTF-8 で読むから化けている。",
-        "`file` の `Non-ISO extended-ASCII text` をそのまま答えた（`file` は、日本語の文字コードの名前までは言わない）。"
+        "`matsuri.txt` ではなく、UTF-8 に読み直した `matsuri-utf8.txt`（または別のファイル）を調べた。",
+        "`-g` を付けずに打ったので、文字コードの名前ではなく、読み替えた中身が出た。"
       ],
-      "hint": "`nkf -g matsuri.txt` が出す 1 語を、そのまま答えよう。",
+      "hint": "調べるファイルの名前と、`-g`（見当を付けた名前を 1 語で出す）を確かめて、`nkf -g matsuri.txt` と打ち直そう。",
       "terms": [
         "character-encoding"
       ]

@@ -71,7 +71,7 @@
 - 図: 8 ビット = 1 バイト。文字「A」と 01000001。KB・MB・GB の階段
 - 理解: [用語] ビット・バイト・文字コードを結ぶ ／ [はい・いいえ] 同じ文字でも文字コードが違うと別の 0 と 1 になる → はい
 - クイズ: [結果予測] 1 バイトで表せる数の種類 → 256 ／ [原因特定] 文字化けの原因 → 書いた時と読む時の文字コードが違う ／ [選択] 大きい順 → GB・MB・KB
-- 実戦（端）: 目的=古い機械から届いて `cat` で化けるお知らせ `matsuri.txt`（Shift_JIS で置く。setup の `encodings`）の文字コードを調べ、UTF-8 に読み直す ／ 達成=①`file`（`Non-ISO extended-ASCII text`）と `nkf -g` で書いた側の文字コード（Shift_JIS）を答える ②`iconv -f SHIFT_JIS -t UTF-8 matsuri.txt > matsuri-utf8.txt` で本文が読めるファイルを作る ③`xxd -b -l 2`・`-l 3` で「こ」の 0 と 1 を見比べ、UTF-8 の「こ」のバイトの数（3）を答える ／ ヒント=①書いた側の文字コードを調べる ②`-f` に元・`-t` に UTF-8 ③`xxd -b` の 8 けたの組を数える ／ エラー=答えが違う→原因候補「端末の UTF-8 を答えた」、`illegal input sequence`→原因候補「`-f` に別の文字コード・`-f` と `-t` が逆」、`is not supported`→原因候補「名前の打ち間違い」、数が違う→原因候補「Shift_JIS の方を数えた・ビットを数えた」
+- 実戦（端）: 目的=古い機械から届いて `cat` で化けるお知らせ `matsuri.txt`（Shift_JIS で置く。setup の `encodings`）の文字コードを調べ、UTF-8 に読み直す ／ 達成=①`file`（`Non-ISO extended-ASCII text`）と `nkf -g` で書いた側の文字コード（Shift_JIS）を出す（打った結果で判定） ②`iconv -f SHIFT_JIS -t UTF-8 matsuri.txt > matsuri-utf8.txt` で本文が読めるファイルを作る ③`xxd -b -l 2`・`-l 3` で「こ」の 0 と 1 を見比べ、UTF-8 の「こ」のバイトの数（3）を答える ／ ヒント=①書いた側の文字コードを調べる ②`-f` に元・`-t` に UTF-8 ③`xxd -b` の 8 けたの組を数える ／ エラー=答えが違う→原因候補「端末の UTF-8 を答えた」、`illegal input sequence`→原因候補「`-f` に別の文字コード・`-f` と `-t` が逆」、`is not supported`→原因候補「名前の打ち間違い」、数が違う→原因候補「Shift_JIS の方を数えた・ビットを数えた」
 - 結果: 成功=文字化けを直せた ／ 未達=`nkf -g` と `iconv -f` を示す
 - まとめ: ①全ては 0 と 1 ②8 ビットで 1 バイト ③文字化けは文字コードの食い違い ／ 次: found.i.01, db.b.01
 

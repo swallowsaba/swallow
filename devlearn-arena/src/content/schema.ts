@@ -129,7 +129,14 @@ export const checkSchema = z.discriminatedUnion('kind', [
   }).strict(),
   z.object({ kind: z.literal('tls'), host: z.string(), trusted: z.boolean() }).strict(),
   z.object({ kind: z.literal('sql'), query: z.string(), equals: z.unknown() }).strict(),
+  /** 答えの欄に入れる形。コマンドでは得られない値（読み取って考える値）を答える時だけ使う（docs/content-spec.md 2.4） */
   z.object({ kind: z.literal('answer'), equals: z.string() }).strict(),
+  /**
+   * 端末で打った行が、uses のコマンドを全て使い（パイプでつないでよい）、その結果（標準出力の全体）が result と同じ。
+   * 数える・探す・取り出すなど、コマンドの結果そのものが目的の値になる手順（docs/content-spec.md 2.4）。
+   * ブラウザ内 SQL では、uses は文に出る SQL の語（大文字）、結果は返った表の行
+   */
+  z.object({ kind: z.literal('ran'), uses: z.array(z.string().min(1)).min(1), result: z.string().min(1) }).strict(),
   /** 画面で操作する模擬環境（模）の状態。式は docs/content-spec.md 2.4.1（src/engines/sim） */
   z.object({ kind: z.literal('sim'), expr: z.string().min(1) }).strict(),
 ]);

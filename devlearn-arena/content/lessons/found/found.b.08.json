@@ -163,16 +163,19 @@
     "steps": [
       {
         "id": "guess",
-        "purpose": "`cat matsuri.txt` で化けているのを見る。`file matsuri.txt` で UTF-8 の文字（`UTF-8 text`）ではないことを確かめ、`nkf -g matsuri.txt` で書いた側の文字コードの見当を付けて、その名前を答える。",
+        "purpose": "`cat matsuri.txt` で化けているのを見る。`file matsuri.txt` で UTF-8 の文字（`UTF-8 text`）ではないことを確かめ、`nkf -g matsuri.txt` で、書いた側の文字コードの見当を付けた名前を出す。",
         "check": {
-          "kind": "answer",
-          "equals": "Shift_JIS"
+          "kind": "ran",
+          "uses": [
+            "nkf"
+          ],
+          "result": "Shift_JIS"
         },
         "afterward": "`file` は `Non-ISO extended-ASCII text`（UTF-8 ではない、何かの 8 ビットの文字）と言い、`nkf -g` は `Shift_JIS` と見当を付けた。ファイルは壊れていない。この{{term:terminal}}は UTF-8 の表で読むので、{{term:shift-jis}}の表で書いた 0 と 1 が別の文字（読めない所は `?`）になっていた。",
         "hints": [
           "{{term:mojibake}}は、書いた時と読む時の表の食い違い。まず、書いた側の文字コードを調べる。",
           "`file matsuri.txt` は中身の種類を言う。`nkf -g matsuri.txt` は、日本語の文字コードの見当を付けて、名前を 1 語で出す。",
-          "`nkf -g matsuri.txt` を打ち、`Shift_JIS` と答える。"
+          "`nkf -g matsuri.txt` と打つ。Shift_JIS と出れば達成。"
         ],
         "expectedErrors": [
           "found-encoding-misread"

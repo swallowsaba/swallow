@@ -123,16 +123,6 @@
       ]
     },
     {
-      "id": "net-dns-answer",
-      "match": "答えが合っていない",
-      "meaning": "答えたアドレスは、shop.example の今の答えではない。",
-      "causes": [
-        "memo.txt の新しいアドレス（こうあるべき値）を答えた。聞いているのは、今 DNS が返している値。",
-        "SERVER の行（問い合わせた DNS のサーバのアドレス）を読んだ。"
-      ],
-      "hint": "dig の ANSWER SECTION の行の、最後のアドレスを答えよう。+short を付けると、それだけが出る。"
-    },
-    {
       "id": "net-dns-stale",
       "match": "Connection timed out",
       "meaning": "名前で届けようとしたが、返事が来ないまま時間切れになった。名前の答えが、もう誰もいない古いアドレスを指している。",

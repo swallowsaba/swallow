@@ -12,7 +12,7 @@ import { applyAction, createSim, describeAction } from '@/engines/sim/sim';
 import type { SimAction } from '@/engines/sim/types';
 import {
   afterCommand, answerOf, attemptOf, checkState, commandCandidates, currentStep, failedCommand, findGuide, GENERIC_GUIDE, hintsUsed, isFinished,
-  editedText, editOf, openHint, replayAnswers, replaySqlAnswers, resultKind, saveEdit, startRun, type PracticeRun,
+  editedText, editOf, openHint, replayAnswers, replaySqlAnswers, resultKind, saveEdit, sqlParts, startRun, type PracticeRun,
 } from './practice';
 
 /** 端末で 1 行打ち、実戦を進める（画面と同じ道筋） */
@@ -355,7 +355,7 @@ describe('答える形と、出来上がったのに満たさない時の知ら�
 });
 
 describe('目的を果たした命令はエラーにしない（docs/learning-design.md 7 章、docs/content-spec.md 2.5）', () => {
-  it('linux.b.04: grep -r timeout /var/log | wc -l は 3 を出す。読めない場所の Permission denied があっても案内を出さず、3 と答えて手順を満たす', async () => {
+  it('linux.b.04: grep -r timeout /var/log | wc -l は 3 を出す。読めない場所の Permission denied があっても案内を出さず、手順を満たす', async () => {
     const { practice } = await lesson('linux.b.04');
     const p = player(practice);
     const r = p.type('grep -r timeout /var/log | wc -l');
@@ -364,9 +364,7 @@ describe('目的を果たした命令はエラーにしない（docs/learning-de
     expect(r.error).toBeNull();
     expect(p.run.errorOpen).toBe(false);
     expect(p.run.errors).toEqual([]);
-    const answered = p.answer('3');
-    expect(answered.error).toBeNull();
-    expect(answered.done.map((s) => s.id)).toEqual(['count']);
+    expect(r.done.map((s) => s.id)).toEqual(['count']);
   });
 
   it('linux.b.04: パイプ無しの grep -r（一致あり・読めない場所あり。終了の状態は 2）も、結果の行が出ていれば案内を出さない', async () => {
@@ -378,16 +376,15 @@ describe('目的を果たした命令はエラーにしない（docs/learning-de
     expect(r.error).toBeNull();
   });
 
-  it('linux.b.04: find / -name app.conf（見つかった・読めない場所あり）は案内を出さず、場所を答えて手順を満たす', async () => {
+  it('linux.b.04: find / -name app.conf（見つかった・読めない場所あり）は案内を出さず、手順を満たす', async () => {
     const { practice } = await lesson('linux.b.04');
     const p = player(practice);
     p.type('grep -r timeout /var/log | wc -l');
-    p.answer('3');
     const r = p.type('find / -name app.conf');
     expect(r.stdout).toContain('/etc/app/app.conf');
     expect(r.stderr).toContain('Permission denied');
     expect(r.error).toBeNull();
-    expect(p.answer('/etc/app/app.conf').done.map((s) => s.id)).toEqual(['where']);
+    expect(r.done.map((s) => s.id)).toEqual(['where']);
     expect(isFinished(practice, p.run)).toBe(true);
     expect(attemptOf(practice, p.run).errors).toEqual([]);
   });
@@ -416,14 +413,106 @@ describe('目的を果たした命令はエラーにしない（docs/learning-de
     expect(p.type('cat /var/log/secure && echo 読めた').error?.id).toBe('perm-denied-search');
   });
 
-  it('前に案内が出ていても、正しい答えはエラーの状態に引きずられずに通る', async () => {
+  it('前に案内が出ていても、正しいコマンドはエラーの状態に引きずられずに通る', async () => {
     const { practice } = await lesson('linux.b.04');
     const p = player(practice);
     expect(p.type('cat /var/log/secure').error?.id).toBe('perm-denied-search');
-    const answered = p.answer('3');
-    expect(answered.error).toBeNull();
-    expect(answered.done.map((s) => s.id)).toEqual(['count']);
+    const r = p.type('grep -r timeout /var/log | wc -l');
+    expect(r.error).toBeNull();
+    expect(r.done.map((s) => s.id)).toEqual(['count']);
     expect(p.run.errorOpen).toBe(false);
+    expect(p.run.recovered).toBe(true);
+  });
+});
+
+describe('端末の実戦は、コマンドの実行の結果で達成する（docs/content-spec.md 2.4、docs/progress/urgent-03.md）', () => {
+  it('linux.b.04: grep -r timeout /var/log/ | wc -l で 3 が出た時点で 1 つ目の手順を満たす。答えの欄に入れなくてよい', async () => {
+    const { practice } = await lesson('linux.b.04');
+    expect(practice.steps.map((s) => s.check.kind)).not.toContain('answer');
+    const p = player(practice);
+    const r = p.type('grep -r timeout /var/log/ | wc -l');
+    expect(r.stdout.trim()).toBe('3');
+    expect(r.error).toBeNull();
+    expect(r.done.map((s) => s.id)).toEqual(['count']);
+  });
+
+  it('linux.b.04: find / -name app.conf で場所が出た時点で 2 つ目の手順を満たし、実戦を達成する', async () => {
+    const { practice } = await lesson('linux.b.04');
+    const p = player(practice);
+    p.type('grep -r timeout /var/log | wc -l');
+    const r = p.type('find / -name app.conf');
+    expect(r.stdout.trim()).toBe('/etc/app/app.conf');
+    expect(r.done.map((s) => s.id)).toEqual(['where']);
+    expect(isFinished(practice, p.run)).toBe(true);
+    expect(attemptOf(practice, p.run)).toMatchObject({ success: true, stepsDone: ['count', 'where'], errors: [] });
+  });
+
+  it('linux.b.04: 数を自分で書いただけ・別の数え方の結果では満たさない', async () => {
+    const { practice } = await lesson('linux.b.04');
+    const p = player(practice);
+    expect(p.type('echo 3').done).toEqual([]);
+    expect(p.type('grep -rc timeout /var/log').done).toEqual([]);
+    expect(p.run.stepsDone).toEqual([]);
+    // 調べる途中の命令（決めた道具を全ては使っていない）では、案内を出さない
+    expect(p.run.errors).toEqual([]);
+  });
+
+  it('linux.b.04: grep と wc で数えたのに数が違えば、手順で想定した「合っていない」の解説を出す', async () => {
+    const { practice } = await lesson('linux.b.04');
+    const p = player(practice);
+    const one = p.type('grep timeout /var/log/app/web.log | wc -l');
+    expect(one.stdout.trim()).toBe('2');
+    expect(one.done).toEqual([]);
+    expect(one.error?.id).toBe('linux-wrong-count');
+    // Permission denied の行まで数えた
+    expect(p.type('grep -r timeout /var/log 2>&1 | wc -l').error?.id).toBe('linux-wrong-count');
+    expect(p.type('grep -r timeout /var/log | wc -l').done.map((s) => s.id)).toEqual(['count']);
+    expect(p.type('find / -name app.conf 2>&1').error?.id).toBe('linux-wrong-place');
+  });
+
+  it('docker.i.03: 予約が残ることは DB の状態で判定する。足しただけでは満たさず、-v を付けて作り直した時点で満たす', async () => {
+    const { practice } = await lesson('docker.i.03');
+    const p = player(practice);
+    p.type('docker volume create db-data');
+    p.type('docker rm -f db');
+    p.type('docker run -d --name db -v db-data:/var/lib/postgresql/data city-db:1.0');
+    expect(p.type(`docker exec db psql -U postgres -d reserve -c "INSERT INTO reservations (name) VALUES ('市民ホール')"`).done.map((s) => s.id)).toEqual(['add']);
+    p.type('docker rm -f db');
+    // -v を付け忘れると、空の場所に最初の表を作り直すので満たさない
+    expect(p.type('docker run -d --name db city-db:1.0').done).toEqual([]);
+    p.type('docker rm -f db');
+    expect(p.type('docker run -d --name db -v db-data:/var/lib/postgresql/data city-db:1.0').done.map((s) => s.id)).toEqual(['keep']);
+    expect(isFinished(practice, p.run)).toBe(true);
+  });
+
+  it('想定の無い手順では、同じ道具で形を見ても案内を出さない（web.i.02 の jq .）', async () => {
+    const { practice } = await lesson('web.i.02');
+    const p = player(practice);
+    const r = p.type('curl -s http://shop.example/inventory | jq .');
+    expect(r.done).toEqual([]);
+    expect(r.error).toBeNull();
+    expect(p.type("curl -s http://shop.example/inventory | jq '.items | length'").done.map((s) => s.id)).toEqual(['shape']);
+  });
+
+  it('sudo を付けて打っても、使ったコマンドとして数える', async () => {
+    const { practice } = await lesson('linux.b.04');
+    const p = player(practice);
+    p.type('grep -r timeout /var/log | wc -l');
+    expect(p.type('sudo find / -name app.conf').done.map((s) => s.id)).toEqual(['where']);
+  });
+
+  it('答えの欄は、全角の数字や記号で入れても同じ答えとして受け取る', () => {
+    expect(checkState({ kind: 'answer', equals: '102' }, { answer: '１０２' })).toBe(true);
+    expect(checkState({ kind: 'answer', equals: '127.0.0.1:80' }, { answer: '１２７．０．０．１：８０' })).toBe(true);
+  });
+
+  it('答えがコマンドの結果そのもの（出力の全体が答え）なら、答える形にした手順は問題として見つかる', () => {
+    const answerStep = (hint: string): Practice => ({
+      mode: 'terminal', purpose: '目的', environment: 'linux-basic', setup: { files: { '/home/learner/a.txt': 'x\n' } },
+      steps: [{ id: 'count', purpose: '行の数を答える', check: { kind: 'answer', equals: '1' }, afterward: '1 行', hints: ['方向', '具体', hint] }],
+    });
+    expect(replayAnswers(answerStep('`wc -l < a.txt` と打つ。答えの欄に `1` と入れる。')).join()).toContain('コマンドの結果そのもの');
+    expect(replayAnswers(answerStep('`wc -l a.txt` と打つ。答えの欄に `1` と入れる。'))).toEqual([]);
   });
 });
 
@@ -583,6 +672,34 @@ describe('ブラウザ内 SQL（S。docs/content-spec.md 2.4 の sql）', () => 
     expect(await replaySqlAnswers(wrong, guides)).toEqual(['実戦 count: 最後のヒントを実行しても達成条件を満たさない']);
     const broken: Practice = { ...practice, steps: [{ ...practice.steps[0]!, hints: ['a', 'b', '`UPDATE member SET city = 1` を実行する。'] }] };
     expect(await replaySqlAnswers(broken, guides)).toContain('実戦 move: 答え「UPDATE member SET city = 1」でエラー: no such table: member');
+  });
+
+  it('db.b.04: SELECT COUNT(*) で 15 と出た時点で数える手順を満たす。答えの欄は使わない。別の数や、COUNT を使わない結果では満たさない', async () => {
+    const l = await lesson('db.b.04');
+    const count = l.practice.steps[0]!;
+    expect(count.check.kind).toBe('ran');
+    const { openDb } = await import('@/engines/db/db');
+    const db = await openDb((l.practice.setup as { sql: string }).sql);
+    const run = (statement: string): ReturnType<typeof afterCommand> => {
+      const out = db.exec(statement);
+      return afterCommand(l.practice, startRun(), { line: statement, stderr: out.ok ? '' : out.error, db, parts: sqlParts(statement, out) }, ERROR_GUIDES);
+    };
+    // 数を自分で書いただけ・表を見ただけでは満たさず、案内も出さない
+    expect(run('SELECT 15')).toMatchObject({ done: [], error: null });
+    expect(run('SELECT * FROM members')).toMatchObject({ done: [], error: null });
+    // COUNT(*) で数えたが、退会の人まで数えた（20）: 想定した「合っていない」の解説を出す
+    const all = run('SELECT COUNT(*) FROM members');
+    expect(all.done).toEqual([]);
+    expect(all.error?.id).toBe('db-group-misread');
+    expect(run("select count(*) from members where status = '在籍'").done.map((s) => s.id)).toEqual(['count']);
+    db.close();
+  });
+
+  it('SQL の結果がそのまま答えになる手順を、答える形にしていれば、問題として見つける', async () => {
+    const read: Practice = { ...practice, steps: [{ id: 'tokyo', purpose: '東京の人数', check: { kind: 'answer', equals: '2' }, afterward: '2 人', hints: ['a', 'b', "`SELECT COUNT(*) FROM members WHERE city = '東京'` を実行し、`2` と答える。"] }] };
+    expect((await replaySqlAnswers(read, guides)).join()).toContain('コマンドの結果そのもの');
+    const ran: Practice = { ...read, steps: [{ ...read.steps[0]!, check: { kind: 'ran', uses: ['COUNT'], result: '2' }, hints: ['a', 'b', "`SELECT COUNT(*) FROM members WHERE city = '東京'` を実行する。2 と出れば達成。"] }] };
+    expect(await replaySqlAnswers(ran, guides)).toEqual([]);
   });
 
   it('取り出すだけの手順は、調べて答える形。最後のヒントの最後の物が答えで、その前の SQL を実行して調べる', async () => {

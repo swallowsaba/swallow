@@ -194,16 +194,20 @@
     "steps": [
       {
         "id": "count",
-        "purpose": "/var/log の中の全てのファイルから timeout を含む行を探し、その行の数を、答えの欄に入れる。",
+        "purpose": "/var/log の中の全てのファイルから timeout を含む行を探し、その行の数を出す。",
         "check": {
-          "kind": "answer",
-          "equals": "3"
+          "kind": "ran",
+          "uses": [
+            "grep",
+            "wc"
+          ],
+          "result": "3"
         },
         "afterward": "読めるログの中に timeout の行は 3 つあった。/var/log/secure は{{term:root-user}}だけが読めるので、`Permission denied` と言われて探せなかった。",
         "hints": [
           "行を探すのは grep。ディレクトリの中まで探す{{term:option}}を付ける。数えるのは {{term:wc}}。",
           "grep -r timeout /var/log の結果を、{{term:pipe}}（|）で `wc -l` に渡すと行の数が出る。",
-          "`grep -r timeout /var/log | wc -l` を打つと 3 と出る。答えの欄に `3` と入れる。"
+          "`grep -r timeout /var/log | wc -l` と打つ。3 と出れば達成。"
         ],
         "expectedErrors": [
           "perm-denied-search",
@@ -212,16 +216,19 @@
       },
       {
         "id": "where",
-        "purpose": "app.conf という名前のファイルを、/ から探す。見つかった場所（パス）を、答えの欄に入れる。",
+        "purpose": "app.conf という名前のファイルを、/ から探し、その場所（パス）を出す。",
         "check": {
-          "kind": "answer",
-          "equals": "/etc/app/app.conf"
+          "kind": "ran",
+          "uses": [
+            "find"
+          ],
+          "result": "/etc/app/app.conf"
         },
         "afterward": "app.conf は /etc/app/app.conf にあった。/root は見られないので `Permission denied` と出たが、2>/dev/null で捨てれば結果だけが残る。",
         "hints": [
           "ファイルを名前で探すのは find。探し始める場所に / を書く。",
           "find / -name app.conf と打つ。見られない場所の `Permission denied` が混ざるなら、後ろに 2>/dev/null を付けて捨てる。",
-          "`find / -name app.conf 2>/dev/null` を打つと /etc/app/app.conf と出る。答えの欄に `/etc/app/app.conf` と入れる。"
+          "`find / -name app.conf 2>/dev/null` と打つ。/etc/app/app.conf だけが出れば達成。"
         ],
         "expectedErrors": [
           "perm-denied-search",
@@ -233,7 +240,7 @@
   "result": {
     "success": "行は grep、ファイルは find と、2 つの探し方を使い分けられた。見られない場所のエラーも読み分けた。",
     "partial": "ヒントを使って見つけられた。次は、探す相手が行かファイルかを先に決めてから、命令を選んでみよう。",
-    "retry": "まだ答えが合っていない。探す相手は行（中身）か、ファイル（名前）か。図で、どちらの道具かを確かめよう。"
+    "retry": "まだ数と場所を出せていない。探す相手は行（中身）か、ファイル（名前）か。図で、どちらの道具かを確かめよう。"
   },
   "summary": {
     "points": [

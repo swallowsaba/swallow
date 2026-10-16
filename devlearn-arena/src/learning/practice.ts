@@ -10,7 +10,7 @@ import { clusterHolds } from '@/engines/k8s/check';
 import { containerHolds } from '@/engines/container/check';
 import { httpEnvOf } from '@/engines/kernel/commands/httpLocal';
 import { resolve } from '@/engines/kernel/path';
-import { matchesExpected, type SqlDb } from '@/engines/db/check';
+import { matchesExpected, type ExecOutcome, type SqlDb } from '@/engines/db/check';
 import type { CommandRegistry, ShellState } from '@/engines/kernel/registry';
 import { portsOf, serviceOf } from '@/engines/kernel/services';
 import { execute, type CommandPart } from '@/engines/kernel/shell';
@@ -27,7 +27,8 @@ import type { PracticeAttempt } from '@/game/types';
 /**
  * 実戦の進み（docs/learning-design.md 6・7 章、docs/content-spec.md 2.4・2.5）。純粋な計算。
  *
- * - 判定は出力の文字列ではなく、模擬環境の状態で行う（checkState）
+ * - 判定は出力の文字列ではなく、模擬環境の状態で行う（checkState）。数える・探す・取り出す端末の手順は、
+ *   打った行で決めた道具を使い、正しい結果が出た時点で満たす（ran）。答えの欄はコマンドでは得られない値だけ
  * - 1 つの操作で手順を続けて満たしてもよい（満たした手順は先へ進む）
  * - ヒントは手順ごとに 3 段（方向 → 具体 → そのまま通る答え）。使っても失敗にはしない。
  *   画面で操作する実戦の答えは「何をどこへ置く・つなぐ・並べる」の日本語と、同じ意味の操作（actions）
@@ -39,13 +40,16 @@ import type { PracticeAttempt } from '@/game/types';
 /* ---------- 状態による判定 ---------- */
 
 /** 端末の実戦で判定できる形 */
-export const SHELL_CHECKS: ReadonlySet<CheckSpec['kind']> = new Set(['fs', 'cwd', 'service', 'http', 'tls', 'git', 'k8s', 'net', 'container', 'ci', 'alert', 'answer']);
+export const SHELL_CHECKS: ReadonlySet<CheckSpec['kind']> = new Set(['fs', 'cwd', 'service', 'http', 'tls', 'git', 'k8s', 'net', 'container', 'ci', 'alert', 'ran', 'answer']);
 
 /** 模擬環境（模）の実戦で判定できる形（docs/content-spec.md 2.4.1） */
 export const SIM_CHECKS: ReadonlySet<CheckSpec['kind']> = new Set(['sim']);
 
-/** ブラウザ内 SQL（S）の実戦で判定できる形（取り出すだけの SELECT は DB を変えないので、調べて答える形） */
-export const SQL_CHECKS: ReadonlySet<CheckSpec['kind']> = new Set(['sql', 'answer']);
+/**
+ * ブラウザ内 SQL（S）の実戦で判定できる形。DB を変える手順は sql、取り出すだけの SELECT は、
+ * 結果そのものが目的の値なら ran（SQL の結果）、結果を読み取って考える値なら answer
+ */
+export const SQL_CHECKS: ReadonlySet<CheckSpec['kind']> = new Set(['sql', 'ran', 'answer']);
 
 /** 判定に使う模擬環境の今の状態。実戦の形に応じて、どれか 1 つがある */
 export interface CheckInput {
@@ -54,11 +58,38 @@ export interface CheckInput {
   sim?: SimState | undefined;
   /** 原因などを答える形（answer）の、学習者の答え */
   answer?: string | undefined;
+  /** 端末で今打った行の、区切り（; && ||）ごとの結果。コマンドの実行の結果で判定する形（ran）に使う */
+  ran?: readonly CommandPart[] | undefined;
   /** ブラウザ内 SQL（S）の DB */
   db?: SqlDb | undefined;
 }
 
-const sameAnswer = (a: string, b: string): boolean => a.trim().toLowerCase() === b.trim().toLowerCase();
+/** 答えの比べ方。前後の空白と英字の大小を問わず、全角の数字・英字・記号は半角と同じに見る（日本語の入力のまま答えてよい） */
+const plain = (s: string): string => s.normalize('NFKC').trim().toLowerCase();
+const sameAnswer = (a: string, b: string): boolean => plain(a) === plain(b);
+
+/**
+ * 打った行の区切りのどれかが、uses のコマンドを全て使い、その結果（標準出力の全体）が result と同じか（判定の ran）。
+ * 比べ方は答えと同じ（行ごとの前後の空白も問わない）
+ */
+function ranHolds(parts: readonly CommandPart[], uses: readonly string[], result: string): boolean {
+  return parts.some((p) => uses.every((u) => p.commands.includes(u)) && resultLines(p.stdout) === resultLines(result));
+}
+
+/** 結果の比べ方: 行ごとに答えと同じく比べ、行の中の空白の続きは 1 つに見て、空の行は飛ばす */
+const resultLines = (t: string): string => t.split('\n').map((l) => plain(l).replace(/\s+/g, ' ')).filter((l) => l !== '').join('\n');
+
+/**
+ * ブラウザ内 SQL の 1 回の実行を、判定 ran で見られる形にする。使ったコマンドは、文に出る SQL の語（大文字。'…' の中は除く）。
+ * 結果は表ごとに 1 つで、行ごとに値を空白で並べる（列の名前は入れない）。誤りは標準エラーに置く
+ */
+export function sqlParts(statement: string, outcome: ExecOutcome): CommandPart[] {
+  const commands = (statement.replace(/'(?:[^']|'')*'/g, ' ').match(/[A-Za-z_][A-Za-z0-9_]*/g) ?? []).map((w) => w.toUpperCase());
+  const part = (stdout: string, stderr = ''): CommandPart => ({ stdout, stderr, code: stderr === '' ? 0 : 1, handled: false, commands });
+  if (!outcome.ok) return [part('', outcome.error)];
+  if (outcome.results.length === 0) return [part('')];
+  return outcome.results.map((r) => part(r.rows.map((row) => row.map((v) => (v === null ? 'NULL' : typeof v === 'object' ? `x'${[...v].map((n) => n.toString(16).padStart(2, '0')).join('')}'` : String(v))).join(' ')).join('\n')));
+}
 
 const WHO_SHIFT: Record<string, number> = { u: 6, g: 3, o: 0 };
 const BIT: Record<string, number> = { r: 4, w: 2, x: 1 };
@@ -88,6 +119,7 @@ function hasHeader(headers: Readonly<Record<string, string>>, spec: string): boo
 export function checkState(check: CheckSpec, input: CheckInput): boolean {
   if (check.kind === 'sim') return input.sim !== undefined && holds(input.sim, check.expr);
   if (check.kind === 'answer') return input.answer !== undefined && sameAnswer(input.answer, check.equals);
+  if (check.kind === 'ran') return input.ran !== undefined && ranHolds(input.ran, check.uses, check.result);
   // DB の実戦は、確かめる問い合わせの結果が期待する値と一致するか（DB の状態で判定する）
   if (check.kind === 'sql') return input.db !== undefined && matchesExpected(input.db, check.query, check.equals);
   const { shell } = input;
@@ -393,21 +425,31 @@ export function afterCommand(
 
   const done: PracticeStep[] = [];
   for (let step = currentStep(practice, next); step; step = currentStep(practice, next)) {
-    if (!checkState(step.check, { shell: a.shell, sim: a.sim, answer: a.answer, db: a.db })) break;
+    if (!checkState(step.check, { shell: a.shell, sim: a.sim, answer: a.answer, db: a.db, ran: a.parts })) break;
     done.push(step);
     // 前の操作のエラーの後、ヒントを開かずに満たした
     const self = hadError && (next.hints[step.id] ?? 0) === 0;
     next = { ...next, stepIndex: next.stepIndex + 1, stepsDone: [...next.stepsDone, step.id], errorOpen: false, recovered: next.recovered || self };
   }
+  const step = currentStep(practice, next);
+  const notYet = (step?.expectedErrors ?? []).map((id) => guides.find((g) => g.id === id)).find((g) => g !== undefined && guideMatches(g, NOT_YET));
   if (done.length > 0) error = null;
-  else if (error === null && (a.answer !== undefined || a.settled === true) && currentStep(practice, next)) {
+  else if (error === null && (a.answer !== undefined || a.settled === true) && step) {
     // 答えたのに満たさない: 調べる材料として「合っていない」を出す（ゲームオーバーにしない）
-    const step = currentStep(practice, next);
-    const expected = (step?.expectedErrors ?? []).map((id) => guides.find((g) => g.id === id)).find((g) => g !== undefined && guideMatches(g, NOT_YET));
-    error = expected ?? ANSWER_GUIDE;
+    error = notYet ?? ANSWER_GUIDE;
     next = { ...next, errors: [...next.errors, error.id], errorOpen: true };
+  } else if (error === null && notYet && step?.check.kind === 'ran' && missed(step.check.uses, a.parts ?? [], guides)) {
+    // 決めた道具を使って結果を出したのに、目的の値でない: 手順で想定した「合っていない」の解説だけを出す
+    // （形を見るために同じ道具を打つのは調べる途中なので、想定の無い手順では何も出さない）
+    error = notYet;
+    next = { ...next, errors: [...next.errors, notYet.id], errorOpen: true };
   }
   return { run: next, done, error, danger: danger ? { id: danger.id, why: danger.why } : null };
+}
+
+/** 決めた道具（uses）を全て使い、目的を果たして結果を出した区切りがある（その結果が目的の値でなかった時に使う） */
+function missed(uses: readonly string[], parts: readonly CommandPart[], guides: readonly ErrorGuide[]): boolean {
+  return parts.some((p) => uses.every((u) => p.commands.includes(u)) && p.stdout.trim() !== '' && failureOf(p, guides) === null);
 }
 
 /** 記録に残す形（docs/data-model.md 4.1 の PracticeAttempt。時刻は記録する時に付く） */
@@ -456,6 +498,8 @@ export function replayAnswers(practice: Practice, guides: readonly ErrorGuide[] 
     const lines = answerOf(step);
     if (lines.length === 0) problems.push(`実戦 ${step.id}: 最後のヒントに打つ物（\`...\`）が無い`);
     let answer: string | undefined;
+    let ran: readonly CommandPart[] | undefined;
+    const results: string[] = [];
     for (const [i, line] of lines.entries()) {
       // 答える手順は、最後の物が答え。その前の物は、調べるために端末で打つコマンド
       if (step.check.kind === 'answer' && i === lines.length - 1) {
@@ -464,14 +508,26 @@ export function replayAnswers(practice: Practice, guides: readonly ErrorGuide[] 
       }
       const out = execute(shell, line, registry, clock);
       shell = out.state;
+      ran = out.parts;
       const of = (stream: 'stdout' | 'stderr'): string => out.chunks.filter((c) => c.stream === stream).map((c) => c.text).join('');
       const err = of('stderr');
+      results.push(of('stdout'));
       const expected = (step.expectedErrors ?? []).some((id) => guides.some((g) => g.id === id && guideMatches(g, err)));
       if (failedCommand({ stderr: err, stdout: of('stdout'), code: out.exitCode, parts: out.parts }, guides) && !expected) problems.push(`実戦 ${step.id}: 答え「${line}」でエラー: ${err.trim()}`);
     }
-    if (!checkState(step.check, { shell, answer })) problems.push(`実戦 ${step.id}: 最後のヒントを打っても達成条件を満たさない`);
+    if (!checkState(step.check, { shell, answer, ran })) problems.push(`実戦 ${step.id}: 最後のヒントを打っても達成条件を満たさない`);
+    // 答えの欄は、コマンドでは得られない値を答える時だけ使う。コマンドの結果がそのまま答えなら、実行の結果で判定する（ran）
+    problems.push(...answerIsResult(step, results));
   }
   return problems;
+}
+
+/** 答えの欄は、コマンドでは得られない値を答える時だけ使う。コマンド（SQL）の結果がそのまま答えなら、実行の結果で判定する（ran） */
+function answerIsResult(step: PracticeStep, results: readonly string[]): string[] {
+  const { check } = step;
+  return check.kind === 'answer' && results.some((r) => resultLines(r) === resultLines(check.equals))
+    ? [`実戦 ${step.id}: 答えがコマンドの結果そのもの。答えの欄でなく、実行の結果で判定する（ran）`]
+    : [];
 }
 
 /** 設定の編集（編）の実戦: 最後のヒントの中身を保存して確かめ、全ての手順を満たすか */
@@ -483,7 +539,7 @@ function replayEditor(practice: Practice, guides: readonly ErrorGuide[]): string
   const clock = createClock();
   let shell = initialShell(practice.environment, practice.setup);
   for (const step of practice.steps) {
-    if (!SHELL_CHECKS.has(step.check.kind) || step.check.kind === 'answer') {
+    if (!SHELL_CHECKS.has(step.check.kind) || step.check.kind === 'answer' || step.check.kind === 'ran') {
       problems.push(`実戦 ${step.id}: 判定の形 ${step.check.kind} は設定の編集の実戦で使えない`);
       continue;
     }
@@ -551,12 +607,17 @@ export async function replaySqlAnswers(practice: Practice, guides: readonly Erro
       if (lines.length === 0) problems.push(`実戦 ${step.id}: 最後のヒントに実行する SQL（\`...\`）が無い`);
       // 答える手順は、最後の物が答え。その前の物は、調べるために実行する SQL
       const answer = step.check.kind === 'answer' ? lines.at(-1) : undefined;
+      let ran: CommandPart[] | undefined;
+      const results: string[] = [];
       for (const line of step.check.kind === 'answer' ? lines.slice(0, -1) : lines) {
         const out = db.exec(line);
+        ran = sqlParts(line, out);
+        results.push(...ran.map((p) => p.stdout));
         const expected = !out.ok && (step.expectedErrors ?? []).some((id) => guides.some((g) => g.id === id && guideMatches(g, out.error)));
         if (!out.ok && !expected) problems.push(`実戦 ${step.id}: 答え「${line}」でエラー: ${out.error}`);
       }
-      if (!checkState(step.check, { db, answer })) problems.push(`実戦 ${step.id}: 最後のヒントを実行しても達成条件を満たさない`);
+      if (!checkState(step.check, { db, answer, ran })) problems.push(`実戦 ${step.id}: 最後のヒントを実行しても達成条件を満たさない`);
+      problems.push(...answerIsResult(step, results));
     }
   } finally {
     db.close();

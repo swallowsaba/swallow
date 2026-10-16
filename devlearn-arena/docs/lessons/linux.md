@@ -7,7 +7,7 @@
 - 図: カーネル → ディストリビューション（Ubuntu・Debian・RHEL 系）→ 上で動くサービス
 - 理解: [関係性] カーネルとディストリビューションの関係 ／ [はい・いいえ] サーバの多くは画面（GUI）無しで動く → はい
 - クイズ: [用語] ディストリビューションとは → カーネルと道具一式をまとめた配布物 ／ [状況判断] 遠隔のサーバを操作する手段 → 端末（CLI） ／ [選択] Linux の特徴でないもの → 必ず有料
-- 実戦（端）: 目的=借りたサーバ port-web-01 の OS・配布物・その版を本物のコマンドで調べる ／ 達成=①uname で Linux ②/etc/os-release の NAME で Ubuntu ③VERSION_ID で 24.04 を答える ／ ヒント=①uname ②cat /etc/os-release の NAME ③uname -r（カーネルの版）と VERSION_ID（配布物の版）を比べる ／ エラー=取り違え→原因候補「カーネルの版（6.8.0）を配布物の版と読んだ」
+- 実戦（端）: 目的=借りたサーバ port-web-01 の OS・配布物・その版を本物のコマンドで調べる ／ 達成=①uname で Linux を出す（打った結果で判定）②/etc/os-release の NAME で Ubuntu ③VERSION_ID で 24.04 を答える ／ ヒント=①uname ②cat /etc/os-release の NAME ③uname -r（カーネルの版）と VERSION_ID（配布物の版）を比べる ／ エラー=取り違え→原因候補「カーネルの版（6.8.0）を配布物の版と読んだ」
 - 結果: 成功=Linux の構成を説明できた ／ 未達=構成図に答えを当てて示す
 - まとめ: ①Linux はサーバの標準的な OS ②カーネルと配布物 ③操作は端末で ／ 次: linux.b.01
 
@@ -43,7 +43,7 @@
 - 図: grep は文書の中の行を、find は木の中のファイルを探す
 - 理解: [関係性] grep と find の違い ／ [用語] -i・-r・-name と意味を結ぶ
 - クイズ: [選択] ERROR を含む行 → grep ERROR ／ [結果予測] grep -i error → 大文字小文字を問わず一致 ／ [状況判断] 名前だけ分かる設定ファイル → find / -name
-- 実戦（端）: 目的=/var/log から timeout を含む行の数と、app.conf の場所を答える ／ 達成=両方正しい ／ ヒント=①行は grep、場所は find ②数える方法 ③grep -r timeout /var/log | wc -l と find / -name app.conf ／ エラー=Permission denied が並ぶ→原因候補「見られない場所まで探した」（エラーを捨てる方法を示す）
+- 実戦（端）: 目的=/var/log から timeout を含む行の数と、app.conf の場所を、コマンドで出す ／ 達成=grep と wc で 3、find で /etc/app/app.conf が出る（打った結果で判定。答えの欄は使わない） ／ ヒント=①行は grep、場所は find ②数える方法 ③grep -r timeout /var/log | wc -l と find / -name app.conf ／ エラー=Permission denied が並ぶ→原因候補「見られない場所まで探した」（エラーを捨てる方法を示す）
 - 結果: 成功=2 つの探し方を使い分けた ／ 未達=どちらの道具が要るかを示す
 - まとめ: ①行は grep ②ファイルは find ③-r で中まで ／ 次: linux.b.05, trouble.b.01
 

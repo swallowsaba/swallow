@@ -219,19 +219,19 @@
     "steps": [
       {
         "id": "look",
-        "purpose": "shop.example の今の答え（アドレス）を引き、答えの欄に入れる。",
+        "purpose": "shop.example の今の答え（アドレス）を dig で引き、アドレスだけを出す。",
         "check": {
-          "kind": "answer",
-          "equals": "203.0.113.10"
+          "kind": "ran",
+          "uses": [
+            "dig"
+          ],
+          "result": "203.0.113.10"
         },
         "afterward": "shop.example は 203.0.113.10 を指していた。memo.txt によると、そこは止めた古いサーバ。名前の答えが古いまま残っている。",
         "hints": [
           "名前の答えは dig で引く。",
           "`dig shop.example` を打ち、`ANSWER` `SECTION` の行の、最後のアドレスを読む。+short を付けるとアドレスだけが出る。",
-          "`dig +short shop.example` と打つ。出たアドレス `203.0.113.10` を答えの欄に入れる。"
-        ],
-        "expectedErrors": [
-          "net-dns-answer"
+          "`dig +short shop.example` と打つ。203.0.113.10 と出れば達成。"
         ]
       },
       {

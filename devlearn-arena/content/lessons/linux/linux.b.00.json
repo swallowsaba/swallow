@@ -162,16 +162,19 @@
     "steps": [
       {
         "id": "os",
-        "purpose": "`uname` で、この機械の OS（の中心のカーネル）の名前を調べて答える。",
+        "purpose": "`uname` で、この機械の OS（の中心のカーネル）の名前を出す。",
         "check": {
-          "kind": "answer",
-          "equals": "Linux"
+          "kind": "ran",
+          "uses": [
+            "uname"
+          ],
+          "result": "Linux"
         },
         "afterward": "`uname` は、動いているカーネルの名前 `Linux` を出す。`uname -r` を打つと、カーネルの版 `6.8.0-45-generic` が出る。これはカーネルの版で、配布物の版ではない。",
         "hints": [
           "`uname` は、動いているカーネルの名前を出すコマンド。",
           "何も付けずに `uname` を打つと、名前が 1 語で出る。`-r` を付けるとカーネルの版、`-a` を付けると全てが出る。",
-          "`uname` を打ち、`Linux` と答える。"
+          "`uname` と打つ。Linux と出れば達成。"
         ],
         "expectedErrors": [
           "linux-version-mixup"

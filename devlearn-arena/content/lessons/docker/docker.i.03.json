@@ -119,15 +119,15 @@
       },
       {
         "id": "keep",
-        "purpose": "もう一度、db を消して作り直す（版を上げた時と同じ）。作り直した db で予約の数を数え、その数を答える。",
-        "check": { "kind": "answer", "equals": "4" },
+        "purpose": "もう一度、db を消して、db-data を付けて作り直す（版を上げた時と同じ）。作り直した db に、足した市民ホールを含む 4 件の予約が残っていれば達成。",
+        "check": { "kind": "container", "expr": "made:db>=3 running:db mount:db=db-data rows:db/reservations=4" },
         "afterward": "作り直した db のログは「`Skipping initialization`」（前のデータを見つけた）。足した市民ホールも残って 4 件。版を上げる時も、同じボリュームを同じ場所に付ければ、予約は消えない。",
         "hints": [
           "作り直す時も、同じ `-v` を付ける。付け忘れると、DB は空の場所に最初の表を作り直す。",
           "`docker rm -f db` → `-v db-data:/var/lib/postgresql/data` を付けた `docker run` → `SELECT count(*) FROM reservations` で数える、の順。",
-          "`docker rm -f db` `docker run -d --name db -v db-data:/var/lib/postgresql/data city-db:1.0` `docker exec db psql -U postgres -d reserve -c \"SELECT count(*) FROM reservations\"` と打ち、`4` と答える。"
+          "`docker rm -f db` `docker run -d --name db -v db-data:/var/lib/postgresql/data city-db:1.0` `docker exec db psql -U postgres -d reserve -c \"SELECT count(*) FROM reservations\"` と打つ。作り直した db で数えて 4 と出れば、予約は残っている。"
         ],
-        "expectedErrors": ["docker-volume-lost", "docker-conflict", "docker-psql-connect"]
+        "expectedErrors": ["docker-conflict", "docker-psql-connect"]
       }
     ],
     "dangerous": [

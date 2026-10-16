@@ -163,16 +163,19 @@
     "steps": [
       {
         "id": "shape",
-        "purpose": "返事の形（一番外側は何か・商品はどこに並ぶか）を確かめ、商品の並び（items）に何件あるかを答える。",
+        "purpose": "返事の形（一番外側は何か・商品はどこに並ぶか）を確かめ、商品の並び（items）に何件あるかを、{{term:jq}} で数えて出す。",
         "check": {
-          "kind": "answer",
-          "equals": "5"
+          "kind": "ran",
+          "uses": [
+            "jq"
+          ],
+          "result": "5"
         },
         "afterward": "一番外側は { } のオブジェクトで、商品は items という名前の配列に 5 件並んでいた。.items で配列に入り、length で数えた。",
         "hints": [
           "{{term:curl}} -s で返事の本文だけを取り、{{term:pipe}}で {{term:jq}} . に渡すと、形が整って見える。",
           "一番外側が { } なら、まず名前（.items）で中へ入る。並びの数は length で数える。",
-          "`curl -s http://shop.example/inventory | jq '.items | length'` と打ち、`5` と答える。"
+          "`curl -s http://shop.example/inventory | jq '.items | length'` と打つ。5 と出れば達成。"
         ],
         "expectedErrors": [
           "web-jq-object",
@@ -182,16 +185,19 @@
       },
       {
         "id": "zero",
-        "purpose": "items の中から、在庫（stock）が 0 の商品を選び、その名前を答える。",
+        "purpose": "items の中から、在庫（stock）が 0 の商品を選び、その名前だけを出す。",
         "check": {
-          "kind": "answer",
-          "equals": "潮見の望遠鏡"
+          "kind": "ran",
+          "uses": [
+            "jq"
+          ],
+          "result": "潮見の望遠鏡"
         },
         "afterward": ".items[] で並びの 1 つ 1 つに入り、select で在庫が 0 の物だけを残して、.name で名前を取り出した。5 件なら目で探せるが、1,000 件でも同じ式で取り出せる。",
         "hints": [
           "並びの 1 つ 1 つに入るのは .items[]。.items.stock のように並びにそのまま名前を付けると、エラーになる。",
           "select(.stock == 0) で条件に合う物だけを残し、| .name で名前を取る。-r を付けると、引用符なしで出る。",
-          "`curl -s http://shop.example/inventory | jq -r '.items[] | select(.stock == 0) | .name'` と打ち、`潮見の望遠鏡` と答える。"
+          "`curl -s http://shop.example/inventory | jq -r '.items[] | select(.stock == 0) | .name'` と打つ。潮見の望遠鏡 と出れば達成。"
         ],
         "expectedErrors": [
           "web-jq-array",
@@ -204,7 +210,7 @@
   "result": {
     "success": "JSON の形を確かめ、道筋と条件で、必要な値だけを取り出せた。",
     "partial": "ヒントを使って、値を取り出せた。次は、在庫が 5 より少ない商品の名前を、同じ形の式で取り出してみよう。",
-    "retry": "まだ答えが合っていない。`jq .` で形を見て、{ } は名前で、[ ] は .[] か番号で入る、の順に道筋をたどろう。"
+    "retry": "まだ値を取り出せていない。`jq .` で形を見て、{ } は名前で、[ ] は .[] か番号で入る、の順に道筋をたどろう。"
   },
   "summary": {
     "points": [

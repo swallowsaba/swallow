@@ -156,16 +156,20 @@
     "steps": [
       {
         "id": "count",
-        "purpose": "水準が `ERROR` の行の数を答える。",
+        "purpose": "水準が `ERROR` の行の数を出す。",
         "check": {
-          "kind": "answer",
-          "equals": "12"
+          "kind": "ran",
+          "uses": [
+            "grep",
+            "wc"
+          ],
+          "result": "12"
         },
         "afterward": "`ERROR` の行は 12 行。71 行のうち `INFO` が 46 行、`WARN` が 13 行。項目（`\"level\":\"ERROR\"`）で絞ったので、内容の文に `ERROR` という字が入った行を拾う心配も無い。",
         "hints": [
           "まず `head -3 app.log` で 1 行の形を見る。水準は `\"level\":\"ERROR\"` の項目。",
           "`grep '\"level\":\"ERROR\"' app.log` で `ERROR` の行だけにし、`wc -l` で数える。2 つは `|` でつなぐ。",
-          "`grep '\"level\":\"ERROR\"' app.log | wc -l` と打ち、出た数 `12` を答える。"
+          "`grep '\"level\":\"ERROR\"' app.log | wc -l` と打つ。12 と出れば達成。"
         ],
         "expectedErrors": [
           "mon-counted-warn",

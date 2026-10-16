@@ -13,7 +13,7 @@ import type { SimAction, SimOutcome, SimState } from '@/engines/sim/types';
 import type { SqlDb } from '@/engines/db/check';
 import type { PracticeAttempt, PracticeSession } from '@/game/types';
 import {
-  afterCommand, attemptOf, commandCandidates, currentStep, editedText, editOf, failedCommand, isFinished, openHint, saveEdit, startRun,
+  afterCommand, attemptOf, commandCandidates, currentStep, editedText, editOf, failedCommand, isFinished, openHint, saveEdit, sqlParts, startRun,
   type CommandOutcome, type EditResult, type EditSpec, type PracticeRun,
 } from '@/learning/practice';
 import { Icon } from '@/ui/icons/Icon';
@@ -383,13 +383,13 @@ function SqlPracticeStage({ practice: p, sessionId, saved, onSave, onFinish, onT
   const runSql = (statement: string): void => {
     const d = dbRef.current;
     if (!d) return;
-    const { entry } = runStatement(d, statement);
+    const { entry, outcome: done } = runStatement(d, statement);
     statementsRef.current = [...statementsRef.current, statement];
     const nextLog = [...logRef.current, entry];
     logRef.current = nextLog;
     setLog(nextLog);
     setTables(tablesOf(d));
-    const outcome = afterCommand(p, r.runRef.current, { line: statement, stderr: entry.error ?? '', db: d }, ERROR_GUIDES);
+    const outcome = afterCommand(p, r.runRef.current, { line: statement, stderr: entry.error ?? '', db: d, parts: sqlParts(statement, done) }, ERROR_GUIDES);
     save(r.took(outcome, entry.error ?? '', statement), nextLog);
   };
 

@@ -150,7 +150,7 @@
   ],
   "practice": {
     "mode": "sql",
-    "purpose": "運営会議のために、会員の表 `members`（id・name・city・status）を集計する。`status` は「在籍」か「退会」。結果を見て答える。",
+    "purpose": "運営会議のために、会員の表 `members`（id・name・city・status）を集計する。`status` は「在籍」か「退会」。数は {{term:sql}} で出し、順位は結果を見て答える。",
     "environment": "sql-sqlite",
     "setup": {
       "sql": "CREATE TABLE members (id INTEGER PRIMARY KEY, name TEXT NOT NULL, city TEXT NOT NULL, status TEXT NOT NULL) STRICT; INSERT INTO members VALUES (1, '青木', '東京', '在籍'), (2, '石田', '大阪', '在籍'), (3, '上野', '東京', '在籍'), (4, '遠藤', '横浜', '在籍'), (5, '小川', '東京', '在籍'), (6, '加藤', '大阪', '在籍'), (7, '木村', '札幌', '在籍'), (8, '久保', '東京', '在籍'), (9, '小林', '横浜', '在籍'), (10, '斎藤', '福岡', '在籍'), (11, '佐藤', '大阪', '退会'), (12, '鈴木', '東京', '在籍'), (13, '高橋', '横浜', '在籍'), (14, '田中', '大阪', '在籍'), (15, '千葉', '福岡', '在籍'), (16, '土屋', '大阪', '退会'), (17, '中村', '横浜', '在籍'), (18, '西田', '大阪', '退会'), (19, '野口', '大阪', '退会'), (20, '原田', '東京', '退会');"
@@ -158,16 +158,19 @@
     "steps": [
       {
         "id": "count",
-        "purpose": "在籍している会員だけを数える。何人かを答える。",
+        "purpose": "在籍している会員だけを、`COUNT(*)` で数えて出す。",
         "check": {
-          "kind": "answer",
-          "equals": "15"
+          "kind": "ran",
+          "uses": [
+            "COUNT"
+          ],
+          "result": "15"
         },
         "afterward": "在籍は 15 人。表には 20 行あるが、退会の 5 人を WHERE で外した。`COUNT(*)` は、絞った後の行を数える。",
         "hints": [
           "数えるのは集計関数の `COUNT(*)`。在籍の行だけにするのは `WHERE`。",
           "`SELECT COUNT(*) FROM 表 WHERE 列 = 値` の形。値は `'在籍'`。",
-          "`SELECT COUNT(*) FROM members WHERE status = '在籍'` を実行し、`15` と答える。"
+          "`SELECT COUNT(*) FROM members WHERE status = '在籍'` を実行する。15 と出れば達成。"
         ],
         "expectedErrors": [
           "db-no-column",
