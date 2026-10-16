@@ -2,6 +2,7 @@ import { ENVIRONMENTS, isEnvironmentId, resolveSetup } from '@/engines/environme
 import { actionNames, createSim, exprProblems, isSimEnvironment } from '@/engines/sim/sim';
 import type { SimState } from '@/engines/sim/types';
 import { replayAnswers } from '@/learning/practice';
+import { areaOf, hitBoxOf, isLargeArea, MIN_HIT, type Box } from './figures';
 import { parseRich, termsIn } from './rich';
 import type { CatalogEntry, ErrorGuide, Lesson, Mission, Practice, Term } from './schema';
 
@@ -322,6 +323,128 @@ export function validateFigure(svg: string, allowedColors: ReadonlySet<string>, 
   for (const g of svg.matchAll(/<g\b[^>]*\bdata-part="([^"]+)"[^>]*>([\s\S]*?)<\/g>/g)) {
     for (const r of (g[2] ?? '').matchAll(/<rect\b[^>]*>/g)) {
       if (/\bfill="none"/.test(r[0]) && !/\bpointer-events="all"/.test(r[0])) p.push(`部分 ${g[1] ?? ''}: 中を塗らない四角に pointer-events="all" が無い（中を押しても当たらない）`);
+    }
+  }
+  p.push(...partHits(svg));
+  return p;
+}
+
+/** 押して当たる所。描いた順に、持ち主の部分（無ければ null）と並べる */
+interface HitArea { part: string | null; box: Box }
+
+/** 字の大まかな箱（全角は字の大きさ、半角はその 0.6 倍の幅） */
+function textBox(tag: string, content: string, num: (tag: string, name: string) => number): Box {
+  const size = num(tag, 'font-size') || 16;
+  const w = [...content].reduce((n, c) => n + ((c.codePointAt(0) ?? 0) > 0x2e80 ? size : size * 0.6), 0);
+  const anchor = /\btext-anchor="(\w+)"/.exec(tag)?.[1];
+  const x = num(tag, 'x') - (anchor === 'middle' ? w / 2 : anchor === 'end' ? w : 0);
+  return { x, y: num(tag, 'y') - size * 0.85, w, h: size };
+}
+
+/** 線・折れ線・道の点（大まかな箱を作るため。弧と曲線は端と制御の点） */
+function pointsOf(name: string, tag: string, num: (tag: string, name: string) => number): [number, number][] {
+  if (name === 'line') return [[num(tag, 'x1'), num(tag, 'y1')], [num(tag, 'x2'), num(tag, 'y2')]];
+  if (name === 'polyline' || name === 'polygon') {
+    const v = (/\bpoints="([^"]+)"/.exec(tag)?.[1] ?? '').trim().split(/[\s,]+/).map(Number);
+    return v.flatMap((n, i) => (i % 2 === 0 ? [[n, v[i + 1] ?? 0] as [number, number]] : []));
+  }
+  const pts: [number, number][] = [];
+  let at: [number, number] = [0, 0];
+  for (const [, cmd = '', args = ''] of (/\bd="([^"]+)"/.exec(tag)?.[1] ?? '').matchAll(/([a-zA-Z])([^a-zA-Z]*)/g)) {
+    const v = args.trim() === '' ? [] : args.trim().split(/[\s,]+/).map(Number);
+    const rel = cmd === cmd.toLowerCase();
+    const add = (x: number, y: number): void => {
+      at = rel ? [at[0] + x, at[1] + y] : [x, y];
+      pts.push(at);
+    };
+    const c = cmd.toUpperCase();
+    if (c === 'H') for (const x of v) add(x, rel ? 0 : at[1]);
+    else if (c === 'V') for (const y of v) add(rel ? 0 : at[0], y);
+    else if (c === 'A') for (let i = 0; i + 6 < v.length; i += 7) add(v[i + 5] ?? 0, v[i + 6] ?? 0);
+    else if (c !== 'Z') for (let i = 0; i + 1 < v.length; i += 2) add(v[i] ?? 0, v[i + 1] ?? 0);
+  }
+  return pts;
+}
+
+/**
+ * 押す部分（data-part）は、押せる所が上に重なった物に隠されていない（docs/progress/verify-all.md の found.b.07）。
+ * 画面（src/screens/lesson/Figure.tsx）と同じく、押せる面（24×24 以上の四角・円）の無い部分には、描いた物ごとの箱（24×24 まで広げる）の透明な面を部分の絵の下に敷いて考える。
+ * 部分の押せる所のうち、後に描いた（上に重なる）別の物の面に覆われずに残る所が 24×24 の半分より狭ければ、押してもそちらに当たる。
+ * 中を押しても当たる枠（pointer-events="all"）は、中の部分より先に描く
+ */
+function partHits(svg: string): string[] {
+  const body = svg.replace(/<defs>[\s\S]*?<\/defs>/g, '').replace(/<title>[\s\S]*?<\/title>/g, '');
+  const num = (tag: string, name: string): number => Number(new RegExp(`\\b${name}="(-?[\\d.]+)"`).exec(tag)?.[1] ?? 0);
+  const areas: (HitArea | { slot: string })[] = [];
+  const boxes = new Map<string, Box[]>();
+  const keep = (part: string, b: Box): void => {
+    boxes.set(part, [...(boxes.get(part) ?? []), b]);
+  };
+  const big = new Set<string>();
+  const stack: { part: string | null; fillNone: boolean }[] = [];
+  let text: { tag: string; content: string } | null = null;
+  for (const m of body.matchAll(/<(\/?)([a-zA-Z]+)\b([^>]*?)(\/?)>|([^<]+)/g)) {
+    const [whole, close, name = '', , selfClose, chars] = m;
+    const part = stack.at(-1)?.part ?? null;
+    if (chars !== undefined) {
+      if (text) text.content += chars.trim();
+      continue;
+    }
+    if (name === 'g') {
+      if (close) stack.pop();
+      else {
+        const own = /\bdata-part="([^"]+)"/.exec(whole)?.[1];
+        // 細い部分の透明な面は、部分の最初の子として敷く（部分の絵の下、前に描いた物の上）
+        if (own) areas.push({ slot: own });
+        stack.push({ part: own ?? part, fillNone: /\bfill="none"/.test(whole) || (stack.at(-1)?.fillNone ?? false) });
+        if (selfClose) stack.pop();
+      }
+      continue;
+    }
+    if (name === 'text') {
+      if (close && text && part) keep(part, textBox(text.tag, text.content, num));
+      text = close ? null : { tag: whole, content: '' };
+      continue;
+    }
+    if (close || name === 'tspan') continue;
+    const area = areaOf(name, (a) => new RegExp(`\\b${a}="([^"]+)"`).exec(whole)?.[1] ?? null, stack.at(-1)?.fillNone ?? false);
+    if (area) areas.push({ part, box: area });
+    if (part === null) continue;
+    if (isLargeArea(area)) big.add(part);
+    if (['rect', 'circle', 'ellipse'].includes(name)) {
+      const b = areaOf(name, (a) => (a === 'fill' ? '#000' : new RegExp(`\\b${a}="([^"]+)"`).exec(whole)?.[1] ?? null));
+      if (b) keep(part, b);
+    } else {
+      const pts = pointsOf(name, whole, num);
+      if (pts.length > 0) {
+        const xs = pts.map((q) => q[0]);
+        const ys = pts.map((q) => q[1]);
+        keep(part, { x: Math.min(...xs), y: Math.min(...ys), w: Math.max(...xs) - Math.min(...xs), h: Math.max(...ys) - Math.min(...ys) });
+      }
+    }
+  }
+  const hits: HitArea[] = areas.flatMap((a) => {
+    if (!('slot' in a)) return [a];
+    return big.has(a.slot) ? [] : (boxes.get(a.slot) ?? []).map((b) => ({ part: a.slot, box: hitBoxOf(b) }));
+  });
+  const p: string[] = [];
+  const STEP = 2;
+  for (const part of [...new Set(hits.flatMap((h) => (h.part ? [h.part] : [])))]) {
+    let free = 0;
+    const covers = new Map<string, number>();
+    for (const [i, h] of hits.entries()) {
+      if (h.part !== part) continue;
+      for (let x = h.box.x + STEP / 2; x < h.box.x + h.box.w; x += STEP) {
+        for (let y = h.box.y + STEP / 2; y < h.box.y + h.box.h; y += STEP) {
+          const top = hits.slice(i + 1).filter((o) => x >= o.box.x && x <= o.box.x + o.box.w && y >= o.box.y && y <= o.box.y + o.box.h).at(-1);
+          if (!top || top.part === part) free += 1;
+          else covers.set(top.part ?? '', (covers.get(top.part ?? '') ?? 0) + 1);
+        }
+      }
+    }
+    if (free * STEP * STEP < (MIN_HIT * MIN_HIT) / 2) {
+      const by = [...covers].sort((a, b) => b[1] - a[1])[0]?.[0];
+      p.push(`部分 ${part}: 押せる所が、後に描いた${by ? `部分 ${by} ` : '物'}に覆われている（押すとそちらに当たる。中を押しても当たる枠は、中の部分より先に描く）`);
     }
   }
   return p;

@@ -137,16 +137,23 @@ export async function verifyLesson(page, id, opts = {}) {
       const n = `理解 ${String(i + 1)}（${u.kind}）`;
       if (u.kind === 'figure-pick') {
         for (const part of u.answer) {
-          // 人と同じく、その部分の真ん中を押す。そこで一番上にある物が別の部分なら、押しても別の部分が選ばれる
-          const hit = await page.evaluate((name) => {
+          // 人と同じく、その部分の見えている所を押す。真ん中から探し、周り 8px も全てその部分に当たる所（指先の幅で外れない所）を押す。
+          // 無ければ、上に重なった別の部分に当たるか、当たりが狭い
+          const spot = await page.evaluate((name) => {
             const el = document.querySelector(`[data-testid="lesson-figure"] [data-part="${name}"]`);
-            if (!el) return null;
+            if (!el) return { miss: null };
             const r = el.getBoundingClientRect();
-            const top = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
-            return top?.closest('[data-part]')?.getAttribute('data-part') ?? '';
+            const owner = (x, y) => document.elementFromPoint(x, y)?.closest('[data-part]')?.getAttribute('data-part') ?? '';
+            const firm = (x, y) => [[0, 0], [8, 0], [-8, 0], [0, 8], [0, -8]].every(([dx, dy]) => owner(x + dx, y + dy) === name);
+            const cx = r.left + r.width / 2;
+            const cy = r.top + r.height / 2;
+            const tries = [[cx, cy]];
+            for (let x = r.left + 4; x < r.right; x += 6) for (let y = r.top + 4; y < r.bottom; y += 6) tries.push([x, y]);
+            const at = tries.find(([x, y]) => firm(x, y));
+            return at ? { x: at[0], y: at[1] } : { miss: owner(cx, cy) };
           }, part);
-          if (hit !== part) throw fail(`図の「${part}」の真ん中を押すと、${hit === null ? 'その部分が図に無い' : hit === '' ? '何も無い所を押したことになる（当たりが狭い）' : `上に重なった「${hit}」が押される`}`);
-          await page.click(`[data-testid="lesson-figure"] [data-part="${part}"]`);
+          if (spot.miss !== undefined) throw fail(`図の「${part}」を押せない: ${spot.miss === null ? 'その部分が図に無い' : spot.miss === '' ? '押して当たる所が狭い（周り 8px まで当たる所が無い）' : `上に重なった「${spot.miss}」に当たる`}`);
+          await page.mouse.click(spot.x, spot.y);
         }
         if (u.answer.length > 1) await page.click('.stage-check');
         did(`${n}: 図の ${u.answer.join('・')} を押した`);

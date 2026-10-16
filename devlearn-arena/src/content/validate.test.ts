@@ -132,4 +132,18 @@ describe('検証が誤りを見つける', () => {
     expect(p).toContain('文字の大きさ 11');
     expect(p).toContain('要素が 8 つ');
   });
+
+  it('図: 押す部分の押せる所が、後に描いた物に覆われていない（docs/progress/verify-all.md。found.b.07）', () => {
+    const head = '<svg viewBox="0 0 700 300"><title>t</title>';
+    const lan = '<g class="el" data-part="lan"><rect x="10" y="80" width="270" height="140" fill="none" stroke="#f2b632" pointer-events="all" /></g>';
+    const router = '<g class="el" data-part="router"><rect x="160" y="110" width="110" height="80" fill="#5cc1ff" /></g>';
+    // 後に描いた枠（中を押しても当たる）が、先に描いた部分の上に重なる: ルータを押すと LAN が選ばれた
+    expect(validateFigure(`${head}${router}${lan}</svg>`, COLORS, FONT_SIZES).join()).toContain('部分 router: 押せる所が、後に描いた部分 lan に覆われている');
+    // 枠を先に描けば、中の部分が上になる。枠は、中の部分の外の所で押せる
+    expect(validateFigure(`${head}${lan}${router}</svg>`, COLORS, FONT_SIZES)).toEqual([]);
+    // 細い線と字だけの部分は、画面で描いた物ごとの箱（24×24 まで広げる）を押せる。その箱も、先に描いた部分を覆う
+    const curve = '<g class="el" data-part="back"><path d="M100 100 C300 100 300 220 100 220" stroke="#e04a3a" /></g>';
+    expect(validateFigure(`${head}${router}${curve}</svg>`, COLORS, FONT_SIZES).join()).toContain('部分 router: 押せる所が、後に描いた部分 back に覆われている');
+    expect(validateFigure(`${head}${curve}${router}</svg>`, COLORS, FONT_SIZES)).toEqual([]);
+  });
 });
