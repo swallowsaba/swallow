@@ -59,10 +59,32 @@ const isCompound = (c: Command): c is CompoundCommand => c.kind !== undefined;
 function commandNames(command: Command): string[] {
   if (isCompound(command)) return [];
   const words = command.words.map((w) => w.raw.replace(/^['"]|['"]$/g, ''));
-  const [name, ...args] = words.slice(words.findIndex((w) => !/^[A-Za-z_][A-Za-z0-9_]*=/.test(w)));
+  return namesIn(words.slice(words.findIndex((w) => !/^[A-Za-z_][A-Za-z0-9_]*=/.test(w))));
+}
+
+/** 他のコマンドを動かすコマンド（sudo・ip netns exec 機械・xargs など）の後ろのコマンドも、使ったコマンドとして数える */
+function namesIn(words: readonly string[]): string[] {
+  const [name, ...args] = words;
   if (name === undefined || /^[A-Za-z_][A-Za-z0-9_]*=/.test(name)) return [];
-  const inner = name === 'sudo' ? args.find((a) => !a.startsWith('-')) : undefined;
-  return inner === undefined ? [name] : [name, inner];
+  const from = (rest: readonly string[]): string[] => {
+    const at = rest.findIndex((a) => !a.startsWith('-'));
+    return at < 0 ? [] : namesIn(rest.slice(at));
+  };
+  if (name === 'sudo' || name === 'xargs' || name === 'nohup' || name === 'time' || name === 'watch') return [name, ...from(args)];
+  if (name === 'ip' && args[0] === 'netns' && args[1] === 'exec' && args[2] !== undefined) return [name, ...namesIn(args.slice(3))];
+  return [name];
+}
+
+/**
+ * 1 行に出てくるコマンドの名前（; && || の区切りとパイプの全て。sudo の後ろも）。打たずに読むだけ
+ * （今打てるコマンドの候補に使う）。読めない行は空
+ */
+export function lineCommands(line: string): string[] {
+  try {
+    return parse(line).items.flatMap((item) => item.pipeline.commands.flatMap(commandNames));
+  } catch {
+    return [];
+  }
 }
 
 function makeExpandContext(state: ShellState, registry: CommandRegistry, clock: MutableClock): ExpandContext {

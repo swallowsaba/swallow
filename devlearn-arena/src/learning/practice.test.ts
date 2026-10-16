@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { ERROR_GUIDES } from '@/content/glossary';
+import { ENTRIES } from '@/content/catalog';
 import { loadLesson } from '@/content/lessons';
 import type { Lesson, Practice } from '@/content/schema';
 import { createClock } from '@/engines/kernel/clock';
@@ -167,10 +168,38 @@ describe('実戦（docs/learning-design.md 6・7 章）', () => {
     expect(GENERIC_GUIDE.causes.length).toBeGreaterThanOrEqual(2);
   });
 
-  it('今打てるコマンドの候補は、答え（最後のヒント）からは取らない', async () => {
-    const { practice } = await lesson('linux.i.01');
-    const step = practice.steps[0];
-    expect(step && commandCandidates(step)).toEqual(['systemctl']);
+  it('今打てるコマンドの候補は、その実戦で使うコマンドを全て出す（linux.b.04 は grep と wc と find。VERIFY-ALL.txt【6】）', async () => {
+    const { practice } = await lesson('linux.b.04');
+    expect([...commandCandidates(practice)].sort()).toEqual(['find', 'grep', 'wc']);
+    // 今の手順のコマンドを先に出す
+    expect(commandCandidates(practice, practice.steps[1])[0]).toBe('find');
+  });
+
+  it('別の機械の中で打つコマンド（ip netns exec 機械 の後ろ）も候補に出す（net.i.06 の ping）', async () => {
+    const { practice } = await lesson('net.i.06');
+    expect(commandCandidates(practice)).toEqual(expect.arrayContaining(['ip', 'bridge', 'nmap', 'ping', 'iptables']));
+  });
+
+  it('全ての端末の実戦で、最後のヒントの行で使うコマンドが全て候補に出る（パイプの後ろ・sudo の後ろも）', async () => {
+    const registry = createDefaultRegistry();
+    const missing: string[] = [];
+    for (const entry of ENTRIES) {
+      const l = await loadLesson(entry.id);
+      if (l?.practice.mode !== 'terminal') continue;
+      const candidates = new Set(commandCandidates(l.practice));
+      let shell = initialShell(l.practice.environment, l.practice.setup);
+      const clock = createClock();
+      for (const step of l.practice.steps) {
+        const lines = [...step.hints[2].matchAll(/`([^`]+)`/g)].map((m) => m[1] ?? '');
+        // 答える手順の最後の物は答え（打たない）
+        for (const line of step.check.kind === 'answer' ? lines.slice(0, -1) : lines) {
+          const out = execute(shell, line, registry, clock);
+          shell = out.state;
+          for (const c of (out.parts ?? []).flatMap((part) => part.commands)) if (registry.has(c) && !candidates.has(c)) missing.push(`${l.id}: ${c}（${line}）`);
+        }
+      }
+    }
+    expect(missing).toEqual([]);
   });
 });
 

@@ -13,7 +13,7 @@ import { resolve } from '@/engines/kernel/path';
 import { matchesExpected, type ExecOutcome, type SqlDb } from '@/engines/db/check';
 import type { CommandRegistry, ShellState } from '@/engines/kernel/registry';
 import { portsOf, serviceOf } from '@/engines/kernel/services';
-import { execute, type CommandPart } from '@/engines/kernel/shell';
+import { execute, lineCommands, type CommandPart } from '@/engines/kernel/shell';
 import { sshHolds } from '@/engines/kernel/commands/ssh';
 import { exists, isDir, metaOf, readFile, writeFile } from '@/engines/kernel/vfs';
 import { initialShell, resolveSetup } from '@/engines/environments';
@@ -246,13 +246,24 @@ export function answerOf(step: PracticeStep): string[] {
 const REGISTRY = createDefaultRegistry();
 
 /**
- * 「今打てるコマンドの候補」（docs/learning-design.md 8 章）。手順の目的と、答えでないヒントに出た物のうち、端末のコマンドの名前。
- * 用語として書いたコマンド（{{term:pwd}}）も含める
+ * 「今打てるコマンドの候補」（docs/learning-design.md 8 章）。その実戦で使うコマンドの全て（VERIFY-ALL.txt【6】）:
+ * 全ての手順の目的・ヒント（打つ行は、パイプの後ろ・sudo の後ろも）・判定の uses に出る、端末のコマンドの名前。
+ * 用語として書いたコマンド（{{term:pwd}}）も含める。出すのは名前だけで、打つ行そのものは出さない。step を渡すと、その手順の物を先に並べる
  */
-export function commandCandidates(step: PracticeStep): string[] {
-  const texts = [step.purpose, step.hints[0], step.hints[1]];
-  const names = texts.flatMap((t) => parseRich(t).flatMap((p) => (p.kind === 'code' ? [p.text.trim().split(/\s+/)[0] ?? ''] : p.kind === 'term' ? [p.id] : [])));
-  return [...new Set(names.filter((n) => REGISTRY.has(n)))];
+export function commandCandidates(practice: Practice, step?: PracticeStep): string[] {
+  const of = (s: PracticeStep): string[] => {
+    // 答える手順の最後の `` は答え（コマンドではない）
+    const answer = s.check.kind === 'answer' ? answerOf(s).at(-1) : undefined;
+    const named = [s.purpose, ...s.hints].flatMap((t) => parseRich(t).flatMap((p) => {
+      if (p.kind === 'term') return [p.id];
+      if (p.kind !== 'code' || p.text === answer) return [];
+      const names = lineCommands(p.text);
+      return names.length > 0 ? names : [p.text.trim().split(/\s+/)[0] ?? ''];
+    }));
+    return s.check.kind === 'ran' ? [...named, ...s.check.uses] : named;
+  };
+  const steps = step ? [step, ...practice.steps.filter((s) => s.id !== step.id)] : practice.steps;
+  return [...new Set(steps.flatMap(of).filter((n) => REGISTRY.has(n)))];
 }
 
 /* ---------- エラーの解説 ---------- */

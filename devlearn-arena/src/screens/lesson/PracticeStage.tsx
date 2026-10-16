@@ -267,7 +267,7 @@ function TerminalPractice({ practice: p, sessionId, saved, onSave, onFinish, onT
           {step && !r.error && commandHints ? (
             <p className="practice-candidates" data-testid="practice-candidates">
               <span className="practice-candidates-label">今打てるコマンドの候補</span>
-              {[...commandCandidates(step), 'help'].map((c) => <code key={c} className="practice-candidate">{c}</code>)}
+              {[...commandCandidates(p, step), 'help'].map((c) => <code key={c} className="practice-candidate">{c}</code>)}
             </p>
           ) : null}
         </div>
