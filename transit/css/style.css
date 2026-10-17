@@ -600,6 +600,24 @@ ul { margin: 0; padding: 0; list-style: none; }
 }
 .leaflet-control-attribution a { color: var(--accent-ink); }
 
+/* 背景地図の切り替え。Leaflet の既定は白地なので、ダークモードで浮く */
+.leaflet-control-layers {
+  background: var(--surface);
+  color: var(--ink);
+  border: 1px solid var(--rule);
+  border-radius: 8px;
+}
+.leaflet-control-layers-toggle {
+  background-color: var(--surface);
+  border-radius: 8px;
+}
+.leaflet-control-layers-expanded {
+  padding: 8px 12px 8px 10px;
+  font-size: 12.5px;
+}
+.leaflet-control-layers label { display: flex; align-items: center; gap: 6px; margin: 2px 0; }
+.leaflet-control-layers input { accent-color: var(--accent, #1c5fb0); }
+
 .status-item--stale { opacity: .75; }
 
 .map-pick__title { font-weight: 700; font-size: 14px; margin-bottom: 4px; }

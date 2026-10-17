@@ -1,5 +1,5 @@
 /**
- * 地図(Leaflet + 地理院タイル)
+ * 地図(Leaflet + OpenStreetMap / 地理院タイル)
  * ==================================================================
  * 地図から出発地・到着地を選べるようにする。
  *
@@ -15,10 +15,51 @@
  * そのまま使えるように、地図だけを無効化して理由を表示する。
  */
 
-/** 地理院タイル(出典表示が条件。申請不要) */
-const GSI_TILE = 'https://cyberjapandata.gsi.go.jp/xyz/pale/{z}/{x}/{y}.png';
-const GSI_ATTRIBUTION =
-  '<a href="https://maps.gsi.go.jp/development/ichiran.html" target="_blank" rel="noopener">地理院タイル</a>';
+/* ------------------------------------------------------------------ *
+ *  背景地図(タイル)
+ * ------------------------------------------------------------------ *
+ * 既定は OpenStreetMap。地理院タイルも残して、地図の右上で切り替えられる。
+ *
+ * 【OSM の標準タイルサーバを使うときの決まり】
+ * 2026-10 に規約(operations.osmfoundation.org/policies/tiles/)を確認。
+ * 数値の上限は書かれていないが、次は守らなければならない。
+ *
+ *  ・https で `tile.openstreetmap.org/{z}/{x}/{y}.png` をそのまま使う
+ *  ・出典を地図上に**常時**出す。たたんだり画面外に逃がしたりしない
+ *  ・一括取得(スクレイピング)・表示していないタイルの先読み・オフライン保存はしない
+ *  ・`Cache-Control: no-cache` を送らない(ブラウザの既定のまま。自前で付けない)
+ *  ・`Referer` を送る。制限の強い Referrer-Policy をページに付けない
+ *
+ * **best-effort で SLA は無く、過剰な利用は予告なく遮断される**と明記されている。
+ * だから地理院タイルを消さずに残し、読み込みが続けて失敗したら自動で切り替える。
+ */
+const TILES = {
+  osm: {
+    id: 'osm',
+    label: 'OpenStreetMap',
+    url: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+    attribution:
+      '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors',
+    maxZoom: 19,
+  },
+  gsi: {
+    id: 'gsi',
+    label: '地理院タイル',
+    url: 'https://cyberjapandata.gsi.go.jp/xyz/pale/{z}/{x}/{y}.png',
+    attribution:
+      '<a href="https://maps.gsi.go.jp/development/ichiran.html" target="_blank" rel="noopener">地理院タイル</a>',
+    maxZoom: 18,
+  },
+};
+/** 既定の背景地図 */
+export const DEFAULT_TILE = 'osm';
+/** 選んだ背景地図を覚えておくキー(読めなくても動く) */
+const TILE_STORAGE_KEY = 'kanto-transit:tile';
+/**
+ * これだけ続けてタイルが読めなかったら、もう一方に切り替える。
+ * 1 枚の失敗で切り替えると、端のタイルが無いだけで地図が入れ替わってしまう。
+ */
+const TILE_ERROR_LIMIT = 6;
 
 /** 区間ごとの線のスタイル。色だけでなく線の形でも区別する。 */
 export const SEGMENT_STYLE = {
@@ -44,11 +85,15 @@ export class TransitMap {
    * @param {object} handlers
    *   onPickStation(groupId, title, which) / onPickBusStop(stop, which)
    *   onPickPoint({lat,lon}, which) / describePoint(lat, lon) / onStationBusStops(group)
+   *   onTileFallback({from, to}) … 背景地図が読めず切り替えたときに知らせる
    *   which は 'from' | 'to' | 'via'
    */
   constructor(container, handlers = {}) {
     this.container = container;
     this.handlers = handlers;
+    this.tileLayers = {};
+    this.activeTile = DEFAULT_TILE;
+    this.tileErrors = 0;
     this.map = null;
     this.stationLayer = null;
     this.busLayer = null;
@@ -71,11 +116,7 @@ export class TransitMap {
       zoom: DEFAULT_ZOOM,
       zoomControl: true,
     });
-    L.tileLayer(GSI_TILE, {
-      attribution: GSI_ATTRIBUTION,
-      maxZoom: 18,
-      minZoom: 9,
-    }).addTo(this.map);
+    this.#addTiles(L);
 
     this.stationLayer = L.layerGroup().addTo(this.map);
     this.busLayer = L.layerGroup().addTo(this.map);
@@ -95,6 +136,75 @@ export class TransitMap {
 
     this.ready = true;
     return true;
+  }
+
+  /**
+   * 背景地図を 2 つ用意して、右上で切り替えられるようにする。
+   *
+   * 出典表示は Leaflet が選択中のレイヤーのものに自動で入れ替える。
+   * OSM も地理院も出典表示が条件なので、ここを自前で書かないことが大事
+   * (片方を消し忘れて、使っていない方の出典を出し続ける事故を防ぐ)。
+   */
+  #addTiles(L) {
+    const saved = readTilePreference();
+    const initial = TILES[saved] ? saved : DEFAULT_TILE;
+
+    const byLabel = {};
+    for (const key of Object.keys(TILES)) {
+      const spec = TILES[key];
+      const layer = L.tileLayer(spec.url, {
+        attribution: spec.attribution,
+        maxZoom: spec.maxZoom,
+        minZoom: 9,
+      });
+      layer.tileId = key;
+      this.tileLayers[key] = layer;
+      byLabel[spec.label] = layer;
+    }
+
+    this.activeTile = initial;
+    this.tileLayers[initial].addTo(this.map);
+    L.control.layers(byLabel, {}, { position: 'topright' }).addTo(this.map);
+
+    this.map.on('baselayerchange', (e) => {
+      const id = e.layer?.tileId;
+      if (!id) return;
+      this.activeTile = id;
+      this.tileErrors = 0;
+      writeTilePreference(id);
+    });
+
+    // OSM は best-effort で、遮断されることが規約に明記されている。
+    // 続けて読めなくなったら地理院へ逃がす(黙って替えず、呼び出し側に知らせる)。
+    for (const key of Object.keys(this.tileLayers)) {
+      const layer = this.tileLayers[key];
+      layer.on('tileload', () => {
+        // 1 枚でも読めたなら落ちてはいない。端のタイルが無いだけの状態と区別する。
+        if (this.activeTile === key) this.tileErrors = 0;
+      });
+      layer.on('tileerror', () => {
+        if (this.activeTile !== key) return;
+        this.tileErrors += 1;
+        if (this.tileErrors < TILE_ERROR_LIMIT) return;
+        this.#fallbackTile(key);
+      });
+    }
+  }
+
+  /** 読めなくなった背景地図から、もう一方へ切り替える */
+  #fallbackTile(failed) {
+    const to = failed === 'osm' ? 'gsi' : 'osm';
+    if (!this.tileLayers[to] || !this.tileLayers[failed]) return;
+    this.tileErrors = 0;
+    this.map.removeLayer(this.tileLayers[failed]);
+    this.tileLayers[to].addTo(this.map);
+    this.activeTile = to;
+    this.handlers.onTileFallback?.({ from: TILES[failed].label, to: TILES[to].label });
+  }
+
+  /** いま表示している背景地図の名前(表示用) */
+  tileLabel() {
+    return TILES[this.activeTile]?.label || '';
   }
 
   /** コンテナのサイズが変わったあとに呼ぶ(隠れている間に作ると 0px になるため) */
@@ -507,4 +617,27 @@ export function routeToPoints(route, net, busStopIndex) {
     for (const p of seg.points) push(p);
   }
   return points;
+}
+
+/* ------------------------------------------------------------------ *
+ *  背景地図の選択を覚えておく
+ * ------------------------------------------------------------------ *
+ * 読めなくても動かなければならない(プライベートウィンドウ・保存の拒否)。
+ * だから必ず try/catch で囲み、失敗したら既定の背景地図に落ちる。
+ */
+
+function readTilePreference() {
+  try {
+    return localStorage.getItem(TILE_STORAGE_KEY) || DEFAULT_TILE;
+  } catch {
+    return DEFAULT_TILE;
+  }
+}
+
+function writeTilePreference(id) {
+  try {
+    localStorage.setItem(TILE_STORAGE_KEY, id);
+  } catch {
+    /* 覚えられないだけ。次に開くと既定に戻る */
+  }
 }

@@ -758,6 +758,16 @@ function toggleMap() {
 
   if (!state.map) {
     state.map = new TransitMap(el, {
+      /**
+       * 背景地図が読めなくて切り替わったとき。黙って替えない。
+       * 見た目が変わった理由が判らないと「壊れた」と見える。
+       */
+      onTileFallback: ({ from, to }) => {
+        ui.addAlert('info', {
+          title: `背景地図を ${to} に切り替えました`,
+          body: `${from} のタイルを読み込めませんでした。地図の右上から戻せます。経路の計算には影響しません。`,
+        });
+      },
       onPickStation: (groupId, title, which) => {
         applyPick(which, { groupId, label: title, busOnly: false }, '地図から選択');
       },
