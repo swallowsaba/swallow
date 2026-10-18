@@ -10,6 +10,7 @@
 import { formatDuration, toClockTime, formatFetchedAt, secondsSince } from './time.js';
 import { SEVERITY, SEVERITY_LABEL, delayEstimate } from './status.js';
 import { formatDistance } from './geo.js';
+import { buildModel, drawChart, summaryOf, lineupOf } from './routechart.js';
 
 export const $ = (sel) => document.querySelector(sel);
 
@@ -451,6 +452,27 @@ export function clearResults() {
   $('#results-head').hidden = true;
 }
 
+/* ------------------------------------------------------------------ *
+ *  経路の比較チャート
+ *  縦軸 = 乗り換え回数 / 横軸 = 時刻。詳細は routechart.js を参照。
+ * ------------------------------------------------------------------ */
+
+const SVG_NS = 'http://www.w3.org/2000/svg';
+
+/** 画面に出ているチャート。再描画(リサイズ・選択)のために持っておく。 */
+let chart = null;
+
+if (typeof window !== 'undefined') {
+  let timer = null;
+  window.addEventListener('resize', () => {
+    if (!chart) return;
+    // 連続して飛んでくるので間引く。アニメーションは付けない
+    // (リサイズのたびに線が描き直されると目が痛い)
+    clearTimeout(timer);
+    timer = setTimeout(() => chart && chart.redraw(false), 120);
+  });
+}
+
 /**
  * @param {Array} routes bindSchedule の結果
  * @param {object} ctx { net, analysis, sort, onExcludeRailway }
@@ -459,6 +481,7 @@ export function renderRoutes(routes, ctx) {
   const head = $('#results-head');
   const body = $('#results-body');
   body.replaceChildren();
+  chart = null;
 
   if (!routes.length) {
     renderEmpty('条件に合う経路が見つかりませんでした', '出発時刻を早めるか、除外している路線を解除してみてください。');
@@ -468,9 +491,187 @@ export function renderRoutes(routes, ctx) {
   head.hidden = false;
   $('#results-count').textContent = `${routes.length} 件の経路(比較軸: 所要時間・乗換回数)`;
 
-  routes.forEach((route, i) => {
-    body.append(renderRoute(route, i + 1, ctx));
+  const model = buildModel(routes, ctx.net);
+  const wrap = el('div', 'rc');
+
+  /* --- 凡例。色だけに頼らせないための「読み方」--- */
+  const legend = el('div', 'rc__read');
+  wrap.append(legend);
+
+  /* --- 図 --- */
+  const plot = el('div', 'rc__plot');
+  const hd = el('div', 'rc__hd');
+  const title = el('div', 'rc__title');
+  const meta = el('div', 'rc__meta');
+  const back = el('button', 'rc__back', '← 比較に戻る');
+  back.type = 'button';
+  back.hidden = true;
+  hd.append(title, meta, back);
+  const svg = document.createElementNS(SVG_NS, 'svg');
+  svg.setAttribute('class', 'rc__svg');
+  svg.setAttribute('role', 'img');
+  plot.append(hd, svg);
+  wrap.append(plot);
+
+  /* --- スマホ用。マウスオーバーが無いので、押している間だけ強調する --- */
+  const chips = el('div', 'rc__chips');
+  wrap.append(chips);
+
+  /* --- 案の一覧 --- */
+  const listHint = el('div', 'rc__hint', '押すと詳しく出ます');
+  const list = el('div', 'rc__list');
+  wrap.append(listHint, list);
+
+  /* --- 選んだ案の行程 --- */
+  const det = el('div', 'rc__det');
+  wrap.append(det);
+
+  body.append(wrap);
+
+  let selected = null;
+  let hovered = null;
+
+  const redraw = (animate) => {
+    drawChart(svg, model, {
+      selected,
+      hovered,
+      animate,
+      onPick: (id) => pick(selected === id ? null : id),
+      onHover: (id) => {
+        if (selected !== null) return;
+        hovered = id;
+        redraw(false);
+      },
+    });
+    const narrow = window.innerWidth < 760;
+    svg.setAttribute('aria-label',
+      selected === null
+        ? `${model.items.length} 件の経路を、乗り換え回数と時刻で比べた図`
+        : `案${selected + 1} の経路図`);
+    if (selected === null) {
+      title.textContent = `${model.items.length} 件を比べる`;
+      meta.textContent = narrow ? '線か下の一覧を押すと詳しく出ます' : '線をクリックすると、その案だけを詳しく表示します';
+      back.hidden = true;
+    } else {
+      const item = model.items[selected];
+      title.textContent = `案${selected + 1}　${toClockTime(item.arrival)}着`;
+      meta.textContent = narrow ? summaryOf(item) : `${summaryOf(item)}　/　${lineupOf(item).join(' → ')}`;
+      back.hidden = false;
+      back.textContent = narrow ? '← 比較' : '← 比較に戻る';
+    }
+    legend.replaceChildren(...legendChips(narrow));
+    for (const b of list.querySelectorAll('.rc__opt')) {
+      b.classList.toggle('is-on', Number(b.dataset.id) === selected);
+    }
+    for (const b of chips.querySelectorAll('button')) {
+      b.classList.toggle('is-on', Number(b.dataset.id) === (selected !== null ? selected : hovered));
+    }
+  };
+
+  const pick = (id) => {
+    selected = id;
+    hovered = null;
+    det.replaceChildren();
+    if (id !== null) {
+      det.append(renderRoute(model.items[id].route, id + 1, ctx));
+    }
+    redraw(true);
+    if (id !== null && window.innerWidth < 760) {
+      plot.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  };
+
+  /* 一覧 */
+  model.items.forEach((item) => {
+    list.append(optionCard(item, ctx, () => pick(selected === item.id ? null : item.id)));
   });
+
+  /* 強調チップ(スマホ) */
+  model.items.forEach((item) => {
+    const b = el('button', 'rc__chip');
+    b.type = 'button';
+    b.dataset.id = String(item.id);
+    b.style.setProperty('--c', item.color);
+    b.append(el('span', 'rc__chipbar'), el('span', null, `案${item.index + 1}`));
+    const show = () => {
+      if (selected !== null) return;
+      hovered = item.id;
+      redraw(false);
+    };
+    const hide = () => {
+      if (hovered === null) return;
+      hovered = null;
+      redraw(false);
+    };
+    b.addEventListener('pointerdown', show);
+    b.addEventListener('pointerup', hide);
+    b.addEventListener('pointerleave', hide);
+    b.addEventListener('pointercancel', hide);
+    b.addEventListener('click', () => pick(selected === item.id ? null : item.id));
+    chips.append(b);
+  });
+
+  back.addEventListener('click', () => pick(null));
+
+  chart = { redraw };
+  redraw(true);
+}
+
+function legendChips(narrow) {
+  const mk = (iconClass, text) => {
+    const s = el('span');
+    s.append(el('i', iconClass), el('span', null, text));
+    return s;
+  };
+  if (narrow) {
+    return [
+      mk('rc__i rc__i--v', '線 = 乗車中'),
+      mk('rc__i rc__i--c', '斜め = 乗換'),
+      mk('rc__i rc__i--w', '点線 = 徒歩'),
+    ];
+  }
+  return [
+    mk('rc__i rc__i--h', '線が伸びている間 = その乗り物に乗っている'),
+    mk('rc__i rc__i--c', '斜め = 乗り換え(待ち時間)'),
+    mk('rc__i rc__i--w', '点線 = 徒歩'),
+    mk('rc__i rc__i--n', '上の段ほど乗り換えが多い / 右ほど遅い時刻'),
+  ];
+}
+
+/** 一覧の 1 件。色だけでなく「案 N」と文字でも区別する。 */
+function optionCard(item, ctx, onPick) {
+  const route = item.route;
+  const b = el('button', 'rc__opt');
+  b.type = 'button';
+  b.dataset.id = String(item.id);
+
+  const n = el('span', 'rc__optn');
+  n.append(el('b', null, `案${item.index + 1}`));
+  const bar = el('i');
+  bar.style.background = item.color;
+  n.append(bar);
+  b.append(n);
+
+  b.append(el('span', 'rc__opta', toClockTime(route.arrival) + '着'));
+  const lineup = lineupOf(item);
+  b.append(el('span', 'rc__optr', lineup.length ? lineup.join(' → ') : '徒歩のみ'));
+  b.append(el('span', 'rc__optm', summaryOf(item)));
+
+  const tags = el('span', 'rc__opttags');
+  const warnings = route.warnings || [];
+  if (warnings.some((w) => w.severity === SEVERITY.SUSPENDED)) {
+    tags.append(el('span', 'badge badge--danger', '運休あり'));
+  } else if (warnings.length) {
+    tags.append(el('span', 'badge badge--warn', '運行情報あり'));
+  }
+  if (route.kind === 'bus') tags.append(el('span', 'badge badge--bus', 'バス'));
+  else if (route.kind === 'mixed') tags.append(el('span', 'badge badge--bus', 'バス+鉄道'));
+  if (route.walkOnly) tags.append(el('span', 'badge badge--walk', '徒歩のみ'));
+  if (route.estimatedOnly) tags.append(el('span', 'badge badge--est', '一部推定'));
+  if (tags.children.length) b.append(tags);
+
+  b.addEventListener('click', onPick);
+  return b;
 }
 
 /** 地図に描いている経路のカードに印を付ける */
@@ -495,7 +696,7 @@ function renderRoute(route, rank, { net, analysis, shownRoute, onExcludeRailway,
 
   /* --- ヘッダ --- */
   const head = el('div', 'route__head');
-  head.append(el('span', 'route__rank', `第${rank}案`));
+  head.append(el('span', 'route__rank', `案${rank}`));
   head.append(el('span', 'route__time', formatDuration(route.rideMinutes)));
   head.append(el('span', 'route__span', `${toClockTime(route.departure)} → ${toClockTime(route.arrival)}`));
   const est = delayEstimate(route);
@@ -688,7 +889,10 @@ export function countModes(route) {
   let walk = 0;
   let via = 0;
   for (const leg of route.legs || []) {
+    // 両端の徒歩を数え落として「電車 5 本」のように 1 本多く出ていた。
+    // 乗り物でないものを先に外す。
     if (leg.via) via += 1;
+    else if (leg.walkAccess) walk += 1;
     else if (leg.transfer) {
       if (leg.kind === 'walk') walk += 1;
     } else if (leg.bus) bus += 1;
