@@ -917,3 +917,21 @@ ul { margin: 0; padding: 0; list-style: none; }
   from { box-shadow: 0 0 0 3px var(--accent); border-radius: 14px; }
   to { box-shadow: 0 0 0 3px transparent; border-radius: 14px; }
 }
+
+/* --- 1 本前 / 1 本後 --- *
+   比較の画面(図の見出し)と、選んだ案の明細の両方に置く。
+   図の見出しは高さを変えない約束なので、背を低く作る。 */
+.rc__step { display: flex; gap: 4px; margin-left: auto; flex: none; }
+.rc__hd .rc__back { margin-left: 8px; }
+.rc__stepb {
+  border: 1px solid var(--rule-strong); background: var(--surface); color: var(--ink-2);
+  font: inherit; font-weight: 800; font-size: 11.5px; padding: 7px 10px;
+  border-radius: 999px; cursor: pointer; white-space: nowrap;
+}
+.rc__stepb:hover:not(:disabled) { border-color: var(--accent); color: var(--ink); }
+.rc__stepb:disabled { opacity: .4; cursor: not-allowed; }
+.route__step { display: flex; gap: 4px; }
+@media (max-width: 760px) {
+  .rc__stepb { padding: 7px 9px; }
+  .rc__hd .rc__meta { display: none; }
+}

@@ -16,6 +16,7 @@ import { toServiceMoment, calendarFor, dateKey } from './time.js';
 import { TransitMap, routeToSegments } from './map.js';
 import { combineSegments, buildPoints, validatePoints } from './via.js';
 import { walkSettings, accessCombos, attachWalk, isPoint, walkMinutes, farWalk, accessCandidates, walkOnlyRoute } from './walk.js';
+import { firstRide, canShiftRoute, splitForShift } from './shift.js';
 import { railCategory, busCategory, RAIL_CATEGORIES, BUS_CATEGORIES, categoryOrder } from './category.js';
 import * as ui from './ui.js';
 
@@ -35,6 +36,7 @@ const state = {
   vias: [], // [{id, spec:{groupId,label,busOnly}|null, stay:分}]
   excludes: [], // {id, type:'railway'|'range', railway, from?, to?}
   sort: 'time',
+  selectRoute: null, // 1 本ずらした後に選び直す案
   whenMode: 'depart', // depart | arrive | first | last
   lastWhen: null,
   routes: [],
@@ -1691,7 +1693,12 @@ async function searchSegment(fromSpec, toSpec, at, ctx) {
   };
 }
 
-async function runSearch() {
+/**
+ * @param {?{minutes:number, backward:boolean}} override
+ *   「1 本前 / 1 本後」で検索し直すときだけ渡す。画面で選んでいる
+ *   出発/到着の指定は変えずに、時刻だけずらす。
+ */
+async function runSearch(override = null) {
   if (state.searching) return;
   if (!state.net) {
     ui.addAlert('error', { title: '路線データが読み込まれていません', body: '画面を再読み込みしてください。' });
@@ -1733,7 +1740,9 @@ async function runSearch() {
   ui.clearAlerts();
   ui.renderLoading('経路を計算しています…');
 
-  const when = searchWhen();
+  const when = override
+    ? { ...searchWhen(), minutes: override.minutes, backward: override.backward, shifted: true }
+    : searchWhen();
   const { serviceDate, minutes } = when;
   const cal = calendarFor(serviceDate, state.holidays);
   state.lastWhen = when;
@@ -1960,6 +1969,11 @@ function renderSorted() {
     net: state.net,
     analysis: state.analysis,
     shownRoute: state.shownRoute,
+    // 1 本ずらした後も、同じ案を選んだままにする
+    selectRoute: state.selectRoute || null,
+    onShiftAll: shiftSearch,
+    onShiftRoute: shiftRoute,
+    canShiftRoute,
     onExcludeRailway: (rw) => addExclude({ type: 'railway', railway: rw }),
     onExcludeBusLine: ({ operatorTitle, lineTitle }) =>
       addExclude({ type: 'busLine', operatorTitle, lineTitle }),
@@ -1970,6 +1984,83 @@ function renderSorted() {
   });
   // 地図が開いていれば、先頭の経路をそのまま描く
   autoShowRouteOnMap();
+}
+
+/* ------------------------------------------------------------------ *
+ *  1 本前 / 1 本後
+ * ------------------------------------------------------------------ *
+ *
+ * 2 とおりある。どちらも探索そのものは既存のものを使い回す。
+ *   ・比較の画面 … 全体をずらす。いまの最も早い出発時刻を基準に取り直す
+ *   ・選んだ案   … その経路だけ、1 本前/後の列車に乗り換えて組み直す
+ */
+
+/** 全体を 1 本ずらす */
+async function shiftSearch(dir) {
+  const routes = state.sortedRoutes || [];
+  const times = routes.map((r) => r.departure).filter(Number.isFinite);
+  if (!times.length) return;
+  const base = Math.min(...times);
+  state.selectRoute = null;
+  // 次 = その時刻より後に出る便、前 = その時刻より前に着く便
+  await runSearch({ minutes: dir > 0 ? base + 1 : base - 1, backward: dir < 0 });
+}
+
+/** 選んだ案だけを 1 本ずらす */
+async function shiftRoute(route, dir) {
+  if (state.searching || !canShiftRoute(route)) return;
+  const first = firstRide(route);
+  const { serviceDate } = searchWhen();
+  const cal = calendarFor(serviceDate, state.holidays);
+  const opts = { api: state.api, net: state.net, calendarUrn: cal.urn, stores: state.stores };
+
+  // 両端の徒歩は時刻を持たないので、いったん外して組み直してから付け直す
+  const { fromLeg, toLeg, core, rideLegs } = splitForShift(route);
+  if (!rideLegs.length) return;
+  const candidate = { ...route, legs: core, rideLegs };
+
+  state.searching = true;
+  $('#search-btn').disabled = true;
+  try {
+    let bound;
+    if (dir > 0) {
+      bound = await bindSchedule([candidate], { ...opts, departAt: first.departure + 1 });
+    } else {
+      // 1 本前は 2 段階。まず最初の区間の「1 本前の列車」を逆向きに探し、
+      // その発車時刻から先は前向きに組み直す(後ろ向きのままだと終点側が動く)。
+      const head = { ...candidate, legs: [rideLegs[0]], rideLegs: [rideLegs[0]] };
+      const back = await bindScheduleBackward([head], { ...opts, arriveBy: first.arrival - 1 });
+      if (!back.routes.length) {
+        ui.addAlert('info', { title: 'これより前の便は見つかりませんでした', body: 'その日のダイヤの端に当たっている可能性があります。' });
+        return;
+      }
+      bound = await bindSchedule([candidate], { ...opts, departAt: back.routes[0].departure });
+    }
+    if (!bound.routes.length) {
+      ui.addAlert('info', {
+        title: dir > 0 ? 'これより後の便は見つかりませんでした' : 'これより前の便は見つかりませんでした',
+        body: 'その日のダイヤの端に当たっているか、乗り継ぎが成立しませんでした。',
+      });
+      return;
+    }
+    let next = bound.routes[0];
+    next.warnings = state.analysis ? warningsForRoute(next, state.analysis) : [];
+    if (fromLeg || toLeg) next = attachWalk(next, fromLeg, toLeg);
+
+    const i = state.routes.indexOf(route);
+    if (i >= 0) state.routes[i] = next;
+    else state.routes.push(next);
+    state.selectRoute = next;
+    if (state.shownRoute === route) state.shownRoute = next;
+    state.stamps.timetableAt = bound.fetchedAt || state.stamps.timetableAt;
+    ui.renderStamps({ ...state.stamps, statusFailed: state.statusFailed });
+    renderSorted();
+  } catch (e) {
+    handleApiError(e, '前後の便を取得できませんでした');
+  } finally {
+    state.searching = false;
+    $('#search-btn').disabled = false;
+  }
 }
 
 /* ------------------------------------------------------------------ *

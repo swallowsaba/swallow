@@ -22,11 +22,16 @@ interface Packet {
 /** 荷物が 1 区間を進む秒数 */
 const HOP = 0.45;
 
+/** つなげない理由の 1 行。中身の文が「つなげない:」で始まっていても、1 度だけ付ける */
+const refuseLine = (why: string): string => (why.startsWith('つなげない') ? why : `つなげない: ${why}`);
+
 export function ConnectBoard({ s, act }: BoardProps<ConnectState>) {
   const boardRef = useRef<HTMLDivElement>(null);
   const [size, setSize] = useState({ w: 0, h: 0 });
   const [note, setNote] = useState<{ text: string; n: number } | null>(null);
   const [packet, setPacket] = useState<Packet | null>(null);
+  // つなげなかった時に放した部品（赤く光ったまま示す。次の操作で消す）
+  const [refused, setRefused] = useState<{ node: string; n: number } | null>(null);
   useLayoutEffect(() => {
     const el = boardRef.current;
     if (el === null) return;
@@ -44,7 +49,8 @@ export function ConnectBoard({ s, act }: BoardProps<ConnectState>) {
     if (to === c.from) return;
     const out = act({ op: 'connect', a: c.from, b: to });
     counter.current += 1;
-    setNote(out.error ? { text: out.error.startsWith('つなげない') ? out.error : `線を引けない: ${out.error}`, n: counter.current } : null);
+    setNote(out.error ? { text: refuseLine(out.error), n: counter.current } : null);
+    setRefused(out.error ? { node: to, n: counter.current } : null);
     setPacket(null);
   });
 
@@ -64,6 +70,7 @@ export function ConnectBoard({ s, act }: BoardProps<ConnectState>) {
     counter.current += 1;
     setPacket({ path: route.path, arrived: out.error === null, why: out.error, n: counter.current });
     setNote(null);
+    setRefused(null);
   };
   const packetEnd = packet === null ? null : packet.path[packet.path.length - 1] ?? null;
   const packetTime = packet === null ? 0 : Math.max(1, packet.path.length - 1) * HOP;
@@ -144,10 +151,11 @@ export function ConnectBoard({ s, act }: BoardProps<ConnectState>) {
         {s.setup.nodes.map((n) => {
           const up = isUp(s, n.id);
           const end = packet !== null && packetEnd === n.id;
+          const isRefused = refused?.node === n.id && from === null;
           return (
             <div
-              key={end ? `${n.id}-${String(packet.n)}` : n.id}
-              className={`sim-node${up ? '' : ' is-down'}${overNode === n.id && from !== null && n.id !== from ? (problem ? ' is-refuse' : ' is-over') : ''}${from === n.id ? ' is-from' : ''}${end ? (packet.arrived ? ' is-arrived' : ' is-stuck') : ''}`}
+              key={end ? `${n.id}-${String(packet.n)}` : isRefused ? `${n.id}-r${String(refused.n)}` : n.id}
+              className={`sim-node${up ? '' : ' is-down'}${overNode === n.id && from !== null && n.id !== from ? (problem ? ' is-refuse' : ' is-over') : ''}${from === n.id ? ' is-from' : ''}${end ? (packet.arrived ? ' is-arrived' : ' is-stuck') : ''}${isRefused ? ' is-refused' : ''}`}
               style={{ left: `${String(n.x)}%`, top: `${String(n.y)}%`, '--delay': `${String(packetTime)}s` } as CSSProperties}
             >
               <div
@@ -179,7 +187,7 @@ export function ConnectBoard({ s, act }: BoardProps<ConnectState>) {
         })}
         {from !== null && drag.now && rect && overNode !== null && overNode !== from ? (
           <span className={`sim-drag-tip${problem ? ' is-bad' : ''}`} style={{ left: drag.now.x - rect.left, top: drag.now.y - rect.top }}>
-            {problem ? `つなげない: ${problem}` : `${label(overNode)} へつなぐ`}
+            {problem ? refuseLine(problem) : `${label(overNode)} へつなぐ`}
           </span>
         ) : null}
       </div>

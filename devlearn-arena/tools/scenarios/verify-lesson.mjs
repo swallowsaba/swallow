@@ -81,6 +81,8 @@ const progressOf = (page) => page.evaluate(() => {
 
 /**
  * レッスン id を、都市の画面から人と同じ道で通す。page は都市の画面を開いた直後（操作説明は閉じた）。
+ * opts.opened: レッスンの画面をもう開いた（施設の情報パネルから入った時など）。学習ライブラリから開く所を飛ばす
+ * opts.onStage(段階): 解説・理解・クイズ・実戦・結果・まとめ の各段の初めに呼ぶ（途中でページを読み直す時など）
  * 返す物: { id, ok, stage, did, saw, shot, notes }
  */
 export async function verifyLesson(page, id, opts = {}) {
@@ -109,18 +111,24 @@ export async function verifyLesson(page, id, opts = {}) {
 
     // b. 上の「学ぶ」→ 学習ライブラリ → 行を選ぶ → 入口の札の「始める」
     rec.stage = '都市';
-    await page.locator('.topbar-entry', { hasText: '学ぶ' }).click();
-    did('上の「学ぶ」を押した');
-    await page.waitForSelector('[data-testid="learn-screen"]');
-    const row = page.locator(`[data-lesson="${id}"]`);
-    await row.scrollIntoViewIfNeeded();
-    await row.click();
-    did(`学習ライブラリで「${lesson.title}」を選んだ`);
-    await page.click('[data-testid="entry-start"]');
-    did('入口の札の「始める」を押した');
+    if (!opts.opened) {
+      await page.locator('.topbar-entry', { hasText: '学ぶ' }).click();
+      did('上の「学ぶ」を押した');
+      await page.waitForSelector('[data-testid="learn-screen"]');
+      const row = page.locator(`[data-lesson="${id}"]`);
+      await row.scrollIntoViewIfNeeded();
+      await row.click();
+      did(`学習ライブラリで「${lesson.title}」を選んだ`);
+      await page.click('[data-testid="entry-start"]');
+      did('入口の札の「始める」を押した');
+    }
+    const stageStart = async (name) => {
+      rec.stage = name;
+      await opts.onStage?.(name);
+    };
 
     // c. 解説を読み進める
-    rec.stage = '解説';
+    await stageStart('解説');
     await page.waitForSelector('[data-testid="stage-explain"]');
     for (let i = 0; i < 12 && (await page.$('[data-testid="stage-explain"]')); i += 1) {
       await next(page);
@@ -130,7 +138,7 @@ export async function verifyLesson(page, id, opts = {}) {
     if (await page.$('[data-testid="stage-explain"]')) throw fail('解説から先へ進めない');
 
     // d. 理解の問いに全て正しく答える
-    rec.stage = '理解';
+    await stageStart('理解');
     await page.waitForSelector('[data-testid="stage-understand"]');
     for (const [i, u] of lesson.understand.entries()) {
       await page.waitForSelector('[data-testid="understand-item"]');
@@ -189,7 +197,7 @@ export async function verifyLesson(page, id, opts = {}) {
     }
 
     // e. クイズに全て正しく答える
-    rec.stage = 'クイズ';
+    await stageStart('クイズ');
     await page.waitForSelector('[data-testid="stage-quiz"]');
     for (const q of lesson.quiz) {
       await page.waitForSelector('[data-testid="quiz-question"]');
@@ -209,7 +217,7 @@ export async function verifyLesson(page, id, opts = {}) {
     }
 
     // f. 実戦。最後のヒントに書かれた操作だけを行う
-    rec.stage = '実戦';
+    await stageStart('実戦');
     await page.waitForSelector('[data-testid="stage-practice"]');
     const p = lesson.practice;
     if (p.mode === 'editor') await page.waitForSelector('[data-testid="editor-text"]');
@@ -304,7 +312,7 @@ export async function verifyLesson(page, id, opts = {}) {
     if (rec.errors.length > 0) throw fail(rec.saw);
 
     // g. 結果の画面
-    rec.stage = '結果';
+    await stageStart('結果');
     await next(page);
     did('「結果へ」を押した');
     await page.waitForSelector('[data-testid="stage-result"]');
@@ -324,7 +332,7 @@ export async function verifyLesson(page, id, opts = {}) {
     }
 
     // h. まとめ
-    rec.stage = 'まとめ';
+    await stageStart('まとめ');
     await next(page);
     did('「まとめへ」を押した');
     await page.waitForSelector('[data-testid="stage-summary"]');

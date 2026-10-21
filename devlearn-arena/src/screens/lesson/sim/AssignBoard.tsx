@@ -21,8 +21,11 @@ export function AssignBoard({ s, act, expr }: BoardProps<AssignState>) {
   // 最後に入った枠（光らせる）と、入らなかった枠と理由。n は同じ枠でも動きをやり直すための数
   const [took, setTook] = useState<{ slot: string; n: number } | null>(null);
   const [refused, setRefused] = useState<{ slot: string; why: string; n: number } | null>(null);
+  // 一度でも札を動かしたか（初めから置き違えのある並びで、何もしないうちに置き違えの行を出さない）
+  const [touched, setTouched] = useState(false);
   const drag = useDrag<Carry>((c, target) => {
     if (target === null) return;
+    setTouched(true);
     if (target === 'pool') {
       if (c.from !== null) act({ op: 'take', item: c.item, slot: c.from });
       setRefused(null);
@@ -57,6 +60,14 @@ export function AssignBoard({ s, act, expr }: BoardProps<AssignState>) {
     wrong = [];
   }
   const dragging = drag.now?.payload ?? drag.held;
+  // 何が違うのか: 置き違えた札と、今入っている枠（画面の並びの順。正しい枠は言わない）
+  const slotIndex = (id: string): number => s.setup.slots.findIndex((x) => (s.placed[id] ?? []).includes(x.id));
+  const wrongLine = touched && wrong.length > 0
+    ? `置き違えた札: ${[...wrong].sort((a, b) => slotIndex(a) - slotIndex(b)).map((id) => {
+      const at = s.setup.slots.filter((x) => (s.placed[id] ?? []).includes(x.id)).map((x) => `「${x.label}」`);
+      return `「${item(id)?.label ?? id}」（${at.length > 0 ? `今は${at.join('・')}` : '置き場'}）`;
+    }).join('・')}`
+    : null;
 
   const card = (id: string, from: string | null) => {
     const it = item(id);
@@ -117,6 +128,7 @@ export function AssignBoard({ s, act, expr }: BoardProps<AssignState>) {
           );
         })}
       </div>
+      {wrongLine !== null ? <p className="sim-note is-bad" role="status">{wrongLine}</p> : null}
       {timed ? <p className="sim-total">{s.setup.timeLabel ?? 'かかる時間の合計'}: <span className="num">{assignTime(s)}</span>{s.setup.timeUnit ? ` ${s.setup.timeUnit}` : ''}</p> : null}
       <div
         className={`sim-pool${drag.now?.over === 'pool' ? ' is-over' : ''}`}

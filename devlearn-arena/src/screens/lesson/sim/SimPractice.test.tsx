@@ -127,6 +127,38 @@ describe('模擬環境（つなぐ）の実戦', () => {
     expect($('[data-step="in"]').dataset.done).toBe('false');
   });
 
+  it('つなげない組み合わせへ放すと、放した部品が赤く光ったまま示される。次につなぐと消える', () => {
+    mount(connect);
+    drag('[data-node="入力"]', '[data-node="出力"]');
+    expect(host.querySelector('.sim-node.is-refused')?.textContent).toContain('画面');
+    drag('[data-node="入力"]', '[data-node="処理"]');
+    expect(host.querySelector('.sim-node.is-refused')).toBeNull();
+  });
+
+  it('ドラッグの途中の理由は「つなげない:」を 1 度だけ付ける（中身の文が「つなげない:」で始まっていても）', () => {
+    for (const message of ['キーボードと画面を直につないでも、計算はされない', 'つなげない: キーボードと画面を直につないでも、計算はされない']) {
+      mount({ ...connect, setup: { ...(connect.setup as object), forbid: [{ a: '入力', b: '出力', message }] } });
+      const to = $('[data-node="出力"]');
+      Object.defineProperty(document, 'elementFromPoint', { value: () => to, configurable: true });
+      act(() => {
+        $('[data-node="入力"]').dispatchEvent(new MouseEvent('pointerdown', { bubbles: true, button: 0, clientX: 10, clientY: 10 }));
+      });
+      act(() => {
+        window.dispatchEvent(new MouseEvent('pointermove', { clientX: 60, clientY: 60 }));
+      });
+      expect($('.sim-drag-tip').textContent).toBe('つなげない: キーボードと画面を直につないでも、計算はされない');
+      act(() => {
+        window.dispatchEvent(new MouseEvent('pointerup', { clientX: 60, clientY: 60 }));
+      });
+      delete (document as { elementFromPoint?: unknown }).elementFromPoint;
+      expect($('.sim-note.is-bad').textContent).toBe('つなげない: キーボードと画面を直につないでも、計算はされない');
+      act(() => root?.unmount());
+      root = null;
+      host.remove();
+    }
+    mount(connect);
+  });
+
   it('送るボタンを押すと荷物が進み、届かなければ止まった所が赤く示される', () => {
     mount(connect);
     drag('[data-node="入力"]', '[data-node="処理"]');
@@ -190,12 +222,22 @@ describe('模擬環境（置く・読み取って答える）の実戦', () => {
     drag('[data-card="資料"]', '[data-slot="倉庫"]');
     expect($('[data-testid="practice-error"]').dataset.guide).toBe('not-yet');
     expect(host.querySelectorAll('.sim-card.is-wrong')).toHaveLength(2);
+    // 何が違うのか（置き違えた札と、今入れた枠）が 1 行で出る。正しい枠は言わない
+    expect($('.sim-note.is-bad').textContent).toBe('置き違えた札: 「大きな図面」（今は「作業机」）・「今使う資料」（今は「倉庫」）');
     // 枠から別の枠へドラッグすると移る。置き場へドラッグすると戻る
     drag('.sim-slot [data-card="図面"]', '[data-slot="倉庫"]');
     drag('.sim-slot [data-card="資料"]', '.sim-pool');
     expect(host.querySelector('.sim-pool [data-card="資料"]')).not.toBeNull();
     drag('[data-card="資料"]', '[data-slot="机"]');
     expect($('[data-step="sort"]').dataset.done).toBe('true');
+  });
+
+  it('初めから置き違えのある並びでは、まだ何もしていない時は、置き違えの行を出さない（赤い縁だけ）', () => {
+    mount({ ...assign, setup: { ...(assign.setup as object), initial: { 図面: '机', 資料: '倉庫' } } });
+    expect(host.querySelectorAll('.sim-card.is-wrong')).toHaveLength(2);
+    expect(host.querySelector('.sim-note.is-bad')).toBeNull();
+    drag('.sim-slot [data-card="図面"]', '[data-slot="倉庫"]');
+    expect($('.sim-note.is-bad').textContent).toBe('置き違えた札: 「今使う資料」（今は「倉庫」）');
   });
 
   it('入らない札は、枠が赤く光って理由が 1 行出る。エラーの小窓も出る', () => {

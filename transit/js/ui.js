@@ -528,7 +528,14 @@ export function renderRoutes(routes, ctx) {
   const back = el('button', 'rc__back', '← 比較に戻る');
   back.type = 'button';
   back.hidden = true;
-  hd.append(title, meta, back);
+  // 1 本前 / 1 本後。比較中は全体を、案を選んでいるときはその案をずらす。
+  const step = el('div', 'rc__step');
+  const prev = el('button', 'rc__stepb', '◀ 1本前');
+  const next = el('button', 'rc__stepb', '1本後 ▶');
+  prev.type = 'button';
+  next.type = 'button';
+  step.append(prev, next);
+  hd.append(title, meta, step, back);
   const svg = document.createElementNS(SVG_NS, 'svg');
   svg.setAttribute('class', 'rc__svg');
   svg.setAttribute('role', 'img');
@@ -577,6 +584,20 @@ export function renderRoutes(routes, ctx) {
       back.hidden = false;
       back.textContent = narrow ? '← 比較' : '← 比較に戻る';
     }
+    // 1 本前/後の宛先を、いまの状態に合わせて付け替える
+    const target = selected === null ? null : model.items[selected].route;
+    const can = target ? (ctx.canShiftRoute ? ctx.canShiftRoute(target) : false) : model.items.length > 0;
+    for (const b of [prev, next]) {
+      b.disabled = !can;
+      b.title = target
+        ? (can ? 'この経路の 1 本前後の便を探します' : 'この案は 1 本ずらせません(経由地つき・バス・徒歩のみ)')
+        : 'すべての案を 1 本ずらして探し直します';
+    }
+    prev.textContent = narrow ? '◀' : '◀ 1本前';
+    next.textContent = narrow ? '▶' : '1本後 ▶';
+    prev.setAttribute('aria-label', '1本前の便');
+    next.setAttribute('aria-label', '1本後の便');
+
     legend.replaceChildren(...legendChips(narrow));
     for (const b of tabs.querySelectorAll('.rc__tab')) {
       const id = b.dataset.id === '' ? null : Number(b.dataset.id);
@@ -645,9 +666,25 @@ export function renderRoutes(routes, ctx) {
   model.items.forEach((item) => addTab(routeTab(item), item.id));
 
   back.addEventListener('click', () => pick(null));
+  const shift = (dir) => {
+    if (selected === null) ctx.onShiftAll && ctx.onShiftAll(dir);
+    else ctx.onShiftRoute && ctx.onShiftRoute(model.items[selected].route, dir);
+  };
+  prev.addEventListener('click', () => shift(-1));
+  next.addEventListener('click', () => shift(1));
 
   chart = { redraw };
   redraw(true);
+
+  // 1 本ずらした直後は、同じ案を選んだままにする(画面が飛ばないよう動かさない)
+  if (ctx.selectRoute) {
+    const keep = model.items.find((it) => it.route === ctx.selectRoute);
+    if (keep) {
+      selected = keep.id;
+      det.replaceChildren(renderRoute(keep.route, keep.index + 1, ctx));
+      redraw(false);
+    }
+  }
 }
 
 function legendChips(narrow) {
@@ -710,7 +747,8 @@ export function markShownRoute(route) {
   }
 }
 
-function renderRoute(route, rank, { net, analysis, shownRoute, onExcludeRailway, onExcludeBusLine, onShowOnMap }) {
+function renderRoute(route, rank, ctx) {
+  const { net, analysis, shownRoute, onExcludeRailway, onExcludeBusLine, onShowOnMap } = ctx;
   const warnings = route.warnings || [];
   const worst = warnings.reduce(
     (acc, w) => (w.severity === SEVERITY.SUSPENDED ? 'danger' : acc === 'danger' ? 'danger' : w.severity === SEVERITY.DELAY ? 'warn' : acc),
@@ -739,6 +777,18 @@ function renderRoute(route, rank, { net, analysis, shownRoute, onExcludeRailway,
   if (route.walkMinutes > 0) meta.append(el('div', 'muted', `徒歩 ${formatDuration(route.walkMinutes)}(推定)`));
   if (route.waitMinutes > 0) meta.append(el('div', 'muted', `待ち ${formatDuration(route.waitMinutes)}`));
   head.append(meta);
+  if (ctx.onShiftRoute && ctx.canShiftRoute && ctx.canShiftRoute(route)) {
+    const step = el('div', 'route__step');
+    const mk = (label, dir, aria) => {
+      const b = el('button', 'btn btn--ghost btn--sm', label);
+      b.type = 'button';
+      b.setAttribute('aria-label', aria);
+      b.addEventListener('click', () => ctx.onShiftRoute(route, dir));
+      return b;
+    };
+    step.append(mk('◀ 1本前', -1, '1本前の便'), mk('1本後 ▶', 1, '1本後の便'));
+    head.append(step);
+  }
   if (onShowOnMap) {
     const m = el('button', 'btn btn--ghost btn--sm route__map', route === shownRoute ? '地図に表示中' : '地図で見る');
     m.type = 'button';
