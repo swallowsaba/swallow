@@ -206,23 +206,27 @@ export function accessCombos(fromSpec, toSpec, net, settings = WALK_DEFAULTS, ma
  *
  * @param {{lat:number, lon:number, label:string}} fromSpec
  * @param {{lat:number, lon:number, label:string}} toSpec
- * @param {number} departAt 出発時刻(その日の 0 時からの分)
+ * @param {number} departAt 出発時刻(その日の 0 時からの分)。
+ *   到着指定のときは `opts.arriveBy` を渡し、そこから逆算する。
  * @param {object} settings
+ * @param {{arriveBy?:number}} [opts]
  * @returns {?object} 経路。座標が無ければ null。
  */
-export function walkOnlyRoute(fromSpec, toSpec, departAt, settings = WALK_DEFAULTS) {
+export function walkOnlyRoute(fromSpec, toSpec, departAt, settings = WALK_DEFAULTS, opts = {}) {
   const a = coordsOf(fromSpec);
   const b = coordsOf(toSpec);
   if (!a || !b) return null;
 
   const km = straightKm(a.lat, a.lon, b.lat, b.lon);
   const minutes = walkMinutes(km, settings);
+  // 到着指定なら、締切ちょうどに着くように出発を逆算する
+  const start = opts.arriveBy != null ? opts.arriveBy - minutes : departAt;
   return {
     kind: 'walk',
     source: 'walk',
     walkOnly: true,
-    departure: departAt,
-    arrival: departAt + minutes,
+    departure: start,
+    arrival: start + minutes,
     transfers: 0,
     waitMinutes: 0,
     walkMinutes: minutes,

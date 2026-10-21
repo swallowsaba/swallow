@@ -503,3 +503,203 @@ class MinHeap {
     return top;
   }
 }
+
+/* ================================================================== *
+ *  3) 到着時刻から逆向きに時刻を確定する
+ * ================================================================== *
+ *
+ * 「○時までに着きたい」は、前向きの探索では答えが出ない。
+ * 前向きに解くと「指定時刻以降でいちばん early に着く便」になり、
+ * 実際にはもっと遅く出ても間に合うのに、早い便を出してしまう。
+ *
+ * そこで締切時刻から後ろ向きにたどる。
+ *   ・最後のレグ … 締切までに着く便のうち、いちばん遅く出るもの
+ *   ・その 1 つ前 … 上で決まった乗車時刻までに着く便のうち、いちばん遅いもの
+ * 取りに行くデータは前向きと同じ(乗車駅の時刻表 + 列車時刻表)。
+ */
+
+/** 逆向きは候補が外れやすい(締切に間に合わない便が混ざる)ので少し多めに見る */
+const TRAINS_PER_LEG_BACK = 5;
+
+export async function bindScheduleBackward(routes, { api, net, calendarUrn, arriveBy, stores }) {
+  const warnings = [];
+  const timetableStore = stores.timetables;
+  const trainStore = stores.trains;
+  let fetchedAt = null;
+
+  const needed = new Set();
+  for (const r of routes) for (const leg of r.rideLegs) if (!timetableStore.has(leg.from)) needed.add(leg.from);
+  const neededList = [...needed];
+  if (neededList.length > BATCH * 2) {
+    warnings.push({ code: 'ROUTES_TRIMMED', message: '候補経路が多いため、上位のみ時刻を確定しました。' });
+  }
+  for (const batch of chunkArray(neededList.slice(0, BATCH * 2), BATCH)) {
+    const res = await api.timetables(batch, calendarUrn);
+    fetchedAt = res.fetchedAt || fetchedAt;
+    for (const tt of res.data.timetables || []) {
+      if (!timetableStore.has(tt.station)) timetableStore.set(tt.station, []);
+      timetableStore.get(tt.station).push(tt);
+    }
+    for (const b of batch) if (!timetableStore.has(b)) timetableStore.set(b, []);
+    for (const e of res.data.errors || []) {
+      warnings.push({ code: 'TIMETABLE_PARTIAL', message: `${net.stationTitle(e.station)}の時刻表を取得できませんでした` });
+    }
+  }
+
+  // 末尾のレグから前へ。cursor は「ここまでに着いていないといけない時刻」。
+  const state = routes.map((r) => ({
+    route: r, cursor: arriveBy, legIndex: r.legs.length - 1, resolved: [], failed: false,
+  }));
+  const maxLegs = Math.max(...routes.map((r) => r.legs.length), 0);
+
+  for (let level = 0; level < maxLegs; level += 1) {
+    const wanted = new Map();
+    for (const s of state) {
+      if (s.failed) continue;
+      const leg = s.route.legs[s.legIndex];
+      if (!leg) continue;
+      if (leg.transfer) {
+        // 乗り換えに要する時間ぶん、前のレグの締切は早まる
+        s.cursor -= leg.minutes;
+        s.resolved.unshift({ ...leg, at: s.cursor });
+        s.legIndex -= 1;
+        continue;
+      }
+      const rows = pickArrivals(net, timetableStore, leg, calendarUrn, s.cursor);
+      s.pending = { leg, rows };
+      for (const row of rows) {
+        if (!row.train) continue;
+        if (trainStore.has(row.train)) continue;
+        if (!wanted.has(row.train)) wanted.set(row.train, true);
+      }
+    }
+
+    const ids = [...wanted.keys()].slice(0, BATCH * 2);
+    for (const batch of chunkArray(ids, BATCH)) {
+      try {
+        const res = await api.trains(batch);
+        fetchedAt = res.fetchedAt || fetchedAt;
+        for (const t of res.data.trains || []) trainStore.set(t.id, t);
+        for (const b of batch) if (!trainStore.has(b)) trainStore.set(b, null);
+      } catch (e) {
+        for (const b of batch) trainStore.set(b, null);
+        warnings.push({ code: 'TRAIN_PARTIAL', message: '列車時刻表を取得できず、一部区間は所要時間を推定しています。' });
+      }
+    }
+
+    for (const s of state) {
+      if (s.failed || !s.pending) continue;
+      const { leg, rows } = s.pending;
+      s.pending = null;
+      const best = chooseTrainBackward(net, leg, rows, trainStore, s.cursor);
+      if (!best) {
+        s.failed = true;
+        continue;
+      }
+      s.resolved.unshift({ ...leg, ...best });
+      s.cursor = best.departure;
+      s.legIndex -= 1;
+    }
+  }
+
+  const out = [];
+  for (const s of state) {
+    if (s.failed || !s.resolved.length) continue;
+    const rides = s.resolved.filter((l) => !l.transfer);
+    if (!rides.length) continue;
+    const departure = rides[0].departure;
+    const arrival = rides[rides.length - 1].arrival;
+    out.push({
+      ...s.route,
+      legs: s.resolved,
+      departure,
+      arrival,
+      totalMinutes: arriveBy - departure,
+      rideMinutes: arrival - departure,
+      // 前向きの「待ち」は出発前の待ち時間。逆向きにそれは無く、
+      // 代わりに「着いてから締切までの余裕」が出る。別の名前で持つ。
+      waitMinutes: 0,
+      slackMinutes: arriveBy - arrival,
+      estimatedOnly: s.resolved.some((l) => l.estimated),
+    });
+  }
+
+  // 間に合う中で「いちばん遅く出られる」順。これが到着指定で知りたい順序。
+  out.sort((a, b) => b.departure - a.departure || a.transfers - b.transfers);
+  return { routes: out, warnings, fetchedAt };
+}
+
+/** 駅数から見積もる所要時間(列車時刻表が引けないときの代用でもある) */
+function estimateLegMinutes(net, leg) {
+  const hop = net.config.hopMinutes?.[leg.railway] ?? net.config.defaultHopMinutes ?? 2.2;
+  return Math.max(1, leg.stops) * hop;
+}
+
+/**
+ * 締切に間に合いうる出発候補を「遅い順」に。
+ *
+ * 締切ぎりぎりに出る便は当然間に合わないので、見積もり所要時間ぶんは手前から見る。
+ * ただし優等列車は見積もりより速いことがあるため、窓は半分だけ寄せて広めに取る。
+ * 実際に間に合うかどうかは chooseTrainBackward が列車時刻表で確かめる。
+ */
+function pickArrivals(net, timetableStore, leg, calendarUrn, notAfter) {
+  const tables = timetableStore.get(leg.from) || [];
+  const direction = net.directionFor(leg.railway, leg.from, leg.to);
+  const aliases = new Set(calendarAliases(calendarUrn));
+  const upper = notAfter - estimateLegMinutes(net, leg) * 0.5;
+
+  const rows = [];
+  for (const tt of tables) {
+    if (tt.railway !== leg.railway) continue;
+    if (tt.calendar && !aliases.has(tt.calendar)) continue;
+    if (direction && tt.direction && tt.direction !== direction) continue;
+    for (const r of tt.rows) {
+      const m = toMinutes(r.time);
+      if (m == null) continue;
+      if (m > upper) continue;
+      rows.push({ ...r, minutes: m, direction: tt.direction });
+    }
+  }
+  rows.sort((a, b) => b.minutes - a.minutes);
+  return rows.slice(0, TRAINS_PER_LEG_BACK);
+}
+
+/** 候補列車から、締切に間に合う範囲でいちばん遅く出るものを選ぶ */
+function chooseTrainBackward(net, leg, rows, trainStore, notAfter) {
+  let best = null;
+
+  for (const row of rows) {
+    const tt = row.train ? trainStore.get(row.train) : null;
+    if (tt) {
+      const dep = findStopTime(tt, leg.from, 'dep');
+      const arr = findStopTime(tt, leg.to, 'arr');
+      if (dep == null || arr == null || arr <= dep) continue;
+      if (arr > notAfter) continue;
+      if (!best || dep > best.departure) {
+        best = {
+          departure: dep,
+          arrival: arr,
+          trainNo: tt.no || row.no,
+          trainType: tt.type || row.type,
+          destination: (tt.dest && tt.dest[0]) || (row.dest && row.dest[0]) || null,
+          estimated: false,
+        };
+      }
+      continue;
+    }
+    const arrival = row.minutes + estimateLegMinutes(net, leg);
+    if (arrival > notAfter) continue;
+    if (!best || row.minutes > best.departure) {
+      best = {
+        departure: row.minutes,
+        arrival,
+        trainNo: row.no,
+        trainType: row.type,
+        destination: (row.dest && row.dest[0]) || null,
+        estimated: true,
+      };
+    }
+  }
+
+  return best;
+}

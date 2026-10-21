@@ -28,6 +28,8 @@ const MAX_PATTERNS = 6;
 const MAX_TRANSFER_PATTERNS = 20;
 /** 1 系統あたり検討する便の本数 */
 const RUNS_PER_PATTERN = 3;
+/** 到着指定のとき、締切からどれだけ手前の便まで見るか(分) */
+const BACK_WINDOW_MINUTES = 180;
 /** 便別時刻が引けないときの、停留所 1 区間あたりの推定所要(分) */
 const BUS_MINUTES_PER_STOP = 2.2;
 /** バス停と駅の間の徒歩(分)。ODPT にこのデータは無いため既定値 */
@@ -256,9 +258,14 @@ function walkLeg(from, to, fromTitle, toTitle, minutes, at) {
 
 /**
  * 乗り換えなしで行けるバス便を探す。
+ *
+ * `arriveBy` を渡すと「その時刻までに着ける便のうち、いちばん遅く出るもの」を選ぶ。
+ * バス停時刻表はその日ぶんをまとめて取っているので、絞り方を変えるだけで済み、
+ * 追加の通信は発生しない。
+ *
  * @returns {Promise<{routes:Array, warnings:Array, fetchedAt:string|null, searched:boolean, context:object}>}
  */
-export async function findBusRoutes(api, fromLabel, toLabel, { departAt, serviceDate, store, context }) {
+export async function findBusRoutes(api, fromLabel, toLabel, { departAt, arriveBy = null, serviceDate, store, context }) {
   const warnings = [];
   let fetchedAt = null;
 
@@ -351,19 +358,24 @@ export async function findBusRoutes(api, fromLabel, toLabel, { departAt, service
     warnings.push({ code: 'BUS_CALENDAR', message: 'この日に適用されるバスのダイヤを特定できませんでした。' });
   }
 
-  const runsByPattern = await loadRuns(api, departures, segments, departAt, activeCalendars, warnings, (at) => {
+  // 到着指定のときは、締切より前に出る便を遅い順に見る
+  const windowFrom = arriveBy != null ? Math.max(0, arriveBy - BACK_WINDOW_MINUTES) : departAt;
+  const runsByPattern = await loadRuns(api, departures, segments, windowFrom, activeCalendars, warnings, (at) => {
     fetchedAt = at || fetchedAt;
   });
 
   /* --- 経路を組み立てる --- */
   const routes = [];
   for (const seg of segments) {
-    const ride = pickBusRide(departures, runsByPattern, seg, departAt);
+    const ride = arriveBy != null
+      ? pickBusRideBackward(departures, runsByPattern, seg, arriveBy)
+      : pickBusRide(departures, runsByPattern, seg, departAt);
     if (!ride) continue;
-    routes.push(makeRoute([busLeg(seg, ride)], departAt, 'bus'));
+    routes.push(makeRoute([busLeg(seg, ride)], arriveBy != null ? ride.departure : departAt, 'bus',
+      null, arriveBy));
   }
 
-  return { routes: dedupe(routes).slice(0, 4), warnings, fetchedAt, searched: true, context: ctx };
+  return { routes: dedupe(routes, arriveBy != null).slice(0, 4), warnings, fetchedAt, searched: true, context: ctx };
 }
 
 /* ================================================================== *
@@ -622,7 +634,7 @@ async function loadRuns(api, departures, segments, departAt, activeCalendars, wa
 }
 
 /** レグの並びから経路オブジェクトを作る */
-function makeRoute(legs, departAt, kind, inheritedWarnings) {
+function makeRoute(legs, departAt, kind, inheritedWarnings, arriveBy = null) {
   const rides = legs.filter((l) => !l.transfer);
   const departure = rides[0].departure;
   const arrival = rides[rides.length - 1].arrival;
@@ -638,20 +650,52 @@ function makeRoute(legs, departAt, kind, inheritedWarnings) {
     transfers,
     departure,
     arrival,
-    totalMinutes: arrival - departAt,
+    totalMinutes: arriveBy != null ? arriveBy - departure : arrival - departAt,
     rideMinutes: arrival - departure,
-    waitMinutes: departure - departAt,
+    waitMinutes: arriveBy != null ? 0 : departure - departAt,
+    slackMinutes: arriveBy != null ? arriveBy - arrival : 0,
     estimatedOnly: legs.some((l) => l.estimated),
     warnings: inheritedWarnings || [],
   };
 }
 
-/** 同じ経路は最速の 1 本だけ残す */
-function dedupe(routes) {
+/** 同じ経路は 1 本だけ残す。出発指定なら最速、到着指定ならいちばん遅く出る便。 */
+function dedupe(routes, backward = false) {
   const best = new Map();
   for (const r of routes) {
     const prev = best.get(r.signature);
-    if (!prev || r.arrival < prev.arrival) best.set(r.signature, r);
+    const better = backward
+      ? !prev || r.departure > prev.departure
+      : !prev || r.arrival < prev.arrival;
+    if (better) best.set(r.signature, r);
   }
-  return [...best.values()].sort((a, b) => a.arrival - b.arrival);
+  return [...best.values()].sort((a, b) => (backward ? b.departure - a.departure : a.arrival - b.arrival));
+}
+
+/**
+ * 締切までに着く便のうち、いちばん遅く出るもの。
+ * 候補は「締切より前に出る便」を遅い順に見る。
+ */
+function pickBusRideBackward(departures, runsByPattern, seg, notAfter) {
+  const cands = (departures.get(`${seg.fromPole}|${seg.pattern.id}`) || [])
+    .filter((c) => c.minutes <= notAfter)
+    .sort((a, b) => b.minutes - a.minutes)
+    .slice(0, RUNS_PER_PATTERN * 2);
+  if (!cands.length) return null;
+
+  let best = null;
+  for (const c of cands) {
+    const r = resolveRun(runsByPattern.get(seg.pattern.id), seg.fromPole, seg.toPole, c.minutes);
+    const ride = r
+      ? { ...r, destSign: c.destSign }
+      : {
+          departure: c.minutes,
+          arrival: c.minutes + Math.max(1, seg.stops) * BUS_MINUTES_PER_STOP,
+          estimated: true,
+          destSign: c.destSign,
+        };
+    if (ride.arrival > notAfter) continue;
+    if (!best || ride.departure > best.departure) best = ride;
+  }
+  return best;
 }

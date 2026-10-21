@@ -7,7 +7,7 @@
 import { resolveWorkerUrl, IS_PLACEHOLDER_URL } from './config.js';
 import { TransitApi, ApiError, messageFor } from './api.js';
 import { loadNetwork, clearNetworkCache, operatorSignature } from './network.js';
-import { findCandidateRoutes, bindSchedule, edgeKey } from './router.js';
+import { findCandidateRoutes, bindSchedule, bindScheduleBackward, edgeKey } from './router.js';
 import { analyzeStatus, warningsForRoute, SEVERITY } from './status.js';
 import { findBusRoutes, findIntermodalRoutes, setBusOperatorTitles } from './bus.js';
 import { findAllGtfsRoutes, loadCatalog, stopsInBounds, indexStatus, STOP_MIN_ZOOM } from './gtfs.js';
@@ -35,6 +35,8 @@ const state = {
   vias: [], // [{id, spec:{groupId,label,busOnly}|null, stay:分}]
   excludes: [], // {id, type:'railway'|'range', railway, from?, to?}
   sort: 'time',
+  whenMode: 'depart', // depart | arrive | first | last
+  lastWhen: null,
   routes: [],
   analysis: null,
   statusFailed: false,
@@ -52,6 +54,14 @@ const state = {
   includeIntermodal: true,
   searching: false,
   lastQuery: null,
+};
+
+/** 時刻の指定の仕方ごとの、欄の見出しと説明 */
+const WHEN_TEXT = {
+  depart: ['出発時刻', '指定した時刻以降に出発できる経路を探します。'],
+  arrive: ['到着時刻', '指定した時刻までに着ける経路のうち、いちばん遅く出発できるものを探します。'],
+  first: ['始発', 'その日いちばん早い便から順に探します。日付だけを使い、時刻は使いません。'],
+  last: ['終電', 'その日のうちに着ける最後の便を探します。日付だけを使い、時刻は使いません。'],
 };
 
 /* ------------------------------------------------------------------ *
@@ -102,6 +112,7 @@ async function init() {
     setBusOperatorTitles(res.data?.bus?.operators || []);
     // GTFS から取り込んだ事業者があれば、それも「対応している」側に出す
     ui.renderCoverage(res.data, catalog);
+    updateBlockNotes();
     if (!res.data.tokenConfigured) {
       ui.addAlert('warn', {
         title: 'ODPT のアクセストークンが未設定です',
@@ -143,6 +154,7 @@ async function init() {
 
   renderVias();
   ui.renderExcludes(state.excludes, state.net, removeExclude, clearExcludes);
+  updateBlockNotes();
   ui.renderEmpty('出発地と到着地を入力してください', '駅名のほか、「現在地」ボタンや住所からも指定できます。');
 }
 
@@ -164,13 +176,35 @@ async function reloadNetwork() {
  *  イベント結線
  * ------------------------------------------------------------------ */
 function bindStaticHandlers() {
+  bindBlocks();
+  bindWhenMode();
+
+  $('#side-toggle').addEventListener('click', (e) => {
+    const side = $('#side');
+    // スマホでは棚が本文の下にある。隠すより「そこへ飛ぶ」方が要る動き。
+    if (window.innerWidth < 980) {
+      side.hidden = false;
+      side.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      side.classList.remove('side--flash');
+      // 再生し直すためにいったん外してから付ける
+      void side.offsetWidth;
+      side.classList.add('side--flash');
+    } else {
+      side.hidden = !side.hidden;
+    }
+    e.currentTarget.setAttribute('aria-expanded', String(!side.hidden));
+  });
+
   $('#coverage-toggle').addEventListener('click', (e) => {
     const panel = $('#coverage-panel');
     panel.hidden = !panel.hidden;
     e.currentTarget.setAttribute('aria-expanded', String(!panel.hidden));
   });
 
-  $('#now-btn').addEventListener('click', setDepartToNow);
+  $('#now-btn').addEventListener('click', () => {
+    setWhenMode('depart');
+    setDepartToNow();
+  });
 
   const busToggle = $('#include-bus');
   const mixToggle = $('#include-intermodal');
@@ -664,6 +698,7 @@ function removeVia(id) {
  * 入力途中の値は state 側(spec)にしか無いので、DOM を作り直しても消えない。
  */
 function renderVias() {
+  updateBlockNotes();
   const list = $('#via-list');
   list.replaceChildren();
 
@@ -1039,14 +1074,126 @@ function autoShowRouteOnMap() {
 }
 
 /* ------------------------------------------------------------------ *
+ *  畳めるブロック
+ * ------------------------------------------------------------------ *
+ *
+ * 画面に出すものを「経路を出すのに要るもの」だけに絞り、それ以外は
+ * たたんだ状態で左の棚に置く。閉じたままでも中身の要約が見出しに出る。
+ */
+function bindBlocks() {
+  for (const blk of document.querySelectorAll('.blk')) {
+    const btn = blk.querySelector('.blk__b');
+    if (!btn) continue;
+    btn.addEventListener('click', () => {
+      const open = !blk.classList.contains('is-open');
+      blk.classList.toggle('is-open', open);
+      btn.setAttribute('aria-expanded', String(open));
+      // 地図は開いたときに初期化する(閉じている間は読み込まない)
+      if (blk.id === 'map-card' && open !== state.mapOpen) toggleMap();
+    });
+  }
+}
+
+/** 閉じたブロックの見出しに出す要約 */
+function updateBlockNotes() {
+  const set = (id, text) => {
+    const el = document.getElementById(id);
+    if (el) el.textContent = text;
+  };
+  const ex = state.excludes.length;
+  set('excludes-card-note', ex ? `${ex} 件` : 'なし');
+  // 除外は棚の中にあって見えないので、何件あるかはヘッダにも出す
+  const badge = document.getElementById('side-count');
+  if (badge) {
+    badge.textContent = String(ex);
+    badge.hidden = ex === 0;
+  }
+  const vias = state.vias.length;
+  set('blk-vias-note', vias ? `${vias} か所` : 'なし');
+  set('blk-checks-note',
+    !state.includeBus ? '鉄道だけ' : state.includeIntermodal ? 'バスと乗り継ぎも使う' : 'バスの直通便も使う');
+  set('blk-coverage-note', state.health ? `${(state.health.supported || []).length} 事業者` : '—');
+  if (state.from && state.to) {
+    const when = whenSummary();
+    set('search-form-note', `${state.from.label} → ${state.to.label} / ${when}`);
+  }
+}
+
+/* ------------------------------------------------------------------ *
  *  日時
  * ------------------------------------------------------------------ */
+function bindWhenMode() {
+  const box = $('#when-mode');
+  box.addEventListener('click', (e) => {
+    const btn = e.target.closest('button[data-mode]');
+    if (!btn) return;
+    setWhenMode(btn.dataset.mode);
+    if (state.lastQuery) runSearch();
+  });
+  setWhenMode(state.whenMode);
+}
+
+function setWhenMode(mode) {
+  state.whenMode = mode;
+  for (const b of document.querySelectorAll('#when-mode button')) {
+    const on = b.dataset.mode === mode;
+    b.classList.toggle('is-on', on);
+    b.setAttribute('aria-pressed', String(on));
+  }
+  const [label, note] = WHEN_TEXT[mode] || WHEN_TEXT.depart;
+  $('#when-label').textContent = label;
+  $('#when-note').textContent = note;
+  // 始発・終電は時刻を使わない。入れても効かない欄を出したままにしない。
+  const usesTime = mode === 'depart' || mode === 'arrive';
+  $('#when-time').hidden = !usesTime;
+  $('#when-now').hidden = !usesTime;
+  // 到着・終電は「いちばん遅く出られる案」から見たい。
+  // 出発指定のときに出しても意味が無い並べ替えなので、欄ごと出し入れする。
+  const backward = mode === 'arrive' || mode === 'last';
+  state.sort = backward ? 'departLate' : 'time';
+  for (const b of document.querySelectorAll('.sorter__btn')) {
+    if (b.dataset.sort === 'departLate') b.hidden = !backward;
+    b.classList.toggle('is-active', b.dataset.sort === state.sort);
+  }
+  updateBlockNotes();
+}
+
+/** 見出しに出す「21:35 出発」のような文言 */
+function whenSummary() {
+  const mode = state.whenMode;
+  if (mode === 'first') return 'その日の始発から';
+  if (mode === 'last') return 'その日の終電まで';
+  const d = departDate();
+  const hhmm = `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+  return mode === 'arrive' ? `${hhmm} までに到着` : `${hhmm} 出発`;
+}
+
+
 function setDepartToNow() {
   const d = new Date();
   d.setSeconds(0, 0);
   const pad = (n) => String(n).padStart(2, '0');
   $('#depart-input').value = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
   updateCalendarNote();
+}
+
+/** 営業日の始まり/終わり(分)。始発・終電はここを端にして探す。 */
+const SERVICE_START_MINUTES = 3 * 60;
+const SERVICE_END_MINUTES = 1440 + 3 * 60 - 1;
+
+/**
+ * 画面で選ばれている時刻の指定の仕方を、探索に渡す形に直す。
+ *   出発 … その時刻以降に出る    (前向き)
+ *   到着 … その時刻までに着く    (後ろ向き)
+ *   始発 … その日の最初から探す  (前向き)
+ *   終電 … その日の最後から探す  (後ろ向き)
+ */
+function searchWhen() {
+  const mode = state.whenMode || 'depart';
+  const { serviceDate, minutes } = toServiceMoment(departDate());
+  if (mode === 'first') return { mode, backward: false, minutes: SERVICE_START_MINUTES, serviceDate };
+  if (mode === 'last') return { mode, backward: true, minutes: SERVICE_END_MINUTES, serviceDate };
+  return { mode, backward: mode === 'arrive', minutes, serviceDate };
 }
 
 function departDate() {
@@ -1056,6 +1203,7 @@ function departDate() {
 }
 
 function updateCalendarNote() {
+  updateBlockNotes();
   if (!state.holidays) return;
   const { serviceDate, minutes } = toServiceMoment(departDate());
   const cal = calendarFor(serviceDate, state.holidays);
@@ -1265,18 +1413,21 @@ function addExclude(ex) {
   if (state.excludes.some((e) => e.id === id)) return;
   state.excludes.push({ ...ex, id });
   ui.renderExcludes(state.excludes, state.net, removeExclude, clearExcludes);
+  updateBlockNotes();
   if (state.lastQuery) runSearch();
 }
 
 function removeExclude(id) {
   state.excludes = state.excludes.filter((e) => e.id !== id);
   ui.renderExcludes(state.excludes, state.net, removeExclude, clearExcludes);
+  updateBlockNotes();
   if (state.lastQuery) runSearch();
 }
 
 function clearExcludes() {
   state.excludes = [];
   ui.renderExcludes(state.excludes, state.net, removeExclude, clearExcludes);
+  updateBlockNotes();
   if (state.lastQuery) runSearch();
 }
 
@@ -1336,8 +1487,9 @@ function buildExclusionSets() {
  * 地点(地図でタップした座標)を含む区間の検索。
  * 最寄駅の候補ごとに徒歩時間を見積もり、駅から先は通常の検索にかける。
  */
-async function searchSegmentWithWalk(fromSpec, toSpec, departAt, ctx) {
-  if (!isPoint(fromSpec) && !isPoint(toSpec)) return searchSegment(fromSpec, toSpec, departAt, ctx);
+async function searchSegmentWithWalk(fromSpec, toSpec, at, ctx) {
+  const backward = Boolean(ctx.backward);
+  if (!isPoint(fromSpec) && !isPoint(toSpec)) return searchSegment(fromSpec, toSpec, at, ctx);
 
   const settings = walkSettings(state.config || {});
   const combos = accessCombos(fromSpec, toSpec, state.net, settings, MAX_WALK_COMBOS);
@@ -1356,7 +1508,7 @@ async function searchSegmentWithWalk(fromSpec, toSpec, departAt, ctx) {
   // 歩いて行ける距離なら、徒歩だけの案も作る。
   // 近い 2 地点では最寄駅が同じになって鉄道の案が 1 本も出ないことがあり、
   // そのとき「経路が見つかりません」とだけ返すのは事実に反する(歩けば着く)。
-  const onlyWalk = walkOnlyRoute(fromSpec, toSpec, departAt, settings);
+  const onlyWalk = walkOnlyRoute(fromSpec, toSpec, at, settings, backward ? { arriveBy: at } : {});
   const walkCandidates = onlyWalk && onlyWalk.walkMinutes <= WALK_ONLY_MAX_MINUTES ? [onlyWalk] : [];
 
   if (!combos.length) {
@@ -1376,9 +1528,12 @@ async function searchSegmentWithWalk(fromSpec, toSpec, departAt, ctx) {
 
   const results = [];
   for (const combo of combos) {
-    // 地点を「その時刻に出る」ので、駅で乗るのは徒歩時間のぶん後になる
-    const at = departAt + (combo.fromLeg?.minutes || 0);
-    const seg = await searchSegment(combo.from, combo.to, at, ctx);
+    // 出発指定: 地点をその時刻に出るので、駅で乗るのは徒歩時間のぶん後になる
+    // 到着指定: 地点にその時刻までに着くので、降車駅の締切は徒歩時間のぶん前になる
+    const stationAt = backward
+      ? at - (combo.toLeg?.minutes || 0)
+      : at + (combo.fromLeg?.minutes || 0);
+    const seg = await searchSegment(combo.from, combo.to, stationAt, ctx);
     results.push({ seg, combo });
   }
 
@@ -1414,8 +1569,14 @@ async function searchSegmentWithWalk(fromSpec, toSpec, departAt, ctx) {
   };
 }
 
-async function searchSegment(fromSpec, toSpec, departAt, ctx) {
-  const { excludedRailways, excludedEdges, cal, serviceDate } = ctx;
+/**
+ * @param {number} at 出発指定なら出発時刻、到着指定なら「ここまでに着く」締切時刻
+ * @param {object} ctx backward=true で到着指定
+ */
+async function searchSegment(fromSpec, toSpec, at, ctx) {
+  const { excludedRailways, excludedEdges, cal, serviceDate, backward } = ctx;
+  const departAt = backward ? null : at;
+  const arriveBy = backward ? at : null;
 
   // バス停を指定している側があるときは、鉄道単独の経路は成立しない
   const candidates =
@@ -1423,14 +1584,11 @@ async function searchSegment(fromSpec, toSpec, departAt, ctx) {
       ? findCandidateRoutes(state.net, fromSpec.groupId, toSpec.groupId, { excludedRailways, excludedEdges })
       : [];
 
+  const bindOpts = { api: state.api, net: state.net, calendarUrn: cal.urn, stores: state.stores };
   const railPromise = candidates.length
-    ? bindSchedule(candidates, {
-        api: state.api,
-        net: state.net,
-        calendarUrn: cal.urn,
-        departAt,
-        stores: state.stores,
-      })
+    ? (backward
+        ? bindScheduleBackward(candidates, { ...bindOpts, arriveBy })
+        : bindSchedule(candidates, { ...bindOpts, departAt }))
     : Promise.resolve({ routes: [], warnings: [], fetchedAt: null });
 
   /**
@@ -1453,11 +1611,17 @@ async function searchSegment(fromSpec, toSpec, departAt, ctx) {
     ? (async () => {
         const direct = await findBusRoutes(state.api, fromSpec.label, toSpec.label, {
           departAt,
+          arriveBy,
           serviceDate,
           store: state.busStore,
         });
         rememberBusStops([...(direct.context?.originStops || []), ...(direct.context?.destStops || [])]);
-        if (!state.includeIntermodal) return { ...direct, searched: true, directCount: direct.routes.length, mixedCount: 0 };
+        // バス⇄鉄道の乗り継ぎは前向きにしか解けない(途中駅の締切を決められない)。
+        // 到着指定では直通便だけを出し、その旨を画面に書く。
+        if (!state.includeIntermodal || backward) {
+          return { ...direct, searched: true, directCount: direct.routes.length, mixedCount: 0,
+            intermodalSkipped: backward && state.includeIntermodal };
+        }
         // バス停の検索結果は使い回して、無駄なリクエストを増やさない
         const mixed = await findIntermodalRoutes(
           { api: state.api, net: state.net, railSearch },
@@ -1489,7 +1653,7 @@ async function searchSegment(fromSpec, toSpec, departAt, ctx) {
    * GitHub Actions が作った GTFS 由来の索引から探す。Worker は通らない。
    */
   const gtfsPromise = state.includeBus
-    ? findAllGtfsRoutes(fromSpec.label, toSpec.label, { departAt, serviceDate }).catch((e) => ({
+    ? findAllGtfsRoutes(fromSpec.label, toSpec.label, { departAt, arriveBy, serviceDate }).catch((e) => ({
         routes: [],
         warnings: [{ message: `GTFS の索引を読めませんでした(${e.message})` }],
         stops: [],
@@ -1523,6 +1687,7 @@ async function searchSegment(fromSpec, toSpec, departAt, ctx) {
     gtfsCount: keptGtfs.length,
     busExcluded: bus.routes.length - keptBus.length + (gtfs.routes.length - keptGtfs.length),
     gtfsOperators: gtfs.operators || [],
+    intermodalSkipped: Boolean(bus.intermodalSkipped),
   };
 }
 
@@ -1568,13 +1733,16 @@ async function runSearch() {
   ui.clearAlerts();
   ui.renderLoading('経路を計算しています…');
 
-  const { serviceDate, minutes } = toServiceMoment(departDate());
+  const when = searchWhen();
+  const { serviceDate, minutes } = when;
   const cal = calendarFor(serviceDate, state.holidays);
+  state.lastWhen = when;
   state.lastQuery = {
     from: state.from,
     to: state.to,
     vias: vias.map((v) => `${v.label}/${v.stay}`).join(','),
     minutes,
+    mode: when.mode,
     calendar: cal.urn,
   };
 
@@ -1584,29 +1752,51 @@ async function runSearch() {
 
     /* --- 2) 区間ごとに検索する(経由地が無ければ 1 区間) --- */
     const { excludedRailways, excludedEdges } = buildExclusionSets();
-    const ctx = { excludedRailways, excludedEdges, cal, serviceDate };
+    const ctx = { excludedRailways, excludedEdges, cal, serviceDate, backward: when.backward };
     const segCount = points.length - 1;
 
-    const segments = [];
-    let departAt = minutes;
+    const segments = new Array(segCount);
     let failedAt = -1;
 
-    for (let i = 0; i < segCount; i += 1) {
-      ui.renderLoading(
-        segCount === 1
-          ? '時刻表を取得しています…'
-          : `時刻表を取得しています…(区間 ${i + 1}/${segCount}: ${points[i].label} → ${points[i + 1].label})`
-      );
-      const seg = await searchSegmentWithWalk(points[i], points[i + 1], departAt, ctx);
-      segments.push(seg);
-      if (!seg.routes.length) {
-        failedAt = i;
-        break;
+    if (when.backward) {
+      // 到着指定は最後の区間から逆にたどる。
+      // 1 つ前の区間の締切は「この区間でいちばん遅く出られる時刻 − 滞在時間」。
+      let cursor = minutes;
+      for (let i = segCount - 1; i >= 0; i -= 1) {
+        ui.renderLoading(
+          segCount === 1
+            ? '時刻表を取得しています…'
+            : `時刻表を取得しています…(区間 ${i + 1}/${segCount}: ${points[i].label} → ${points[i + 1].label})`
+        );
+        const seg = await searchSegmentWithWalk(points[i], points[i + 1], cursor, ctx);
+        segments[i] = seg;
+        if (!seg.routes.length) {
+          failedAt = i;
+          break;
+        }
+        const latest = Math.max(...seg.routes.map((r) => r.departure));
+        cursor = latest - (vias[i - 1]?.stay || 0);
       }
-      // 次の区間は「最も早く着ける時刻 + 滞在時間」から探す
-      const earliest = Math.min(...seg.routes.map((r) => r.arrival));
-      departAt = earliest + (vias[i]?.stay || 0);
+    } else {
+      let departAt = minutes;
+      for (let i = 0; i < segCount; i += 1) {
+        ui.renderLoading(
+          segCount === 1
+            ? '時刻表を取得しています…'
+            : `時刻表を取得しています…(区間 ${i + 1}/${segCount}: ${points[i].label} → ${points[i + 1].label})`
+        );
+        const seg = await searchSegmentWithWalk(points[i], points[i + 1], departAt, ctx);
+        segments[i] = seg;
+        if (!seg.routes.length) {
+          failedAt = i;
+          break;
+        }
+        // 次の区間は「最も早く着ける時刻 + 滞在時間」から探す
+        const earliest = Math.min(...seg.routes.map((r) => r.arrival));
+        departAt = earliest + (vias[i]?.stay || 0);
+      }
     }
+    for (let i = 0; i < segCount; i += 1) if (!segments[i]) segments[i] = { routes: [], railRoutes: [], warnings: [], fetchedAt: null };
 
     state.stamps.timetableAt = segments.map((s) => s.fetchedAt).filter(Boolean).pop() || state.stamps.timetableAt;
     ui.renderStamps({ ...state.stamps, statusFailed: state.statusFailed });
@@ -1681,6 +1871,15 @@ async function runSearch() {
       });
     }
 
+    if (segments.some((x) => x.intermodalSkipped)) {
+      ui.addAlert('info', {
+        title: '到着時刻の指定では、バスと鉄道の乗り継ぎは探していません',
+        body:
+          '途中の乗り継ぎ地点で「何時までに着けばよいか」を決められないためです。' +
+          'バスの直通便と鉄道だけを後ろ向きに探しています。乗り継ぎも見たいときは「出発」で検索してください。',
+      });
+    }
+
     const gtfsOps = segments.flatMap((x) => x.gtfsOperators || []);
     if (gtfsOps.length) {
       const seen = new Map(gtfsOps.map((o) => [o.id, o]));
@@ -1752,6 +1951,8 @@ function renderSorted() {
     if (byWarning !== 0) return byWarning;
     if (state.sort === 'transfers') return a.transfers - b.transfers || a.rideMinutes - b.rideMinutes;
     if (state.sort === 'arrival') return a.arrival - b.arrival || a.transfers - b.transfers;
+    // 到着指定で知りたいのは「いちばん遅く出られる案」
+    if (state.sort === 'departLate') return b.departure - a.departure || a.rideMinutes - b.rideMinutes;
     return a.rideMinutes - b.rideMinutes || a.transfers - b.transfers;
   });
   state.sortedRoutes = sorted;

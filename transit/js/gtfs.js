@@ -123,11 +123,15 @@ export function findStops(index, name) {
  * @param {string} operatorId
  * @param {string} fromName 出発のバス停名
  * @param {string} toName   到着のバス停名
- * @param {{departAt:number, serviceDate:Date, limit?:number}} opts
+ * `arriveBy` を渡すと「その時刻までに着ける便のうち、いちばん遅く出るもの」を選ぶ。
+ * GTFS は手元に全便の時刻が入っているので、後ろから探すだけで済む。
+ *
+ * @param {{departAt?:number, arriveBy?:number, serviceDate:Date, limit?:number}} opts
  * @returns {Promise<{routes:Array, warnings:Array, context:object}>}
  */
 export async function findGtfsBusRoutes(operatorId, fromName, toName, opts) {
-  const { departAt, serviceDate, limit = 3 } = opts;
+  const { departAt, arriveBy = null, serviceDate, limit = 3 } = opts;
+  const backward = arriveBy != null;
   const index = await loadIndex(operatorId);
 
   const originStops = findStops(index, fromName);
@@ -166,7 +170,20 @@ export async function findGtfsBusRoutes(operatorId, fromName, toName, opts) {
     const ti = pattern.s.findIndex((si, i) => i > fi && destIds.has(si));
     if (ti < 0) continue;
 
-    const ride = pattern.t.find((times) => times[fi] != null && times[fi] >= departAt);
+    let ride;
+    if (backward) {
+      // 後ろから見て、締切までに着く最初の便 = いちばん遅く出る便
+      for (let k = pattern.t.length - 1; k >= 0; k -= 1) {
+        const times = pattern.t[k];
+        if (times[fi] == null || times[ti] == null) continue;
+        if (times[ti] > arriveBy) continue;
+        if (times[ti] < times[fi]) continue;
+        ride = times;
+        break;
+      }
+    } else {
+      ride = pattern.t.find((times) => times[fi] != null && times[fi] >= departAt);
+    }
     if (!ride) continue;
     const dep = ride[fi];
     const arr = ride[ti];
@@ -175,7 +192,10 @@ export async function findGtfsBusRoutes(operatorId, fromName, toName, opts) {
     routes.push(buildRoute(index, pattern, { fi, ti, dep, arr, operatorId }));
   }
 
-  routes.sort((a, b) => a.arrival - b.arrival || a.rideMinutes - b.rideMinutes);
+  // 到着指定なら「遅く出られる順」、出発指定なら「早く着く順」
+  routes.sort((a, b) => (backward
+    ? b.departure - a.departure || a.rideMinutes - b.rideMinutes
+    : a.arrival - b.arrival || a.rideMinutes - b.rideMinutes));
   return {
     routes: routes.slice(0, limit),
     warnings,
@@ -249,7 +269,7 @@ export async function findAllGtfsRoutes(fromName, toName, opts) {
     }
   }
 
-  routes.sort((a, b) => a.arrival - b.arrival);
+  routes.sort((a, b) => (opts.arriveBy != null ? b.departure - a.departure : a.arrival - b.arrival));
   return { routes, warnings, stops, operators: used, catalog };
 }
 

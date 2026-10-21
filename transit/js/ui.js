@@ -97,6 +97,22 @@ export function renderStamps({ networkAt, timetableAt, statusAt, statusFailed, s
   $('#foot-network-stamp').textContent = `路線データ: ${networkAt ? `${formatFetchedAt(networkAt)} 取得` : '—'}`;
   $('#foot-timetable-stamp').textContent = `時刻表: ${timetableAt ? `${formatFetchedAt(timetableAt)} 取得` : '—'}`;
 
+  // 左の棚にも同じものを出す。閉じたままでも「いつのデータか」が判るように、
+  // 見出しには直近の取得時刻だけを出す。
+  const side = $('#side-stamps');
+  if (side) {
+    side.replaceChildren(
+      el('span', 'stamp', `路線データ: ${networkAt ? `${formatFetchedAt(networkAt)} 取得` : '—'}`),
+      el('span', 'stamp', `時刻表: ${timetableAt ? `${formatFetchedAt(timetableAt)} 取得` : '—'}`),
+      el('span', 'stamp', `運行情報: ${statusFailed ? '取得失敗' : statusAt ? `${formatFetchedAt(statusAt)} 時点` : '—'}`)
+    );
+  }
+  const dataNote = $('#blk-data-note');
+  if (dataNote) {
+    const latest = [statusAt, timetableAt, networkAt].find(Boolean);
+    dataNote.textContent = statusFailed ? '運行情報が取れていません' : latest ? `${formatFetchedAt(latest)} 更新` : '—';
+  }
+
   const statusEl = $('#foot-status-stamp');
   const cardStamp = $('#status-stamp');
   if (statusFailed) {
@@ -268,7 +284,7 @@ export function nearestSuggestItems(nearest) {
  * ------------------------------------------------------------------ */
 
 /** 運行情報の開閉状態(既定は閉じる) */
-let statusOpen = false;
+let statusOpen = true;
 
 export function setStatusOpen(open) {
   statusOpen = Boolean(open);
@@ -312,12 +328,18 @@ export function renderStatus(analysis, { failed, errors, onExcludeRailway }) {
   card.hidden = false;
 
   const sum = statusSummary(analysis, { failed, errors });
+  const sideNote = $('#status-card-note');
+  if (sideNote) {
+    sideNote.textContent = sum.text;
+    sideNote.className = `blk__n blk__n--${sum.level}`;
+  }
   const summaryEl = $('#status-summary');
   if (summaryEl) {
     summaryEl.textContent = sum.text;
     summaryEl.className = `status__summary${sum.level === 'normal' ? '' : ` status__summary--${sum.level}`}`;
   }
-  setStatusOpen(statusOpen);
+  // 開閉は外側のブロック(左の棚)が受け持つので、中身は常に出しておく
+  setStatusOpen(true);
 
   if (failed) {
     const p = el('p', null, '運行情報を取得できませんでした。遅延・運休は反映されていません。各事業者の公式情報をご確認ください。');
@@ -513,14 +535,10 @@ export function renderRoutes(routes, ctx) {
   plot.append(hd, svg);
   wrap.append(plot);
 
-  /* --- スマホ用。マウスオーバーが無いので、押している間だけ強調する --- */
-  const chips = el('div', 'rc__chips');
-  wrap.append(chips);
-
-  /* --- 案の一覧 --- */
-  const listHint = el('div', 'rc__hint', '押すと詳しく出ます');
-  const list = el('div', 'rc__list');
-  wrap.append(listHint, list);
+  /* --- 案のタブ。一覧を縦に積むと、下まで延々とスクロールすることになる --- */
+  const tabs = el('div', 'rc__tabs');
+  tabs.setAttribute('role', 'tablist');
+  wrap.append(tabs);
 
   /* --- 選んだ案の行程 --- */
   const det = el('div', 'rc__det');
@@ -560,11 +578,11 @@ export function renderRoutes(routes, ctx) {
       back.textContent = narrow ? '← 比較' : '← 比較に戻る';
     }
     legend.replaceChildren(...legendChips(narrow));
-    for (const b of list.querySelectorAll('.rc__opt')) {
-      b.classList.toggle('is-on', Number(b.dataset.id) === selected);
-    }
-    for (const b of chips.querySelectorAll('button')) {
-      b.classList.toggle('is-on', Number(b.dataset.id) === (selected !== null ? selected : hovered));
+    for (const b of tabs.querySelectorAll('.rc__tab')) {
+      const id = b.dataset.id === '' ? null : Number(b.dataset.id);
+      b.classList.toggle('is-on', id === selected);
+      b.classList.toggle('is-hot', selected === null && id !== null && id === hovered);
+      b.setAttribute('aria-selected', String(id === selected));
     }
   };
 
@@ -576,40 +594,55 @@ export function renderRoutes(routes, ctx) {
       det.append(renderRoute(model.items[id].route, id + 1, ctx));
     }
     redraw(true);
-    if (id !== null && window.innerWidth < 760) {
-      plot.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    if (id !== null) {
+      const tab = tabs.querySelector(`.rc__tab[data-id="${id}"]`);
+      if (tab) {
+        // 横の並びだけを動かす。scrollIntoView を使うとページ全体が動いて、
+        // スマホでは明細の末尾まで飛んでしまう。
+        const t = tab.getBoundingClientRect();
+        const box = tabs.getBoundingClientRect();
+        if (t.left < box.left || t.right > box.right) {
+          tabs.scrollTo({ left: tabs.scrollLeft + (t.left - box.left) - 12, behavior: 'smooth' });
+        }
+      }
+      if (window.innerWidth < 760) {
+        // 明細を足した後の高さで測る
+        requestAnimationFrame(() => plot.scrollIntoView({ behavior: 'smooth', block: 'start' }));
+      }
     }
   };
 
-  /* 一覧 */
-  model.items.forEach((item) => {
-    list.append(optionCard(item, ctx, () => pick(selected === item.id ? null : item.id)));
-  });
+  /* --- タブ --- */
+  const addTab = (node, id) => {
+    node.dataset.id = id === null ? '' : String(id);
+    node.setAttribute('role', 'tab');
+    node.addEventListener('click', () => pick(id));
+    if (id !== null) {
+      // マウスオーバーが無い端末のための代わり。押している間だけ強調する。
+      const show = () => {
+        if (selected !== null) return;
+        hovered = id;
+        redraw(false);
+      };
+      const hide = () => {
+        if (hovered === null) return;
+        hovered = null;
+        redraw(false);
+      };
+      node.addEventListener('pointerenter', show);
+      node.addEventListener('pointerdown', show);
+      node.addEventListener('pointerup', hide);
+      node.addEventListener('pointerleave', hide);
+      node.addEventListener('pointercancel', hide);
+    }
+    tabs.append(node);
+  };
 
-  /* 強調チップ(スマホ) */
-  model.items.forEach((item) => {
-    const b = el('button', 'rc__chip');
-    b.type = 'button';
-    b.dataset.id = String(item.id);
-    b.style.setProperty('--c', item.color);
-    b.append(el('span', 'rc__chipbar'), el('span', null, `案${item.index + 1}`));
-    const show = () => {
-      if (selected !== null) return;
-      hovered = item.id;
-      redraw(false);
-    };
-    const hide = () => {
-      if (hovered === null) return;
-      hovered = null;
-      redraw(false);
-    };
-    b.addEventListener('pointerdown', show);
-    b.addEventListener('pointerup', hide);
-    b.addEventListener('pointerleave', hide);
-    b.addEventListener('pointercancel', hide);
-    b.addEventListener('click', () => pick(selected === item.id ? null : item.id));
-    chips.append(b);
-  });
+  const allTab = el('button', 'rc__tab rc__tab--all');
+  allTab.type = 'button';
+  allTab.append(el('b', null, 'すべて'), el('span', null, '比較'), el('small', null, `${model.items.length} 件`));
+  addTab(allTab, null);
+  model.items.forEach((item) => addTab(routeTab(item), item.id));
 
   back.addEventListener('click', () => pick(null));
 
@@ -638,39 +671,33 @@ function legendChips(narrow) {
   ];
 }
 
-/** 一覧の 1 件。色だけでなく「案 N」と文字でも区別する。 */
-function optionCard(item, ctx, onPick) {
+/**
+ * 案 1 件ぶんのタブ。
+ * 色だけで区別させない。「案 N」の文字と、到着時刻・所要時間を必ず添える。
+ */
+function routeTab(item) {
   const route = item.route;
-  const b = el('button', 'rc__opt');
+  const b = el('button', 'rc__tab');
   b.type = 'button';
-  b.dataset.id = String(item.id);
+  b.style.setProperty('--c', item.color);
 
-  const n = el('span', 'rc__optn');
-  n.append(el('b', null, `案${item.index + 1}`));
-  const bar = el('i');
-  bar.style.background = item.color;
-  n.append(bar);
-  b.append(n);
-
-  b.append(el('span', 'rc__opta', toClockTime(route.arrival) + '着'));
-  const lineup = lineupOf(item);
-  b.append(el('span', 'rc__optr', lineup.length ? lineup.join(' → ') : '徒歩のみ'));
-  b.append(el('span', 'rc__optm', summaryOf(item)));
-
-  const tags = el('span', 'rc__opttags');
+  const head = el('b');
+  head.append(el('i'), document.createTextNode(`案${item.index + 1}`));
   const warnings = route.warnings || [];
   if (warnings.some((w) => w.severity === SEVERITY.SUSPENDED)) {
-    tags.append(el('span', 'badge badge--danger', '運休あり'));
+    head.append(el('em', 'rc__tabwarn rc__tabwarn--bad', '運休'));
   } else if (warnings.length) {
-    tags.append(el('span', 'badge badge--warn', '運行情報あり'));
+    head.append(el('em', 'rc__tabwarn', '遅れ'));
+  } else if (route.kind === 'bus' || route.kind === 'mixed') {
+    head.append(el('em', 'rc__tabwarn rc__tabwarn--bus', route.kind === 'bus' ? 'バス' : 'バス+鉄道'));
+  } else if (route.walkOnly) {
+    head.append(el('em', 'rc__tabwarn', '徒歩'));
+  } else if (route.estimatedOnly) {
+    head.append(el('em', 'rc__tabwarn', '推定'));
   }
-  if (route.kind === 'bus') tags.append(el('span', 'badge badge--bus', 'バス'));
-  else if (route.kind === 'mixed') tags.append(el('span', 'badge badge--bus', 'バス+鉄道'));
-  if (route.walkOnly) tags.append(el('span', 'badge badge--walk', '徒歩のみ'));
-  if (route.estimatedOnly) tags.append(el('span', 'badge badge--est', '一部推定'));
-  if (tags.children.length) b.append(tags);
-
-  b.addEventListener('click', onPick);
+  b.append(head);
+  b.append(el('span', null, `${toClockTime(route.arrival)}着`));
+  b.append(el('small', null, summaryOf(item)));
   return b;
 }
 

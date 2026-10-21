@@ -23,139 +23,26 @@
         <p class="brand__sub">公共交通オープンデータ(ODPT)  運賃表示なし</p>
       </div>
     </div>
-    <button type="button" class="btn btn--ghost" id="coverage-toggle" aria-expanded="false" aria-controls="coverage-panel">
-      対応範囲
-    </button>
+    <button type="button" class="btn btn--ghost btn--sm" id="side-toggle" aria-expanded="true" aria-controls="side">除外・設定<span class="side-count" id="side-count" hidden>0</span></button>
+    <button type="button" class="btn btn--ghost btn--sm" id="coverage-toggle" aria-expanded="false" aria-controls="coverage-panel" hidden>対応範囲</button>
   </div>
 </header>
 
-<!-- 対応/非対応事業者 -->
-<section id="coverage-panel" class="coverage" hidden>
-  <div class="coverage__inner">
-    <div>
-      <h2 class="coverage__h">対応している事業者</h2>
-      <ul class="coverage__list" id="coverage-supported"><li class="muted">読み込み中…</li></ul>
-    </div>
-    <div>
-      <h2 class="coverage__h">対応していない事業者</h2>
-      <ul class="coverage__list coverage__list--no" id="coverage-unsupported"><li class="muted">読み込み中…</li></ul>
-      <p class="coverage__note">
-        JR東日本や大手私鉄のデータは「公共交通オープンデータチャレンジ限定ライセンス」で提供されており、
-        コンテスト目的以外での利用が認められていません。そのため本アプリでは扱っていません。
-      </p>
-    </div>
-  </div>
-</section>
 
-<main class="app-main">
 
-  <!-- ================= 検索フォーム ================= -->
-  <form class="search card" id="search-form" autocomplete="off">
-    <div class="search__row">
-      <div class="field">
-        <label class="field__label" for="from-input">出発</label>
-        <div class="field__control">
-          <input class="input" type="text" id="from-input" placeholder="駅名・住所・施設名" aria-describedby="from-hint"
-                 role="combobox" aria-expanded="false" aria-controls="from-list" aria-autocomplete="list">
-          <button type="button" class="btn btn--icon" id="locate-btn" title="現在地から最寄駅を探す" aria-label="現在地から最寄駅を探す">現在地</button>
-        </div>
-        <ul class="suggest" id="from-list" role="listbox" hidden></ul>
-        <p class="field__hint" id="from-hint"></p>
-      </div>
+<main class="layout">
 
-      <button type="button" class="btn btn--swap" id="swap-btn" title="出発と到着を入れ替える" aria-label="出発と到着を入れ替える">⇅</button>
-
-      <div class="field">
-        <label class="field__label" for="to-input">到着</label>
-        <div class="field__control">
-          <input class="input" type="text" id="to-input" placeholder="駅名・住所・施設名" aria-describedby="to-hint"
-                 role="combobox" aria-expanded="false" aria-controls="to-list" aria-autocomplete="list">
-        </div>
-        <ul class="suggest" id="to-list" role="listbox" hidden></ul>
-        <p class="field__hint" id="to-hint"></p>
-      </div>
-    </div>
-
-    <!-- 経由地 -->
-    <div class="vias" id="vias">
-      <div class="vias__head">
-        <span class="field__label">経由地(任意)</span>
-        <button type="button" class="btn btn--ghost btn--sm" id="via-add">経由地を追加</button>
-      </div>
-      <div class="via-list" id="via-list"></div>
-      <p class="vias__note">
-        指定した順に必ず通る経路を計算します。各経由地では<strong>そこに何分とどまるか</strong>を指定できます。
-        区間ごとに検索するため通信量が増えます(最大 3 か所)。
-      </p>
-    </div>
-
-    <div class="search__row search__row--bottom">
-      <div class="field field--time">
-        <label class="field__label" for="depart-input">出発時刻</label>
-        <input class="input" type="datetime-local" id="depart-input">
-      </div>
-      <div class="field field--now">
-        <button type="button" class="btn btn--ghost" id="now-btn">現在時刻</button>
-      </div>
-      <button class="btn btn--primary" type="submit" id="search-btn">経路を検索</button>
-    </div>
-
-    <div class="checks">
-      <label class="check" for="include-bus">
-        <input type="checkbox" id="include-bus" checked>
-        <span>都営バスも使う<small>直通便を鉄道と並べて表示します</small></span>
-      </label>
-      <label class="check" for="include-intermodal">
-        <input type="checkbox" id="include-intermodal" checked>
-        <span>バスと鉄道の乗り継ぎも探す<small>バス停と駅の間は徒歩5分として計算します</small></span>
-      </label>
-    </div>
-
-    <p class="calendar-note" id="calendar-note"></p>
-  </form>
-
-  <!-- ================= 地図 ================= -->
-  <section class="card map-card" id="map-card">
-    <div class="map-card__head">
-      <h2 class="card__h">地図から選ぶ</h2>
-      <div class="map-card__actions">
-        <button type="button" class="btn btn--ghost btn--sm" id="map-locate">現在地へ</button>
-        <button type="button" class="btn btn--ghost btn--sm" id="map-toggle" aria-expanded="false" aria-controls="map">
-          地図を開く
-        </button>
-      </div>
-    </div>
-    <div class="map-wrap" id="map-wrap" hidden>
-      <div id="map" class="map"></div>
-      <!-- 読み込み中の表示。地図に重ねて出す(下の行だと見落とされるため) -->
-      <div class="map-status" id="map-status" role="status" hidden></div>
-    </div>
-    <div class="map-legend" id="map-legend" hidden>
-      <span class="map-legend__item map-legend__item--rail"><i></i>乗降する駅</span>
-      <span class="map-legend__item map-legend__item--bus"><i></i>乗降するバス停</span>
-      <span class="map-legend__item map-legend__item--walk"><i></i>指定した地点</span>
-      <span class="map-legend__item map-legend__item--via"><i></i>経由地</span>
-      <span class="map-legend__note">
-        検索すると、いちばん上の経路の<strong>乗り降りする地点</strong>に番号付きの印を出します。
-        他の案は経路カードの「地図で見る」で切り替えられます。
-        <strong>線は引きません</strong>(実際の線路・バス路線の形のデータが無く、直線でつないでも実際の経路とは違うためです)。
-      </span>
-    </div>
-    <p class="map-hint" id="map-hint" hidden></p>
-    <p class="map-note" id="map-note" hidden>
-      駅・バス停をタップすると出発地・到着地・経由地に設定できます。
-      <strong>都営バス・京王バス・小田急バス・西東京バス・関東バス</strong>は GTFS を取り込んでいるため、
-      拡大すると<strong>表示範囲のバス停がそのまま出ます</strong>。
-      それ以外の事業者(東急・西武・相鉄・横浜市営バス)は、ODPT が全停留所の一括取得に対応していないため、
-      <strong>検索で見つかったものと経路上のものだけ</strong>表示されます。
-    </p>
-  </section>
-
-  <!-- ================= 通知・エラー ================= -->
-  <div id="alerts" class="alerts" aria-live="polite"></div>
-
-  <!-- ================= 運行情報 ================= -->
-  <section class="card status" id="status-card" hidden>
+  <!-- ============ 左の棚: 必要なときだけ開く ============ -->
+  <aside class="side" id="side" aria-label="設定">
+  <section class="blk" id="status-card" hidden>
+    <h2 class="blk__h">
+      <button type="button" class="blk__b" aria-expanded="false">
+        <span class="blk__c" aria-hidden="true">▸</span>
+        <span class="blk__t">運行情報</span>
+        <span class="blk__n" id="status-card-note">—</span>
+      </button>
+    </h2>
+    <div class="blk__body">
     <button type="button" class="status__head" id="status-toggle" aria-expanded="false" aria-controls="status-body">
       <span class="card__h">運行情報</span>
       <span class="status__summary" id="status-summary">—</span>
@@ -163,10 +50,19 @@
       <span class="status__chev" aria-hidden="true">▾</span>
     </button>
     <div id="status-body" hidden></div>
+  
+    </div>
   </section>
 
-  <!-- ================= 除外設定 ================= -->
-  <section class="card excludes" id="excludes-card" hidden>
+  <section class="blk" id="excludes-card">
+    <h2 class="blk__h">
+      <button type="button" class="blk__b" aria-expanded="false">
+        <span class="blk__c" aria-hidden="true">▸</span>
+        <span class="blk__t">除外する路線・区間・バス</span>
+        <span class="blk__n" id="excludes-card-note">なし</span>
+      </button>
+    </h2>
+    <div class="blk__body">
     <div class="excludes__head">
       <h2 class="card__h">除外する路線・区間・バス</h2>
       <button type="button" class="btn btn--ghost btn--sm" id="excludes-clear">すべて解除</button>
@@ -208,21 +104,223 @@
         <p class="excludes__note" id="ex-bus-note"></p>
       </div>
     </details>
+  
+    </div>
   </section>
 
-  <!-- ================= 結果 ================= -->
-  <section id="results" class="results" aria-live="polite">
+  <section class="blk" id="blk-vias">
+    <h2 class="blk__h">
+      <button type="button" class="blk__b" aria-expanded="false">
+        <span class="blk__c" aria-hidden="true">▸</span>
+        <span class="blk__t">経由地</span>
+        <span class="blk__n" id="blk-vias-note">なし</span>
+      </button>
+    </h2>
+    <div class="blk__body">
+    <!-- 経由地 -->
+    <div class="vias" id="vias">
+      <div class="vias__head">
+        <span class="field__label">経由地(任意)</span>
+        <button type="button" class="btn btn--ghost btn--sm" id="via-add">経由地を追加</button>
+      </div>
+      <div class="via-list" id="via-list"></div>
+      <p class="vias__note">
+        指定した順に必ず通る経路を計算します。各経由地では<strong>そこに何分とどまるか</strong>を指定できます。
+        区間ごとに検索するため通信量が増えます(最大 3 か所)。
+      </p>
+    </div>
+  </section>
+
+  <section class="blk" id="blk-checks">
+    <h2 class="blk__h">
+      <button type="button" class="blk__b" aria-expanded="false">
+        <span class="blk__c" aria-hidden="true">▸</span>
+        <span class="blk__t">探し方</span>
+        <span class="blk__n" id="blk-checks-note">バスも使う</span>
+      </button>
+    </h2>
+    <div class="blk__body">
+    <div class="checks">
+      <label class="check" for="include-bus">
+        <input type="checkbox" id="include-bus" checked>
+        <span>都営バスも使う<small>直通便を鉄道と並べて表示します</small></span>
+      </label>
+      <label class="check" for="include-intermodal">
+        <input type="checkbox" id="include-intermodal" checked>
+        <span>バスと鉄道の乗り継ぎも探す<small>バス停と駅の間は徒歩5分として計算します</small></span>
+      </label>
+    </div>
+
+    </div>
+  </section>
+
+  <section class="blk" id="blk-data">
+    <h2 class="blk__h">
+      <button type="button" class="blk__b" aria-expanded="false">
+        <span class="blk__c" aria-hidden="true">▸</span>
+        <span class="blk__t">データの状態</span>
+        <span class="blk__n" id="blk-data-note">—</span>
+      </button>
+    </h2>
+    <div class="blk__body">
+      <p class="stamp-row" id="side-stamps"></p>\n    <p class="calendar-note" id="calendar-note"></p>
+
+    </div>
+  </section>
+
+  <section class="blk" id="blk-coverage">
+    <h2 class="blk__h">
+      <button type="button" class="blk__b" aria-expanded="false">
+        <span class="blk__c" aria-hidden="true">▸</span>
+        <span class="blk__t">対応範囲</span>
+        <span class="blk__n" id="blk-coverage-note">—</span>
+      </button>
+    </h2>
+    <div class="blk__body">
+  <div class="coverage__inner" id="coverage-panel">
+    <div>
+      <h2 class="coverage__h">対応している事業者</h2>
+      <ul class="coverage__list" id="coverage-supported"><li class="muted">読み込み中…</li></ul>
+    </div>
+    <div>
+      <h2 class="coverage__h">対応していない事業者</h2>
+      <ul class="coverage__list coverage__list--no" id="coverage-unsupported"><li class="muted">読み込み中…</li></ul>
+      <p class="coverage__note">
+        JR東日本や大手私鉄のデータは「公共交通オープンデータチャレンジ限定ライセンス」で提供されており、
+        コンテスト目的以外での利用が認められていません。そのため本アプリでは扱っていません。
+      </p>
+    </div>
+  </div>
+    </div>
+  </section>
+
+  </aside>
+
+  <!-- ============ 中央: これだけで経路は出せる ============ -->
+  <div class="col">
+
+    <form class="blk blk--key is-open" id="search-form" autocomplete="off">
+      <h2 class="blk__h">
+        <button type="button" class="blk__b" aria-expanded="true">
+          <span class="blk__c" aria-hidden="true">▸</span>
+          <span class="blk__t">出発と到着</span>
+          <span class="blk__n" id="search-form-note">駅名・住所・施設名で指定できます</span>
+        </button>
+      </h2>
+      <div class="blk__body">
+    <div class="search__row">
+      <div class="field">
+        <label class="field__label" for="from-input">出発</label>
+        <div class="field__control">
+          <input class="input" type="text" id="from-input" placeholder="駅名・住所・施設名" aria-describedby="from-hint"
+                 role="combobox" aria-expanded="false" aria-controls="from-list" aria-autocomplete="list">
+          <button type="button" class="btn btn--icon" id="locate-btn" title="現在地から最寄駅を探す" aria-label="現在地から最寄駅を探す">現在地</button>
+        </div>
+        <ul class="suggest" id="from-list" role="listbox" hidden></ul>
+        <p class="field__hint" id="from-hint"></p>
+      </div>
+
+      <button type="button" class="btn btn--swap" id="swap-btn" title="出発と到着を入れ替える" aria-label="出発と到着を入れ替える">⇅</button>
+
+      <div class="field">
+        <label class="field__label" for="to-input">到着</label>
+        <div class="field__control">
+          <input class="input" type="text" id="to-input" placeholder="駅名・住所・施設名" aria-describedby="to-hint"
+                 role="combobox" aria-expanded="false" aria-controls="to-list" aria-autocomplete="list">
+        </div>
+        <ul class="suggest" id="to-list" role="listbox" hidden></ul>
+        <p class="field__hint" id="to-hint"></p>
+      </div>
+    </div>
+
+
+    <!-- 時刻の指定の仕方。出発だけでなく到着・始発・終電で探せる -->
+    <div class="when">
+      <div class="seg" id="when-mode" role="group" aria-label="時刻の指定の仕方">
+        <button type="button" data-mode="depart" class="is-on" aria-pressed="true">出発</button>
+        <button type="button" data-mode="arrive" aria-pressed="false">到着</button>
+        <button type="button" data-mode="first" aria-pressed="false">始発</button>
+        <button type="button" data-mode="last" aria-pressed="false">終電</button>
+      </div>
+      <div class="field field--time" id="when-time">
+        <label class="field__label" for="depart-input" id="when-label">出発時刻</label>
+        <input class="input" type="datetime-local" id="depart-input">
+      </div>
+      <div class="field field--now" id="when-now">
+        <button type="button" class="btn btn--ghost" id="now-btn">現在時刻</button>
+      </div>
+      <button class="btn btn--primary go" type="submit" id="search-btn">経路を検索</button>
+    </div>
+    <p class="when__note" id="when-note">指定した時刻以降に出発できる経路を探します。</p>
+  
+      </div>
+    </form>
+
+  <!-- ================= 通知・エラー ================= -->
+  <div id="alerts" class="alerts" aria-live="polite"></div>
+
+  <section class="blk blk--key" id="map-card">
+    <h2 class="blk__h">
+      <button type="button" class="blk__b" aria-expanded="false">
+        <span class="blk__c" aria-hidden="true">▸</span>
+        <span class="blk__t">地図</span>
+        <span class="blk__n" id="map-card-note">駅・バス停をタップして指定できます</span>
+      </button>
+    </h2>
+    <div class="blk__body">
+    <div class="map-card__head">
+      <h2 class="card__h">地図から選ぶ</h2>
+      <div class="map-card__actions">
+        <button type="button" class="btn btn--ghost btn--sm" id="map-locate">現在地へ</button>
+        <button type="button" class="btn btn--ghost btn--sm" id="map-toggle" aria-expanded="false" aria-controls="map">
+          地図を開く
+        </button>
+      </div>
+    </div>
+    <div class="map-wrap" id="map-wrap" hidden>
+      <div id="map" class="map"></div>
+      <!-- 読み込み中の表示。地図に重ねて出す(下の行だと見落とされるため) -->
+      <div class="map-status" id="map-status" role="status" hidden></div>
+    </div>
+    <div class="map-legend" id="map-legend" hidden>
+      <span class="map-legend__item map-legend__item--rail"><i></i>乗降する駅</span>
+      <span class="map-legend__item map-legend__item--bus"><i></i>乗降するバス停</span>
+      <span class="map-legend__item map-legend__item--walk"><i></i>指定した地点</span>
+      <span class="map-legend__item map-legend__item--via"><i></i>経由地</span>
+      <span class="map-legend__note">
+        検索すると、いちばん上の経路の<strong>乗り降りする地点</strong>に番号付きの印を出します。
+        他の案は経路カードの「地図で見る」で切り替えられます。
+        <strong>線は引きません</strong>(実際の線路・バス路線の形のデータが無く、直線でつないでも実際の経路とは違うためです)。
+      </span>
+    </div>
+    <p class="map-hint" id="map-hint" hidden></p>
+    <p class="map-note" id="map-note" hidden>
+      駅・バス停をタップすると出発地・到着地・経由地に設定できます。
+      <strong>都営バス・京王バス・小田急バス・西東京バス・関東バス</strong>は GTFS を取り込んでいるため、
+      拡大すると<strong>表示範囲のバス停がそのまま出ます</strong>。
+      それ以外の事業者(東急・西武・相鉄・横浜市営バス)は、ODPT が全停留所の一括取得に対応していないため、
+      <strong>検索で見つかったものと経路上のものだけ</strong>表示されます。
+    </p>
+  
+    </div>
+  </section>
+
+
+    <section id="results" class="results" aria-live="polite">
     <div class="results__head" id="results-head" hidden>
       <div class="results__count" id="results-count"></div>
       <div class="sorter" role="group" aria-label="並べ替え">
         <button type="button" class="sorter__btn is-active" data-sort="time">所要時間</button>
         <button type="button" class="sorter__btn" data-sort="transfers">乗換回数</button>
         <button type="button" class="sorter__btn" data-sort="arrival">到着が早い順</button>
+        <button type="button" class="sorter__btn sorter__btn--back" data-sort="departLate" hidden>出発が遅い順</button>
       </div>
     </div>
     <div id="results-body"></div>
-  </section>
+  
+    </section>
 
+  </div>
 </main>
 
 <footer class="app-footer">
