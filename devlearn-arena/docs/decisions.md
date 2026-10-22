@@ -188,4 +188,4 @@
   - 案 B: `PROMPT.txt` を `VERIFY-ALL.txt` に戻す（前回の確認は `docs/progress/verify-all.md` で終わっている）
   - 案 C: 確かめる事を、この項の「判断:」に直接書く
 - 再確認（2026-10-22 二回目）: `git fetch` 後も作業ツリー・全コミット・`origin/main` に `VERIFY-FREE.txt` は無く、`docs/progress/verify-free.md` も無い。判断も出ていない
-- 判断:
+- **判断**: 案 A。devlearn-arena/VERIFY-FREE.txt をコミットした。置き忘れだった。
