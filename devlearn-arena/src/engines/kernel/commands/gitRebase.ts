@@ -6,7 +6,7 @@ import { decode, encode, parseCommit } from '@/engines/git/objects';
 import { buildTodo, parseTodo, runTodo, type TodoLine } from '@/engines/git/rebaseTodo';
 import { resolveRef } from '@/engines/git/refs';
 import {
-  FILE_MODE, currentBranch, headCommit, indexOf, materialize, status as statusOf,
+  FILE_MODE, currentBranch, headCommit, indexOf, materialize, status as statusOf, switchBranch,
 } from '@/engines/git/repository';
 import {
   commitFiles, isAncestor, mergeBase, pickOnto,
@@ -293,6 +293,15 @@ export const rebaseSubcommands: Record<string, GitHandler> = {
 
     if (plain) return { stderr: 'fatal: It seems that there is already a rebase-merge directory.\n', code: 128 };
     void nowSeconds;
+    // git rebase 先 枝 は、その枝に移ってから載せ替える（本物と同じ）
+    const branch = operands[1];
+    if (branch !== undefined && branch !== currentBranch(git)) {
+      const moved = switchBranch(git, branch);
+      if (moved.error !== undefined) return { stderr: `fatal: no such branch/commit '${branch}'\n`, code: 128 };
+      const vfs = checkoutWorktree(shell.vfs, moved.git, headCommit(git), headCommit(moved.git));
+      const r = startPlain({ ...ctx, git: moved.git, shell: { ...shell, vfs } }, target);
+      return { ...r, patch: { git: moved.git, vfs, ...r.patch } };
+    }
     return startPlain(ctx, target);
   },
 };

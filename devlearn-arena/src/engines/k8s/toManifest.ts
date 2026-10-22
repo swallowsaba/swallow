@@ -116,7 +116,7 @@ function volumeOf(v: PodVolume): Plain {
 
 function templateOf(template: Deployment['spec']['template']): Plain {
   return {
-    metadata: { labels: template.labels },
+    metadata: compact({ labels: template.labels, annotations: template.annotations }),
     spec: compact({
       containers: template.containers.map(containerOf),
       nodeSelector: template.nodeSelector,

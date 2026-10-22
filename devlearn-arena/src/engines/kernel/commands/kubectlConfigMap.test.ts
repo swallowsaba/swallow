@@ -59,6 +59,17 @@ describe('ConfigMap を環境変数で渡す', () => {
     expect(c.apply(CONFIG('web-config', 'db-staging-2') + DEPLOY(FROM('web-config'))).out).toBe('configmap/web-config configured\ndeployment.apps/web unchanged\n');
   });
 
+  it('設計図（template）の注釈を変えると、別の世代になって Pod が作り直され、新しい値を読む（VERIFY-FREE.txt【1】）', () => {
+    const c = console_();
+    c.apply(CONFIG('web-config', 'db-staging') + DEPLOY(FROM('web-config')));
+    c.run('kubectl rollout status deployment/web');
+    const annotated = DEPLOY(FROM('web-config')).replace('        app: web\n    spec:', '        app: web\n      annotations:\n        config-version: "2"\n    spec:');
+    expect(c.apply(CONFIG('web-config', 'db-staging-2') + annotated).out).toBe('configmap/web-config configured\ndeployment.apps/web configured\n');
+    c.run('kubectl rollout status deployment/web');
+    expect(c.holds('deployment/web readyReplicas=2 env.DATABASE_URL=db-staging-2')).toBe(true);
+    expect(c.run('kubectl get deployment web -o yaml').out).toMatch(/config-version: ['"]2['"]/);
+  });
+
   it('rollout status は入れ替わりが終わるまで待ち、Pod は ConfigMap の値を環境変数に持つ', () => {
     const c = console_();
     expect(c.run('kubectl exec deploy/web -- printenv DATABASE_URL').out).toBe('db-staging\n');

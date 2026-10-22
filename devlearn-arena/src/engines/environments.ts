@@ -360,7 +360,8 @@ function rebirth(cluster: ClusterState, born: number): ClusterState {
 export function shellOptions(environment: string, setup: unknown): SessionOptions {
   const s = resolveSetup(environment, setup);
   if (!ENVIRONMENTS[s.environment].shell) throw new Error(`${environment} は端末の実戦に使えない`);
-  const files: Record<string, string | null> = {};
+  // /tmp はどの機械にもある（本物の Linux と同じ）
+  const files: Record<string, string | null> = { '/tmp': null };
   for (const d of s.dirs ?? []) files[d] = null;
   for (const [path, content] of Object.entries(s.files ?? {})) files[path] = content;
   for (const [path, charset] of Object.entries(s.encodings ?? {})) {

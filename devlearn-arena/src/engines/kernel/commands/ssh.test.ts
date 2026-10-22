@@ -81,6 +81,16 @@ describe('ssh-copy-id と ssh', () => {
     expect(netHolds(m.shell(), 'ssh deploy@web01')).toBe(true);
   });
 
+  it('公開鍵を手で足す（cat 鍵.pub | ssh サーバ "mkdir -p ~/.ssh && cat >> ~/.ssh/authorized_keys"）と、鍵で入れる（VERIFY-FREE.txt【1】）', () => {
+    const m = machine();
+    m.run('ssh-keygen -t ed25519 -N ""');
+    const r = m.run("cat ~/.ssh/id_ed25519.pub | ssh deploy@web01 'mkdir -p ~/.ssh && cat >> ~/.ssh/authorized_keys'");
+    expect(r.code).toBe(0);
+    expect(m.run('ssh deploy@web01 cat .ssh/authorized_keys').out).toBe(readFile(m.shell().vfs, `${KEY}.pub`));
+    expect(m.run('ssh deploy@web01').err).not.toContain('password');
+    expect(netHolds(m.shell(), 'ssh deploy@web01')).toBe(true);
+  });
+
   it('-i に秘密鍵を書いても、送るのは公開鍵（.pub）', () => {
     const m = machine();
     m.run('ssh-keygen -N ""');

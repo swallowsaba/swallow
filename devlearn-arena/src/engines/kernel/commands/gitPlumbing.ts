@@ -1,5 +1,6 @@
 import { parseCommit, parseTree, serialize } from '@/engines/git/objects';
-import { peel } from '@/engines/git/refs';
+import { peel, resolveRef } from '@/engines/git/refs';
+import { log } from '@/engines/git/repository';
 import type { GitState } from '@/engines/git/types';
 import { fromLines } from './args';
 import { short, type GitHandler } from './gitShared';
@@ -79,6 +80,20 @@ export const plumbingSubcommands: Record<string, GitHandler> = {
       .sort(([a], [b]) => (a < b ? -1 : 1))
       .map(([ref, hash]) => `${hash} ${ref}`);
     return { stdout: fromLines(rows) };
+  },
+
+  /** git rev-list [--count] <記録>…。辿れる記録（新しい順）か、その数 */
+  'rev-list': ({ git, rest }) => {
+    const revs = rest.filter((a) => !a.startsWith('-'));
+    if (revs.length === 0) return { stderr: 'usage: git rev-list [<options>] <commit>... [--] [<path>...]\n', code: 129 };
+    const starts: string[] = [];
+    for (const rev of revs) {
+      const hash = resolveRef(git, rev);
+      if (hash === undefined) return { stderr: `fatal: ambiguous argument '${rev}': unknown revision or path not in the working tree.\n`, code: 128 };
+      starts.push(hash);
+    }
+    const entries = log(git, Number.MAX_SAFE_INTEGER, starts);
+    return { stdout: rest.includes('--count') ? `${String(entries.length)}\n` : fromLines(entries.map((e) => e.hash)) };
   },
 
   describe: ({ git, rest }) => {

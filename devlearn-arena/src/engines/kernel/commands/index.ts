@@ -28,6 +28,7 @@ import { systemctlCommands } from './systemctl';
 import { miscCommands } from './misc';
 import { textCommands } from './text';
 import { textToolCommands } from './textTools';
+import { awkCommands } from './awk';
 
 /**
  * P1 で用意するのは、どのトラックでも使う汎用コマンドだけ。
@@ -49,6 +50,7 @@ export function createDefaultRegistry(): CommandRegistry {
     ...netToolCommands,
     ...textCommands,
     ...textToolCommands,
+    ...awkCommands,
     ...encodingCommands,
     ...opensslCommands,
     ...promCommands,

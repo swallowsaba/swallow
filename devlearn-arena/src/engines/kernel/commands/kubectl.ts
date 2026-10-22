@@ -471,7 +471,7 @@ function runSub(sub: string, argv: readonly string[], shell: ShellState): Comman
   const { flags, values, operands } = parseArgs([sub, ...rest], {
     withValue: [
       'o', 'n', 'namespace', 'l', 'f', 'as', 'image', 'replicas', 'tcp', 'requests', 'limits', 'succeeds-after',
-      'port', 'target-port', 'type', 'name', 'labels', 'cpu-percent', 'min', 'max', 'field-selector',
+      'port', 'target-port', 'type', 'name', 'labels', 'cpu-percent', 'min', 'max', 'field-selector', 'c', 'container', 'timeout', 'to-revision',
     ],
   });
 
@@ -516,7 +516,17 @@ export const kubectlCommands: CommandSpec[] = [
         ? NAMES
         : [...new Set(Object.values(KINDS))].sort()
       ).filter((s) => s.startsWith(prefix)),
-    handler: ({ argv, shell }) => {
+    handler: ({ argv: typed, shell }) => {
+      // 全体の旗（-n 区画・--namespace=区画・-A など）は、命令の前に書いてもよい（kubectl -n dev get pods）。命令の後ろへ回す
+      const lead: string[] = [];
+      let at = 1;
+      while (typed[at]?.startsWith('-') === true) {
+        const a = typed[at] ?? '';
+        const takes = ['-n', '--namespace', '--context', '--kubeconfig', '-s', '--server'].includes(a);
+        lead.push(...typed.slice(at, at + (takes ? 2 : 1)));
+        at += takes ? 2 : 1;
+      }
+      const argv = lead.length === 0 ? typed : [typed[0] ?? 'kubectl', ...typed.slice(at, at + 1), ...lead, ...typed.slice(at + 1)];
       const sub = argv[1];
       if (sub === undefined) {
         return {

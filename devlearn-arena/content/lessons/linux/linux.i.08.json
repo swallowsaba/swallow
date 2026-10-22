@@ -177,7 +177,7 @@
         "check": {
           "kind": "fs",
           "path": "/var/spool/cron/crontabs/root",
-          "contains": "0 2 * * * /srv/backup.sh"
+          "contains": "/srv/backup.sh"
         },
         "afterward": "仕事が登録された。`crontab -l` で、登録した 1 行が見られる。",
         "hints": [

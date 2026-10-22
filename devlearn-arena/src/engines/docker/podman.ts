@@ -7,7 +7,7 @@ import { build, type BuildTrace } from '@/engines/container/build';
 import { resolve } from '@/engines/kernel/path';
 import type { CommandResult, CommandSpec, ShellState } from '@/engines/kernel/registry';
 import { exists, isDir, readFile } from '@/engines/kernel/vfs';
-import { contextFiles, diffLines, execIn, lines, MIN_MEMORY, parseRun, portLines, portsOf, qualified, status } from './cli';
+import { contextFiles, diffLines, execIn, lines, MIN_MEMORY, operandsOf, parseRun, portLines, portsOf, qualified, shortForm, status, tailOf, topLines, VALUED } from './cli';
 import { composeCommand } from './compose';
 
 /**
@@ -143,7 +143,7 @@ const podSubnet = (n: Network): { subnet: string; gateway: string } => (n.subnet
 /** 網の命令 */
 function networkCommand(host: ContainerHost, args: readonly string[]): CommandResult {
   const [sub, ...rest] = args;
-  const names = rest.filter((a) => !a.startsWith('-')).map((n) => (n === 'podman' ? 'bridge' : n));
+  const names = operandsOf(rest, VALUED.network ?? []).map((n) => (n === 'podman' ? 'bridge' : n));
   const set = (h: ContainerHost, stdout: string): CommandResult => ({ stdout, patch: { containers: h } });
   // 一覧は podman での名前の順（既定の網は podman）
   const nets = (): Network[] => allNetworks(host).filter((n) => n.driver === 'bridge').sort((a, b) => netName(a.name).localeCompare(netName(b.name)));
@@ -477,7 +477,7 @@ function podmanOn(host: ContainerHost, verb: string | undefined, rest: readonly 
     case 'restart':
     case 'rm': {
       const force = rest.includes('-f') || rest.includes('--force');
-      const refs = rest.filter((a) => !a.startsWith('-'));
+      const refs = operandsOf(rest, VALUED[verb] ?? []);
       if (refs.length === 0) return { stderr: 'Error: specify one or more containers to remove\n', code: 125 };
       let h = host;
       const out: string[] = [];
@@ -512,10 +512,18 @@ function podmanOn(host: ContainerHost, verb: string | undefined, rest: readonly 
       return set(h, { stdout: lines(out) });
     }
     case 'logs': {
-      const ref = rest.filter((a) => !a.startsWith('-'))[0] ?? '';
+      const ref = operandsOf(rest, VALUED.logs ?? [])[0] ?? '';
       const c = findContainer(host, ref);
       if (!c) return podmanError(host, { kind: 'no-such-container', ref }, 'logs');
-      return { stdout: lines(c.log) };
+      return { stdout: lines(tailOf(c.log, rest)) };
+    }
+    case 'top': {
+      const ref = rest.find((a) => !a.startsWith('-'));
+      if (!ref) return { stderr: 'Error: you must provide the name or id of a running container\n', code: 125 };
+      const c = findContainer(host, ref);
+      if (!c) return podmanError(host, { kind: 'no-such-container', ref }, 'top');
+      if (c.state !== 'running') return { stderr: `Error: top can only be used on running containers: container state improper\n`, code: 125 };
+      return { stdout: lines(topLines(host, c)) };
     }
     case 'inspect':
       return inspect(host, rest, shell);
@@ -588,7 +596,8 @@ export const podmanCommands: CommandSpec[] = [
       const world = shell.containers;
       // podman を入れていない機械には無い
       if (world?.cli !== 'podman') return { stderr: 'podman: command not found\n', code: 127 };
-      return podmanOn(world, argv[1], argv.slice(2), shell);
+      const [verb, rest] = shortForm(argv[1], argv.slice(2));
+      return podmanOn(world, verb, rest, shell);
     },
   },
 ];

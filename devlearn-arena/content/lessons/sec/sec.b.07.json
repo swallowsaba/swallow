@@ -181,6 +181,7 @@
           "`openssl s_client -connect shop.example:443 -servername shop.example` を打ち、`Minato Issuing CA` と答える。"
         ],
         "expectedErrors": [
+          "sec-chain-incomplete",
           "sec-chain-answer"
         ]
       },

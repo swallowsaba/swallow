@@ -1,10 +1,12 @@
+import { localNetstat } from './sockets';
 import { localCurl } from './httpLocal';
 import { addressOf, deviceAt, resolveName, roundTrip, rttOf, traceHops } from '@/engines/net/probe';
 import { parseCidr } from '@/engines/net/subnet';
 import { emptyIptables, runIptables } from '@/engines/net/firewall';
 import { checkZone } from '@/engines/net/zone';
 import type { DeliveryResult, Device, Topology } from '@/engines/net/types';
-import type { CommandResult, CommandSpec, ShellState } from '../registry';
+import { changedState, type CommandResult, type CommandSpec, type ShellState } from '../registry';
+import { serviceOf } from '../services';
 import { fromLines, parseArgs } from './args';
 import { ipAddr, ipLink, ipRoute } from './netBuild';
 import { currentUser } from './perm';
@@ -16,22 +18,21 @@ const NO_NET = 'ネットワークが用意されていません。ネットワ�
 /**
  * ネットワークの模擬が無い機械の ip addr。自分の口だけを出す: lo（127.0.0.1）と、__HOST_ADDR（実戦の setup の address）があれば eth0
  */
-function ownAddresses(shell: ShellState, argv: readonly string[]): CommandResult {
+function ownAddresses(shell: ShellState, raw: readonly string[]): CommandResult {
+  // -4・-6・-br などの旗は、addr の前に書いてよい（ip -4 addr show eth0）
+  const argv = raw.filter((a, i) => i === 0 || !a.startsWith('-'));
   const what = argv[1] ?? 'addr';
-  if (!['addr', 'address', 'a'].includes(what) || (argv[2] !== undefined && argv[2] !== 'show')) return { stderr: NO_NET, code: 1 };
+  if (!['addr', 'address', 'a'].includes(what) || (argv[2] !== undefined && !['show', 'list', 'ls'].includes(argv[2]))) return { stderr: NO_NET, code: 1 };
+  // show の後の口の名前（dev を書いてもよい）。その口だけを出す
+  const dev = argv.slice(3).filter((a) => a !== 'dev')[0];
   const own = shell.vars.get('__HOST_ADDR');
-  return {
-    stdout: fromLines([
-      '1: lo: <LOOPBACK,UP,LOWER_UP> mtu 65536',
-      '    link/loopback 00:00:00:00:00:00 brd 00:00:00:00:00:00',
-      '    inet 127.0.0.1/8 scope host lo',
-      ...(own === undefined ? [] : [
-        '2: eth0: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500',
-        '    link/ether 02:42:0a:00:00:05 brd ff:ff:ff:ff:ff:ff',
-        `    inet ${own} scope global eth0`,
-      ]),
-    ]),
-  };
+  const blocks = [
+    ['lo', ['1: lo: <LOOPBACK,UP,LOWER_UP> mtu 65536', '    link/loopback 00:00:00:00:00:00 brd 00:00:00:00:00:00', '    inet 127.0.0.1/8 scope host lo']] as const,
+    ...(own === undefined ? [] : [['eth0', ['2: eth0: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500', '    link/ether 02:42:0a:00:00:05 brd ff:ff:ff:ff:ff:ff', `    inet ${own} scope global eth0`]] as const]),
+  ];
+  const picked = dev === undefined ? blocks : blocks.filter(([name]) => name === dev);
+  if (picked.length === 0) return { stderr: `Device "${dev ?? ''}" does not exist.\n`, code: 1 };
+  return { stdout: fromLines(picked.flatMap(([, lines]) => [...lines])) };
 }
 
 function selfName(shell: ShellState): string {
@@ -297,6 +298,20 @@ export const netCommands: CommandSpec[] = [
     },
   },
   {
+    name: 'rndc',
+    summary: 'DNS のサーバ（named）に頼む（rndc reload で、ゾーンを読み直す。systemctl reload named と同じ）',
+    handler: ({ argv, shell, runLine }) => {
+      const named = serviceOf(shell.services, 'named');
+      if (!named) return { stderr: 'rndc: command not found\n', code: 127 };
+      if (named.active !== 'active') return { stderr: 'rndc: connect failed: 127.0.0.1#953: connection refused\n', code: 1 };
+      const [verb, zone] = argv.slice(1).filter((a) => !a.startsWith('-'));
+      if (verb !== 'reload') return { stderr: `rndc: '${verb ?? ''}' failed: unknown command\n`, code: 1 };
+      const r = runLine('systemctl reload named');
+      if (r.code !== 0) return { stderr: `rndc: 'reload' failed: failure\n${r.stderr}`, code: 1, patch: changedState(shell, r.state) };
+      return { stdout: zone === undefined ? 'server reload successful\n' : 'zone reload successful\n', patch: changedState(shell, r.state) };
+    },
+  },
+  {
     name: 'ip',
     summary: 'インタフェースと経路を見る / 設定する（addr / link / route）',
     complete: ({ argv, prefix }) =>
@@ -403,9 +418,10 @@ export const netCommands: CommandSpec[] = [
   {
     name: 'netstat',
     summary: '待ち受けと経路の要約',
-    handler: ({ shell }) => {
+    handler: ({ argv, shell }) => {
       const net = shell.net;
-      if (net === null) return { stderr: NO_NET, code: 1 };
+      // 網の構成が無い機械では、ss と同じく、この機械の動いているサービスの待ち受けを出す（netstat -tlnp）
+      if (net === null) return { stdout: localNetstat(shell, argv) };
       const me = net.devices.get(selfName(shell));
       if (!me) return { stderr: '自分の機器が見つかりません\n', code: 1 };
       const rows = ['Proto  Local Address           State'];

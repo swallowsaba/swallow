@@ -163,6 +163,8 @@ export interface Deployment {
     selector: Record<string, string>;
     template: {
       labels: Record<string, string>;
+      /** 設計図の注釈（書いた時だけ）。変えれば別の世代になり、Pod を作り直す */
+      annotations?: Record<string, string>;
       containers: ContainerSpec[];
       nodeSelector: Record<string, string>;
       /** 作る Pod に付けるボリューム（PVC・ConfigMap など）。書かなければ無い */

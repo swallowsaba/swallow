@@ -58,7 +58,10 @@ function settling(c: ClusterState, hpas: readonly HorizontalPodAutoscaler[], nam
     if (target === undefined) return false;
     const ready = [...c.pods.values()].filter((p) => p.metadata.namespace === h.metadata.namespace && isReady(p) && Object.entries(target.spec.selector).every(([k, v]) => p.metadata.labels[k] === v)).length;
     const last = h.status.recommendations?.[h.status.recommendations.length - 1];
-    return ready !== target.spec.replicas || (last !== undefined && last.replicas < target.spec.replicas);
+    // まだ測れていない（<unknown>）が、対象の Pod の全てが要求を書いていて動いている: 次の計測と計算を待つ（打つのが遅れた時も見届ける）
+    const pods = [...c.pods.values()].filter((p) => p.metadata.namespace === h.metadata.namespace && Object.entries(target.spec.selector).every(([k, v]) => p.metadata.labels[k] === v));
+    const coming = h.status.currentCpuPercent === null && pods.length > 0 && pods.every((p) => p.spec.containers.every((s) => s.requests.cpu > 0)) && pods.some(isReady);
+    return coming || ready !== target.spec.replicas || (last !== undefined && last.replicas < target.spec.replicas);
   });
 }
 

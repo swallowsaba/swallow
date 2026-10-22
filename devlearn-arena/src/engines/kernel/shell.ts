@@ -72,6 +72,9 @@ function namesIn(words: readonly string[]): string[] {
   };
   if (name === 'sudo' || name === 'xargs' || name === 'nohup' || name === 'time' || name === 'watch') return [name, ...from(args)];
   if (name === 'ip' && args[0] === 'netns' && args[1] === 'exec' && args[2] !== undefined) return [name, ...namesIn(args.slice(3))];
+  // find … -exec コマンド … {} + も、そのコマンドを使った
+  const exec = name === 'find' ? args.findIndex((a) => a === '-exec' || a === '-execdir') : -1;
+  if (exec >= 0) return [name, ...namesIn(args.slice(exec + 1))];
   return [name];
 }
 
@@ -266,8 +269,8 @@ function runCommand(
     }
   }
 
-  const runLine = (line: string, from: ShellState = state): RunLineResult => {
-    const outcome = runList(from, parse(line), registry, clock);
+  const runLine = (line: string, from: ShellState = state, input = ''): RunLineResult => {
+    const outcome = runList(from, parse(line), registry, clock, false, input);
     const pick = (stream: 'stdout' | 'stderr'): string =>
       outcome.chunks.filter((c) => c.stream === stream).map((c) => c.text).join('');
     return { stdout: pick('stdout'), stderr: pick('stderr'), code: outcome.exitCode, state: outcome.state };
@@ -416,6 +419,8 @@ function runList(
   registry: CommandRegistry,
   clock: MutableClock,
   condition = false,
+  /** この並びの標準入力（ssh サーバ "命令" の、ssh に流し込んだ物）。各パイプラインの先頭の命令が読む */
+  input = '',
 ): ExecOutcome {
   let state = initial;
   const chunks: OutputChunk[] = [];
@@ -427,7 +432,7 @@ function runList(
   for (const item of list.items) {
     if (!skipNext) {
       const from = chunks.length;
-      let pipedStdin = '';
+      let pipedStdin = input;
       // パイプの各段はサブシェル。ファイルシステムへの変更は残るが、
       // cwd と変数はパイプライン全体の外へ漏らさない（bash と同じ）
       const isPipeline = item.pipeline.commands.length > 1;

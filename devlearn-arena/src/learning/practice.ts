@@ -19,7 +19,7 @@ import { exists, isDir, metaOf, readFile, writeFile } from '@/engines/kernel/vfs
 import { initialShell, resolveSetup } from '@/engines/environments';
 import { request } from '@/engines/http/http';
 import { resolveName, roundTrip } from '@/engines/net/probe';
-import { applyAction, createSim, describeAction, holds, stepSettled } from '@/engines/sim/sim';
+import { applyAction, createSim, describeAction, holds, settledAfter } from '@/engines/sim/sim';
 import type { SimAction, SimState } from '@/engines/sim/types';
 import { verify } from '@/engines/tls/tls';
 import type { PracticeAttempt } from '@/game/types';
@@ -66,14 +66,35 @@ export interface CheckInput {
 
 /** 答えの比べ方。前後の空白と英字の大小を問わず、全角の数字・英字・記号は半角と同じに見る（日本語の入力のまま答えてよい） */
 const plain = (s: string): string => s.normalize('NFKC').trim().toLowerCase();
-const sameAnswer = (a: string, b: string): boolean => plain(a) === plain(b);
+const sameAnswer = (a: string, b: string): boolean => {
+  if (plain(a) === plain(b)) return true;
+  // 場所の答えは、最後の / を問わない（/srv/report/out/）
+  const dir = (s: string): string => plain(s).replace(/(.)\/+$/, '$1');
+  if (plain(b).startsWith('/') && dir(a) === dir(b)) return true;
+  // 数の答えは、後ろに単位を付けてもよい（3 バイト）
+  const unit = /^(\d+(?:\.\d+)?)\s*[^\d\s.][^\d]{0,9}$/.exec(plain(a));
+  return /^\d+(?:\.\d+)?$/.test(plain(b)) && unit?.[1] === plain(b);
+};
 
 /**
  * 打った行の区切りのどれかが、uses のコマンドを全て使い、その結果（標準出力の全体）が result と同じか（判定の ran）。
  * 比べ方は答えと同じ（行ごとの前後の空白も問わない）
  */
-function ranHolds(parts: readonly CommandPart[], uses: readonly string[], result: string): boolean {
-  return parts.some((p) => uses.every((u) => p.commands.includes(u)) && resultLines(p.stdout) === resultLines(result));
+function ranHolds(parts: readonly CommandPart[], uses: readonly string[], result: string | undefined, shows: readonly string[] | undefined): boolean {
+  return parts.some((p) => {
+    if (!uses.every((u) => p.commands.includes(u))) return false;
+    const got = resultLines(p.stdout);
+    const resultOk = result === undefined || got === resultLines(result) || countsSum(got, result);
+    const lines = got.split('\n');
+    return resultOk && (shows ?? []).every((s) => lines.includes(resultLines(s)));
+  });
+}
+
+/** 数える手順で、ファイルごとの数（grep -c の「名前:数」の行）を出した時は、その合計で比べる（grep -rc・find -exec grep -c {} +） */
+function countsSum(got: string, result: string): boolean {
+  if (!/^\d+$/.test(result.trim())) return false;
+  const counts = got.split('\n').map((l) => /^\S.*:(\d+)$/.exec(l)?.[1]);
+  return counts.length > 0 && counts.every((c) => c !== undefined) && counts.reduce((s, c) => s + Number(c), 0) === Number(result.trim());
 }
 
 /** 結果の比べ方: 行ごとに答えと同じく比べ、行の中の空白の続きは 1 つに見て、空の行は飛ばす */
@@ -119,7 +140,7 @@ function hasHeader(headers: Readonly<Record<string, string>>, spec: string): boo
 export function checkState(check: CheckSpec, input: CheckInput): boolean {
   if (check.kind === 'sim') return input.sim !== undefined && holds(input.sim, check.expr);
   if (check.kind === 'answer') return input.answer !== undefined && sameAnswer(input.answer, check.equals);
-  if (check.kind === 'ran') return input.ran !== undefined && ranHolds(input.ran, check.uses, check.result);
+  if (check.kind === 'ran') return input.ran !== undefined && ranHolds(input.ran, check.uses, check.result, check.shows);
   // DB の実戦は、確かめる問い合わせの結果が期待する値と一致するか（DB の状態で判定する）
   if (check.kind === 'sql') return input.db !== undefined && matchesExpected(input.db, check.query, check.equals);
   const { shell } = input;
@@ -449,7 +470,7 @@ export function afterCommand(
     // 答えたのに満たさない: 調べる材料として「合っていない」を出す（ゲームオーバーにしない）
     error = notYet ?? ANSWER_GUIDE;
     next = { ...next, errors: [...next.errors, error.id], errorOpen: true };
-  } else if (error === null && notYet && step?.check.kind === 'ran' && missed(step.check.uses, a.parts ?? [], guides)) {
+  } else if (error === null && notYet && step?.check.kind === 'ran' && missed(step.check, a.parts ?? [], guides)) {
     // 決めた道具を使って結果を出したのに、目的の値でない: 手順で想定した「合っていない」の解説だけを出す
     // （形を見るために同じ道具を打つのは調べる途中なので、想定の無い手順では何も出さない）
     error = notYet;
@@ -459,8 +480,10 @@ export function afterCommand(
 }
 
 /** 決めた道具（uses）を全て使い、目的を果たして結果を出した区切りがある（その結果が目的の値でなかった時に使う） */
-function missed(uses: readonly string[], parts: readonly CommandPart[], guides: readonly ErrorGuide[]): boolean {
-  return parts.some((p) => uses.every((u) => p.commands.includes(u)) && p.stdout.trim() !== '' && failureOf(p, guides) === null);
+function missed(check: Extract<CheckSpec, { kind: 'ran' }>, parts: readonly CommandPart[], guides: readonly ErrorGuide[]): boolean {
+  // 数える手順では、数（か、ファイルごとの数）を出した時だけ（grep で一致した行を並べて見るのは、調べる途中）
+  const counted = (out: string): boolean => check.result === undefined || !/^\d+$/.test(check.result.trim()) || out.split('\n').every((l) => /^(\S.*:)?\d+$/.test(l));
+  return parts.some((p) => check.uses.every((u) => p.commands.includes(u)) && p.stdout.trim() !== '' && counted(resultLines(p.stdout)) && failureOf(p, guides) === null);
 }
 
 /** 記録に残す形（docs/data-model.md 4.1 の PracticeAttempt。時刻は記録する時に付く） */
@@ -674,9 +697,10 @@ export function playSteps(practice: Practice, guides: readonly ErrorGuide[], inp
       for (const action of inputs(step).filter((x): x is SimAction => typeof x !== 'string')) {
         const said = describeAction(sim, action);
         const out = applyAction(sim, action);
+        const before = sim;
         sim = out.state;
         const check = currentStep(practice, run)?.check;
-        const settled = out.error === null && stepSettled(sim, check?.kind === 'sim' ? check.expr : null);
+        const settled = out.error === null && settledAfter(before, sim, check?.kind === 'sim' ? check.expr : null);
         took(step, said, afterCommand(practice, run, { line: said, stderr: out.error ?? '', sim, settled }, guides), out.error !== null);
       }
     }

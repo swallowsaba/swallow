@@ -15,6 +15,20 @@ import { short, type GitHandler } from './gitShared';
 
 /** 別インスタンスの仮想リモートとやり取りする操作 */
 export const remoteSubcommands: Record<string, GitHandler> = {
+  /** git config [--get] 名前・--list。送り先の住所（remote.名前.url）と作者（user.name・user.email）を読む */
+  config: ({ git, rest }) => {
+    const values = new Map<string, string>([['user.name', git.author.name], ['user.email', git.author.email]]);
+    for (const r of git.remotes.values()) {
+      values.set(`remote.${r.name}.url`, r.url);
+      values.set(`remote.${r.name}.fetch`, `+refs/heads/*:refs/remotes/${r.name}/*`);
+    }
+    if (rest.includes('--list') || rest.includes('-l')) return { stdout: fromLines([...values].map(([k, v]) => `${k}=${v}`)) };
+    const names = rest.filter((a) => !a.startsWith('-'));
+    if (names.length === 0) return { stderr: 'usage: git config [<options>]\n', code: 129 };
+    if (names.length > 1) return { stderr: 'この練習の端末では、git の設定は読むだけ（git config --get 名前・git config --list）\n', code: 1 };
+    const v = values.get((names[0] ?? '').toLowerCase());
+    return v === undefined ? { code: 1 } : { stdout: `${v}\n` };
+  },
   remote: ({ git, rest }) => {
     const { flags, operands } = parseArgs(['remote', ...rest]);
     if (operands[0] === 'add') {

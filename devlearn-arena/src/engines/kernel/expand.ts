@@ -145,10 +145,21 @@ function expandText(text: string, ctx: ExpandContext): string {
 
 /** リダイレクト先など、分割してはいけない場所で使う。 */
 export function expandWord(word: Word, ctx: ExpandContext): string {
-  return word.parts.map((p) => (p.expandable ? expandText(p.text, ctx) : p.text)).join('');
+  // 頭の ~ は、その機械のホーム（ssh で入ったサーバでは、そこの利用者のホーム）
+  return word.parts.map((p, i) => (p.expandable ? expandText(i === 0 && p.splittable ? tilde(p.text, ctx.vars.get('HOME') ?? '/home/learner') : p.text, ctx) : p.text)).join('');
 }
 
 const IFS = /[ \t\n]+/;
+
+/**
+ * 引用符の外の ~ をホームにする（bash と同じ）。語の頭の ~ と ~/…、代入の形（名前=…）なら = と : の後ろの ~ も
+ * （export PATH=~/bin:$PATH）
+ */
+function tilde(text: string, home: string): string {
+  const assign = /^[A-Za-z_][A-Za-z0-9_]*=/.exec(text);
+  if (assign) return assign[0] + text.slice(assign[0].length).split(':').map((s) => s.replace(/^~(?=\/|$)/, home)).join(':');
+  return text.replace(/^~(?=\/|$)/, home);
+}
 
 /**
  * 1単語を展開してフィールド列にする。
@@ -163,13 +174,13 @@ export function expandWordFields(word: Word, ctx: ExpandContext): string[] {
     fields[fields.length - 1] = (fields[fields.length - 1] ?? '') + text;
   };
 
-  for (const part of word.parts) {
+  for (const [index, part] of word.parts.entries()) {
     if (!part.expandable) {
       hadQuoted = true;
       appendLast(part.text);
       continue;
     }
-    const text = expandText(part.text, ctx);
+    const text = expandText(index === 0 && part.splittable ? tilde(part.text, ctx.vars.get('HOME') ?? '/home/learner') : part.text, ctx);
     if (!part.splittable) {
       hadQuoted = true;
       appendLast(text);

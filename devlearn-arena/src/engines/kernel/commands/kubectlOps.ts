@@ -356,7 +356,7 @@ export const opsSubcommands: Record<string, KubectlHandler> = {
     return { stdout, patch };
   },
 
-  rollout: ({ cluster, rest, namespace, operands }) => {
+  rollout: ({ cluster, rest, namespace, operands, values }) => {
     const action = operands[0] ?? '';
     const target = operands[2] ?? operands[1]?.split('/')[1] ?? '';
     const deployment = cluster.deployments.get(key(namespace, target));
@@ -391,7 +391,7 @@ export const opsSubcommands: Record<string, KubectlHandler> = {
     }
 
     if (action === 'undo') {
-      const toRevision = rest
+      const toRevision = values.get('to-revision') ?? rest
         .map((a) => /^--to-revision=(\d+)$/.exec(a)?.[1])
         .find((v) => v !== undefined);
       const result = rolloutUndo(cluster, deployment, toRevision === undefined ? null : Number(toRevision));

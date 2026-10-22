@@ -101,9 +101,17 @@ function update(table: ServiceTable, s: Service, lines: LogLine[]): ServiceTable
   return { ...table, services, tick: table.tick + lines.length };
 }
 
+/** 別名（Ubuntu の ssh.service は sshd.service、named.service は bind9.service とも呼べる） */
+const ALIASES: Readonly<Record<string, string>> = { sshd: 'ssh', bind9: 'named' };
+
+/** 名前か別名で引く */
+const lookup = (table: ServiceTable | null, raw: string): Service | undefined => {
+  const name = unitName(raw);
+  return table?.services.get(name) ?? table?.services.get(ALIASES[name] ?? '');
+};
+
 function find(table: ServiceTable, raw: string): Service | ServiceError {
-  const s = table.services.get(unitName(raw));
-  return s ?? { kind: 'not-found', unit: `${unitName(raw)}.service` };
+  return lookup(table, raw) ?? { kind: 'not-found', unit: `${unitName(raw)}.service` };
 }
 
 const isError = (x: Service | ServiceError): x is ServiceError => 'kind' in x;
@@ -201,5 +209,5 @@ export function reboot(table: ServiceTable, load?: ConfigLoader, read?: TextRead
 }
 
 export function serviceOf(table: ServiceTable | null, raw: string): Service | undefined {
-  return table?.services.get(unitName(raw));
+  return lookup(table, raw);
 }

@@ -66,6 +66,18 @@ describe('kubectl autoscale と HPA（本物の計算の仕方）', () => {
     expect(c.holds('hpa/web cpu')).toBe(false);
   });
 
+  it('様子を見る命令を挟んで打つのが遅れても、get hpa -w は入れ替わりの後の計測を待って、増える所まで見せる（VERIFY-FREE.txt【1】）', () => {
+    const c = console_();
+    c.run('kubectl scale deployment web --replicas=4');
+    c.run('kubectl get pods');
+    c.run('kubectl autoscale deployment web --cpu-percent=50 --min=2 --max=10');
+    c.run('kubectl set resources deployment web --requests=cpu=200m');
+    c.run('kubectl scale deployment crowd --replicas=1');
+    const watched = c.run('kubectl get hpa web -w').out;
+    expect(watched).toMatch(/cpu: \d+%\/50%/);
+    expect(Math.max(...replicasIn(watched))).toBeGreaterThanOrEqual(6);
+  });
+
   it('要求があれば、負荷で使用率が目標を超えると増やす（1 回に 2 倍か 4 つまで）。目標の近くで止まる', () => {
     const c = console_(WEB('200m'));
     c.run('kubectl autoscale deployment web --cpu-percent=50 --min=2 --max=10');

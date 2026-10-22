@@ -42,7 +42,8 @@ export function asStringMap(value: unknown): Record<string, string> {
   return out;
 }
 
-export function toProbe(value: unknown): Probe | null {
+/** named: 名前を付けたポート（ports の name → containerPort）。確かめの port に名前を書いた時に引く。無い名前は 0（通らない） */
+export function toProbe(value: unknown, named: Readonly<Record<string, number>> = {}): Probe | null {
   const raw = asRecord(value);
   if (Object.keys(raw).length === 0) return null;
   // 本物の確かめ（httpGet）は、本物の既定（10 秒ごと・3 回続けて失敗で落ちる）で、アプリの振る舞いで決まる
@@ -55,7 +56,7 @@ export function toProbe(value: unknown): Probe | null {
         failureThreshold: asNumber(raw['failureThreshold'], 3),
         succeedsAfter: null,
       }),
-      httpGet: { path: asString(http['path'], '/'), port: asNumber(http['port'], 80) },
+      httpGet: { path: asString(http['path'], '/'), port: typeof http['port'] === 'string' && !/^\d+$/.test(http['port']) ? (named[http['port']] ?? 0) : asNumber(http['port'], 80) },
     };
   }
   // 「いつ通るようになるか」は succeedsAfter で明示する。書かれていなければすぐ通る
@@ -119,6 +120,7 @@ export function toContainers(value: unknown): ReturnType<typeof container>[] {
     const requests = asRecord(resources['requests']);
     const limits = asRecord(resources['limits']);
     const { env, refs } = toEnv(c['env']);
+    const named = Object.fromEntries(asArray(c['ports']).map(asRecord).filter((p) => typeof p['name'] === 'string').map((p) => [String(p['name']), asNumber(p['containerPort'], 80)]));
     return container(asString(c['name'], `c${String(i)}`), asString(c['image'], 'nginx'), {
       // 本物と同じく、要求を書かず上限だけを書いた物は、上限と同じ量を要求する
       requests: {
@@ -129,9 +131,9 @@ export function toContainers(value: unknown): ReturnType<typeof container>[] {
       env,
       envFrom: [...toEnvFrom(c['envFrom']), ...refs],
       readyAfter: asNumber(c['readyAfter'], 2),
-      livenessProbe: toProbe(c['livenessProbe']),
-      readinessProbe: toProbe(c['readinessProbe']),
-      startupProbe: toProbe(c['startupProbe']),
+      livenessProbe: toProbe(c['livenessProbe'], named),
+      readinessProbe: toProbe(c['readinessProbe'], named),
+      startupProbe: toProbe(c['startupProbe'], named),
       volumeMounts: toMounts(c['volumeMounts']),
       ports: asArray(c['ports']).map((p) => asNumber(asRecord(p)['containerPort'], 80)),
     });
@@ -168,8 +170,10 @@ export function toTemplate(value: unknown, fallbackLabels: Record<string, string
   const templateSpec = asRecord(template['spec']);
   const labels = asStringMap(templateMeta['labels']);
   const volumes = toVolumes(templateSpec['volumes']);
+  const annotations = asStringMap(templateMeta['annotations']);
   return {
     labels: Object.keys(labels).length === 0 ? fallbackLabels : labels,
+    ...(Object.keys(annotations).length > 0 ? { annotations } : {}),
     containers: toContainers(templateSpec['containers']),
     nodeSelector: asStringMap(templateSpec['nodeSelector']),
     ...(volumes.length > 0 ? { volumes } : {}),

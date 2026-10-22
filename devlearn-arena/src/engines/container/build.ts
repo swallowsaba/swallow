@@ -1,3 +1,4 @@
+import { globMatch } from '@/engines/kernel/glob';
 import { fromRegistry, hexOf, normalizeRef, type ContainerHost, type Image } from './container';
 
 /**
@@ -250,7 +251,12 @@ export function build(host: ContainerHost, input: BuildInput): BuildOutput {
       for (const src of srcs) {
         const rel = src.replace(/^\.\/?/, '').replace(/\/$/, '');
         const all = Object.entries(input.context);
-        const hits = rel === '' ? all.map(([p, c]) => [p, c, p] as const) : all.filter(([p]) => p === rel || p.startsWith(`${rel}/`)).map(([p, c]) => [p, c, p === rel ? (p.split('/').pop() ?? p) : p.slice(rel.length + 1)] as const);
+        // * ? [ を含む元（package*.json）は、合うファイルをそれぞれの名前で写す
+        const hits = rel === ''
+          ? all.map(([p, c]) => [p, c, p] as const)
+          : /[*?[]/.test(rel)
+            ? all.filter(([p]) => globMatch(rel, p)).map(([p, c]) => [p, c, p.split('/').pop() ?? p] as const)
+            : all.filter(([p]) => p === rel || p.startsWith(`${rel}/`)).map(([p, c]) => [p, c, p === rel ? (p.split('/').pop() ?? p) : p.slice(rel.length + 1)] as const);
         if (hits.length === 0) {
           out.push(pad(` => ERROR ${label}`, '0.0s'));
           const ref = `${hexOf(key, 25)}::${hexOf(key + 1, 25)}`;

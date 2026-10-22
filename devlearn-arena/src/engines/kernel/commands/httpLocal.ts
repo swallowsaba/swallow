@@ -178,11 +178,13 @@ interface CurlArgs {
   cookie?: string;
   /** -c: 終えた後に札を書き出すファイル */
   jar?: string;
+  /** -D: 返事の頭を書き出すファイル（- なら標準出力） */
+  dump?: string;
 }
 
 const WITH_VALUE: Record<string, keyof CurlArgs> = {
   X: 'method', '--request': 'method', d: 'data', '--data': 'data', '--data-raw': 'data', '--json': 'data', o: 'out', '--output': 'out', w: 'write', '--write-out': 'write',
-  b: 'cookie', '--cookie': 'cookie', c: 'jar', '--cookie-jar': 'jar',
+  b: 'cookie', '--cookie': 'cookie', c: 'jar', '--cookie-jar': 'jar', D: 'dump', '--dump-header': 'dump', '--data-urlencode': 'data',
 };
 const LONG_FLAGS: Record<string, string> = { '--insecure': 'k', '--head': 'I', '--include': 'i', '--silent': 's', '--verbose': 'v', '--location': 'L', '--show-error': 'S', '--fail': 'f' };
 
@@ -190,7 +192,9 @@ function parseCurl(argv: readonly string[]): CurlArgs | string {
   const a: CurlArgs = { headers: [], flags: new Set() };
   const take = (key: keyof CurlArgs, value: string | undefined, name: string): string | null => {
     if (value === undefined) return `curl: option ${name}: requires parameter\n`;
-    if (key === 'method' || key === 'data' || key === 'out' || key === 'write' || key === 'cookie' || key === 'jar') a[key] = value;
+    // -d を何度も書くと、& でつないで 1 つにして送る（本物と同じ）
+    if (key === 'data') a.data = a.data === undefined ? value : `${a.data}&${value}`;
+    else if (key === 'method' || key === 'out' || key === 'write' || key === 'cookie' || key === 'jar' || key === 'dump') a[key] = value;
     return null;
   };
   const rest = argv.slice(1);
@@ -285,6 +289,7 @@ export function localCurl(argv: readonly string[], shell: ShellState): CommandRe
   const typed = [...(a.cookie?.includes('=') ? [a.cookie] : []), ...a.headers.flatMap((h) => /^cookie:\s*(.*)$/i.exec(h)?.[1] ?? [])].join('; ');
   const jarFile = a.cookie !== undefined && !a.cookie.includes('=') ? fileOf(shell, a.cookie) : null;
   let jar: Cookie[] = jarFile && exists(shell.vfs, jarFile) && !isDir(shell.vfs, jarFile) ? parseJar(readFile(shell.vfs, jarFile)) : [];
+  let dumped = '';
   for (let hop = 0; ; hop += 1) {
     // -H 'Host: 名前' は、届け先（URL の名前か住所）を変えずに、名乗る名前だけを変える
     const hostHeader = a.headers.map((h) => /^host:\s*(\S+)/i.exec(h)?.[1]).find((h) => h !== undefined)?.toLowerCase();
@@ -315,7 +320,8 @@ export function localCurl(argv: readonly string[], shell: ShellState): CommandRe
       if (a.flags.has('v')) verbose.push(`* Added cookie ${got.name}="${got.value}" for domain ${got.domain}, path ${got.path}, expire 0`);
     }
     const follow = a.flags.has('L') && r.status >= 300 && r.status < 400 ? nextUrl(out) : null;
-    if (a.flags.has('I') || a.flags.has('i')) stdout += `${headOf(out)}\n`;
+    if (a.flags.has('I') || a.flags.has('i') || a.dump === '-') stdout += `${headOf(out)}\n`;
+    else if (a.dump !== undefined) dumped += `${headOf(out)}\n`;
     if (follow) {
       if (hop >= MAX_REDIRS) return { stdout, stderr: `${verbose.map((l) => `${l}\n`).join('')}curl: (47) Maximum (${String(MAX_REDIRS)}) redirects followed\n`, code: 47 };
       url = follow;
@@ -326,6 +332,7 @@ export function localCurl(argv: readonly string[], shell: ShellState): CommandRe
   if (!last) return { stderr: "curl: try 'curl --help' for more information\n", code: 2 };
   const r = last.response;
   let vfs = shell.vfs;
+  if (dumped !== '' && a.dump !== undefined && a.dump !== '/dev/null') vfs = writeFile(vfs, fileOf(shell, a.dump), dumped);
   if (!a.flags.has('I') && r.body !== '') {
     const body = r.body.endsWith('\n') ? r.body : `${r.body}\n`;
     if (a.out === undefined || a.out === '-') stdout += body;

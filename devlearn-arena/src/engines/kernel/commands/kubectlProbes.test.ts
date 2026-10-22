@@ -55,6 +55,17 @@ describe('liveness と readiness（本物の httpGet の確かめ）', () => {
     expect(events).toContain('Liveness:       http-get http://:8080/healthz delay=30s timeout=1s period=10s #success=1 #failure=3');
   });
 
+  it('確かめのポートは、名前を付けたポート（ports の name）でも指せる（VERIFY-FREE.txt【1】）', () => {
+    const c = console_();
+    const named = (s: string[]) => s.map((l) => l.replace('port: 8080', 'port: http'));
+    c.apply(GUIDE([...named(LIVE(30)), ...named(READY())]).replace('        - containerPort: 8080', '        - name: http\n          containerPort: 8080'));
+    expect(c.run('kubectl rollout status deployment/guide').code).toBe(0);
+    expect(c.holds('deployment/guide readyReplicas=2')).toBe(true);
+    // 無い名前を指すと、確かめは通らない
+    c.apply(GUIDE([...READY().map((l) => l.replace('port: 8080', 'port: web'))]));
+    expect(c.run('kubectl rollout status deployment/guide').code).not.toBe(0);
+  });
+
   it('readiness が無いと、待ち受ける前から Ready になり、頼みが送られる（early）', () => {
     const c = console_();
     c.apply(GUIDE(LIVE(30)));

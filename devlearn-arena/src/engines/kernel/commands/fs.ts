@@ -1,6 +1,6 @@
 import { globMatch } from '../glob';
 import { basename, dirname, HOME, resolve } from '../path';
-import type { CommandResult, CommandSpec, ShellState } from '../registry';
+import { changedState, type CommandResult, type CommandSpec, type ShellState } from '../registry';
 import { allows, formatMode } from '../perm';
 import { copy, fileSize, list, metaOf, mkdir, move, readFile, remove, setMeta, stat, touch, VfsError } from '../vfs';
 import { fromLines, humanSize, parseArgs } from './args';
@@ -248,13 +248,35 @@ export const fsCommands: CommandSpec[] = [
   {
     name: 'find',
     summary: 'パスを再帰的に探す',
-    handler: ({ argv, shell }) => {
+    handler: ({ argv, shell, runLine }) => {
       const rest = argv.slice(1);
-      const nameIndex = rest.indexOf('-name');
-      const typeIndex = rest.indexOf('-type');
-      const namePattern = nameIndex === -1 ? undefined : rest[nameIndex + 1];
-      const typeFilter = typeIndex === -1 ? undefined : rest[typeIndex + 1];
-      const start = rest.find((a) => !a.startsWith('-') && a !== namePattern && a !== typeFilter) ?? '.';
+      // 探し始める場所（式の前の物）と、式（-name・-iname・-type・-maxdepth・-mindepth・-print・-exec … {} + / ;）
+      const firstTest = rest.findIndex((a) => a.startsWith('-'));
+      const starts = firstTest === -1 ? rest : rest.slice(0, firstTest);
+      const expr = firstTest === -1 ? [] : rest.slice(firstTest);
+      let namePattern: string | undefined;
+      let ignoreCase = false;
+      let typeFilter: string | undefined;
+      let maxDepth = Number.POSITIVE_INFINITY;
+      let minDepth = 0;
+      let exec: { words: string[]; batch: boolean } | undefined;
+      for (let i = 0; i < expr.length; i += 1) {
+        const a = expr[i] ?? '';
+        if (a === '-name' || a === '-iname') {
+          namePattern = expr[(i += 1)];
+          ignoreCase = a === '-iname';
+        } else if (a === '-type') typeFilter = expr[(i += 1)];
+        else if (a === '-maxdepth') maxDepth = Number(expr[(i += 1)]);
+        else if (a === '-mindepth') minDepth = Number(expr[(i += 1)]);
+        else if (a === '-exec' || a === '-execdir') {
+          const end = expr.findIndex((w, k) => k > i && (w === ';' || w === '+'));
+          if (end === -1) return { stderr: `find: missing argument to \`${a}'\n`, code: 1 };
+          exec = { words: expr.slice(i + 1, end), batch: expr[end] === '+' };
+          i = end;
+        } else if (a === '-print' || a === '-print0') continue;
+        else return { stderr: `find: unknown predicate \`${a}'\n`, code: 1 };
+      }
+      const start = starts[0] ?? '.';
       const root = resolve(shell.cwd, start);
       if (!stat(shell.vfs, root)) {
         return { stderr: `find: '${start}': No such file or directory\n`, code: 1 };
@@ -264,26 +286,45 @@ export const fsCommands: CommandSpec[] = [
       const errors: string[] = [];
       const user = currentUser(shell);
       const groups = currentGroups(shell);
-      const walk = (abs: string, display: string): void => {
+      const walk = (abs: string, display: string, depth = 0): void => {
         const node = stat(shell.vfs, abs);
         if (!node) return;
         const typeOk =
           typeFilter === undefined ||
           (typeFilter === 'f' && node.kind === 'file') ||
           (typeFilter === 'd' && node.kind === 'dir');
-        const nameOk = namePattern === undefined || globMatch(namePattern, basename(abs));
-        if (typeOk && nameOk) matches.push(display);
-        if (node.kind !== 'dir') return;
+        const nameOk = namePattern === undefined || (ignoreCase ? globMatch(namePattern.toLowerCase(), basename(abs).toLowerCase()) : globMatch(namePattern, basename(abs)));
+        if (typeOk && nameOk && depth >= minDepth) matches.push(display);
+        if (node.kind !== 'dir' || depth >= maxDepth) return;
         // 読めないディレクトリの中は探せない（本物と同じく、そう言って先へ進む）
         if (!allows(metaOf(shell.vfs, abs), user, 'read', groups)) {
           errors.push(`find: '${display}': Permission denied`);
           return;
         }
         for (const child of list(shell.vfs, abs)) {
-          walk(`${abs === '/' ? '' : abs}/${child}`, `${display === '/' ? '' : display}/${child}`);
+          walk(`${abs === '/' ? '' : abs}/${child}`, `${display === '/' ? '' : display}/${child}`, depth + 1);
         }
       };
       walk(root, start);
+      if (exec !== undefined) {
+        // 見つけた物を {} に入れて動かす（+ はまとめて 1 回、; は 1 つずつ）
+        const quote = (s: string): string => (/^[\w./-]+$/.test(s) ? s : `'${s.replace(/'/g, "'\\''")}'`);
+        const words = exec.words;
+        const lineFor = (files: readonly string[]): string => words.flatMap((w) => (w === '{}' ? files.map(quote) : [quote(w)])).join(' ');
+        const lines = matches.length === 0 ? [] : exec.batch ? [lineFor(matches)] : matches.map((m) => lineFor([m]));
+        let state = shell;
+        let stdout = '';
+        let stderr = errors.length > 0 ? fromLines(errors) : '';
+        let code = errors.length > 0 ? 1 : 0;
+        for (const line of lines) {
+          const r = runLine(line, state);
+          state = r.state;
+          stdout += r.stdout;
+          stderr += r.stderr;
+          if (r.code !== 0) code = 1;
+        }
+        return { ...(stdout ? { stdout } : {}), ...(stderr ? { stderr } : {}), code, patch: changedState(shell, state) };
+      }
       return {
         ...(matches.length > 0 ? { stdout: fromLines(matches) } : {}),
         ...(errors.length > 0 ? { stderr: fromLines(errors) } : {}),

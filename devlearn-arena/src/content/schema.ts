@@ -136,10 +136,14 @@ export const checkSchema = z.discriminatedUnion('kind', [
    * 数える・探す・取り出すなど、コマンドの結果そのものが目的の値になる手順（docs/content-spec.md 2.4）。
    * ブラウザ内 SQL では、uses は文に出る SQL の語（大文字）、結果は返った表の行
    */
-  z.object({ kind: z.literal('ran'), uses: z.array(z.string().min(1)).min(1), result: z.string().min(1) }).strict(),
+  z.object({
+    kind: z.literal('ran'), uses: z.array(z.string().min(1)).min(1), result: z.string().min(1).optional(),
+    /** 出力に、これらの行が全てある（他の行が混ざってよい。一覧を詳しい形で出す手順など。-l に -a を足すと . や隠しファイルの行も出る） */
+    shows: z.array(z.string().min(1)).min(1).optional(),
+  }).strict(),
   /** 画面で操作する模擬環境（模）の状態。式は docs/content-spec.md 2.4.1（src/engines/sim） */
   z.object({ kind: z.literal('sim'), expr: z.string().min(1) }).strict(),
-]);
+]).refine((c) => c.kind !== 'ran' || c.result !== undefined || c.shows !== undefined, { message: 'ran には result か shows が要る' });
 
 export const practiceStepSchema = z.object({
   id: z.string().min(1),

@@ -160,7 +160,8 @@ function readRule(args: readonly string[]): Rule | string {
  * iptables の引数（命令の名前は除く）を、表に当てる。-t 表・-A・-I・-D・-F・-P・-L・-S
  */
 export function runIptables(t: Iptables, args: readonly string[]): IptablesResult {
-  let rest = [...args];
+  // 短い旗はまとめて書ける（-nL・-vnL は -n -L・-v -n -L）
+  let rest = args.flatMap((a) => (/^-[nvxLS]{2,}$/.test(a) ? [...a.slice(1)].map((c) => `-${c}`) : [a]));
   let tableName: 'filter' | 'nat' = 'filter';
   const ti = rest.findIndex((a) => a === '-t' || a === '--table');
   if (ti >= 0) {
@@ -173,7 +174,7 @@ export function runIptables(t: Iptables, args: readonly string[]): IptablesResul
   const chains = (tableName === 'filter' ? t.filter : t.nat) as Record<string, Chain>;
   const put = (name: string, chain: Chain): Iptables => (tableName === 'filter' ? { ...t, filter: { ...t.filter, [name]: chain } } : { ...t, nat: { ...t.nat, [name]: chain } });
   const flags = new Set(rest.filter((a) => a.startsWith('-')));
-  const command = rest.find((a) => /^-[AIDFPLS]$/.test(a) || ['--append', '--insert', '--delete', '--flush', '--policy', '--list', '--list-rules'].includes(a));
+  const command = rest.find((a) => /^-[AIDRFPLS]$/.test(a) || ['--append', '--insert', '--delete', '--replace', '--flush', '--policy', '--list', '--list-rules'].includes(a));
   if (command === undefined) return err(t, `${VERSION}: no command specified\nTry \`iptables -h' or 'iptables --help' for more information.\n`);
   const at = rest.indexOf(command);
   const chainName = rest[at + 1] !== undefined && !rest[at + 1]?.startsWith('-') ? rest[at + 1] : undefined;
@@ -218,6 +219,17 @@ export function runIptables(t: Iptables, args: readonly string[]): IptablesResul
         return { ok: true, table: put(chainName, { ...chain, rules }) };
       }
       return { ok: true, table: put(chainName, { ...chain, rules: [...chain.rules, rule] }) };
+    }
+    case '-R': case '--replace': {
+      // -R 鎖 番号 規則: その番号の規則を置き換える
+      if (!chain || chainName === undefined) return noChain();
+      const n = rest[at + 2];
+      if (n === undefined || !/^\d+$/.test(n)) return err(t, `${VERSION}: -R requires a rule number\nTry \`iptables -h' or 'iptables --help' for more information.\n`);
+      const k = Number(n);
+      if (k < 1 || k > chain.rules.length) return err(t, `iptables: Index of replacement too big.\n`, 1);
+      const rule = readRule(rest.slice(at + 3));
+      if (typeof rule === 'string') return err(t, `${rule}\nTry \`iptables -h' or 'iptables --help' for more information.\n`);
+      return { ok: true, table: put(chainName, { ...chain, rules: chain.rules.map((r, i) => (i === k - 1 ? rule : r)) }) };
     }
     case '-D': case '--delete': {
       if (!chain || chainName === undefined) return noChain();

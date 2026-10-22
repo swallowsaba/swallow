@@ -2,7 +2,7 @@ import { resolve } from '../path';
 import { compilePattern } from '../regex';
 import type { CommandSpec, ShellState } from '../registry';
 import { allows } from '../perm';
-import { byteLength } from '../bytes';
+import { byteLength, fromBytes, toBytes } from '../bytes';
 import { isDir, list, metaOf, readFile, stat } from '../vfs';
 import { currentGroups, currentUser, denied } from './perm';
 import { fromLines, parseArgs, toLines } from './args';
@@ -170,9 +170,12 @@ export const textCommands: CommandSpec[] = [
     name: 'head',
     summary: '先頭の行を出す',
     handler: ({ argv, shell, stdin }) => {
-      const { values, operands } = parseArgs(lineCountArgs(argv), { withValue: ['n'] });
-      const count = Number(values.get('n') ?? 10);
+      const { values, operands } = parseArgs(lineCountArgs(argv), { withValue: ['n', 'c'] });
       const text = readInput(shell, stdin, operands);
+      // -c は先頭のバイト数（文字の途中で切れることもある。本物と同じ）
+      const bytes = values.get('c');
+      if (bytes !== undefined) return { stdout: fromBytes(toBytes(text).slice(0, Number(bytes))) };
+      const count = Number(values.get('n') ?? 10);
       return { stdout: fromLines(toLines(text).slice(0, count)) };
     },
   },

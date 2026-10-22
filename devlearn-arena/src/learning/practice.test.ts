@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { ERROR_GUIDES } from '@/content/glossary';
 import { ENTRIES } from '@/content/catalog';
 import { loadLesson } from '@/content/lessons';
-import type { Lesson, Practice } from '@/content/schema';
+import type { CheckSpec, Lesson, Practice } from '@/content/schema';
 import { createClock } from '@/engines/kernel/clock';
 import { createDefaultRegistry } from '@/engines/kernel/commands';
 import type { ShellState } from '@/engines/kernel/registry';
@@ -476,14 +476,45 @@ describe('端末の実戦は、コマンドの実行の結果で達成する（d
     expect(attemptOf(practice, p.run)).toMatchObject({ success: true, stepsDone: ['count', 'where'], errors: [] });
   });
 
-  it('linux.b.04: 数を自分で書いただけ・別の数え方の結果では満たさない', async () => {
+  it('linux.b.04: 数を自分で書いただけ・一致した行を並べただけでは満たさない', async () => {
     const { practice } = await lesson('linux.b.04');
     const p = player(practice);
     expect(p.type('echo 3').done).toEqual([]);
-    expect(p.type('grep -rc timeout /var/log').done).toEqual([]);
+    expect(p.type('grep -r timeout /var/log 2>/dev/null').done).toEqual([]);
     expect(p.run.stepsDone).toEqual([]);
     // 調べる途中の命令（決めた道具を全ては使っていない）では、案内を出さない
     expect(p.run.errors).toEqual([]);
+  });
+
+  it('linux.b.04: grep -rc・find -exec grep -c でファイルごとに数えても、合計が合えば満たす（VERIFY-FREE.txt【1】の別解）', async () => {
+    const { practice } = await lesson('linux.b.04');
+    expect(player(practice).type('grep -rc timeout /var/log').done.map((s) => s.id)).toEqual(['count']);
+    expect(player(practice).type('find /var/log -type f -exec grep -c timeout {} +').done.map((s) => s.id)).toEqual(['count']);
+    expect(player(practice).type('grep -c timeout /var/log/app/web.log').done).toEqual([]);
+  });
+
+  it('ran: ファイルごとの数（名前:数）は合計で比べる。shows は、その行が全て出ていれば満たす（他の行が混ざってよい）', () => {
+    const part = (stdout: string, commands: string[]) => ({ stdout, stderr: '', code: 0, handled: false, commands });
+    expect(checkState({ kind: 'ran', uses: ['grep'], result: '3' }, { ran: [part('/a:1\n/b:2\n', ['grep'])] })).toBe(true);
+    expect(checkState({ kind: 'ran', uses: ['grep'], result: '3' }, { ran: [part('/a:1\n/b:1\n', ['grep'])] })).toBe(false);
+    expect(checkState({ kind: 'ran', uses: ['grep'], result: '3' }, { ran: [part('/a:1\nx\n/b:2\n', ['grep'])] })).toBe(false);
+    expect(checkState({ kind: 'ran', uses: ['grep'], result: 'a:3' }, { ran: [part('a:1\na:2\n', ['grep'])] })).toBe(false);
+    const listed = { kind: 'ran' as const, uses: ['ls'], shows: ['-rw-r--r-- 1 learner learner 36 notes.txt'] } satisfies CheckSpec;
+    expect(checkState(listed, { ran: [part('./\n-rw-r--r--  1 learner learner   36 notes.txt\n', ['ls'])] })).toBe(true);
+    expect(checkState(listed, { ran: [part('notes.txt\n', ['ls'])] })).toBe(false);
+    expect(checkState(listed, { ran: [part('-rw-r--r-- 1 learner learner 36 notes.txt\n', ['cat'])] })).toBe(false);
+  });
+
+  it('linux.b.01: ls -l・ls -al・ls --all -l のどれでも、詳しい形の一覧で満たす。詳しくない一覧では満たさない', async () => {
+    const { practice } = await lesson('linux.b.01');
+    for (const line of ['ls -l ~', 'ls -al ~', 'ls --all -l /home/learner', 'ls -la']) {
+      const p = player(practice);
+      p.type('pwd');
+      expect(p.type(line).done.map((s) => s.id)).toEqual(['list']);
+    }
+    const p = player(practice);
+    p.type('pwd');
+    expect(p.type('ls -a ~').done).toEqual([]);
   });
 
   it('linux.b.04: grep と wc で数えたのに数が違えば、手順で想定した「合っていない」の解説を出す', async () => {
@@ -528,6 +559,18 @@ describe('端末の実戦は、コマンドの実行の結果で達成する（d
     const p = player(practice);
     p.type('grep -r timeout /var/log | wc -l');
     expect(p.type('sudo find / -name app.conf').done.map((s) => s.id)).toEqual(['where']);
+  });
+
+  it('場所の答えは、最後に / を付けてもよい（/srv/report/out/）', () => {
+    expect(checkState({ kind: 'answer', equals: '/srv/report/out' }, { answer: '/srv/report/out/' })).toBe(true);
+    expect(checkState({ kind: 'answer', equals: '/srv/report/out' }, { answer: '/srv/report/' })).toBe(false);
+    expect(checkState({ kind: 'answer', equals: '/' }, { answer: '/' })).toBe(true);
+  });
+
+  it('数の答えは、後ろに単位を付けてもよい（3 バイト・3バイト・3 bytes）。数が違えば満たさない', () => {
+    for (const a of ['3 バイト', '3バイト', '３ バイト', '3 bytes', '3個']) expect(checkState({ kind: 'answer', equals: '3' }, { answer: a }), a).toBe(true);
+    for (const a of ['24 ビット', '3 2', '3.5 バイト', 'バイト 3']) expect(checkState({ kind: 'answer', equals: '3' }, { answer: a }), a).toBe(false);
+    expect(checkState({ kind: 'answer', equals: 'web' }, { answer: 'web です' })).toBe(false);
   });
 
   it('答えの欄は、全角の数字や記号で入れても同じ答えとして受け取る', () => {

@@ -1,4 +1,4 @@
-import type { CommandResult, CommandSpec, ShellState } from '../registry';
+import { changedState, type CommandResult, type CommandSpec, type ShellState } from '../registry';
 import {
   restartService, serviceOf, setEnabled, startService, stopService, unitName, type ConfigLoader, type ServiceResult, type TextReader, type ServiceTable,
 } from '../services';
@@ -226,6 +226,15 @@ export const systemctlCommands: CommandSpec[] = [
       const installed = exists(shell.vfs, NGINX_BIN);
       const service = serviceOf(shell.services, 'nginx');
       if (!installed && !service) return { stderr: 'nginx: command not found\n', code: 127 };
+      // nginx -s reload・stop・quit は、動いている nginx に合図を送る（systemctl reload・stop と同じ結果）
+      const sig = argv[argv.indexOf('-s') + 1];
+      if (argv.includes('-s') && service) {
+        if (service.active !== 'active') return { stderr: 'nginx: [error] invalid PID number "" in "/run/nginx.pid"\n', code: 1 };
+        if (sig === 'reopen') return {};
+        if (sig !== 'reload' && sig !== 'stop' && sig !== 'quit') return { stderr: `nginx: invalid option: "-s ${sig ?? ''}"\n`, code: 1 };
+        const r = runLine(`systemctl ${sig === 'reload' ? 'reload' : 'stop'} nginx`);
+        return { stdout: r.stdout, stderr: r.stderr, code: r.code, patch: changedState(shell, r.state) };
+      }
       if (!argv.slice(1).includes('-t')) {
         // -v などは、入れた実行ファイルに任せる
         if (installed) {

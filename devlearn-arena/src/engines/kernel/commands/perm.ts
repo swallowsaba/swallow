@@ -3,7 +3,7 @@ import {
   allows, applyModeSpec, BASE_DIR_MODE, BASE_FILE_MODE, formatMode, formatOctal, parseUmask,
   withUmask, type AccessKind,
 } from '../perm';
-import type { CommandResult, CommandSpec, ShellState } from '../registry';
+import { changedState, type CommandResult, type CommandSpec, type ShellState } from '../registry';
 import { fileSize, list, metaOf, setMeta, stat } from '../vfs';
 import { gidOf, groupsOfUser, readGroups, writeGroups } from '../users';
 import { fromLines, parseArgs } from './args';
@@ -226,6 +226,39 @@ export const permCommands: CommandSpec[] = [
         return x;
       });
       return { patch: { vfs: writeGroups(shell.vfs, groups) } };
+    },
+  },
+  {
+    name: 'gpasswd',
+    summary: '利用者をグループに入れる・外す（-a 利用者 グループ / -d 利用者 グループ。root だけ）',
+    handler: ({ argv, shell }) => {
+      const [flag, user, group] = argv.slice(1);
+      if ((flag !== '-a' && flag !== '-d') || user === undefined || group === undefined) return { stderr: 'Usage: gpasswd [option] GROUP\n', code: 2 };
+      if (currentUser(shell) !== 'root') return { stderr: 'gpasswd: Permission denied.\n', code: 1 };
+      const groups = readGroups(shell.vfs);
+      const g = groups.find((x) => x.name === group);
+      if (!g) return { stderr: `gpasswd: group '${group}' does not exist in /etc/group\n`, code: 3 };
+      if (flag === '-d' && !g.members.includes(user)) return { stderr: `gpasswd: user '${user}' is not a member of '${group}'\n`, code: 3 };
+      const members = flag === '-a' ? (g.members.includes(user) ? g.members : [...g.members, user]) : g.members.filter((m) => m !== user);
+      return {
+        stdout: flag === '-a' ? `Adding user ${user} to group ${group}\n` : `Removing user ${user} from group ${group}\n`,
+        patch: { vfs: writeGroups(shell.vfs, groups.map((x) => (x.name === group ? { ...x, members } : x))) },
+      };
+    },
+  },
+  {
+    name: 'sg',
+    summary: '入っているグループで 1 行だけ動かす（sg グループ -c "命令"。今のシェルのグループは変えない）',
+    handler: ({ argv, shell, runLine }) => {
+      const group = argv[1];
+      const at = argv.indexOf('-c');
+      const line = at >= 0 ? argv.slice(at + 1).join(' ') : argv.slice(2).join(' ');
+      if (group === undefined || line === '') return { stderr: 'Usage: sg group [[-c] command]\n', code: 2 };
+      const user = currentUser(shell);
+      const now = groupsOfUser(shell.vfs, user);
+      if (!now.includes(group) && user !== 'root') return { stderr: 'sg: Permission denied.\n', code: 1 };
+      const r = runLine(line, { ...shell, vars: new Map([...shell.vars, ['GROUPS', [group, ...now.filter((g) => g !== group)].join(' ')]]) });
+      return { stdout: r.stdout, stderr: r.stderr, code: r.code, patch: changedState(shell, { ...r.state, vars: shell.vars, cwd: shell.cwd }) };
     },
   },
   {

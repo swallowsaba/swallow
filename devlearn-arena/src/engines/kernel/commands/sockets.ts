@@ -1,4 +1,4 @@
-import type { CommandSpec } from '../registry';
+import type { CommandSpec, ShellState } from '../registry';
 import { portsOf } from '../services';
 import { fromLines } from './args';
 import { currentUser } from './perm';
@@ -50,3 +50,23 @@ export const socketCommands: CommandSpec[] = [
     },
   },
 ];
+
+/** netstat -tlnp（網の構成が無い機械）。ss と同じく、動いているサービスの待ち受けを、netstat の形で出す。-p は管理者の時だけプログラムを出す */
+export function localNetstat(shell: ShellState, argv: readonly string[]): string {
+  const flags = new Set(argv.slice(1).filter((a) => a.startsWith('-')).flatMap((a) => a.slice(1).split('')));
+  const showProc = flags.has('p') && currentUser(shell) === 'root';
+  const tcp = flags.has('t') || !flags.has('u');
+  const udp = flags.has('u') || !flags.has('t');
+  const services = [...(shell.services?.services.values() ?? [])].filter((s) => s.active === 'active');
+  const rows = services.flatMap((s, i) => [
+    ...(tcp ? portsOf(s).map((port) => ['tcp', `${s.address ?? '0.0.0.0'}:${String(port)}`, 'LISTEN', `${String(800 + i)}/${s.program ?? s.name}`]) : []),
+    ...(udp ? (s.udp ?? []).map((port) => ['udp', `${s.address ?? '0.0.0.0'}:${String(port)}`, '', `${String(800 + i)}/${s.program ?? s.name}`]) : []),
+  ]);
+  const line = (proto: string, local: string, state: string, prog: string): string =>
+    `${proto.padEnd(6)}${'0'.padStart(6)} ${'0'.padStart(6)} ${local.padEnd(23)} ${(proto === 'tcp' ? '0.0.0.0:*' : '0.0.0.0:*').padEnd(23)} ${state.padEnd(11)} ${showProc ? prog : '-'}`.trimEnd();
+  return fromLines([
+    'Active Internet connections (only servers)',
+    'Proto Recv-Q Send-Q Local Address           Foreign Address         State       PID/Program name',
+    ...rows.map((r) => line(r[0] ?? '', r[1] ?? '', r[2] ?? '', r[3] ?? '')),
+  ]);
+}

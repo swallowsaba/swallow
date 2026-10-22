@@ -66,6 +66,16 @@ describe('sed', () => {
     expect(run('sed "s/alpha/A/;s/gamma/G/" old.txt').out).toBe('A\nreturn 301 https://$host$request_uri;\nG\n');
     expect(parseSedScript('s/a/b;c/g; 2d').length).toBe(2);
   });
+  it('-e を何度も書くと、全ての式を順に当てる（VERIFY-FREE.txt【1】）', () => {
+    expect(run("sed -e 's/alpha/A/' -e 's/gamma/G/' old.txt").out).toBe('A\nbeta\nG\n');
+    expect(run("sed --expression='s/alpha/A/' -e '2d' old.txt").out).toBe('A\ngamma\n');
+  });
+  it('c は行を置き換え、i は前に、a は後ろに行を足す（a\\ の後ろの空白は残す）', () => {
+    expect(run(`sed '2c\\  return 301 https://$host$request_uri;' old.txt`).out).toBe('alpha\n  return 301 https://$host$request_uri;\ngamma\n');
+    expect(run("sed '/beta/i new' old.txt").out).toBe('alpha\nnew\nbeta\ngamma\n');
+    expect(run("sed '$a\\  end' old.txt").out).toBe('alpha\nbeta\ngamma\n  end\n');
+    expect(run("sed -n '1c X' old.txt").out).toBe('X\n');
+  });
   it('スクリプトを直接パースできる', () => {
     expect(parseSedScript('s/a/b/g').length).toBe(1);
     expect(() => parseSedScript('q')).toThrow();

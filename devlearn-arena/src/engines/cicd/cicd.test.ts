@@ -239,6 +239,15 @@ describe('push で動く GitHub Actions', () => {
     expect(again.code).toBe(1);
   });
 
+  it('npm run test は npm test と同じ手順として当てる（start・stop・restart も。VERIFY-FREE.txt【1】）', () => {
+    const m = machine(ONE_JOB.replace('run: npm test', 'run: npm run test'));
+    m.run('npm install');
+    m.push('1.5.0');
+    expect(m.holds('order:release=npm+ci,npm+run+build,npm+test,npm+run+deploy step:release/npm+test=success has:release/npm+test')).toBe(true);
+    expect(m.holds('order:release=npm+ci,npm+run+build,npm+run+test')).toBe(true);
+    expect(m.holds('has:release/npm+start')).toBe(false);
+  });
+
   it('依存しない job は同じ時刻に並んで動き、全体の時間は一番長い道すじになる。依存が失敗すれば動かない', () => {
     const job = (key: string, needs: string, run: string): string => `  ${key}:\n${needs}    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@v4\n      - run: npm ci\n      - run: ${run}\n`;
     const m = machine(flow(job('build', '', 'npm run build') + job('test', '    needs: build\n', 'npm test') + job('lint', '    needs: build\n', 'npm test')));

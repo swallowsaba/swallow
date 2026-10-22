@@ -89,7 +89,7 @@ export interface CommandContext {
   /** sleep など、仮想時計を進めるコマンドがあるので可変で渡す */
   clock: MutableClock;
   /** xargs のように別のコマンドを起動するコマンドのための入口 */
-  runLine: (line: string, from?: ShellState) => RunLineResult;
+  runLine: (line: string, from?: ShellState, stdin?: string) => RunLineResult;
   /** 補完やヘルプのために自分自身を参照できるようにする */
   registry: CommandRegistry;
 }
@@ -115,6 +115,13 @@ export interface EditorRequest {
 }
 
 export type CommandHandler = (ctx: CommandContext) => CommandResult;
+
+/** 別のコマンドを動かしたコマンド（xargs・find -exec）が返す差分。動かした先で変わった物を全て渡す（ファイルだけでなく、クラスタ・コンテナなども） */
+export function changedState(before: ShellState, after: ShellState): Partial<ShellState> {
+  const out: Record<string, unknown> = {};
+  for (const k of Object.keys(after) as (keyof ShellState)[]) if (after[k] !== before[k]) out[k] = after[k];
+  return out;
+}
 
 export interface CommandSpec {
   name: string;

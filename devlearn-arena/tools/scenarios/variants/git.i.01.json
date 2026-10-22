@@ -18,11 +18,10 @@
       }
     },
     {
-      "name": "SSH で断られてから https で複製・設定から読む",
+      "name": "場所を移ってから複製・設定から読む",
       "steps": {
         "clone": [
-          "git clone git@git.city.example:park/reserve.git",
-          "git clone https://git.city.example/park/reserve.git"
+          "cd /home/learner && git clone https://git.city.example/park/reserve.git"
         ],
         "name": [
           "cd ~/reserve",

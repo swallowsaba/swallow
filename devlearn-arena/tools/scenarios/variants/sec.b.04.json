@@ -19,10 +19,11 @@
       }
     },
     {
-      "name": "置き場所と空の合言葉を指定して作る・手で足す",
+      "name": "場所を作ってから置き場所と空の合言葉を指定して作る・手で足す",
       "steps": {
         "pair": [
-          "ssh-keygen -t ed25519 -f ~/.ssh/id_ed25519 -N ''"
+          "mkdir -p ~/.ssh && chmod 700 ~/.ssh",
+          "ssh-keygen -t ed25519 -f ~/.ssh/id_ed25519 -N \"\""
         ],
         "register": [
           "cat ~/.ssh/id_ed25519.pub | ssh deploy@web01 'mkdir -p ~/.ssh && cat >> ~/.ssh/authorized_keys'",

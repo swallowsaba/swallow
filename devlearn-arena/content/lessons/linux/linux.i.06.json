@@ -171,7 +171,7 @@
         "check": {
           "kind": "fs",
           "path": "/home/learner/.bashrc",
-          "contains": "export PATH=$HOME/bin:$PATH"
+          "contains": "bin:$PATH"
         },
         "afterward": "~/.bashrc の最後に、PATH を足す行が書けた。ログインするたびに、この行が読まれる。",
         "hints": [

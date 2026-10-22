@@ -96,8 +96,12 @@ export const miscCommands: CommandSpec[] = [
         v: '#45-Ubuntu SMP PREEMPT_DYNAMIC Fri Aug 30 12:02:04 UTC 2024', m: 'x86_64', p: 'x86_64', i: 'x86_64', o: 'GNU/Linux',
       };
       let wanted = '';
+      // 長い名前（--kernel-name など）は、1 字の物と同じ
+      const LONG: Record<string, string> = {
+        '--all': 'a', '--kernel-name': 's', '--nodename': 'n', '--kernel-release': 'r', '--kernel-version': 'v', '--machine': 'm', '--processor': 'p', '--hardware-platform': 'i', '--operating-system': 'o',
+      };
       for (const a of argv.slice(1)) {
-        if (a === '--all') wanted += 'a';
+        if (LONG[a] !== undefined) wanted += LONG[a];
         else if (/^-[a-z]+$/.test(a)) wanted += a.slice(1);
         else return { stderr: `uname: extra operand '${a}'\n`, code: 1 };
       }

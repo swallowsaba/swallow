@@ -194,6 +194,18 @@ describe('Web サーバの公開用のディレクトリと振り分け', () => 
     expect(img).toContain('Cache-Control: max-age=31536000');
     expect(img).toContain('Content-Type: image/png');
   });
+
+  it('expires は Cache-Control の max-age になる（1y・30d・12h・max。epoch と負の値は no-cache。VERIFY-FREE.txt【1】）', () => {
+    const conf = (v: string) => `server {\n  listen 80;\n  root /srv/www;\n  location /img/ {\n    expires ${v};\n  }\n}\n`;
+    const cases: [string, string][] = [['1y', 'max-age=31536000'], ['30d', 'max-age=2592000'], ['12h', 'max-age=43200'], ['max', 'max-age=315360000'], ['epoch', 'no-cache'], ['-1', 'no-cache']];
+    for (const [v, want] of cases) {
+      const { run } = site(conf(v), { '/srv/www/img/logo.png': 'png' });
+      run('systemctl start nginx');
+      expect(run('curl -sI http://localhost/img/logo.png').out, v).toContain(`Cache-Control: ${want}`);
+    }
+    const bad = site(conf('soon'), { '/srv/www/img/logo.png': 'png' });
+    expect(bad.run('nginx -t').out).toContain('"expires" directive invalid value');
+  });
 });
 
 describe('転送が繰り返す', () => {

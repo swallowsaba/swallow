@@ -140,8 +140,11 @@ export const procCommands: CommandSpec[] = [
     summary: '名前で選んで合図を送る',
     handler: ({ argv, shell }) => {
       const rest = argv.slice(1);
-      const sig = normalizeSignal(rest.find((a) => a.startsWith('-')));
-      const pattern = rest.find((a) => !a.startsWith('-'));
+      // -f（命令の全体で探す）・-x（名前がちょうど同じ）などの旗は合図ではない。合図は -9・-TERM・-SIGTERM・--signal 名前
+      const named = rest.findIndex((a) => a === '--signal');
+      const sigArg = named >= 0 ? `-${rest[named + 1] ?? ''}` : rest.find((a) => /^-(\d+|[A-Z][A-Z0-9]*)$/.test(a));
+      const sig = normalizeSignal(sigArg);
+      const pattern = rest.find((a, i) => !a.startsWith('-') && (named < 0 || i !== named + 1));
       if (pattern === undefined) return { stderr: 'usage: pkill [-signal] <pattern>\n', code: 2 };
       const found = findByPattern(shell.procs, pattern);
       if (found.length === 0) return { code: 1 };

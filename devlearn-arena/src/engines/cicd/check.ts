@@ -30,6 +30,10 @@ function forgeOf(shell: ShellState): GitServer | undefined {
 
 const words = (s: string): string => s.replace(/\+/g, ' ');
 
+/** npm run test・npm run-script test は npm test と同じ（start・stop・restart も）。手順の文字を、この形にそろえて当てる */
+const npmAlias = (s: string): string => s.replace(/\bnpm (?:run|run-script) (test|start|stop|restart)(?![\w:-])/g, 'npm $1');
+const mentions = (hay: string, want: string): boolean => npmAlias(hay).includes(npmAlias(want));
+
 function latest(runs: readonly RunRecord[], workflow?: string): RunRecord | undefined {
   return [...runs].reverse().find((r) => workflow === undefined || r.workflow === workflow || r.file === workflow || r.file.endsWith(`/${workflow}`));
 }
@@ -65,18 +69,18 @@ function termHolds(shell: ShellState, server: GitServer, term: string): boolean 
       return jobOf(run, arg)?.conclusion === (value as Conclusion);
     case 'step': {
       const [k = '', text = ''] = [arg.slice(0, arg.indexOf('/')), words(arg.slice(arg.indexOf('/') + 1))];
-      const s = jobOf(run, k)?.steps.find((x) => x.name.includes(text) || (x.run ?? '').includes(text) || (x.uses ?? '').includes(text));
+      const s = jobOf(run, k)?.steps.find((x) => x.name.includes(text) || mentions(x.run ?? '', text) || (x.uses ?? '').includes(text));
       return s?.conclusion === (value as Conclusion);
     }
     case 'has': {
       const [k = '', text = ''] = [arg.slice(0, arg.indexOf('/')), words(arg.slice(arg.indexOf('/') + 1))];
-      return shapeOf(k)?.steps.some((x) => x.includes(text)) === true;
+      return shapeOf(k)?.steps.some((x) => mentions(x, text)) === true;
     }
     case 'order': {
       const steps = shapeOf(arg)?.steps ?? [];
       let at = -1;
       for (const want of value.split(',').map(words)) {
-        const i = steps.findIndex((x, idx) => idx > at && x.includes(want));
+        const i = steps.findIndex((x, idx) => idx > at && mentions(x, want));
         if (i < 0) return false;
         at = i;
       }

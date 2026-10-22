@@ -188,6 +188,20 @@ function parse(tokens: Token[], path: string): Directive[] | string {
   return level(false);
 }
 
+const EXPIRES_UNIT: Readonly<Record<string, number>> = { ms: 0.001, s: 1, m: 60, h: 3600, d: 86400, w: 604800, M: 2592000, y: 31536000 };
+
+/** expires の値から足す見出し（Cache-Control。本物は Expires も足すが、模擬は時刻の見出しを出さない）。off は無し。読めなければ誤りの文 */
+function readExpires(d: Directive, path: string): [string, string][] | string {
+  const v = d.args[d.args.length - 1] ?? '';
+  if (v === 'off') return [];
+  if (v === 'epoch') return [['Cache-Control', 'no-cache']];
+  if (v === 'max') return [['Cache-Control', 'max-age=315360000']];
+  const m = /^(-?)(\d+)(ms|s|m|h|d|w|M|y)?$/.exec(v);
+  if (!m) return emerg(`"expires" directive invalid value in ${path}:${String(d.line)}`);
+  const seconds = Math.floor(Number(m[2]) * (EXPIRES_UNIT[m[3] ?? 's'] ?? 1));
+  return [['Cache-Control', m[1] === '-' ? 'no-cache' : `max-age=${String(seconds)}`]];
+}
+
 function readReturn(d: Directive, path: string): Return | string {
   const [code, target = ''] = d.args;
   const status = Number(code);
@@ -224,6 +238,11 @@ export function readWebConfig(path: string, read: (p: string) => string | null):
       else if (d.name === 'root') s.root = d.args[0];
       else if (d.name === 'index') s.index = d.args;
       else if (d.name === 'add_header') s.headers.push([d.args[0] ?? '', d.args[1] ?? '']);
+      else if (d.name === 'expires') {
+        const h = readExpires(d, path);
+        if (typeof h === 'string') return { ok: false, error: h };
+        s.headers.push(...h);
+      }
       else if (d.name === 'ssl_certificate') s.cert = d.args[0] ?? null;
       else if (d.name === 'return') {
         const r = readReturn(d, path);
@@ -236,6 +255,11 @@ export function readWebConfig(path: string, read: (p: string) => string | null):
           if (x.name === 'root') loc.root = x.args[0];
           else if (x.name === 'proxy_pass') loc.proxy = x.args[0];
           else if (x.name === 'add_header') loc.headers.push([x.args[0] ?? '', x.args[1] ?? '']);
+          else if (x.name === 'expires') {
+            const h = readExpires(x, path);
+            if (typeof h === 'string') return { ok: false, error: h };
+            loc.headers.push(...h);
+          }
           else if (x.name === 'return') {
             const r = readReturn(x, path);
             if (typeof r === 'string') return { ok: false, error: r };

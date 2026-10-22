@@ -416,6 +416,8 @@ function placedIn(expr: string): string[] {
  * ほかの型は isSettled と同じ
  */
 export function stepSettled(s: SimState, expr: string | null | undefined): boolean {
+  // 並べるは、式に出てくる札（否定の条件を除く）が全て並ぶまで出来上がりと見ない（下の段から置く途中で知らせない）
+  if (s.type === 'order' && expr) return isSettled(s) && namedInOrder(expr).every((i) => stageOf(s, i) >= 0);
   if (isSettled(s)) return true;
   if (!expr) return false;
   if (s.type === 'read') {
@@ -427,6 +429,57 @@ export function stepSettled(s: SimState, expr: string | null | undefined): boole
     return items.length > 0 && items.every((i) => (s.placed[i] ?? []).length > 0);
   }
   return false;
+}
+
+/** 並べるの式の seq・with・has に出てくる札（否定の条件は除く） */
+function namedInOrder(expr: string): string[] {
+  return expr.split('&&').map((c) => c.trim()).filter((c) => !c.startsWith('!')).flatMap((c) => {
+    const [head = '', ...args] = c.split(/\s+/).filter(Boolean);
+    if (head === 'seq') return (args[0] ?? '').split('<');
+    return head === 'with' || head === 'has' ? args : [];
+  });
+}
+
+/** 置いた札の数（並べるは並んだ札、置くは枠に入った札の延べ数） */
+function placedCount(s: SimState): number {
+  if (s.type === 'order') return s.setup.items.filter((i) => stageOf(s, i.id) >= 0).length;
+  if (s.type === 'assign') return Object.values(s.placed).reduce((n, at) => n + at.length, 0);
+  return 0;
+}
+
+/** 置くの式を札 1 枚ずつの条件に分け、今の値を返す（true・false・まだ置いていないので決まらない＝undefined） */
+function assignAtoms(s: AssignState, expr: string): (boolean | undefined)[] {
+  return expr.split('&&').flatMap((raw) => {
+    const c = raw.trim();
+    const neg = c.startsWith('!');
+    const [head = '', ...args] = (neg ? c.slice(1) : c).split(/\s+/).filter(Boolean);
+    if (head !== 'in') return [holds(s, c)];
+    return args.map((pair) => {
+      const [item = '', slot = ''] = pair.split('=');
+      const at = s.placed[item] ?? [];
+      if (neg) return !at.includes(slot);
+      if (at.includes(slot)) return true;
+      // 何枚でも置ける札は、ほかの枠にあっても、まだ決まらない
+      return at.length === 0 || s.setup.items.find((i) => i.id === item)?.multi === true ? undefined : false;
+    });
+  });
+}
+
+/**
+ * 1 つの操作の後に、手順の分の出来上がりとして「合っているか」を知らせるか（stepSettled に、並べ直しの途中を除く決まりを足した物）。
+ * 札を置き場へ戻した時（並べ直しの途中）と、置くで条件を 1 つ満たして、どの条件も崩さなかった時は知らせない（強い札を先に入れてから弱い札を戻す、など。VERIFY-FREE.txt【1】）
+ */
+export function settledAfter(before: SimState, after: SimState, expr: string | null | undefined): boolean {
+  if (!stepSettled(after, expr)) return false;
+  if ((after.type === 'order' || after.type === 'assign') && placedCount(after) < placedCount(before)) return false;
+  if (after.type === 'assign' && before.type === 'assign' && expr) {
+    const was = assignAtoms(before, expr);
+    const now = assignAtoms(after, expr);
+    const gained = now.some((v, i) => v === true && was[i] !== true);
+    const broke = now.some((v, i) => v === false && was[i] !== false);
+    if (gained && !broke) return false;
+  }
+  return true;
 }
 
 /** 手順の式と違う答えをした問い（手順の問いに全て答えた時だけ。読み取って答える） */

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
-  actionNames, applyAction, connectProblem, createSim, describeAction, exprProblems, holds, isSettled, isSimEnvironment, misplaced, orderStop, sendRoute, shownPanels, stepSettled, wrongAnswers,
+  actionNames, applyAction, connectProblem, createSim, describeAction, exprProblems, holds, isSettled, isSimEnvironment, misplaced, orderStop, sendRoute, settledAfter, shownPanels, stepSettled, wrongAnswers,
   type SimEnvironmentId,
 } from './sim';
 import type { SimAction, SimState } from './types';
@@ -355,6 +355,36 @@ describe('手順ごとの出来上がり（stepSettled・wrongAnswers）', () =>
     expect(stepSettled(run(sim('sim-assign', setup), [put('x', 'c')]).state, expr)).toBe(false);
     expect(stepSettled(run(sim('sim-assign', setup), [put('x', 'a'), put('y', 'a')]).state, expr)).toBe(true);
     expect(stepSettled(run(sim('sim-assign', setup), [put('x', 'a')]).state, null)).toBe(false);
+  });
+
+  it('並べるは、手順の式に出てくる札（否定の条件を除く）が全て並んだら出来上がり（下の段から置いても、途中で知らせない）', () => {
+    const setup = { items: [{ id: 'ci', label: 'CI', extra: true }, { id: 'ok', label: '承認', extra: true }, { id: 'go', label: '配る' }, { id: 'auto', label: '自動', extra: true }] };
+    const expr = 'seq ci<ok<go && !has auto';
+    expect(stepSettled(run(sim('sim-order', setup), [arrange(['go'])]).state, expr)).toBe(false);
+    expect(stepSettled(run(sim('sim-order', setup), [arrange(['ok'], ['go'])]).state, expr)).toBe(false);
+    expect(stepSettled(run(sim('sim-order', setup), [arrange(['ok'], ['ci'], ['go'])]).state, expr)).toBe(true);
+  });
+
+  it('settledAfter: 札を置き場へ戻した時と、条件を 1 つ満たして崩さなかった置き方では、出来上がりと見ない（並べ直しの途中。VERIFY-FREE.txt【1】）', () => {
+    // 初めから弱い札（w）が入っている。強い札（s・t）を先に入れてから、弱い札を戻す
+    const setup = { slots: [{ id: 'rules', label: '決まり' }], items: [{ id: 's', label: 'S' }, { id: 't', label: 'T' }, { id: 'w', label: 'W', extra: true }], initial: { w: 'rules' } };
+    const expr = 'in s=rules t=rules && !in w=rules';
+    const a0 = sim('sim-assign', setup);
+    const a1 = run(a0, [put('s', 'rules')]).state;
+    const a2 = run(a1, [put('t', 'rules')]).state;
+    expect(stepSettled(a2, expr)).toBe(true);
+    expect(settledAfter(a1, a2, expr)).toBe(false);
+    // 戻した札をまた入れる（条件を崩した）のは、出来上がりとして知らせる
+    const a3 = run(a2, [take('w')]).state;
+    const a4 = run(a3, [put('w', 'rules')]).state;
+    expect(settledAfter(a3, a4, expr)).toBe(true);
+    // 並べるで、並んだ札を置き場へ戻す途中は知らせない。順を誤った並びが出来上がれば知らせる
+    const order = { items: [{ id: 'ci', label: 'CI', extra: true }, { id: 'ok', label: '承認', extra: true }, { id: 'go', label: '配る' }] };
+    const full = run(sim('sim-order', order), [arrange(['ci'], ['ok'], ['go'])]).state;
+    const fewer = run(full, [arrange(['ok'], ['go'])]).state;
+    expect(settledAfter(full, fewer, 'seq ci<go && !has ok')).toBe(false);
+    const wrong = run(fewer, [arrange(['ok'], ['go'], ['ci'])]).state;
+    expect(settledAfter(fewer, wrong, 'seq ci<ok<go')).toBe(true);
   });
 
   it('読み取って答えるは、手順の式に出てくる問いに全て答えたら出来上がり。違う答えの問いだけを返す', () => {

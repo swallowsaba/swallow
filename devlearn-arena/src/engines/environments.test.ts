@@ -24,6 +24,12 @@ describe('実戦の模擬環境の初期状態（docs/content-spec.md 2.4 の en
     expect(run('linux-basic', { cwd: '/srv/app', dirs: ['/srv/app'], files: { '/srv/app/config.txt': 'port=8080\n' } }, ['pwd', 'whoami', 'cat config.txt', 'ls /home'])).toBe('/srv/app\nlearner\nport=8080\nlearner/\n');
   });
 
+  it('端末のある機械には、どれにも /tmp があり、誰でも書ける（echo … > /tmp/mycron。VERIFY-FREE.txt【1】）', () => {
+    for (const env of ['linux-basic', 'linux-server', 'container-host', 'web-client', 'net-client', 'k8s-cluster']) {
+      expect(run(env, {}, ['echo x > /tmp/a && cat /tmp/a']), env).toBe('x\n');
+    }
+  });
+
   it('サーバは管理者で入り、setup のサービスを systemctl で扱える', () => {
     const out = run('linux-server', { services: { web: { description: 'Web server' } } }, ['whoami', 'systemctl is-active web', 'systemctl is-enabled web']);
     expect(out).toBe('root\ninactive\ndisabled\n');

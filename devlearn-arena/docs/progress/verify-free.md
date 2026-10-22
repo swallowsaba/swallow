@@ -9,7 +9,7 @@
 
 | 段 | 状態 |
 |---|---|
-| 【1】ヒントを開かず、別の書き方で通す（`tools/scenarios/verify-free.mjs`） | 1 回目を流した（下の「【1】1 回目」。131 本中 58 本が不合格）。直しに入る |
+| 【1】ヒントを開かず、別の書き方で通す（`tools/scenarios/verify-free.mjs`） | 1 回目を流した（131 本中 58 本が不合格）。原因ごとに直した（下の「直したこと」）。公開した所で 2 回目を流す |
 | 【2】間違えた時の道（`tools/scenarios/verify-wrong.mjs`） | まだ |
 | 【3】1280x720 で確かめる | まだ |
 | 【4】ミッション 6 本を通しで遊ぶ（`tools/scenarios/verify-mission.mjs`） | まだ |
@@ -65,6 +65,32 @@ VERIFY_URL=https://swallowsaba.github.io/swallow/devlearn-arena/ を付けると
 - F3 別のコマンドを動かすコマンドが、動かした先の変化を捨てる（`… | xargs kubectl delete` で消した Pod が戻る。`xargs` はファイルの変化しか返さなかった）
 - F4 正しい途中・様子見の操作に、エラーの案内が当たる（模の札を並べる途中の 1 枚・別の機械からの `nmap`）
 - F5 別解そのものの誤り（台本側。例: `~/.ssh` が無いのに `ssh-keygen -f ~/.ssh/id_ed25519`。本物でも失敗する）
+
+### 直したこと（【1】1 回目の後）
+
+先に、全 268 通りを画面と同じ関数で通す失敗するテスト（`src/content/variants.test.ts`）を書き、原因ごとに、その振る舞いのテストを書いてから直した。
+
+- F1 模擬環境に、本物にある書き方を足した（テスト: `src/engines/docker/alternatives.test.ts`・`src/engines/kernel/commands/gitAlternatives.test.ts`・`linuxAlternatives.test.ts`・`awk.test.ts` ほか）
+  - docker・podman: `container …`・`image …` の管理の命令の形、置き場まで書いた名前、`logs --tail`・`-n`、`stop -t`、`network create --driver`、`top`、`--mount`、`exec 名前 sh -c "…"`・`grep`、中の相対パスはイメージの WORKDIR から、`COPY package*.json ./`（* の写す元）、`psql` で DB を書かなければ初めから在る `postgres` の DB
+  - git: `add -A`・`checkout 記録 -- ファイル`・`log -S`・`log ファイル`・`rev-list --count`・`diff --name-only`・`config --get`・取り込みの途中の `commit --no-edit`・`rebase 先 枝`
+  - Linux: `awk`（無かった。列・`-F`・`NR`・`BEGIN`・`END`・配列・`printf`・`gsub` など）、`gpasswd -a`・`sg グループ -c`、`find -exec … {} +`・`-iname`・`-maxdepth`、`head -c`、`uname --kernel-name`、`pkill -f`、`sed -e` を何度も・`c`・`a`・`i`、代入とリダイレクト先の `~`（ssh で入ったサーバでは、そこのホーム）、どの機械にも `/tmp`
+  - 網・Web: `ip -4 addr show eth0`、網の構成が無い機械の `netstat -tlnp`、`rndc reload`、`iptables -nL`・`-R`、`curl -D -`・`-d` を 2 つ、`nginx -s reload`、nginx の `expires 1y`、`sshd` は `ssh` のサービスの別名、`cat 鍵.pub | ssh サーバ 'mkdir -p ~/.ssh && cat >> ~/.ssh/authorized_keys'`（ssh に流し込んだ物をサーバの命令が読む）
+  - Kubernetes: 区画の旗を命令の前に書く（`kubectl -n dev get pods`）、`rollout undo --to-revision 2`、設計図（template）の注釈を変えると Pod を作り直す、確かめ（probe）のポートを名前（`port: http`）で指す、HPA を様子見の後で付けても `get hpa -w` が増えるまで見る
+  - GitHub Actions の判定: `npm run test` は `npm test` と同じ手順として当てる
+- F2 判定を、打った文字から結果と状態に替えた（`docs/content-spec.md` 2.4 に書いた）
+  - `ran` に `shows`（出力にその行が全てある）を足した。linux.b.01 の 2 つの手順を、履歴の文字から `ran` に替えた（`pwd` の結果・`ls` の詳しい一覧の行）
+  - 数える手順で、ファイルごとの数（`grep -rc` の「名前:数」）は合計で比べる。linux.b.04・mon.b.02 の `uses` から `wc` を外した（`grep -c` で数えてもよい）。一致した行を並べて見ただけでは「合っていない」を出さない
+  - 答えの欄: 数の後ろの単位（`3 バイト`）と、場所の最後の `/`（`/srv/report/out/`）を問わない
+  - linux.i.06（`bin:$PATH` を含む）・linux.i.08（`/srv/backup.sh` の行がある。時刻は次の手順の `timeskip` で確かめる）・sec.b.05（`WEATHER_TOKEN` を含み、鍵の値が無い）の `fs` の文字を、書き方に依らない形にした
+- F3 `xargs`・`find -exec`・`sg`・`nginx -s`・`rndc` は、動かした先で変わった物を全て返す（`changedState`）
+- F4 正しい途中・様子見の操作に案内を当てない
+  - 模: 並べるは、式に出てくる札が全て並ぶまで出来上がりと見ない。札を置き場へ戻した後と、置くで条件を 1 つ満たして崩さなかった後は「答えが合っていない」を出さない（`settledAfter`。sec.b.02・sec.b.03・devops.b.03）
+  - `docker-name-unresolved` の出力への当て方を、頼む命令（`curl`・`ping` など）だけにした（`docker logs` で様子を見ても出さない）。`sec-chain-incomplete` も `curl` だけ（`openssl s_client` の正しい出力に当てない）
+- F5 別解の誤りを直した（git.i.01 #2: 鍵の無い SSH で複製を試してから https で複製する道を、場所を移ってから複製する道に。sec.b.04 #2: `~/.ssh` を作ってから `ssh-keygen -f`）
+- 想定した失敗のレッスン: 目的の文そのものが、失敗を見て読むことを書いている手順を、C2 の一覧に足した（最後のヒントは先に直すので通らないが、目的の文のとおりに打つと通る）。
+  found.b.07（「ping サーバ」で、どこで止まるかを見る）・net.b.01（本社のサーバへ送り、どこで止まるかを見る）・k8s.i.08（1.2 を配り、入れ替えが進むかを見る）・
+  sec.b.07（`curl https://shop.example/` の誤りを読み…。この手順の想定エラーに `sec-chain-incomplete` を足した）・web.b.07（curl で確かめ、200 とページが返らなければ、返事の数から原因を探す）
+- 下見で全 268 通りが通ることを確かめた（`src/content/variants.test.ts`）。並べるの arrange を、ブラウザの台本と同じく 1 枚ずつのドラッグに分けて通しても、途中で案内は出ない
 
 ### 表（1 回目）
 

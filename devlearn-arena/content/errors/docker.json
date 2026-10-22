@@ -252,7 +252,8 @@
         "name-resolution",
         "default-bridge"
       ],
-      "output": true
+      "output": true,
+      "outputOf": "\\b(curl|wget|ping|getent|nslookup)\\b"
     },
     {
       "id": "docker-db-localhost",

@@ -32,6 +32,8 @@ export function templateHash(template: Deployment['spec']['template'], real = fa
     template.nodeSelector,
     // ボリュームは書いた時だけ混ぜる（書かない設計図の世代の名前を変えない）
     ...(template.volumes === undefined ? [] : [template.volumes]),
+    // 注釈も書いた時だけ（kubectl rollout restart の restartedAt や、設定の版の印）
+    ...(template.annotations === undefined ? [] : [template.annotations]),
   ]);
   let hash = 5381;
   for (let i = 0; i < text.length; i += 1) hash = ((hash * 33) ^ text.charCodeAt(i)) >>> 0;

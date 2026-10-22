@@ -220,6 +220,10 @@ export interface LogOptions {
   author: string | null;
   /** 辿り始める記録（origin/main・HEAD~1 など）。A..B は B から辿れて A から辿れない記録 */
   revs: string[];
+  /** -- の後のパス（そのファイルを変えた記録だけ） */
+  paths: string[];
+  /** -S 文字（その文字の数が変わった記録だけ） */
+  pickaxe: string | null;
 }
 
 /** --since・--until の日付。「2026-10-01」（その日の 0 時）・「2026-10-01 14:30」・yesterday・「3 days ago」「2.hours.ago」 */
@@ -237,14 +241,19 @@ export function parseApproxDate(text: string, now: number): number | null {
 
 /** git log の引数（-1・-n 2・--max-count=2・-p・--oneline・--author・--since/--after・--until/--before） */
 export function parseLogArgs(rest: readonly string[], now: number): LogOptions | { error: string } {
-  const opts: LogOptions = { oneline: false, all: false, patch: false, max: null, since: null, until: null, author: null, revs: [] };
+  const opts: LogOptions = { oneline: false, all: false, patch: false, max: null, since: null, until: null, author: null, revs: [], paths: [], pickaxe: null };
   for (let i = 0; i < rest.length; i += 1) {
     const arg = rest[i] ?? '';
     const [name = '', inline] = arg.startsWith('--') ? arg.split(/=(.*)/s) : [arg];
     const value = (): string => inline ?? rest[(i += 1)] ?? '';
-    // -- の後はパス（ここでは絞らない）
-    if (arg === '--') break;
-    if (arg === '--oneline') opts.oneline = true;
+    // -- の後はパス
+    if (arg === '--') {
+      opts.paths.push(...rest.slice(i + 1));
+      break;
+    }
+    if (arg === '-S') opts.pickaxe = value();
+    else if (arg.startsWith('-S')) opts.pickaxe = arg.slice(2);
+    else if (arg === '--oneline') opts.oneline = true;
     else if (arg === '--all') opts.all = true;
     else if (arg === '-p' || arg === '--patch') opts.patch = true;
     else if (/^-\d+$/.test(arg)) opts.max = Number(arg.slice(1));

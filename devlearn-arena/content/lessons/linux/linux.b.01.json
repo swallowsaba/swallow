@@ -185,9 +185,11 @@
         "id": "where",
         "purpose": "まず、今どこにいるかを確かめる。",
         "check": {
-          "kind": "fs",
-          "path": "/home/learner/.bash_history",
-          "contains": "pwd"
+          "kind": "ran",
+          "uses": [
+            "pwd"
+          ],
+          "result": "/home/learner"
         },
         "afterward": "/home/learner と出た。プロンプトの ~ は、このホームディレクトリのこと。",
         "hints": [
@@ -203,9 +205,15 @@
         "id": "list",
         "purpose": "ホームディレクトリ（~）の中身を、詳しい形で一覧する。",
         "check": {
-          "kind": "fs",
-          "path": "/home/learner/.bash_history",
-          "contains": "ls -l"
+          "kind": "ran",
+          "uses": [
+            "ls"
+          ],
+          "shows": [
+            "-rw-r--r-- 1 learner learner 36 notes.txt",
+            "drwxr-xr-x 1 learner learner 4096 photos/",
+            "-rw-r--r-- 1 learner learner 25 plan.txt"
+          ]
         },
         "afterward": "1 行に 1 つずつ、{{term:permission}}・持ち主・大きさ・名前が出た。-l がオプション、~ が引数。photos のように / の付く物は{{term:directory}}。",
         "hints": [

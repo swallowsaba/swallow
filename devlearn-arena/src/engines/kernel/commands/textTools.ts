@@ -1,7 +1,7 @@
 import { formatUnified } from '../diff';
 import { resolve } from '../path';
 import { compilePattern } from '../regex';
-import type { CommandSpec, ShellState } from '../registry';
+import { changedState, type CommandSpec, type ShellState } from '../registry';
 import { appendFile, readFile, stat, writeFile } from '../vfs';
 import { fromLines, parseArgs, toLines } from './args';
 
@@ -55,7 +55,7 @@ function expandSet(set: string): string[] {
 
 interface SedCommand {
   address?: { kind: 'line'; value: number } | { kind: 'last' } | { kind: 'regex'; value: RegExp };
-  action: { kind: 's'; pattern: RegExp; replacement: string } | { kind: 'd' } | { kind: 'p' };
+  action: { kind: 's'; pattern: RegExp; replacement: string } | { kind: 'd' } | { kind: 'p' } | { kind: 'a' | 'i' | 'c'; text: string };
 }
 
 /** スクリプトを ; と改行で命令に分ける。s の 3 つの部分（探す・置き換える・印）の中の ; は区切りにしない（本物と同じ） */
@@ -71,6 +71,15 @@ function splitSedScript(script: string): string[] {
       i += 1;
     } else while (i < script.length && /[\d$]/.test(script[i] ?? '')) i += 1;
     while (i < script.length && /\s/.test(script[i] ?? '')) i += 1;
+    // a・i・c の文は行の終わりまで（; も文のうち）。a\ の後ろで改行した形は、次の行が文
+    if (/[aic]/.test(script[i] ?? '') && /^[aic](\\?\s|\\$|\\\n|$|[^\w])/.test(script.slice(i))) {
+      if (script.startsWith('\\\n', i + 1)) i += 3;
+      while (i < script.length && script[i] !== '\n') i += 1;
+      parts.push(script.slice(start, i));
+      i += 1;
+      start = i;
+      continue;
+    }
     if (script[i] === 's' && i + 1 < script.length) {
       const delimiter = script[i + 1] ?? '/';
       let seen = 0;
@@ -90,8 +99,8 @@ function splitSedScript(script: string): string[] {
 /** 対応するのは s/// と d と p だけ。それ以外は黙って無視せずエラーにする。 */
 export function parseSedScript(script: string): SedCommand[] {
   return splitSedScript(script)
-    .map((part) => part.trim())
-    .filter((part) => part !== '')
+    .map((part) => part.replace(/^\s+/, ''))
+    .filter((part) => part.trim() !== '')
     .map((part) => {
       let rest = part;
       let address: SedCommand['address'];
@@ -144,6 +153,15 @@ export function parseSedScript(script: string): SedCommand[] {
         return address === undefined ? command : { ...command, address };
       }
 
+      // a 文・i 文・c 文（GNU の 1 行の形）。a\ の後ろの空白は文のうち、a の後ろの空白は飛ばす
+      const text = /^([aic])(\\\n?|\s*)([\s\S]*)$/.exec(rest);
+      if (text && (text[2] !== '' || text[3] === '' || !/^\w/.test(text[3] ?? ''))) {
+        const kind = text[1] as 'a' | 'i' | 'c';
+        const command: SedCommand = { action: { kind, text: (text[3] ?? '').replace(/\\(\s)/g, '$1') } };
+        return address === undefined ? command : { ...command, address };
+      }
+
+      rest = rest.trim();
       if (rest === 'd' || rest === 'p') {
         const command: SedCommand = { action: { kind: rest } };
         return address === undefined ? command : { ...command, address };
@@ -158,7 +176,7 @@ export function applySed(lines: readonly string[], commands: readonly SedCommand
   lines.forEach((original, index) => {
     let line = original;
     let deleted = false;
-    let printed = false;
+    const after: string[] = [];
 
     for (const command of commands) {
       const address = command.address;
@@ -175,15 +193,28 @@ export function applySed(lines: readonly string[], commands: readonly SedCommand
       }
       if (command.action.kind === 'p') {
         out.push(line);
-        printed = true;
         continue;
       }
+      // i は今の行の前に、a は後ろに出す（-n でも出る）。c は行の代わりに文を出す
+      if (command.action.kind === 'i') {
+        out.push(command.action.text);
+        continue;
+      }
+      if (command.action.kind === 'a') {
+        after.push(command.action.text);
+        continue;
+      }
+      if (command.action.kind === 'c') {
+        out.push(command.action.text);
+        deleted = true;
+        break;
+      }
+      if (command.action.kind !== 's') continue;
       line = line.replace(command.action.pattern, command.action.replacement);
     }
 
-    if (deleted) return;
-    if (!quiet) out.push(line);
-    else if (!printed) return;
+    if (!deleted && !quiet) out.push(line);
+    out.push(...after);
   });
   return out;
 }
@@ -212,10 +243,19 @@ export const textToolCommands: CommandSpec[] = [
     name: 'sed',
     summary: '行を置換・削除する（s/// と d と p）',
     handler: ({ argv, shell, stdin }) => {
-      const { flags, values, operands } = parseArgs(argv, { withValue: ['e'] });
-      const script = values.get('e') ?? operands[0];
+      // -e は何度も書ける（全ての式を、書いた順に 1 つのスクリプトにする）
+      const scripts: string[] = [];
+      const rest: string[] = [argv[0] ?? 'sed'];
+      for (let i = 1; i < argv.length; i += 1) {
+        const a = argv[i] ?? '';
+        if (a === '-e' || a === '--expression') scripts.push(argv[(i += 1)] ?? '');
+        else if (a.startsWith('--expression=')) scripts.push(a.slice('--expression='.length));
+        else rest.push(a);
+      }
+      const { flags, operands } = parseArgs(rest);
+      const script = scripts.length > 0 ? scripts.join('\n') : operands[0];
       if (script === undefined) return { stderr: 'sed: no script specified\n', code: 1 };
-      const files = values.has('e') ? operands : operands.slice(1);
+      const files = scripts.length > 0 ? operands : operands.slice(1);
       // 読めないファイルは、本物と同じく can't read と言って 2 で終わる
       const missing = files.find((f) => stat(shell.vfs, resolve(shell.cwd, f)) === undefined);
       if (missing !== undefined) return { stderr: `sed: can't read ${missing}: No such file or directory\n`, code: 2 };
@@ -298,7 +338,10 @@ export const textToolCommands: CommandSpec[] = [
     name: 'xargs',
     summary: '標準入力を引数にしてコマンドを実行する',
     handler: ({ argv, stdin, shell, runLine }) => {
-      const { values, operands } = parseArgs(argv, { withValue: ['n', 'I'] });
+      // xargs の旗は、動かすコマンドより前の物だけ（xargs -n 1 curl -I の -I は curl の物）
+      const at = argv.findIndex((a, i) => i > 0 && !a.startsWith('-') && !['-n', '-I', '-L', '-P', '-d'].includes(argv[i - 1] ?? ''));
+      const { values } = parseArgs(at === -1 ? argv : argv.slice(0, at), { withValue: ['n', 'I', 'L', 'P', 'd'] });
+      const operands = at === -1 ? [] : argv.slice(at);
       const items = stdin.split(/\s+/).filter((s) => s !== '');
       if (items.length === 0) return { code: 0 };
       const base = operands.length > 0 ? operands.join(' ') : 'echo';
@@ -321,7 +364,7 @@ export const textToolCommands: CommandSpec[] = [
         stderr += result.stderr;
         if (result.code !== 0) code = result.code;
       }
-      return { stdout, stderr, code, patch: { vfs: state.vfs } };
+      return { stdout, stderr, code, patch: changedState(shell, state) };
     },
   },
   {

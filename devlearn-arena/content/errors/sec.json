@@ -27,7 +27,8 @@
       "terms": [
         "intermediate-certificate",
         "certificate-chain"
-      ]
+      ],
+      "outputOf": "\\bcurl\\b"
     },
     {
       "id": "sec-chain-order",

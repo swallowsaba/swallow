@@ -177,7 +177,7 @@ export function sshHolds(shell: ShellState, dest: string): boolean {
 const withHost = (shell: ShellState, host: SshHost): Partial<ShellState> => ({ sshHosts: new Map([...(shell.sshHosts ?? []), [host.host, host]]) });
 
 /** サーバの中の機械（ホームと authorized_keys だけ）を作り、1 つのコマンドを打つ。authorized_keys の変更は残す */
-function runRemote(ctx: CommandContext, target: Target, command: string): { result: CommandResult; host: SshHost } {
+function runRemote(ctx: CommandContext, target: Target, command: string, input = ''): { result: CommandResult; host: SshHost } {
   const { user, host } = target;
   const home = `/home/${user}`;
   const keys = `${home}/.ssh/authorized_keys`;
@@ -189,7 +189,7 @@ function runRemote(ctx: CommandContext, target: Target, command: string): { resu
   let vfs = remote.vfs;
   for (const [p, mode] of [[home, 0o755], [`${home}/.ssh`, 0o700], [keys, 0o600]] as const) vfs = setMeta(vfs, p, { mode, owner: user, group: user });
   remote = { ...remote, vfs };
-  const r = ctx.runLine(command, remote);
+  const r = ctx.runLine(command, remote, input);
   const after = exists(r.state.vfs, keys) ? readFile(r.state.vfs, keys).split('\n').filter((l) => l.trim() !== '') : [];
   return { result: { stdout: r.stdout, stderr: r.stderr, code: r.code }, host: { ...host, authorized: after } };
 }
@@ -223,7 +223,8 @@ function ssh(ctx: CommandContext): CommandResult {
     const motd = host.motd !== undefined ? `${host.motd}\n\n` : '';
     return { stdout: `${motd}logout\nConnection to ${host.host} closed.\n`, ...(stderr ? { stderr } : {}), patch: withHost(shell, host) };
   }
-  const remote = runRemote(ctx, { user: target.user, host }, command.join(' '));
+  // ssh に流し込んだ物は、サーバの命令の標準入力になる
+  const remote = runRemote(ctx, { user: target.user, host }, command.join(' '), ctx.stdin);
   return {
     stdout: remote.result.stdout ?? '',
     stderr: stderr + (remote.result.stderr ?? ''),

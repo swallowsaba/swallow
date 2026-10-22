@@ -160,8 +160,7 @@
         "check": {
           "kind": "ran",
           "uses": [
-            "grep",
-            "wc"
+            "grep"
           ],
           "result": "12"
         },
