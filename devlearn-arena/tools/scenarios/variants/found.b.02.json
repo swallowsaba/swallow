@@ -1,0 +1,74 @@
+{
+  "lesson": "found.b.02",
+  "variants": [
+    {
+      "name": "保管する物から先に置く",
+      "steps": {
+        "tidy": [
+          {
+            "op": "put",
+            "item": "old",
+            "slot": "store"
+          }
+        ],
+        "work": [
+          {
+            "op": "put",
+            "item": "movie",
+            "slot": "store"
+          },
+          {
+            "op": "put",
+            "item": "photo",
+            "slot": "desk"
+          },
+          {
+            "op": "put",
+            "item": "sheet",
+            "slot": "desk"
+          }
+        ]
+      }
+    },
+    {
+      "name": "写真を先に机へ・動画を最後に倉庫へ",
+      "steps": {
+        "tidy": [
+          {
+            "op": "put",
+            "item": "old",
+            "slot": "store"
+          }
+        ],
+        "work": [
+          {
+            "op": "put",
+            "item": "photo",
+            "slot": "desk"
+          },
+          {
+            "op": "put",
+            "item": "sheet",
+            "slot": "desk"
+          },
+          {
+            "op": "put",
+            "item": "movie",
+            "slot": "store"
+          }
+        ]
+      }
+    }
+  ],
+  "wrong": {
+    "step": "tidy",
+    "why": "大きい動画を机に入れる",
+    "input": [
+      {
+        "op": "put",
+        "item": "movie",
+        "slot": "desk"
+      }
+    ]
+  }
+}

@@ -1,0 +1,38 @@
+{
+  "lesson": "linux.i.02",
+  "variants": [
+    {
+      "name": "期間を付けずに全部読む",
+      "steps": {
+        "time": [
+          "journalctl -u web",
+          "02:13:44"
+        ],
+        "reason": [
+          "Memory"
+        ]
+      }
+    },
+    {
+      "name": ".service まで書いて grep で拾う",
+      "steps": {
+        "time": [
+          "journalctl -u web.service --no-pager | grep -i kill",
+          "02:13:44"
+        ],
+        "reason": [
+          "journalctl -u web | grep -i memory",
+          "memory"
+        ]
+      }
+    }
+  ],
+  "wrong": {
+    "step": "time",
+    "why": "作り直しで落ちた 2 回目の時刻を答える",
+    "input": [
+      "journalctl -u web",
+      "02:13:49"
+    ]
+  }
+}

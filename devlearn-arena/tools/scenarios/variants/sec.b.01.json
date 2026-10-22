@@ -1,0 +1,114 @@
+{
+  "lesson": "sec.b.01",
+  "variants": [
+    {
+      "name": "可用性から入れる・守りも逆から",
+      "steps": {
+        "classify": [
+          {
+            "op": "put",
+            "item": "broken",
+            "slot": "a"
+          },
+          {
+            "op": "put",
+            "item": "flood",
+            "slot": "a"
+          },
+          {
+            "op": "put",
+            "item": "price",
+            "slot": "i"
+          },
+          {
+            "op": "put",
+            "item": "sniff",
+            "slot": "c"
+          },
+          {
+            "op": "put",
+            "item": "roster",
+            "slot": "c"
+          }
+        ],
+        "protect": [
+          {
+            "op": "put",
+            "item": "spare",
+            "slot": "a"
+          },
+          {
+            "op": "put",
+            "item": "sign",
+            "slot": "i"
+          },
+          {
+            "op": "put",
+            "item": "enc",
+            "slot": "c"
+          }
+        ]
+      }
+    },
+    {
+      "name": "表の下から順に入れる",
+      "steps": {
+        "classify": [
+          {
+            "op": "put",
+            "item": "sniff",
+            "slot": "c"
+          },
+          {
+            "op": "put",
+            "item": "broken",
+            "slot": "a"
+          },
+          {
+            "op": "put",
+            "item": "roster",
+            "slot": "c"
+          },
+          {
+            "op": "put",
+            "item": "flood",
+            "slot": "a"
+          },
+          {
+            "op": "put",
+            "item": "price",
+            "slot": "i"
+          }
+        ],
+        "protect": [
+          {
+            "op": "put",
+            "item": "sign",
+            "slot": "i"
+          },
+          {
+            "op": "put",
+            "item": "enc",
+            "slot": "c"
+          },
+          {
+            "op": "put",
+            "item": "spare",
+            "slot": "a"
+          }
+        ]
+      }
+    }
+  ],
+  "wrong": {
+    "step": "classify",
+    "why": "料金表の事故を機密性に入れる",
+    "input": [
+      {
+        "op": "put",
+        "item": "price",
+        "slot": "c"
+      }
+    ]
+  }
+}

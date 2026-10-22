@@ -1,0 +1,43 @@
+{
+  "lesson": "web.b.03",
+  "variants": [
+    {
+      "name": "本文の種類を付けて送る・1 件を取る",
+      "steps": {
+        "make": [
+          "curl -X POST -H 'Content-Type: application/json' -d '{\"name\":\"港の地図\",\"stock\":5}' http://shop.example/items"
+        ],
+        "read": [
+          "curl -s http://shop.example/items",
+          "4"
+        ],
+        "remove": [
+          "curl -i -X DELETE http://shop.example/items/4"
+        ]
+      }
+    },
+    {
+      "name": "-d だけで POST・長い名前の指定",
+      "steps": {
+        "make": [
+          "curl --data '{\"stock\":5,\"name\":\"港の地図\"}' http://shop.example/items"
+        ],
+        "read": [
+          "curl http://shop.example/items | jq '.[-1].id'",
+          "４"
+        ],
+        "remove": [
+          "curl --request DELETE shop.example/items/4",
+          "curl -i http://shop.example/items/4"
+        ]
+      }
+    }
+  ],
+  "wrong": {
+    "step": "make",
+    "why": "作るのに PUT を使う",
+    "input": [
+      "curl -X PUT -d '{\"name\":\"港の地図\",\"stock\":5}' http://shop.example/items"
+    ]
+  }
+}

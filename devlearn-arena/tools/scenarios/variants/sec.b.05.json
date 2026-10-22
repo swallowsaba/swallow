@@ -1,0 +1,52 @@
+{
+  "lesson": "sec.b.05",
+  "variants": [
+    {
+      "name": "値を書いて置き換える・printf で .env を作る",
+      "steps": {
+        "read-env": [
+          "sed -i 's/^TOKEN=wt_live_9fK2mQ7xR4/TOKEN=$WEATHER_TOKEN/' app.sh"
+        ],
+        "keep-out": [
+          "printf 'export WEATHER_TOKEN=wt_live_9fK2mQ7xR4\\n' > .env",
+          "echo '.env' >> .gitignore"
+        ],
+        "run": [
+          ". ./.env && ./app.sh"
+        ],
+        "commit": [
+          "git add .gitignore app.sh && git commit -m '鍵を環境変数から読む'"
+        ]
+      }
+    },
+    {
+      "name": "引用符と {} で読む・まとめて記録する",
+      "steps": {
+        "read-env": [
+          "sed -i 's/^TOKEN=.*/TOKEN=\"${WEATHER_TOKEN}\"/' app.sh"
+        ],
+        "keep-out": [
+          "echo 'export WEATHER_TOKEN=wt_live_9fK2mQ7xR4' >> .env",
+          "printf '.env\\n' > .gitignore",
+          "git status"
+        ],
+        "run": [
+          "source .env",
+          "bash app.sh"
+        ],
+        "commit": [
+          "git add .",
+          "git status",
+          "git commit -m \"鍵を環境変数から読む\""
+        ]
+      }
+    }
+  ],
+  "wrong": {
+    "step": "run",
+    "why": ".env を読み込まずに動かす",
+    "input": [
+      "./app.sh"
+    ]
+  }
+}

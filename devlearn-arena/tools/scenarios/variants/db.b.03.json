@@ -1,0 +1,46 @@
+{
+  "lesson": "db.b.03",
+  "variants": [
+    {
+      "name": "COUNT で数える",
+      "steps": {
+        "names": [
+          "SELECT COUNT(name) FROM members",
+          "10"
+        ],
+        "tokyo": [
+          "SELECT COUNT(*) FROM members WHERE city = '東京'",
+          "4"
+        ],
+        "two": [
+          "SELECT id, name FROM members WHERE city = '東京' AND name = '小川'",
+          "5"
+        ]
+      }
+    },
+    {
+      "name": "小文字で書く・IN で絞る・名前で探す",
+      "steps": {
+        "names": [
+          "select name from members;",
+          "１０"
+        ],
+        "tokyo": [
+          "SELECT name FROM members WHERE city IN ('東京');",
+          " 4 "
+        ],
+        "two": [
+          "SELECT id FROM members WHERE name = '小川';",
+          "5"
+        ]
+      }
+    }
+  ],
+  "wrong": {
+    "step": "names",
+    "why": "列の名前を打ち間違える",
+    "input": [
+      "SELECT names FROM members"
+    ]
+  }
+}

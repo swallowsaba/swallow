@@ -1,0 +1,49 @@
+{
+  "lesson": "docker.i.03",
+  "variants": [
+    {
+      "name": "作って一覧で見る・--mount で付ける",
+      "steps": {
+        "create": [
+          "docker volume create db-data && docker volume ls"
+        ],
+        "attach": [
+          "docker stop db && docker rm db",
+          "docker run -d --name db --mount source=db-data,target=/var/lib/postgresql/data city-db:1.0"
+        ],
+        "add": [
+          "docker exec -it db psql -U postgres -d reserve -c \"INSERT INTO reservations (name) VALUES ('市民ホール');\""
+        ],
+        "keep": [
+          "docker rm -f db && docker run -d --name db -v db-data:/var/lib/postgresql/data city-db:1.0",
+          "docker exec db psql -U postgres -d reserve -c 'SELECT * FROM reservations'"
+        ]
+      }
+    },
+    {
+      "name": "-v で付けると同時に作られる",
+      "steps": {
+        "create": [
+          "docker rm -f db",
+          "docker run -d --name db -v db-data:/var/lib/postgresql/data city-db:1.0"
+        ],
+        "add": [
+          "docker exec db psql -U postgres reserve -c \"INSERT INTO reservations (name) VALUES ('市民ホール')\""
+        ],
+        "keep": [
+          "docker stop db",
+          "docker rm db",
+          "docker run -d --name db --mount source=db-data,target=/var/lib/postgresql/data city-db:1.0",
+          "docker exec db psql -U postgres -d reserve -c \"SELECT count(*) FROM reservations\""
+        ]
+      }
+    }
+  ],
+  "wrong": {
+    "step": "attach",
+    "why": "前の db を消さずに同じ名前で作る",
+    "input": [
+      "docker run -d --name db -v db-data:/var/lib/postgresql/data city-db:1.0"
+    ]
+  }
+}

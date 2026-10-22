@@ -1,0 +1,47 @@
+{
+  "lesson": "ctr.b.05",
+  "variants": [
+    {
+      "name": "latest も取り直して見比べる",
+      "steps": {
+        "now": [
+          "podman ps",
+          "podman search --list-tags registry.city.example/shop/web",
+          "podman pull registry.city.example/shop/web:latest",
+          "podman pull registry.city.example/shop/web:1.3-rc1",
+          "podman images",
+          "1.3-rc1"
+        ],
+        "pin": [
+          "podman stop shop && podman rm shop",
+          "podman run -d -p 8080:3000 --name shop registry.city.example/shop/web:1.2",
+          "curl localhost:8080"
+        ]
+      }
+    },
+    {
+      "name": "置き場の名前で絞って見る・長い名前の指定",
+      "steps": {
+        "now": [
+          "podman search --list-tags registry.city.example/shop/web",
+          "podman pull registry.city.example/shop/web:1.3-rc1",
+          "podman images registry.city.example/shop/web",
+          " 1.3-rc1"
+        ],
+        "pin": [
+          "podman rm --force shop",
+          "podman run --name shop --publish 8080:3000 --detach registry.city.example/shop/web:1.2",
+          "curl -s http://localhost:8080/"
+        ]
+      }
+    }
+  ],
+  "wrong": {
+    "step": "now",
+    "why": "タグの名前 latest をそのまま答える",
+    "input": [
+      "podman ps",
+      "latest"
+    ]
+  }
+}

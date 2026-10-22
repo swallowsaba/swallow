@@ -1,0 +1,74 @@
+{
+  "lesson": "ctr.b.01",
+  "variants": [
+    {
+      "name": "ライブラリから入れる・カーネルを先に分ける",
+      "steps": {
+        "lib": [
+          {
+            "op": "put",
+            "item": "lib",
+            "slot": "box"
+          },
+          {
+            "op": "put",
+            "item": "app",
+            "slot": "box"
+          }
+        ],
+        "conf": [
+          {
+            "op": "put",
+            "item": "kernel",
+            "slot": "host"
+          },
+          {
+            "op": "put",
+            "item": "conf",
+            "slot": "box"
+          }
+        ]
+      }
+    },
+    {
+      "name": "初めにカーネルを機械に任せる",
+      "steps": {
+        "lib": [
+          {
+            "op": "put",
+            "item": "kernel",
+            "slot": "host"
+          },
+          {
+            "op": "put",
+            "item": "app",
+            "slot": "box"
+          },
+          {
+            "op": "put",
+            "item": "lib",
+            "slot": "box"
+          }
+        ],
+        "conf": [
+          {
+            "op": "put",
+            "item": "conf",
+            "slot": "box"
+          }
+        ]
+      }
+    }
+  ],
+  "wrong": {
+    "step": "lib",
+    "why": "カーネルを箱に入れる",
+    "input": [
+      {
+        "op": "put",
+        "item": "kernel",
+        "slot": "box"
+      }
+    ]
+  }
+}

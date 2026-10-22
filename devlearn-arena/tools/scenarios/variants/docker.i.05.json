@@ -1,0 +1,47 @@
+{
+  "lesson": "docker.i.05",
+  "variants": [
+    {
+      "name": "利用者を書いてログイン・image の名前の命令・run で取ってくる",
+      "steps": {
+        "login": [
+          "docker login registry.city.example -u learner"
+        ],
+        "push": [
+          "docker image tag shop/web:1.2 registry.city.example/shop/web:1.2",
+          "docker image push registry.city.example/shop/web:1.2"
+        ],
+        "deploy": [
+          "docker --context prod stop shop",
+          "docker --context prod rm shop",
+          "docker --context prod run -d --name shop -p 80:3000 registry.city.example/shop/web:1.2"
+        ]
+      }
+    },
+    {
+      "name": "context を切り替えて入れ替える",
+      "steps": {
+        "login": [
+          "docker login -u learner registry.city.example"
+        ],
+        "push": [
+          "docker tag shop/web:1.2 registry.city.example/shop/web:1.2 && docker push registry.city.example/shop/web:1.2"
+        ],
+        "deploy": [
+          "docker context use prod",
+          "docker pull registry.city.example/shop/web:1.2",
+          "docker rm -f shop",
+          "docker run -d -p 80:3000 --name shop registry.city.example/shop/web:1.2",
+          "docker context use default"
+        ]
+      }
+    }
+  ],
+  "wrong": {
+    "step": "push",
+    "why": "置き場の住所を付けずに置く",
+    "input": [
+      "docker push shop/web:1.2"
+    ]
+  }
+}

@@ -1,0 +1,77 @@
+{
+  "lesson": "ctr.b.02",
+  "variants": [
+    {
+      "name": "下の問いから答える",
+      "steps": {
+        "os": [
+          {
+            "op": "answer",
+            "question": "many",
+            "value": "コンテナ・軽く多数"
+          },
+          {
+            "op": "answer",
+            "question": "win",
+            "value": "VM・別のOSが要る"
+          }
+        ],
+        "isolate": [
+          {
+            "op": "answer",
+            "question": "test",
+            "value": "コンテナ・数秒で起動"
+          },
+          {
+            "op": "answer",
+            "question": "tenant",
+            "value": "VM・強く分ける"
+          }
+        ]
+      }
+    },
+    {
+      "name": "初めに後の 2 問を答える",
+      "steps": {
+        "os": [
+          {
+            "op": "answer",
+            "question": "tenant",
+            "value": "VM・強く分ける"
+          },
+          {
+            "op": "answer",
+            "question": "test",
+            "value": "コンテナ・数秒で起動"
+          },
+          {
+            "op": "answer",
+            "question": "win",
+            "value": "VM・別のOSが要る"
+          },
+          {
+            "op": "answer",
+            "question": "many",
+            "value": "コンテナ・軽く多数"
+          }
+        ]
+      }
+    }
+  ],
+  "wrong": {
+    "step": "os",
+    "why": "会計ソフトもコンテナにする",
+    "input": [
+      {
+        "op": "answer",
+        "question": "win",
+        "value": "コンテナ・軽く多数"
+      },
+      {
+        "op": "answer",
+        "question": "many",
+        "value": "コンテナ・軽く多数"
+      }
+    ]
+  }
+}

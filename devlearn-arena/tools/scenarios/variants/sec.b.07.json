@@ -1,0 +1,54 @@
+{
+  "lesson": "sec.b.07",
+  "variants": [
+    {
+      "name": "-showcerts で見る・cd してつなぐ・動かし直す",
+      "steps": {
+        "see": [
+          "curl https://shop.example/",
+          "openssl s_client -connect shop.example:443 -showcerts",
+          "Minato Issuing CA"
+        ],
+        "chain": [
+          "cd /etc/nginx/certs",
+          "openssl x509 -in minato-issuing-ca.crt -noout -subject -issuer",
+          "cat shop.crt minato-issuing-ca.crt > fullchain.crt",
+          "sed -i 's/shop\\.crt/fullchain.crt/' /etc/nginx/conf.d/shop.conf",
+          "systemctl restart nginx",
+          "curl -s https://shop.example/"
+        ],
+        "count": [
+          "openssl s_client -connect shop.example:443 -servername shop.example -showcerts",
+          "2"
+        ]
+      }
+    },
+    {
+      "name": "標準入力を空にして打つ・nginx -s reload",
+      "steps": {
+        "see": [
+          "openssl s_client -connect shop.example:443 < /dev/null",
+          "minato issuing ca"
+        ],
+        "chain": [
+          "cat /etc/nginx/certs/shop.crt /etc/nginx/certs/minato-issuing-ca.crt > /etc/nginx/certs/fullchain.crt",
+          "sed -i 's|ssl_certificate .*|ssl_certificate /etc/nginx/certs/fullchain.crt;|' /etc/nginx/conf.d/shop.conf",
+          "nginx -t && nginx -s reload",
+          "curl https://shop.example/"
+        ],
+        "count": [
+          "echo | openssl s_client -connect shop.example:443 -servername shop.example",
+          "２"
+        ]
+      }
+    }
+  ],
+  "wrong": {
+    "step": "see",
+    "why": "発行者でなく根の名前を答える",
+    "input": [
+      "openssl s_client -connect shop.example:443 -servername shop.example",
+      "Minato Root CA"
+    ]
+  }
+}

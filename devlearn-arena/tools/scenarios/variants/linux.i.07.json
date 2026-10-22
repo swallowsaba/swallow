@@ -1,0 +1,35 @@
+{
+  "lesson": "linux.i.07",
+  "variants": [
+    {
+      "name": "awk で使用率を取る・sh で動かす",
+      "steps": {
+        "write": [
+          "cat > check.sh << \"EOF\"\n#!/bin/sh\nused=$(df / | awk 'NR==2 {print $5}' | tr -d '%')\nif [ \"$used\" -gt 80 ]; then\n  echo \"警告: ディスクを ${used}% 使っている\" > alert.txt\nfi\nEOF"
+        ],
+        "run": [
+          "sh check.sh",
+          "cat alert.txt"
+        ]
+      }
+    },
+    {
+      "name": "&& で 1 行にする・u+x で動かす",
+      "steps": {
+        "write": [
+          "cat > check.sh <<'EOF'\n#!/bin/bash\nused=$(df -P / | tail -1 | awk '{print $5}' | sed 's/%//')\n[ \"$used\" -gt 80 ] && echo \"警告: ディスクを ${used}% 使っている\" > alert.txt\nEOF"
+        ],
+        "run": [
+          "chmod u+x check.sh && ./check.sh"
+        ]
+      }
+    }
+  ],
+  "wrong": {
+    "step": "run",
+    "why": "実行の権限を付けずに動かす",
+    "input": [
+      "./check.sh"
+    ]
+  }
+}

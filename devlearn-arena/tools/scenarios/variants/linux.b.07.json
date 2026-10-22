@@ -1,0 +1,36 @@
+{
+  "lesson": "linux.b.07",
+  "variants": [
+    {
+      "name": "gpasswd で入れる・sg で書く",
+      "steps": {
+        "join": [
+          "ls -ld /srv/web",
+          "sudo gpasswd -a learner web"
+        ],
+        "write": [
+          "sg web -c 'touch /srv/web/index.html'"
+        ]
+      }
+    },
+    {
+      "name": "-a -G を分けて書く・echo で作る",
+      "steps": {
+        "join": [
+          "sudo usermod -a -G web learner"
+        ],
+        "write": [
+          "newgrp web",
+          "echo 'hello' > /srv/web/index.html"
+        ]
+      }
+    }
+  ],
+  "wrong": {
+    "step": "join",
+    "why": "sudo を付け忘れる",
+    "input": [
+      "usermod -aG web learner"
+    ]
+  }
+}

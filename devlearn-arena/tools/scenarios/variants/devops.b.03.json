@@ -1,0 +1,101 @@
+{
+  "lesson": "devops.b.03",
+  "variants": [
+    {
+      "name": "下の段から並べる",
+      "steps": {
+        "draw": [
+          {
+            "op": "arrange",
+            "stages": [
+              [
+                "ci"
+              ],
+              [
+                "approve"
+              ],
+              [
+                "deploy"
+              ]
+            ],
+            "dropOrder": "reverse"
+          }
+        ],
+        "shorten": [
+          {
+            "op": "arrange",
+            "stages": [
+              [
+                "ci"
+              ],
+              [
+                "auto"
+              ],
+              [
+                "deploy"
+              ]
+            ],
+            "dropOrder": "reverse"
+          }
+        ]
+      }
+    },
+    {
+      "name": "上の段から並べる（並びは 1 通り）",
+      "steps": {
+        "draw": [
+          {
+            "op": "arrange",
+            "stages": [
+              [
+                "ci"
+              ],
+              [
+                "approve"
+              ],
+              [
+                "deploy"
+              ]
+            ]
+          }
+        ],
+        "shorten": [
+          {
+            "op": "arrange",
+            "stages": [
+              [
+                "ci"
+              ],
+              [
+                "auto"
+              ],
+              [
+                "deploy"
+              ]
+            ]
+          }
+        ]
+      }
+    }
+  ],
+  "wrong": {
+    "step": "draw",
+    "why": "承認会議を CI より先に置く",
+    "input": [
+      {
+        "op": "arrange",
+        "stages": [
+          [
+            "approve"
+          ],
+          [
+            "ci"
+          ],
+          [
+            "deploy"
+          ]
+        ]
+      }
+    ]
+  }
+}

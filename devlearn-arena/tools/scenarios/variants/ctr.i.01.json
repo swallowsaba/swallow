@@ -1,0 +1,84 @@
+{
+  "lesson": "ctr.i.01",
+  "variants": [
+    {
+      "name": "カーネルの側から順に引く",
+      "steps": {
+        "dev": [
+          {
+            "op": "connect",
+            "a": "runc",
+            "b": "kernel"
+          },
+          {
+            "op": "connect",
+            "a": "containerd",
+            "b": "runc"
+          },
+          {
+            "op": "connect",
+            "a": "docker",
+            "b": "containerd"
+          }
+        ],
+        "prod": [
+          {
+            "op": "connect",
+            "a": "kubelet",
+            "b": "containerd"
+          }
+        ],
+        "test": [
+          {
+            "op": "connect",
+            "a": "podman",
+            "b": "runc"
+          }
+        ]
+      }
+    },
+    {
+      "name": "検証と本番の線を先に引く",
+      "steps": {
+        "dev": [
+          {
+            "op": "connect",
+            "a": "podman",
+            "b": "runc"
+          },
+          {
+            "op": "connect",
+            "a": "kubelet",
+            "b": "containerd"
+          },
+          {
+            "op": "connect",
+            "a": "runc",
+            "b": "kernel"
+          },
+          {
+            "op": "connect",
+            "a": "containerd",
+            "b": "runc"
+          },
+          {
+            "op": "connect",
+            "a": "docker",
+            "b": "containerd"
+          }
+        ]
+      }
+    }
+  ],
+  "wrong": {
+    "step": "dev",
+    "why": "Docker から runc へ直接つなぐ",
+    "input": [
+      {
+        "op": "connect",
+        "a": "docker",
+        "b": "runc"
+      }
+    ]
+  }
+}

@@ -1,0 +1,47 @@
+{
+  "lesson": "docker.b.05",
+  "variants": [
+    {
+      "name": "名前で絞る・末尾だけ読む・grep で root を拾う",
+      "steps": {
+        "status": [
+          "docker ps -a --filter name=reserve",
+          "1"
+        ],
+        "logs": [
+          "docker logs --tail 20 reserve",
+          "DATABASE_URL"
+        ],
+        "exec": [
+          "docker exec web grep root /etc/nginx/conf.d/default.conf",
+          "/usr/share/nginx/html"
+        ]
+      }
+    },
+    {
+      "name": "container ls --all・エラーも grep・sh -c で読む",
+      "steps": {
+        "status": [
+          "docker container ls --all",
+          "１"
+        ],
+        "logs": [
+          "docker logs reserve 2>&1 | grep -i database",
+          "database_url"
+        ],
+        "exec": [
+          "docker exec web sh -c 'cat /etc/nginx/conf.d/default.conf'",
+          " /usr/share/nginx/html"
+        ]
+      }
+    }
+  ],
+  "wrong": {
+    "step": "status",
+    "why": "動いている web の番号を答える",
+    "input": [
+      "docker ps -a",
+      "0"
+    ]
+  }
+}

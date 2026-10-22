@@ -1,0 +1,54 @@
+{
+  "lesson": "ctr.i.03",
+  "variants": [
+    {
+      "name": "止まった物も並べて見る・作ってから確かめる",
+      "steps": {
+        "why": [
+          "podman ps --all",
+          "podman logs --tail 5 web",
+          "web"
+        ],
+        "reach": [
+          "podman network connect front-net db",
+          "podman rm web",
+          "podman run -d --name web --network front-net -p 8080:3000 -e DATABASE_URL=postgres://postgres@db:5432/reserve city-reserve:2.0",
+          "curl http://localhost:8080"
+        ],
+        "hide": [
+          "podman port db",
+          "podman stop db && podman rm db",
+          "podman run -d --name db --network front-net city-db:1.0",
+          "podman ps"
+        ]
+      }
+    },
+    {
+      "name": "先に消す・--net と --env で作る",
+      "steps": {
+        "why": [
+          "podman logs web",
+          " web"
+        ],
+        "reach": [
+          "podman rm -f web",
+          "podman network connect front-net db",
+          "podman run --name web -d --net front-net --env DATABASE_URL=postgres://postgres@db:5432/reserve -p 8080:3000 city-reserve:2.0",
+          "curl -s localhost:8080"
+        ],
+        "hide": [
+          "podman rm -f db && podman run -d --network front-net --name db city-db:1.0",
+          "curl -s localhost:8080"
+        ]
+      }
+    }
+  ],
+  "wrong": {
+    "step": "why",
+    "why": "DB のコンテナだと思って答える",
+    "input": [
+      "podman logs web",
+      "db"
+    ]
+  }
+}

@@ -1,0 +1,64 @@
+{
+  "lesson": "found.b.03",
+  "variants": [
+    {
+      "name": "表計算に 4 番を配る",
+      "steps": {
+        "small": [
+          {
+            "op": "put",
+            "item": "m4",
+            "slot": "sheet"
+          }
+        ],
+        "all": [
+          {
+            "op": "put",
+            "item": "m2",
+            "slot": "browser"
+          },
+          {
+            "op": "put",
+            "item": "m3",
+            "slot": "browser"
+          }
+        ]
+      }
+    },
+    {
+      "name": "表計算に 3 番を配り、ブラウザに 4 番から配る",
+      "steps": {
+        "small": [
+          {
+            "op": "put",
+            "item": "m3",
+            "slot": "sheet"
+          }
+        ],
+        "all": [
+          {
+            "op": "put",
+            "item": "m4",
+            "slot": "browser"
+          },
+          {
+            "op": "put",
+            "item": "m2",
+            "slot": "browser"
+          }
+        ]
+      }
+    }
+  ],
+  "wrong": {
+    "step": "small",
+    "why": "音楽が使っているメモリ 1 番を表計算に配る",
+    "input": [
+      {
+        "op": "put",
+        "item": "m1",
+        "slot": "sheet"
+      }
+    ]
+  }
+}

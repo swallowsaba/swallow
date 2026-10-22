@@ -1,0 +1,44 @@
+{
+  "lesson": "docker.b.03",
+  "variants": [
+    {
+      "name": "--name を先に書く・container の名前の命令",
+      "steps": {
+        "run": [
+          "docker run --name web -d nginx:1.27",
+          "docker container ls"
+        ],
+        "stop": [
+          "docker container stop web",
+          "docker ps -a"
+        ],
+        "rm": [
+          "docker container rm web",
+          "docker image ls"
+        ]
+      }
+    },
+    {
+      "name": "= で書く・待ち時間を決めて止める・&& でつなぐ",
+      "steps": {
+        "run": [
+          "docker container run -d --name=web nginx:1.27"
+        ],
+        "stop": [
+          "docker stop -t 1 web",
+          "docker ps --all"
+        ],
+        "rm": [
+          "docker rm web && docker images"
+        ]
+      }
+    }
+  ],
+  "wrong": {
+    "step": "stop",
+    "why": "コンテナの名前を打ち間違える",
+    "input": [
+      "docker stop wbe"
+    ]
+  }
+}

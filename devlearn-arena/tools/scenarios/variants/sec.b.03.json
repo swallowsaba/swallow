@@ -1,0 +1,90 @@
+{
+  "lesson": "sec.b.03",
+  "variants": [
+    {
+      "name": "強い札を先に入れてから弱い札を戻す",
+      "steps": {
+        "mfa": [
+          {
+            "op": "put",
+            "item": "app",
+            "slot": "gate"
+          }
+        ],
+        "password": [
+          {
+            "op": "put",
+            "item": "len12",
+            "slot": "rules"
+          },
+          {
+            "op": "put",
+            "item": "leaked",
+            "slot": "rules"
+          },
+          {
+            "op": "put",
+            "item": "lock",
+            "slot": "rules"
+          },
+          {
+            "op": "take",
+            "item": "free"
+          },
+          {
+            "op": "take",
+            "item": "len6"
+          }
+        ]
+      }
+    },
+    {
+      "name": "1 枚ずつ入れ替える",
+      "steps": {
+        "mfa": [
+          {
+            "op": "put",
+            "item": "app",
+            "slot": "gate"
+          }
+        ],
+        "password": [
+          {
+            "op": "take",
+            "item": "len6"
+          },
+          {
+            "op": "put",
+            "item": "len12",
+            "slot": "rules"
+          },
+          {
+            "op": "take",
+            "item": "free"
+          },
+          {
+            "op": "put",
+            "item": "lock",
+            "slot": "rules"
+          },
+          {
+            "op": "put",
+            "item": "leaked",
+            "slot": "rules"
+          }
+        ]
+      }
+    }
+  ],
+  "wrong": {
+    "step": "mfa",
+    "why": "秘密の質問を 2 つ目の要素にする",
+    "input": [
+      {
+        "op": "put",
+        "item": "question",
+        "slot": "gate"
+      }
+    ]
+  }
+}

@@ -1,0 +1,39 @@
+{
+  "lesson": "net.b.06",
+  "variants": [
+    {
+      "name": "+short を後ろに・rndc で読み直す",
+      "steps": {
+        "look": [
+          "dig shop.example +short"
+        ],
+        "fix": [
+          "sed -i 's/203\\.0\\.113\\.10/203.0.113.20/' /etc/bind/db.shop.example",
+          "rndc reload",
+          "curl http://shop.example/"
+        ]
+      }
+    },
+    {
+      "name": "種類を書いて引く・動かし直す",
+      "steps": {
+        "look": [
+          "dig +short shop.example A"
+        ],
+        "fix": [
+          "sed -i 's/113.10/113.20/' /etc/bind/db.shop.example",
+          "systemctl restart named",
+          "dig +short shop.example",
+          "curl -s shop.example"
+        ]
+      }
+    }
+  ],
+  "wrong": {
+    "step": "fix",
+    "why": "ゾーンファイルの名前を打ち間違える",
+    "input": [
+      "sed -i 's/203.0.113.10/203.0.113.20/' /etc/bind/db.shop"
+    ]
+  }
+}

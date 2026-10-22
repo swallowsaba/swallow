@@ -1,0 +1,48 @@
+{
+  "lesson": "mon.b.02",
+  "variants": [
+    {
+      "name": "grep -c で数える・jq で選んで数える",
+      "steps": {
+        "count": [
+          "grep -c '\"level\":\"ERROR\"' app.log"
+        ],
+        "service": [
+          "jq -r 'select(.level==\"ERROR\") | .service' app.log | sort | uniq -c | sort -rn",
+          "reserve"
+        ]
+      }
+    },
+    {
+      "name": "jq で水準だけを出して数える・grep -o でサービスを拾う",
+      "steps": {
+        "count": [
+          "jq -r .level app.log | grep ERROR | wc -l"
+        ],
+        "service": [
+          "grep ERROR app.log | grep -o '\"service\":\"[a-z]*\"' | sort | uniq -c",
+          "Reserve"
+        ]
+      }
+    },
+    {
+      "name": "ERROR の字で数える",
+      "steps": {
+        "count": [
+          "grep ERROR app.log | wc -l"
+        ],
+        "service": [
+          "grep '\"level\":\"ERROR\"' app.log | jq -r .service | sort | uniq -c",
+          " reserve"
+        ]
+      }
+    }
+  ],
+  "wrong": {
+    "step": "count",
+    "why": "WARN の行を数える",
+    "input": [
+      "grep WARN app.log | wc -l"
+    ]
+  }
+}

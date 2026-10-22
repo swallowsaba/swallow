@@ -1,0 +1,67 @@
+{
+  "lesson": "cloud.b.02",
+  "variants": [
+    {
+      "name": "メールから答える",
+      "steps": {
+        "less-work": [
+          {
+            "op": "answer",
+            "question": "mail",
+            "value": "SaaS・出来上がった物を使うだけ"
+          },
+          {
+            "op": "answer",
+            "question": "reserve",
+            "value": "PaaS・アプリだけ置けばよい"
+          }
+        ],
+        "freedom": [
+          {
+            "op": "answer",
+            "question": "map",
+            "value": "IaaS・OSから自分で決められる"
+          }
+        ]
+      }
+    },
+    {
+      "name": "地図の仕組みを先に答える",
+      "steps": {
+        "less-work": [
+          {
+            "op": "answer",
+            "question": "map",
+            "value": "IaaS・OSから自分で決められる"
+          },
+          {
+            "op": "answer",
+            "question": "reserve",
+            "value": "PaaS・アプリだけ置けばよい"
+          },
+          {
+            "op": "answer",
+            "question": "mail",
+            "value": "SaaS・出来上がった物を使うだけ"
+          }
+        ]
+      }
+    }
+  ],
+  "wrong": {
+    "step": "less-work",
+    "why": "予約サイトを IaaS にする",
+    "input": [
+      {
+        "op": "answer",
+        "question": "reserve",
+        "value": "IaaS・OSから自分で決められる"
+      },
+      {
+        "op": "answer",
+        "question": "mail",
+        "value": "SaaS・出来上がった物を使うだけ"
+      }
+    ]
+  }
+}

@@ -1,0 +1,34 @@
+{
+  "lesson": "k8s.i.01",
+  "variants": [
+    {
+      "name": "1 つの値を configMapKeyRef で受け取る・同じ名前の値を変えて札で入れ替える",
+      "steps": {
+        "move": [
+          "apiVersion: v1\nkind: ConfigMap\nmetadata:\n  name: web-config\ndata:\n  DATABASE_URL: postgres://reserve@db-staging:5432/reserve\n---\napiVersion: apps/v1\nkind: Deployment\nmetadata:\n  name: web\nspec:\n  replicas: 2\n  selector:\n    matchLabels:\n      app: web\n  template:\n    metadata:\n      labels:\n        app: web\n    spec:\n      containers:\n      - name: web\n        image: city-reserve:2.0\n        ports:\n        - containerPort: 3000\n        env:\n        - name: DATABASE_URL\n          valueFrom:\n            configMapKeyRef:\n              name: web-config\n              key: DATABASE_URL\n"
+        ],
+        "switch": [
+          "apiVersion: v1\nkind: ConfigMap\nmetadata:\n  name: web-config\ndata:\n  DATABASE_URL: postgres://reserve@db-staging-2:5432/reserve\n---\napiVersion: apps/v1\nkind: Deployment\nmetadata:\n  name: web\nspec:\n  replicas: 2\n  selector:\n    matchLabels:\n      app: web\n  template:\n    metadata:\n      labels:\n        app: web\n      annotations:\n        config-version: \"2\"\n    spec:\n      containers:\n      - name: web\n        image: city-reserve:2.0\n        ports:\n        - containerPort: 3000\n        env:\n        - name: DATABASE_URL\n          valueFrom:\n            configMapKeyRef:\n              name: web-config\n              key: DATABASE_URL\n"
+        ]
+      }
+    },
+    {
+      "name": "Deployment を先に書く・引用符の値・新しい名前を configMapKeyRef で",
+      "steps": {
+        "move": [
+          "apiVersion: apps/v1\nkind: Deployment\nmetadata:\n  name: web\nspec:\n  replicas: 2\n  selector:\n    matchLabels:\n      app: web\n  template:\n    metadata:\n      labels:\n        app: web\n    spec:\n      containers:\n        - name: web\n          image: city-reserve:2.0\n          ports:\n            - containerPort: 3000\n          envFrom:\n            - configMapRef:\n                name: web-config\n---\napiVersion: v1\nkind: ConfigMap\nmetadata:\n  name: web-config\ndata:\n  DATABASE_URL: \"postgres://reserve@db-staging:5432/reserve\"\n"
+        ],
+        "switch": [
+          "apiVersion: apps/v1\nkind: Deployment\nmetadata:\n  name: web\nspec:\n  replicas: 2\n  selector:\n    matchLabels:\n      app: web\n  template:\n    metadata:\n      labels:\n        app: web\n    spec:\n      containers:\n        - name: web\n          image: city-reserve:2.0\n          ports:\n            - containerPort: 3000\n          env:\n            - name: DATABASE_URL\n              valueFrom:\n                configMapKeyRef:\n                  name: web-config-v2\n                  key: DATABASE_URL\n---\napiVersion: v1\nkind: ConfigMap\nmetadata:\n  name: web-config-v2\ndata:\n  DATABASE_URL: \"postgres://reserve@db-staging-2:5432/reserve\"\n"
+        ]
+      }
+    }
+  ],
+  "wrong": {
+    "step": "move",
+    "why": "ConfigMap の名前を打ち間違える",
+    "input": [
+      "apiVersion: v1\nkind: ConfigMap\nmetadata:\n  name: web-config\ndata:\n  DATABASE_URL: postgres://reserve@db-staging:5432/reserve\n---\napiVersion: apps/v1\nkind: Deployment\nmetadata:\n  name: web\nspec:\n  replicas: 2\n  selector:\n    matchLabels:\n      app: web\n  template:\n    metadata:\n      labels:\n        app: web\n    spec:\n      containers:\n      - name: web\n        image: city-reserve:2.0\n        envFrom:\n        - configMapRef:\n            name: web-cfg\n"
+    ]
+  }
+}

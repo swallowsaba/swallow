@@ -1,0 +1,31 @@
+{
+  "lesson": "mon.b.04",
+  "variants": [
+    {
+      "name": "以上の比べ方・秒で書いた for",
+      "steps": {
+        "condition": [
+          "# 予約サイトのアラート（Prometheus の規則）\ngroups:\n  - name: reserve\n    rules:\n      - alert: ReserveErrorRate\n        expr: reserve:error_ratio >= 0.05\n        for: 300s\n        labels:\n          severity: warning\n        annotations:\n          summary: 予約のエラーが増えている\n"
+        ],
+        "response": [
+          "# 予約サイトのアラート（Prometheus の規則）\ngroups:\n  - name: reserve\n    rules:\n      - alert: ReserveErrorRate\n        expr: reserve:error_ratio >= 0.05\n        for: 300s\n        labels:\n          severity: page\n        annotations:\n          summary: 予約のエラーが増えている\n          runbook_url: \"https://wiki.city.example/runbooks/reserve-error-rate\"\n"
+        ]
+      }
+    },
+    {
+      "name": "式を引用符で囲む・初めから page と手順書も書く",
+      "steps": {
+        "condition": [
+          "groups:\n- name: reserve\n  rules:\n  - alert: ReserveErrorRate\n    expr: 'reserve:error_ratio > 0.05'\n    for: 5m\n    labels:\n      severity: page\n    annotations:\n      summary: 予約のエラーが増えている\n      runbook_url: https://wiki.city.example/runbooks/reserve-error-rate\n"
+        ]
+      }
+    }
+  ],
+  "wrong": {
+    "step": "condition",
+    "why": "for に単位を書き落とす",
+    "input": [
+      "groups:\n  - name: reserve\n    rules:\n      - alert: ReserveErrorRate\n        expr: reserve:error_ratio > 0.05\n        for: 5\n        labels:\n          severity: warning\n        annotations:\n          summary: 予約のエラーが増えている\n"
+    ]
+  }
+}

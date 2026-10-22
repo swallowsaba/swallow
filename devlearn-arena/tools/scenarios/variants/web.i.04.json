@@ -1,0 +1,31 @@
+{
+  "lesson": "web.i.04",
+  "variants": [
+    {
+      "name": "引用符を付けない値・expires で 1 年",
+      "steps": {
+        "html": [
+          "server {\n  listen 80;\n  server_name port.example;\n  root /var/www/port;\n\n  # お知らせのページ（index.html）。毎日直す\n  location / {\n    add_header Cache-Control no-cache;\n  }\n\n  # 画像（logo.v3.png・port.v1.jpg）。変えない。変える時は名前も変える（logo.v4.png）\n  location /images/ {\n    add_header Cache-Control \"no-store\";\n  }\n}"
+        ],
+        "image": [
+          "server {\n  listen 80;\n  server_name port.example;\n  root /var/www/port;\n\n  # お知らせのページ（index.html）。毎日直す\n  location / {\n    add_header Cache-Control no-cache;\n  }\n\n  # 画像（logo.v3.png・port.v1.jpg）。変えない。変える時は名前も変える（logo.v4.png）\n  location /images/ {\n    expires 1y;\n  }\n}"
+        ]
+      }
+    },
+    {
+      "name": "一引用符で書く・2 つを 1 度に直す",
+      "steps": {
+        "html": [
+          "server {\n  listen 80;\n  server_name port.example;\n  root /var/www/port;\n\n  location / {\n    add_header Cache-Control 'no-cache';\n  }\n\n  location /images/ {\n    add_header Cache-Control 'max-age=31536000';\n  }\n}\n"
+        ]
+      }
+    }
+  ],
+  "wrong": {
+    "step": "html",
+    "why": "保存させない no-store にする",
+    "input": [
+      "server {\n  listen 80;\n  server_name port.example;\n  root /var/www/port;\n\n  location / {\n    add_header Cache-Control \"no-store\";\n  }\n\n  location /images/ {\n    add_header Cache-Control \"no-store\";\n  }\n}"
+    ]
+  }
+}

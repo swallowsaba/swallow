@@ -1,0 +1,34 @@
+{
+  "lesson": "cicd.b.05",
+  "variants": [
+    {
+      "name": "長い名前の指定の curl・式の形の if",
+      "steps": {
+        "verify": [
+          "name: deploy\non:\n  push:\n    branches: [main]\njobs:\n  release:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@v4\n      - run: npm ci\n      - run: npm run build\n      - name: 本番に配る\n        run: npm run deploy\n      - name: 動いているか確かめる\n        run: curl --fail --silent --show-error https://reserve.example/health\n      - name: 前の版を消す\n        run: npm run prune\n"
+        ],
+        "rollback": [
+          "name: deploy\non:\n  push:\n    branches: [main]\njobs:\n  release:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@v4\n      - run: npm ci\n      - run: npm run build\n      - name: 本番に配る\n        run: npm run deploy\n      - name: 動いているか確かめる\n        run: curl --fail --silent --show-error https://reserve.example/health\n      - name: 前の版を消す\n        run: npm run prune\n      - name: 切り戻す\n        if: ${{ failure() }}\n        run: npm run rollback\n"
+        ]
+      }
+    },
+    {
+      "name": "名前を付けない手順・curl -f",
+      "steps": {
+        "verify": [
+          "# 予約サイトを組み立てて、本番に配る\nname: deploy\non:\n  push:\n    branches: [main]\njobs:\n  release:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@v4\n      - run: npm ci\n      - run: npm run build\n      - run: npm run deploy\n      - run: curl -f https://reserve.example/health\n      - run: npm run prune\n"
+        ],
+        "rollback": [
+          "# 予約サイトを組み立てて、本番に配る\nname: deploy\non:\n  push:\n    branches: [main]\njobs:\n  release:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@v4\n      - run: npm ci\n      - run: npm run build\n      - run: npm run deploy\n      - run: curl -f https://reserve.example/health\n      - run: npm run prune\n      - if: failure()\n        run: npm run rollback\n"
+        ]
+      }
+    }
+  ],
+  "wrong": {
+    "step": "verify",
+    "why": "確かめを前の版を消した後に置く",
+    "input": [
+      "name: deploy\non:\n  push:\n    branches: [main]\njobs:\n  release:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@v4\n      - run: npm ci\n      - run: npm run build\n      - name: 本番に配る\n        run: npm run deploy\n      - name: 前の版を消す\n        run: npm run prune\n      - name: 配った後に確かめる\n        run: curl -fsS https://reserve.example/health\n"
+    ]
+  }
+}

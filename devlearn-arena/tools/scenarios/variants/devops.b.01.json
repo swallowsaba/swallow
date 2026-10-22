@@ -1,0 +1,85 @@
+{
+  "lesson": "devops.b.01",
+  "variants": [
+    {
+      "name": "初めから一緒に作った検査で並べる",
+      "steps": {
+        "handoff": [
+          {
+            "op": "arrange",
+            "stages": [
+              [
+                "code"
+              ],
+              [
+                "sharedtest"
+              ],
+              [
+                "deploy"
+              ]
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "下の段から並べる（配る段を先に置く）",
+      "steps": {
+        "handoff": [
+          {
+            "op": "arrange",
+            "stages": [
+              [
+                "code"
+              ],
+              [
+                "localtest"
+              ],
+              [
+                "deploy"
+              ]
+            ],
+            "dropOrder": "reverse"
+          }
+        ],
+        "share": [
+          {
+            "op": "arrange",
+            "stages": [
+              [
+                "code"
+              ],
+              [
+                "sharedtest"
+              ],
+              [
+                "deploy"
+              ]
+            ],
+            "dropOrder": "reverse"
+          }
+        ]
+      }
+    }
+  ],
+  "wrong": {
+    "step": "handoff",
+    "why": "書く前に検査を置く",
+    "input": [
+      {
+        "op": "arrange",
+        "stages": [
+          [
+            "localtest"
+          ],
+          [
+            "code"
+          ],
+          [
+            "deploy"
+          ]
+        ]
+      }
+    ]
+  }
+}

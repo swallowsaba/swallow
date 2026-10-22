@@ -1,0 +1,39 @@
+{
+  "lesson": "net.i.04",
+  "variants": [
+    {
+      "name": "大文字小文字を問わず拾う・-t だけ",
+      "steps": {
+        "refused": [
+          "grep -i refused /var/log/app.log",
+          "10.0.0.20:5432"
+        ],
+        "timeout": [
+          "ss -ta",
+          "10.0.0.30:6379"
+        ]
+      }
+    },
+    {
+      "name": "ログ全体を読む・状態で絞る",
+      "steps": {
+        "refused": [
+          "cat /var/log/app.log",
+          "10.0.0.20:5432"
+        ],
+        "timeout": [
+          "ss -tan state syn-sent",
+          "10.0.0.30:6379"
+        ]
+      }
+    }
+  ],
+  "wrong": {
+    "step": "refused",
+    "why": "時間切れの相手を答える",
+    "input": [
+      "grep refused /var/log/app.log",
+      "10.0.0.30:6379"
+    ]
+  }
+}

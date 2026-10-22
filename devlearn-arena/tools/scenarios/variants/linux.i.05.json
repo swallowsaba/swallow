@@ -1,0 +1,39 @@
+{
+  "lesson": "linux.i.05",
+  "variants": [
+    {
+      "name": "/ だけを見る・深さ 1 で数える",
+      "steps": {
+        "usage": [
+          "df -h /",
+          "91%"
+        ],
+        "place": [
+          "du -h --max-depth=1 /var | sort -h",
+          "/var/log"
+        ]
+      }
+    },
+    {
+      "name": "単位なしの df・KB で並べる",
+      "steps": {
+        "usage": [
+          "df",
+          "91%"
+        ],
+        "place": [
+          "du -s /var/* | sort -n",
+          "/var/log"
+        ]
+      }
+    }
+  ],
+  "wrong": {
+    "step": "usage",
+    "why": "使用率でなく大きさを答える",
+    "input": [
+      "df -h",
+      "20G"
+    ]
+  }
+}

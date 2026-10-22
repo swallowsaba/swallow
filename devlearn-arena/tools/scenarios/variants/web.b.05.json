@@ -1,0 +1,39 @@
+{
+  "lesson": "web.b.05",
+  "variants": [
+    {
+      "name": "頭と本文を両方見る・転送をたどる",
+      "steps": {
+        "moved": [
+          "curl -i http://shop.example/menu-2025",
+          "/menu"
+        ],
+        "keep": [
+          "curl -sIL http://shop.example/menu-2025",
+          "3600"
+        ]
+      }
+    },
+    {
+      "name": "grep で見出しを拾う・-D で頭を出す",
+      "steps": {
+        "moved": [
+          "curl -sI http://shop.example/menu-2025 | grep -i location",
+          "/menu"
+        ],
+        "keep": [
+          "curl -s -D - -o /dev/null http://shop.example/menu",
+          "３６００"
+        ]
+      }
+    }
+  ],
+  "wrong": {
+    "step": "moved",
+    "why": "転送先でなく数を答える",
+    "input": [
+      "curl -I http://shop.example/menu-2025",
+      "301"
+    ]
+  }
+}

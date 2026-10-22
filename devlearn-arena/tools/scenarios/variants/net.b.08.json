@@ -1,0 +1,28 @@
+{
+  "lesson": "net.b.08",
+  "variants": [
+    {
+      "name": "範囲を 200〜250 にする",
+      "steps": {
+        "range": [
+          "# 事務所の網 192.168.1.0/24 に、来客のパソコンのアドレスを配る\n# 決まった番号で使う機械: ルータ 192.168.1.1・ファイルのサーバ 192.168.1.10・プリンタ 192.168.1.20\ndefault-lease-time 86400;\nmax-lease-time 86400;\nauthoritative;\n\nsubnet 192.168.1.0 netmask 255.255.255.0 {\n  range 192.168.1.200 192.168.1.250;\n  option routers 192.168.1.1;\n  option domain-name-servers 192.168.1.1;\n}"
+        ]
+      }
+    },
+    {
+      "name": "範囲を 21〜30 にする（ちょうど 10 台）・字下げ 4",
+      "steps": {
+        "range": [
+          "# 事務所の網 192.168.1.0/24 に、来客のパソコンのアドレスを配る\ndefault-lease-time 86400;\nmax-lease-time 86400;\nauthoritative;\n\nsubnet 192.168.1.0 netmask 255.255.255.0 {\n    range 192.168.1.21 192.168.1.30;\n    option routers 192.168.1.1;\n    option domain-name-servers 192.168.1.1;\n}\n"
+        ]
+      }
+    }
+  ],
+  "wrong": {
+    "step": "range",
+    "why": "決まった番号の機械と重なる範囲にする",
+    "input": [
+      "# 事務所の網 192.168.1.0/24 に、来客のパソコンのアドレスを配る\ndefault-lease-time 86400;\nmax-lease-time 86400;\nauthoritative;\n\nsubnet 192.168.1.0 netmask 255.255.255.0 {\n  range 192.168.1.1 192.168.1.10;\n  option routers 192.168.1.1;\n  option domain-name-servers 192.168.1.1;\n}"
+    ]
+  }
+}

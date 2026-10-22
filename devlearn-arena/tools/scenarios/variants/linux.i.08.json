@@ -1,0 +1,48 @@
+{
+  "lesson": "linux.i.08",
+  "variants": [
+    {
+      "name": "今の登録に足して読み込ませる",
+      "steps": {
+        "schedule": [
+          "(crontab -l 2>/dev/null; echo '0 2 * * * /srv/backup.sh >> /var/log/backup.log 2>&1') | crontab -",
+          "crontab -l"
+        ],
+        "verify": [
+          "timeskip 02:30",
+          "cat /var/log/backup.log"
+        ]
+      }
+    },
+    {
+      "name": "ファイルに書いて crontab に渡す",
+      "steps": {
+        "schedule": [
+          "echo '0 2 * * * /srv/backup.sh >> /var/log/backup.log 2>&1' > /tmp/mycron",
+          "crontab /tmp/mycron"
+        ],
+        "verify": [
+          "timeskip 03:00"
+        ]
+      }
+    },
+    {
+      "name": "分と時を 2 けたで書く",
+      "steps": {
+        "schedule": [
+          "echo '00 02 * * * /srv/backup.sh >> /var/log/backup.log 2>&1' | crontab -"
+        ],
+        "verify": [
+          "timeskip 02:01"
+        ]
+      }
+    }
+  ],
+  "wrong": {
+    "step": "schedule",
+    "why": "時刻の欄を 1 つ書き落とす",
+    "input": [
+      "echo '0 2 * * /srv/backup.sh >> /var/log/backup.log 2>&1' | crontab -"
+    ]
+  }
+}

@@ -1,0 +1,36 @@
+{
+  "lesson": "linux.b.06",
+  "variants": [
+    {
+      "name": "記号で指定する",
+      "steps": {
+        "exec": [
+          "ls -l",
+          "chmod u+x deploy.sh"
+        ],
+        "secret": [
+          "chmod u=rw,go= secret.key"
+        ]
+      }
+    },
+    {
+      "name": "8 進数で指定する",
+      "steps": {
+        "exec": [
+          "chmod 755 deploy.sh"
+        ],
+        "secret": [
+          "chmod 0600 secret.key",
+          "ls -l secret.key"
+        ]
+      }
+    }
+  ],
+  "wrong": {
+    "step": "exec",
+    "why": "ファイルの名前を打ち間違える",
+    "input": [
+      "chmod +x deploy.s"
+    ]
+  }
+}

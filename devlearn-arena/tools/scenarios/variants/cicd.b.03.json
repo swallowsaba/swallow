@@ -1,0 +1,55 @@
+{
+  "lesson": "cicd.b.03",
+  "variants": [
+    {
+      "name": "流れの名前で絞る・ログだけを開く・add してから記録",
+      "steps": {
+        "build": [
+          "gh run list --workflow ci",
+          "gh run view 4200064786 --log-failed",
+          "src/reserve.ts:12"
+        ],
+        "test": [
+          "gh run view 4200065903 --log-failed | grep Received",
+          "3000"
+        ],
+        "fix": [
+          "sed -i 's/ADULT = 3000/ADULT = 3500/' src/price.ts",
+          "git add src/price.ts && git commit -m '大人の料金を 3500 円に直す'",
+          "git push origin main",
+          "gh run watch"
+        ]
+      }
+    },
+    {
+      "name": "数を絞った一覧・全てのログ・一覧で見届ける",
+      "steps": {
+        "build": [
+          "gh run list -L 3",
+          "gh run view 4200064786",
+          "gh run view --log-failed 4200064786",
+          " src/reserve.ts:12"
+        ],
+        "test": [
+          "gh run view 4200065903 --log",
+          "３０００"
+        ],
+        "fix": [
+          "sed -i 's/const ADULT = 3000;/const ADULT = 3500;/' src/price.ts",
+          "git commit -a -m \"大人の料金を 3500 円に直す\"",
+          "git push",
+          "gh run list -L 1"
+        ]
+      }
+    }
+  ],
+  "wrong": {
+    "step": "build",
+    "why": "別のファイルの行を答える",
+    "input": [
+      "gh run list",
+      "gh run view 4200064786 --log-failed",
+      "src/price.ts:5"
+    ]
+  }
+}

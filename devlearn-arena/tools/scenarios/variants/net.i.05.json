@@ -1,0 +1,34 @@
+{
+  "lesson": "net.i.05",
+  "variants": [
+    {
+      "name": "名前を全て書き、末尾の . を付けた形",
+      "steps": {
+        "www": [
+          "$TTL 300\n$ORIGIN shop.example.\n@     IN  SOA    ns1.shop.example. admin.shop.example. ( 2026101402 3600 900 604800 300 )\n@     IN  NS     ns1.shop.example.\nns1   IN  A      203.0.113.53\n@     IN  A      203.0.113.20   ; 店のページ\nmail  IN  A      203.0.113.25   ; メールのサーバ\nwww.shop.example.   IN  CNAME  shop.example."
+        ],
+        "mail": [
+          "$TTL 300\n$ORIGIN shop.example.\n@     IN  SOA    ns1.shop.example. admin.shop.example. ( 2026101403 3600 900 604800 300 )\n@     IN  NS     ns1.shop.example.\nns1   IN  A      203.0.113.53\n@     IN  A      203.0.113.20   ; 店のページ\nmail  IN  A      203.0.113.25   ; メールのサーバ\nwww.shop.example.   IN  CNAME  shop.example.\nshop.example.  IN  MX  10  mail.shop.example."
+        ]
+      }
+    },
+    {
+      "name": "IN を省き @ を指す・MX の優先度 5",
+      "steps": {
+        "www": [
+          "$TTL 300\n$ORIGIN shop.example.\n@     IN  SOA    ns1.shop.example. admin.shop.example. ( 2026101401 3600 900 604800 300 )\n@     IN  NS     ns1.shop.example.\nns1   IN  A      203.0.113.53\n@     IN  A      203.0.113.20   ; 店のページ\nmail  IN  A      203.0.113.25   ; メールのサーバ\nwww   CNAME  @"
+        ],
+        "mail": [
+          "$TTL 300\n$ORIGIN shop.example.\n@     IN  SOA    ns1.shop.example. admin.shop.example. ( 2026101401 3600 900 604800 300 )\n@     IN  NS     ns1.shop.example.\n@     IN  MX     5 mail\nns1   IN  A      203.0.113.53\n@     IN  A      203.0.113.20   ; 店のページ\nmail  IN  A      203.0.113.25   ; メールのサーバ\nwww   CNAME  @"
+        ]
+      }
+    }
+  ],
+  "wrong": {
+    "step": "www",
+    "why": "別名の先の名前の末尾の . を書き落とす",
+    "input": [
+      "$TTL 300\n$ORIGIN shop.example.\n@     IN  SOA    ns1.shop.example. admin.shop.example. ( 2026101401 3600 900 604800 300 )\n@     IN  NS     ns1.shop.example.\nns1   IN  A      203.0.113.53\n@     IN  A      203.0.113.20   ; 店のページ\nmail  IN  A      203.0.113.25   ; メールのサーバ\nwww   IN  CNAME  shop.example"
+    ]
+  }
+}

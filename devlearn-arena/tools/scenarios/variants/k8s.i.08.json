@@ -1,0 +1,43 @@
+{
+  "lesson": "k8s.i.08",
+  "variants": [
+    {
+      "name": "deploy/web の形・時間を区切って見る",
+      "steps": {
+        "update": [
+          "kubectl set image deploy/web web=city-shop:1.1",
+          "kubectl rollout status deploy/web"
+        ],
+        "broken": [
+          "kubectl set image deploy/web web=city-shop:1.2",
+          "kubectl rollout status deploy/web --timeout=30s",
+          "kubectl rollout undo deploy/web",
+          "kubectl rollout status deploy/web"
+        ]
+      }
+    },
+    {
+      "name": "種類と名前を分けて書く・版の番号を書いて戻す",
+      "steps": {
+        "update": [
+          "kubectl set image deployment web web=city-shop:1.1",
+          "kubectl get pods -w"
+        ],
+        "broken": [
+          "kubectl set image deployment/web web=city-shop:1.2",
+          "kubectl get pods",
+          "kubectl rollout history deployment/web",
+          "kubectl rollout undo deployment/web --to-revision=2",
+          "kubectl rollout status deployment/web"
+        ]
+      }
+    }
+  ],
+  "wrong": {
+    "step": "update",
+    "why": "コンテナの名前を間違える",
+    "input": [
+      "kubectl set image deployment/web nginx=city-shop:1.1"
+    ]
+  }
+}

@@ -1,0 +1,40 @@
+{
+  "lesson": "git.b.03",
+  "variants": [
+    {
+      "name": "日付で絞る・-S で値の変わった記録を探す",
+      "steps": {
+        "recent": [
+          "git log --oneline --since=2026-10-02",
+          "2"
+        ],
+        "find": [
+          "git log -S timeout=3 --oneline",
+          "e2a0aaf"
+        ]
+      }
+    },
+    {
+      "name": "行の数を数える・1 つ前の記録を見る",
+      "steps": {
+        "recent": [
+          "git log --since=\"2026-10-02 00:00\" --oneline | wc -l",
+          "２"
+        ],
+        "find": [
+          "git log -p --since=yesterday -- app.conf",
+          "git show HEAD~1",
+          "E2A0AAF"
+        ]
+      }
+    }
+  ],
+  "wrong": {
+    "step": "recent",
+    "why": "10/01 の記録も数える",
+    "input": [
+      "git log --oneline",
+      "3"
+    ]
+  }
+}

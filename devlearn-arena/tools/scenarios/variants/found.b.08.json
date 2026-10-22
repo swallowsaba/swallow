@@ -1,0 +1,47 @@
+{
+  "lesson": "found.b.08",
+  "variants": [
+    {
+      "name": "標準入力から当てる・-o で書く",
+      "steps": {
+        "guess": [
+          "cat matsuri.txt",
+          "file matsuri.txt",
+          "nkf -g < matsuri.txt"
+        ],
+        "convert": [
+          "iconv -f SJIS -t UTF-8 matsuri.txt -o matsuri-utf8.txt",
+          "cat matsuri-utf8.txt"
+        ],
+        "bytes": [
+          "xxd -b -l 3 matsuri-utf8.txt",
+          "３"
+        ]
+      }
+    },
+    {
+      "name": "パイプで当てる・CP932 から読み直す",
+      "steps": {
+        "guess": [
+          "cat matsuri.txt | nkf -g"
+        ],
+        "convert": [
+          "iconv -f CP932 -t UTF-8 < matsuri.txt > matsuri-utf8.txt",
+          "head -n 1 matsuri-utf8.txt"
+        ],
+        "bytes": [
+          "xxd -b -l 2 matsuri.txt",
+          "head -c 3 matsuri-utf8.txt | xxd -b",
+          "3 バイト"
+        ]
+      }
+    }
+  ],
+  "wrong": {
+    "step": "convert",
+    "why": "元の文字コードを UTF-8 と書く",
+    "input": [
+      "iconv -f UTF-8 -t UTF-8 matsuri.txt > matsuri-utf8.txt"
+    ]
+  }
+}

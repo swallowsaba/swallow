@@ -1,0 +1,59 @@
+{
+  "lesson": "ctr.b.03",
+  "variants": [
+    {
+      "name": "g を付けて直す・止めてから消す・cd して作る",
+      "steps": {
+        "inside": [
+          "podman exec web sed -i 's/17:00/19:00/g' /app/server.js",
+          "podman restart web",
+          "curl http://localhost:8080",
+          "podman diff web"
+        ],
+        "recreate": [
+          "podman stop web",
+          "podman rm web",
+          "podman run -d --name web -p 8080:3000 reserve:1.0",
+          "curl -s localhost:8080"
+        ],
+        "rebuild": [
+          "cd reserve",
+          "sed -i 's/17:00/19:00/' server.js",
+          "podman build -t reserve:1.1 .",
+          "podman rm -f web",
+          "podman run -d --name web -p 8080:3000 reserve:1.1",
+          "curl -s http://localhost:8080/"
+        ]
+      }
+    },
+    {
+      "name": "sh -c で直す・指定の並びを替える・localhost/ の名前で動かす",
+      "steps": {
+        "inside": [
+          "podman exec web sh -c \"sed -i 's/17:00/19:00/' server.js\"",
+          "podman stop web && podman start web",
+          "curl -s localhost:8080"
+        ],
+        "recreate": [
+          "podman rm --force web && podman run -d -p 8080:3000 --name web reserve:1.0",
+          "curl -s localhost:8080"
+        ],
+        "rebuild": [
+          "sed -i 's/閉館 17:00/閉館 19:00/' ~/reserve/server.js",
+          "podman build --tag reserve:1.1 ~/reserve",
+          "podman images",
+          "podman stop web && podman rm web",
+          "podman run --name web -d -p 8080:3000 localhost/reserve:1.1",
+          "curl -s localhost:8080"
+        ]
+      }
+    }
+  ],
+  "wrong": {
+    "step": "inside",
+    "why": "動いている web と同じ名前でもう 1 つ作る",
+    "input": [
+      "podman run -d --name web -p 8080:3000 reserve:1.0"
+    ]
+  }
+}

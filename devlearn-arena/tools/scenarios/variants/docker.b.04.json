@@ -1,0 +1,40 @@
+{
+  "lesson": "docker.b.04",
+  "variants": [
+    {
+      "name": "止めてから消す・localhost で確かめる",
+      "steps": {
+        "publish": [
+          "docker stop web && docker rm web",
+          "docker run -d --name web -p 8080:80 nginx:1.27",
+          "curl -s localhost:8080"
+        ],
+        "second": [
+          "docker run -d -p 8081:80 --name web2 httpd:2.4",
+          "curl localhost:8081"
+        ]
+      }
+    },
+    {
+      "name": "--force で消す・長い名前の指定・127.0.0.1",
+      "steps": {
+        "publish": [
+          "docker rm --force web",
+          "docker run -d -p 8080:80 --name web nginx:1.27",
+          "curl -I http://localhost:8080/"
+        ],
+        "second": [
+          "docker run --name web2 --publish 8081:80 -d httpd:2.4",
+          "curl -s http://127.0.0.1:8081/"
+        ]
+      }
+    }
+  ],
+  "wrong": {
+    "step": "publish",
+    "why": "前の web を消さずに同じ名前で作る",
+    "input": [
+      "docker run -d --name web -p 8080:80 nginx:1.27"
+    ]
+  }
+}

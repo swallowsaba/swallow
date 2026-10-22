@@ -1,0 +1,37 @@
+{
+  "lesson": "db.b.02",
+  "variants": [
+    {
+      "name": "NOT NULL を付けない・1 行ずつ入れる",
+      "steps": {
+        "create": [
+          "CREATE TABLE members (id INTEGER PRIMARY KEY, name TEXT, city TEXT) STRICT;"
+        ],
+        "insert": [
+          "INSERT INTO members VALUES (1, '青木', '東京');",
+          "INSERT INTO members VALUES (2, '石田', '大阪');",
+          "INSERT INTO members VALUES (3, '上野', '東京');"
+        ]
+      }
+    },
+    {
+      "name": "小文字で書く・列を書かずにまとめて入れる",
+      "steps": {
+        "create": [
+          "create table members (id integer primary key, name text not null, city text not null) strict;"
+        ],
+        "insert": [
+          "insert into members values (1,'青木','東京'),(2,'石田','大阪'),(3,'上野','東京');",
+          "select * from members;"
+        ]
+      }
+    }
+  ],
+  "wrong": {
+    "step": "create",
+    "why": "TABLE を打ち間違える",
+    "input": [
+      "CREATE TABEL members (id INTEGER PRIMARY KEY, name TEXT NOT NULL, city TEXT NOT NULL) STRICT"
+    ]
+  }
+}

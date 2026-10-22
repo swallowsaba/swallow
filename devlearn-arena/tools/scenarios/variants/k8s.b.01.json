@@ -1,0 +1,55 @@
+{
+  "lesson": "k8s.b.01",
+  "variants": [
+    {
+      "name": "短い名前・DaemonSet も無視して空ける・deploy の短い名前",
+      "steps": {
+        "manual": [
+          "kubectl get po -o wide",
+          "kubectl drain node-2",
+          "kubectl drain node-2 --force --ignore-daemonsets"
+        ],
+        "count": [
+          "kubectl get pods --no-headers | wc -l",
+          "2"
+        ],
+        "declare": [
+          "kubectl uncordon node-2",
+          "kubectl create deploy web --image=nginx --replicas=3",
+          "kubectl rollout status deploy/web",
+          "kubectl drain node-2 --ignore-daemonsets",
+          "kubectl get pods -o wide"
+        ]
+      }
+    },
+    {
+      "name": "先に cordon する・作ってから数を変える",
+      "steps": {
+        "manual": [
+          "kubectl cordon node-2",
+          "kubectl drain node-2 --force"
+        ],
+        "count": [
+          "kubectl get po",
+          "２"
+        ],
+        "declare": [
+          "kubectl uncordon node-2",
+          "kubectl create deployment web --image=nginx",
+          "kubectl scale deployment web --replicas=3",
+          "kubectl get pods -w",
+          "kubectl drain node-2 --force",
+          "kubectl get deploy web"
+        ]
+      }
+    }
+  ],
+  "wrong": {
+    "step": "count",
+    "why": "必要な数を答える",
+    "input": [
+      "kubectl get pods",
+      "3"
+    ]
+  }
+}

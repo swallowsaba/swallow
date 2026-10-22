@@ -1,0 +1,43 @@
+{
+  "lesson": "db.b.04",
+  "variants": [
+    {
+      "name": "列で数える・列の番号で並べる",
+      "steps": {
+        "count": [
+          "SELECT COUNT(id) FROM members WHERE status = '在籍'"
+        ],
+        "group": [
+          "SELECT city, COUNT(*) FROM members WHERE status = '在籍' GROUP BY city ORDER BY 2 DESC",
+          "東京"
+        ],
+        "second": [
+          "横浜"
+        ]
+      }
+    },
+    {
+      "name": "小文字で書く・上の 2 つだけを出す",
+      "steps": {
+        "count": [
+          "select count(*) from members where status='在籍';"
+        ],
+        "group": [
+          "SELECT city, COUNT(*) AS cnt FROM members WHERE status = '在籍' GROUP BY city ORDER BY cnt DESC LIMIT 2;",
+          "東京"
+        ],
+        "second": [
+          "SELECT city, COUNT(*) AS cnt FROM members WHERE status = '在籍' GROUP BY city ORDER BY cnt DESC LIMIT 2;",
+          "横浜"
+        ]
+      }
+    }
+  ],
+  "wrong": {
+    "step": "count",
+    "why": "在籍で絞らずに数える",
+    "input": [
+      "SELECT COUNT(*) FROM members"
+    ]
+  }
+}

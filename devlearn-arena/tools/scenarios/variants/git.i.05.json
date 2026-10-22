@@ -1,0 +1,50 @@
+{
+  "lesson": "git.i.05",
+  "variants": [
+    {
+      "name": "checkout で移る・衝突したファイルだけを出す",
+      "steps": {
+        "start": [
+          "git checkout feature",
+          "git rebase main",
+          "git diff --name-only --diff-filter=U",
+          "boat.txt"
+        ],
+        "fix": [
+          "printf 'ボート: 10:00-17:00（雨の日は休み）\\n料金: 500 円\\n' > boat.txt"
+        ],
+        "continue": [
+          "git add boat.txt && git rebase --continue"
+        ]
+      }
+    },
+    {
+      "name": "載せ替える枝を書いて 1 行で・ヒアドキュメント",
+      "steps": {
+        "start": [
+          "git rebase main feature",
+          "git status",
+          "boat.txt"
+        ],
+        "fix": [
+          "cat > boat.txt << 'EOF'\nボート: 10:00-17:00（雨の日は休み）\n料金: 500 円\nEOF"
+        ],
+        "continue": [
+          "git add -A",
+          "git rebase --continue",
+          "git log --oneline --graph"
+        ]
+      }
+    }
+  ],
+  "wrong": {
+    "step": "start",
+    "why": "衝突していないファイルを答える",
+    "input": [
+      "git switch feature",
+      "git rebase main",
+      "git status",
+      "rules.txt"
+    ]
+  }
+}

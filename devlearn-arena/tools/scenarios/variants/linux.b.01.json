@@ -1,0 +1,45 @@
+{
+  "lesson": "linux.b.01",
+  "variants": [
+    {
+      "name": "ls -al（並びの違い）",
+      "steps": {
+        "where": [
+          "pwd -L"
+        ],
+        "list": [
+          "ls -al ~"
+        ]
+      }
+    },
+    {
+      "name": "ls --all -l（長い名前）",
+      "steps": {
+        "where": [
+          "pwd && ls"
+        ],
+        "list": [
+          "ls --all -l /home/learner"
+        ]
+      }
+    },
+    {
+      "name": "ls -la",
+      "steps": {
+        "where": [
+          "pwd"
+        ],
+        "list": [
+          "ls -la"
+        ]
+      }
+    }
+  ],
+  "wrong": {
+    "step": "where",
+    "why": "命令の名前を打ち間違える",
+    "input": [
+      "pdw"
+    ]
+  }
+}

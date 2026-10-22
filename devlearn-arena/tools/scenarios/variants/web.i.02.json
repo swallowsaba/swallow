@@ -1,0 +1,46 @@
+{
+  "lesson": "web.i.02",
+  "variants": [
+    {
+      "name": "空白を詰めた式・select の後に .name",
+      "steps": {
+        "shape": [
+          "curl -s http://shop.example/inventory | jq '.items|length'"
+        ],
+        "zero": [
+          "curl -s http://shop.example/inventory | jq -r '.items[] | select(.stock==0).name'"
+        ]
+      }
+    },
+    {
+      "name": "ファイルに残してから jq を 2 段・map で選ぶ",
+      "steps": {
+        "shape": [
+          "curl -s http://shop.example/inventory > inv.json",
+          "jq '.items' inv.json | jq length"
+        ],
+        "zero": [
+          "jq -r '.items | map(select(.stock == 0)) | .[].name' inv.json"
+        ]
+      }
+    },
+    {
+      "name": "並べ直して数える・1 未満で選ぶ",
+      "steps": {
+        "shape": [
+          "curl -s http://shop.example/inventory | jq '[.items[]] | length'"
+        ],
+        "zero": [
+          "curl -s http://shop.example/inventory | jq -r '.items[] | select(.stock < 1) | .name'"
+        ]
+      }
+    }
+  ],
+  "wrong": {
+    "step": "shape",
+    "why": "一番外側の数を数える",
+    "input": [
+      "curl -s http://shop.example/inventory | jq 'length'"
+    ]
+  }
+}

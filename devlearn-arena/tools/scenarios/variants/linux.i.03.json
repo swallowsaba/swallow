@@ -1,0 +1,38 @@
+{
+  "lesson": "linux.i.03",
+  "variants": [
+    {
+      "name": "apt-get で、確かめを飛ばして入れる",
+      "steps": {
+        "install": [
+          "sudo apt-get update && sudo apt-get install -y nginx"
+        ],
+        "version": [
+          "nginx -V",
+          "1.24.0"
+        ]
+      }
+    },
+    {
+      "name": "2 行に分ける・場所を書いて版を見る",
+      "steps": {
+        "install": [
+          "sudo apt update",
+          "sudo apt install -y nginx"
+        ],
+        "version": [
+          "/usr/sbin/nginx -v",
+          "1.24.0"
+        ]
+      }
+    }
+  ],
+  "wrong": {
+    "step": "install",
+    "why": "包みの名前を打ち間違える",
+    "input": [
+      "sudo apt update",
+      "sudo apt install ngnix"
+    ]
+  }
+}

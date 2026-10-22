@@ -1,0 +1,72 @@
+{
+  "lesson": "mon.b.01",
+  "variants": [
+    {
+      "name": "エラーの割合から入れる・DB から入れる",
+      "steps": {
+        "user": [
+          {
+            "op": "put",
+            "item": "エラー",
+            "slot": "入口"
+          },
+          {
+            "op": "put",
+            "item": "応答時間",
+            "slot": "入口"
+          }
+        ],
+        "resource": [
+          {
+            "op": "put",
+            "item": "ディスク",
+            "slot": "db"
+          },
+          {
+            "op": "put",
+            "item": "CPU",
+            "slot": "web"
+          }
+        ]
+      }
+    },
+    {
+      "name": "資源の札を先に機械へ置く",
+      "steps": {
+        "user": [
+          {
+            "op": "put",
+            "item": "CPU",
+            "slot": "web"
+          },
+          {
+            "op": "put",
+            "item": "ディスク",
+            "slot": "db"
+          },
+          {
+            "op": "put",
+            "item": "エラー",
+            "slot": "入口"
+          },
+          {
+            "op": "put",
+            "item": "応答時間",
+            "slot": "入口"
+          }
+        ]
+      }
+    }
+  ],
+  "wrong": {
+    "step": "user",
+    "why": "CPU の使用率を入口に置く",
+    "input": [
+      {
+        "op": "put",
+        "item": "CPU",
+        "slot": "入口"
+      }
+    ]
+  }
+}

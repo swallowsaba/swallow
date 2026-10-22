@@ -1,0 +1,37 @@
+{
+  "lesson": "web.i.01",
+  "variants": [
+    {
+      "name": "jq で番号を選ぶ・本文の種類を付けて置き換える",
+      "steps": {
+        "find": [
+          "curl -s http://shop.example/items | jq '.[] | select(.name == \"灯台の模型\") | .id'",
+          "7"
+        ],
+        "update": [
+          "curl -X PUT -H 'Content-Type: application/json' -d '{\"stock\":20,\"name\":\"灯台の模型\"}' http://shop.example/items/7"
+        ]
+      }
+    },
+    {
+      "name": "grep で拾う・長い名前の指定で置き換えて確かめる",
+      "steps": {
+        "find": [
+          "curl http://shop.example/items | grep -o '\"id\":7'",
+          "７"
+        ],
+        "update": [
+          "curl --request PUT --data '{\"name\":\"灯台の模型\",\"stock\":20}' http://shop.example/items/7",
+          "curl http://shop.example/items/7"
+        ]
+      }
+    }
+  ],
+  "wrong": {
+    "step": "update",
+    "why": "名前を書かずに置き換える",
+    "input": [
+      "curl -X PUT -d '{\"stock\":20}' http://shop.example/items/7"
+    ]
+  }
+}

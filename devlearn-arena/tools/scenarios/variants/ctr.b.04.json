@@ -1,0 +1,28 @@
+{
+  "lesson": "ctr.b.04",
+  "variants": [
+    {
+      "name": "package*.json を写してから残りを全て写す",
+      "steps": {
+        "order": [
+          "# 予約の窓口のイメージの設計図\nFROM docker.io/library/node:20-alpine\nWORKDIR /app\nCOPY package*.json ./\nRUN npm install\nCOPY . .\nCMD [\"node\", \"server.js\"]\n"
+        ]
+      }
+    },
+    {
+      "name": "/app/ を書いて写す",
+      "steps": {
+        "order": [
+          "FROM docker.io/library/node:20-alpine\nWORKDIR /app\nCOPY package.json /app/\nRUN npm install\nCOPY server.js /app/\nCMD [\"node\", \"server.js\"]"
+        ]
+      }
+    }
+  ],
+  "wrong": {
+    "step": "order",
+    "why": "命令の順を変えずに保存する",
+    "input": [
+      "# 予約の窓口のイメージの設計図\nFROM docker.io/library/node:20-alpine\nWORKDIR /app\nCOPY . .\nRUN npm install\nCMD [\"node\", \"server.js\"]\n"
+    ]
+  }
+}

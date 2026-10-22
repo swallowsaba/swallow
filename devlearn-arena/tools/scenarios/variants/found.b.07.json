@@ -1,0 +1,69 @@
+{
+  "lesson": "found.b.07",
+  "variants": [
+    {
+      "name": "プロバイダからルータへ逆向きに線を引く",
+      "steps": {
+        "inside": [
+          {
+            "op": "send",
+            "from": "pc",
+            "to": "pc2"
+          }
+        ],
+        "outside": [
+          {
+            "op": "send",
+            "from": "pc",
+            "to": "server"
+          },
+          {
+            "op": "connect",
+            "a": "isp",
+            "b": "router"
+          },
+          {
+            "op": "send",
+            "from": "pc",
+            "to": "server"
+          }
+        ]
+      }
+    },
+    {
+      "name": "先に途切れをつないでから家の中を確かめる",
+      "steps": {
+        "inside": [
+          {
+            "op": "connect",
+            "a": "router",
+            "b": "isp"
+          },
+          {
+            "op": "send",
+            "from": "pc",
+            "to": "pc2"
+          }
+        ],
+        "outside": [
+          {
+            "op": "send",
+            "from": "pc",
+            "to": "server"
+          }
+        ]
+      }
+    }
+  ],
+  "wrong": {
+    "step": "outside",
+    "why": "パソコンからプロバイダへ直接つなぐ",
+    "input": [
+      {
+        "op": "connect",
+        "a": "pc",
+        "b": "isp"
+      }
+    ]
+  }
+}

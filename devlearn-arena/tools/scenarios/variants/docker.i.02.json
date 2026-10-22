@@ -1,0 +1,37 @@
+{
+  "lesson": "docker.i.02",
+  "variants": [
+    {
+      "name": "置き場所を書いて作る・名前で絞って見る",
+      "steps": {
+        "build": [
+          "docker build -t shop/web:1.2 ~/shop"
+        ],
+        "compare": [
+          "docker images shop/web",
+          "27bd9de17044"
+        ]
+      }
+    },
+    {
+      "name": "&& で移って作る・image ls",
+      "steps": {
+        "build": [
+          "cd ~/shop && docker build --tag shop/web:1.2 ."
+        ],
+        "compare": [
+          "docker image ls",
+          " 27bd9de17044"
+        ]
+      }
+    }
+  ],
+  "wrong": {
+    "step": "build",
+    "why": "作る場所の . を書き落とす",
+    "input": [
+      "cd shop",
+      "docker build -t shop/web:1.2"
+    ]
+  }
+}

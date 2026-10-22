@@ -1,0 +1,37 @@
+{
+  "lesson": "linux.b.02",
+  "variants": [
+    {
+      "name": "1 行でつなぐ・名前を付けて写す",
+      "steps": {
+        "backup": [
+          "mkdir -p backup && cp config.txt backup/config.txt"
+        ],
+        "clean": [
+          "ls",
+          "rm -v old.log"
+        ]
+      }
+    },
+    {
+      "name": "ホームからの場所で書く",
+      "steps": {
+        "backup": [
+          "mkdir ~/backup",
+          "cp ~/config.txt ~/backup"
+        ],
+        "clean": [
+          "rm -f ./old.log"
+        ]
+      }
+    }
+  ],
+  "wrong": {
+    "step": "backup",
+    "why": "写すファイルの名前を打ち間違える",
+    "input": [
+      "mkdir backup",
+      "cp confg.txt backup/"
+    ]
+  }
+}

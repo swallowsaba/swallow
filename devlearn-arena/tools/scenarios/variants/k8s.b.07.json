@@ -1,0 +1,49 @@
+{
+  "lesson": "k8s.b.07",
+  "variants": [
+    {
+      "name": "ns の短い名前・-n を前に書く・全ての区画",
+      "steps": {
+        "namespaces": [
+          "kubectl create ns dev",
+          "kubectl create ns prod"
+        ],
+        "dev": [
+          "kubectl -n dev create deployment web --image=nginx"
+        ],
+        "prod": [
+          "kubectl -n prod create deployment web --image=nginx"
+        ],
+        "count": [
+          "kubectl get deploy --all-namespaces",
+          "3"
+        ]
+      }
+    },
+    {
+      "name": "&& でつなぐ・--namespace= で書く・数える",
+      "steps": {
+        "namespaces": [
+          "kubectl create namespace dev && kubectl create namespace prod"
+        ],
+        "dev": [
+          "kubectl create deployment web --image=nginx --namespace=dev"
+        ],
+        "prod": [
+          "kubectl create deployment web --image=nginx --namespace=prod"
+        ],
+        "count": [
+          "kubectl get deployments -A | grep web | wc -l",
+          "３"
+        ]
+      }
+    }
+  ],
+  "wrong": {
+    "step": "dev",
+    "why": "区画を書き落とす",
+    "input": [
+      "kubectl create deployment web --image=nginx"
+    ]
+  }
+}

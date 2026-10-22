@@ -1,0 +1,55 @@
+{
+  "lesson": "k8s.i.06",
+  "variants": [
+    {
+      "name": "deploy/web の形・指定の並びを替える",
+      "steps": {
+        "manual": [
+          "kubectl scale deploy/web --replicas 4",
+          "kubectl get pods -w"
+        ],
+        "autoscale": [
+          "kubectl autoscale deploy web --min=2 --max=10 --cpu-percent=50"
+        ],
+        "grow": [
+          "kubectl set resources deploy web --requests=cpu=200m",
+          "kubectl scale deploy crowd --replicas=1",
+          "kubectl get hpa -w"
+        ],
+        "shrink": [
+          "kubectl scale deploy crowd --replicas=0",
+          "kubectl get hpa -w"
+        ]
+      }
+    },
+    {
+      "name": "--replicas を先に書く・コンテナを指定して 0.2 個",
+      "steps": {
+        "manual": [
+          "kubectl scale --replicas=4 deployment web",
+          "kubectl rollout status deployment/web"
+        ],
+        "autoscale": [
+          "kubectl autoscale deployment/web --cpu-percent 50 --min 2 --max 10"
+        ],
+        "grow": [
+          "kubectl set resources deployment/web -c web --requests=cpu=0.2",
+          "kubectl scale deployment/crowd --replicas=1",
+          "kubectl get hpa web --watch"
+        ],
+        "shrink": [
+          "kubectl scale deployment/crowd --replicas 0",
+          "kubectl get hpa web --watch",
+          "kubectl get deploy web"
+        ]
+      }
+    }
+  ],
+  "wrong": {
+    "step": "manual",
+    "why": "Deployment の名前を打ち間違える",
+    "input": [
+      "kubectl scale deployment wbe --replicas=4"
+    ]
+  }
+}

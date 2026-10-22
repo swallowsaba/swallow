@@ -1,0 +1,30 @@
+{
+  "lesson": "linux.i.01",
+  "variants": [
+    {
+      "name": "動かすと有効にするを分ける",
+      "steps": {
+        "run-and-enable": [
+          "systemctl status web",
+          "systemctl start web",
+          "systemctl enable web"
+        ]
+      }
+    },
+    {
+      "name": ".service まで書く・&& でつなぐ",
+      "steps": {
+        "run-and-enable": [
+          "systemctl enable web.service && systemctl start web.service"
+        ]
+      }
+    }
+  ],
+  "wrong": {
+    "step": "run-and-enable",
+    "why": "サービスの名前を打ち間違える",
+    "input": [
+      "systemctl enable --now wbe"
+    ]
+  }
+}

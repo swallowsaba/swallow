@@ -1,0 +1,50 @@
+{
+  "lesson": "net.i.01",
+  "variants": [
+    {
+      "name": "道すじだけを見る・機器の中で ip route を打つ",
+      "steps": {
+        "look": [
+          "traceroute -n 10.0.3.10",
+          "10.0.1.1"
+        ],
+        "go": [
+          "ip netns exec r1 ip route add 10.0.3.0/24 via 10.0.2.2",
+          "ping -c 1 10.0.3.10"
+        ],
+        "back": [
+          "ip netns exec srv-c ping -c 1 10.0.1.10",
+          "ip netns exec r2 ip route add 10.0.1.0/24 via 10.0.2.1",
+          "ping -c 1 10.0.3.10"
+        ]
+      }
+    },
+    {
+      "name": "ip r の短い名前・経路表を見てから足す",
+      "steps": {
+        "look": [
+          "ping -c 2 10.0.3.10",
+          "traceroute 10.0.3.10",
+          " 10.0.1.1"
+        ],
+        "go": [
+          "ip -n r1 route",
+          "ip -n r1 r add 10.0.3.0/24 via 10.0.2.2"
+        ],
+        "back": [
+          "ip -n r2 route show",
+          "ip -n r2 route add 10.0.1.0/24 via 10.0.2.1",
+          "ping -c 3 10.0.3.10"
+        ]
+      }
+    }
+  ],
+  "wrong": {
+    "step": "look",
+    "why": "止まったルータでなく、その次のルータを答える",
+    "input": [
+      "traceroute 10.0.3.10",
+      "10.0.2.2"
+    ]
+  }
+}

@@ -1,0 +1,39 @@
+{
+  "lesson": "linux.i.04",
+  "variants": [
+    {
+      "name": "短い名前 ip a・ss -ltn",
+      "steps": {
+        "addr": [
+          "ip a",
+          "10.0.0.5"
+        ],
+        "listen": [
+          "ss -ltn",
+          "127.0.0.1:80"
+        ]
+      }
+    },
+    {
+      "name": "口を絞って見る・netstat",
+      "steps": {
+        "addr": [
+          "ip -4 addr show eth0",
+          "10.0.0.5"
+        ],
+        "listen": [
+          "netstat -tlnp",
+          "127.0.0.1:80"
+        ]
+      }
+    }
+  ],
+  "wrong": {
+    "step": "addr",
+    "why": "lo のアドレスを答える",
+    "input": [
+      "ip addr",
+      "127.0.0.1"
+    ]
+  }
+}

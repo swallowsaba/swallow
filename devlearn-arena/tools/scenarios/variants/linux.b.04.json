@@ -1,0 +1,45 @@
+{
+  "lesson": "linux.b.04",
+  "variants": [
+    {
+      "name": "grep -rc で数える・-type f を付けて探す",
+      "steps": {
+        "count": [
+          "grep -rc timeout /var/log"
+        ],
+        "where": [
+          "find / -type f -name 'app.conf' 2>/dev/null"
+        ]
+      }
+    },
+    {
+      "name": "find -exec grep -c で数える・-iname で探す",
+      "steps": {
+        "count": [
+          "find /var/log -type f -exec grep -c timeout {} +"
+        ],
+        "where": [
+          "find / -iname app.conf 2>/dev/null"
+        ]
+      }
+    },
+    {
+      "name": "読めない所の文を捨てて数える・-print を書く",
+      "steps": {
+        "count": [
+          "grep -R timeout /var/log/ 2>/dev/null | wc -l"
+        ],
+        "where": [
+          "find / -name \"app.conf\" -print 2>/dev/null"
+        ]
+      }
+    }
+  ],
+  "wrong": {
+    "step": "count",
+    "why": "ディレクトリの中まで探す -r を付け忘れる",
+    "input": [
+      "grep timeout /var/log | wc -l"
+    ]
+  }
+}

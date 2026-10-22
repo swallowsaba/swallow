@@ -5,7 +5,8 @@ playwright-report
 test-results
 .DS_Store
 *.local
-shots/
+/shots/
+# 不合格の瞬間の画像だけは記録として残す（VERIFY-FREE.txt【6】）
 .shoot.lock
 .work/
 review/

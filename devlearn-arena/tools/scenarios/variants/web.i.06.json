@@ -1,0 +1,39 @@
+{
+  "lesson": "web.i.06",
+  "variants": [
+    {
+      "name": "1 行目だけを見る・alt-svc を拾う",
+      "steps": {
+        "news": [
+          "curl -sI --http2 https://news.example/ | head -n 1",
+          "1.1"
+        ],
+        "shop": [
+          "curl --http2 -sI https://shop.example/ | grep -i alt-svc",
+          "3"
+        ]
+      }
+    },
+    {
+      "name": "指定の並びを替える",
+      "steps": {
+        "news": [
+          "curl --http2 -I https://news.example",
+          " 1.1"
+        ],
+        "shop": [
+          "curl --http2 -I https://shop.example",
+          "３"
+        ]
+      }
+    }
+  ],
+  "wrong": {
+    "step": "news",
+    "why": "頼んだ版を答える",
+    "input": [
+      "curl -I --http2 https://news.example/",
+      "2"
+    ]
+  }
+}

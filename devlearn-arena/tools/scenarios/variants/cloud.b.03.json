@@ -1,0 +1,84 @@
+{
+  "lesson": "cloud.b.03",
+  "variants": [
+    {
+      "name": "Web を網に置いてから出口をつなぐ",
+      "steps": {
+        "public": [
+          {
+            "op": "connect",
+            "a": "pub",
+            "b": "web"
+          },
+          {
+            "op": "connect",
+            "a": "gw",
+            "b": "pub"
+          },
+          {
+            "op": "send",
+            "from": "gw",
+            "to": "web"
+          }
+        ],
+        "private": [
+          {
+            "op": "connect",
+            "a": "priv",
+            "b": "db"
+          }
+        ],
+        "storage": [
+          {
+            "op": "connect",
+            "a": "web",
+            "b": "store"
+          }
+        ]
+      }
+    },
+    {
+      "name": "全ての線を引いてから送る",
+      "steps": {
+        "public": [
+          {
+            "op": "connect",
+            "a": "web",
+            "b": "store"
+          },
+          {
+            "op": "connect",
+            "a": "priv",
+            "b": "db"
+          },
+          {
+            "op": "connect",
+            "a": "gw",
+            "b": "pub"
+          },
+          {
+            "op": "connect",
+            "a": "pub",
+            "b": "web"
+          },
+          {
+            "op": "send",
+            "from": "gw",
+            "to": "web"
+          }
+        ]
+      }
+    }
+  ],
+  "wrong": {
+    "step": "public",
+    "why": "出口を Web の機械に直接つなぐ",
+    "input": [
+      {
+        "op": "connect",
+        "a": "gw",
+        "b": "web"
+      }
+    ]
+  }
+}

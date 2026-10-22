@@ -1,0 +1,43 @@
+{
+  "lesson": "k8s.b.05",
+  "variants": [
+    {
+      "name": "deploy の短い名前・rollout status・一覧の 1 つ目を xargs で消す",
+      "steps": {
+        "create": [
+          "kubectl create deploy web --image=nginx --replicas=3"
+        ],
+        "ready": [
+          "kubectl rollout status deployment/web"
+        ],
+        "heal": [
+          "kubectl get pods -o name | head -n 1 | xargs kubectl delete",
+          "kubectl get pods -w"
+        ]
+      }
+    },
+    {
+      "name": "作ってから数を変える・deploy を追う・$( ) で消す",
+      "steps": {
+        "create": [
+          "kubectl create deployment web --image=nginx",
+          "kubectl scale deployment/web --replicas=3"
+        ],
+        "ready": [
+          "kubectl get deploy web -w"
+        ],
+        "heal": [
+          "kubectl delete $(kubectl get pods -o name | tail -n 1)",
+          "kubectl rollout status deployment web"
+        ]
+      }
+    }
+  ],
+  "wrong": {
+    "step": "create",
+    "why": "イメージを書き落とす",
+    "input": [
+      "kubectl create deployment web --replicas=3"
+    ]
+  }
+}

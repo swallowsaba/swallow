@@ -1,0 +1,31 @@
+{
+  "lesson": "cicd.b.02",
+  "variants": [
+    {
+      "name": "needs を [ ] の並びで書く・deploy の並びを替える",
+      "steps": {
+        "parallel": [
+          "name: ci\non:\n  push:\n    branches: [main]\njobs:\n  build:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@v4\n      - run: npm ci\n      - run: npm run build\n  unit:\n    needs: [build]\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@v4\n      - run: npm ci\n      - run: npm test\n  lint:\n    needs: [build]\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@v4\n      - run: npm ci\n      - run: npm run lint\n  e2e:\n    needs: [build]\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@v4\n      - run: npm ci\n      - run: npm run e2e\n  deploy:\n    needs: [e2e]\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@v4\n      - run: npm run deploy\n"
+        ],
+        "deploy": [
+          "name: ci\non:\n  push:\n    branches: [main]\njobs:\n  build:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@v4\n      - run: npm ci\n      - run: npm run build\n  unit:\n    needs: [build]\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@v4\n      - run: npm ci\n      - run: npm test\n  lint:\n    needs: [build]\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@v4\n      - run: npm ci\n      - run: npm run lint\n  e2e:\n    needs: [build]\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@v4\n      - run: npm ci\n      - run: npm run e2e\n  deploy:\n    needs: [e2e, unit, lint]\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@v4\n      - run: npm run deploy\n"
+        ]
+      }
+    },
+    {
+      "name": "needs を 1 行ずつの並びで書く・初めから deploy も直す",
+      "steps": {
+        "parallel": [
+          "# 予約サイトの流れ。組み立て・3 つの検査・配布の 5 つのジョブ\nname: ci\non:\n  push:\n    branches: [main]\njobs:\n  build:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@v4\n      - run: npm ci\n      - run: npm run build\n  unit:\n    needs:\n      - build\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@v4\n      - run: npm ci\n      - run: npm test\n  lint:\n    needs:\n      - build\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@v4\n      - run: npm ci\n      - run: npm run lint\n  e2e:\n    needs:\n      - build\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@v4\n      - run: npm ci\n      - run: npm run e2e\n  deploy:\n    needs:\n      - unit\n      - lint\n      - e2e\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@v4\n      - run: npm run deploy\n"
+        ]
+      }
+    }
+  ],
+  "wrong": {
+    "step": "parallel",
+    "why": "needs の名前を打ち間違える",
+    "input": [
+      "name: ci\non:\n  push:\n    branches: [main]\njobs:\n  build:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@v4\n      - run: npm ci\n      - run: npm run build\n  unit:\n    needs: biuld\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@v4\n      - run: npm ci\n      - run: npm test\n  lint:\n    needs: build\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@v4\n      - run: npm ci\n      - run: npm run lint\n  e2e:\n    needs: build\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@v4\n      - run: npm ci\n      - run: npm run e2e\n  deploy:\n    needs: e2e\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@v4\n      - run: npm run deploy\n"
+    ]
+  }
+}

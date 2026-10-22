@@ -1,0 +1,28 @@
+{
+  "lesson": "web.i.05",
+  "variants": [
+    {
+      "name": "値を引用符で囲む",
+      "steps": {
+        "allow": [
+          "# 在庫の API（https://api.example）。画面のサイト（https://shop.example）のブラウザから呼ばれる\nserver {\n  listen 443 ssl;\n  server_name api.example;\n  ssl_certificate /etc/nginx/certs/api.crt;\n\n  location / {\n    add_header Access-Control-Allow-Origin \"https://shop.example\";\n    proxy_pass http://127.0.0.1:3000;\n  }\n}"
+        ]
+      }
+    },
+    {
+      "name": "always を付けて、名前も引用符で囲む",
+      "steps": {
+        "allow": [
+          "server {\n    listen 443 ssl;\n    server_name api.example;\n    ssl_certificate /etc/nginx/certs/api.crt;\n\n    location / {\n        proxy_pass http://127.0.0.1:3000;\n        add_header 'Access-Control-Allow-Origin' 'https://shop.example' always;\n    }\n}\n"
+        ]
+      }
+    }
+  ],
+  "wrong": {
+    "step": "allow",
+    "why": "どの送り元でも許す * にする",
+    "input": [
+      "server {\n  listen 443 ssl;\n  server_name api.example;\n  ssl_certificate /etc/nginx/certs/api.crt;\n\n  location / {\n    proxy_pass http://127.0.0.1:3000;\n    add_header Access-Control-Allow-Origin *;\n  }\n}"
+    ]
+  }
+}

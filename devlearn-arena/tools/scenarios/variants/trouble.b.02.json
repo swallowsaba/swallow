@@ -1,0 +1,61 @@
+{
+  "lesson": "trouble.b.02",
+  "variants": [
+    {
+      "name": "stat で権限を見る・ls -l で並べる",
+      "steps": {
+        "denied": [
+          "cat /srv/report/summary.txt",
+          "stat /srv/report/summary.txt",
+          "権限"
+        ],
+        "notfound": [
+          "cat /srv/report/dayly.log",
+          "ls -l /srv/report/",
+          "daily.log"
+        ],
+        "network": [
+          "curl -sS http://report.city.example:8080/",
+          "curl -sS https://api.city.example/",
+          "report.city.example"
+        ],
+        "first": [
+          "sh /srv/report/build.sh",
+          "/srv/report/out"
+        ]
+      }
+    },
+    {
+      "name": "bash で動かす・場所を / で終える",
+      "steps": {
+        "denied": [
+          "cat /srv/report/summary.txt",
+          "ls -la /srv/report",
+          " 権限"
+        ],
+        "notfound": [
+          "cat /srv/report/dayly.log",
+          "ls /srv/report/*.log",
+          "daily.log"
+        ],
+        "network": [
+          "curl https://api.city.example/",
+          "curl http://report.city.example:8080/",
+          "report.city.example"
+        ],
+        "first": [
+          "bash /srv/report/build.sh",
+          "/srv/report/out/"
+        ]
+      }
+    }
+  ],
+  "wrong": {
+    "step": "denied",
+    "why": "原因の種類を名前と読む",
+    "input": [
+      "cat /srv/report/summary.txt",
+      "名前"
+    ]
+  }
+}

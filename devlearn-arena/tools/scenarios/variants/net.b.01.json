@@ -1,0 +1,79 @@
+{
+  "lesson": "net.b.01",
+  "variants": [
+    {
+      "name": "ルータからスイッチへ逆向きに引く・本社から先に",
+      "steps": {
+        "inside": [
+          {
+            "op": "send",
+            "from": "pc",
+            "to": "printer"
+          }
+        ],
+        "wan": [
+          {
+            "op": "connect",
+            "a": "r-h",
+            "b": "sw-h"
+          },
+          {
+            "op": "connect",
+            "a": "r-b",
+            "b": "sw-b"
+          },
+          {
+            "op": "send",
+            "from": "pc",
+            "to": "srv"
+          }
+        ]
+      }
+    },
+    {
+      "name": "先に線を引いてから LAN の中を確かめる",
+      "steps": {
+        "inside": [
+          {
+            "op": "connect",
+            "a": "sw-b",
+            "b": "r-b"
+          },
+          {
+            "op": "send",
+            "from": "pc",
+            "to": "printer"
+          }
+        ],
+        "wan": [
+          {
+            "op": "send",
+            "from": "pc",
+            "to": "srv"
+          },
+          {
+            "op": "connect",
+            "a": "sw-h",
+            "b": "r-h"
+          },
+          {
+            "op": "send",
+            "from": "pc",
+            "to": "srv"
+          }
+        ]
+      }
+    }
+  ],
+  "wrong": {
+    "step": "wan",
+    "why": "支店と本社のスイッチを直接つなぐ",
+    "input": [
+      {
+        "op": "connect",
+        "a": "sw-b",
+        "b": "sw-h"
+      }
+    ]
+  }
+}

@@ -1,0 +1,45 @@
+{
+  "lesson": "git.i.04",
+  "variants": [
+    {
+      "name": "差分の全てを見る・HEAD^ を打ち消す",
+      "steps": {
+        "find": [
+          "git log -p",
+          "料金の書き方をそろえる"
+        ],
+        "revert": [
+          "git revert --no-edit HEAD^"
+        ],
+        "push": [
+          "git push origin main"
+        ]
+      }
+    },
+    {
+      "name": "-S で値を探す・番号で打ち消す",
+      "steps": {
+        "find": [
+          "git log -S 3500 --oneline",
+          " 料金の書き方をそろえる"
+        ],
+        "revert": [
+          "git log --oneline -n 2",
+          "git revert HEAD~1 --no-edit",
+          "cat price.txt"
+        ],
+        "push": [
+          "git push -u origin main"
+        ]
+      }
+    }
+  ],
+  "wrong": {
+    "step": "find",
+    "why": "正しい値上げの記録を答える",
+    "input": [
+      "git log --oneline -p",
+      "大人を 350 円に値上げする"
+    ]
+  }
+}

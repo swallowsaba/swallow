@@ -1,0 +1,100 @@
+{
+  "lesson": "net.b.02",
+  "variants": [
+    {
+      "name": "上の層から順に入れる",
+      "steps": {
+        "sort": [
+          {
+            "op": "put",
+            "item": "s4",
+            "slot": "app"
+          },
+          {
+            "op": "put",
+            "item": "s3",
+            "slot": "transport"
+          },
+          {
+            "op": "put",
+            "item": "s5",
+            "slot": "internet"
+          },
+          {
+            "op": "put",
+            "item": "s2",
+            "slot": "internet"
+          },
+          {
+            "op": "put",
+            "item": "s1",
+            "slot": "link"
+          }
+        ]
+      }
+    },
+    {
+      "name": "インターネット層の 2 枚から入れる",
+      "steps": {
+        "sort": [
+          {
+            "op": "put",
+            "item": "s2",
+            "slot": "internet"
+          },
+          {
+            "op": "put",
+            "item": "s5",
+            "slot": "internet"
+          },
+          {
+            "op": "put",
+            "item": "s1",
+            "slot": "link"
+          },
+          {
+            "op": "put",
+            "item": "s4",
+            "slot": "app"
+          },
+          {
+            "op": "put",
+            "item": "s3",
+            "slot": "transport"
+          }
+        ]
+      }
+    }
+  ],
+  "wrong": {
+    "step": "sort",
+    "why": "打ち間違えたアドレスをアプリケーション層に入れる",
+    "input": [
+      {
+        "op": "put",
+        "item": "s1",
+        "slot": "link"
+      },
+      {
+        "op": "put",
+        "item": "s2",
+        "slot": "internet"
+      },
+      {
+        "op": "put",
+        "item": "s3",
+        "slot": "transport"
+      },
+      {
+        "op": "put",
+        "item": "s4",
+        "slot": "app"
+      },
+      {
+        "op": "put",
+        "item": "s5",
+        "slot": "app"
+      }
+    ]
+  }
+}

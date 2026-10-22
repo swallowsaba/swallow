@@ -1,0 +1,36 @@
+{
+  "lesson": "git.b.02",
+  "variants": [
+    {
+      "name": "場所を書いて作る・&& でつなぐ",
+      "steps": {
+        "init": [
+          "git init ."
+        ],
+        "record": [
+          "git add README.md && git commit -m '公園の説明を書く'"
+        ]
+      }
+    },
+    {
+      "name": "作ってすぐ様子を見る・./ を付けて選ぶ",
+      "steps": {
+        "init": [
+          "git init && git status"
+        ],
+        "record": [
+          "git add ./README.md",
+          "git status",
+          "git commit -m \"公園の説明を書く\""
+        ]
+      }
+    }
+  ],
+  "wrong": {
+    "step": "init",
+    "why": "リポジトリを作る前に様子を見る",
+    "input": [
+      "git status"
+    ]
+  }
+}

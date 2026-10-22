@@ -1,0 +1,37 @@
+{
+  "lesson": "web.b.04",
+  "variants": [
+    {
+      "name": "xargs で 1 つずつ送る",
+      "steps": {
+        "find": [
+          "cat urls.txt | xargs -n 1 curl -I",
+          "/stock"
+        ],
+        "side": [
+          "サーバ側"
+        ]
+      }
+    },
+    {
+      "name": "for で数だけを並べる",
+      "steps": {
+        "find": [
+          "for u in $(cat urls.txt); do curl -s -o /dev/null -w \"%{http_code} $u\\n\" $u; done",
+          "/stock"
+        ],
+        "side": [
+          " サーバ側"
+        ]
+      }
+    }
+  ],
+  "wrong": {
+    "step": "find",
+    "why": "転送の 302 を壊れていると読む",
+    "input": [
+      "curl -I http://shop.example/sale",
+      "/sale"
+    ]
+  }
+}

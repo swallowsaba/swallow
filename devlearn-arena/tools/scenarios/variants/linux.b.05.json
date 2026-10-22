@@ -1,0 +1,29 @@
+{
+  "lesson": "linux.b.05",
+  "variants": [
+    {
+      "name": "多い順に並べてから書く",
+      "steps": {
+        "report": [
+          "grep ERROR app.log | sort | uniq -c | sort -rn > report.txt",
+          "cat report.txt"
+        ]
+      }
+    },
+    {
+      "name": "行頭で拾う・先に並べる",
+      "steps": {
+        "report": [
+          "sort app.log | grep '^ERROR' | uniq -c > report.txt"
+        ]
+      }
+    }
+  ],
+  "wrong": {
+    "step": "report",
+    "why": "並べる sort を忘れて数える",
+    "input": [
+      "grep ERROR app.log | uniq -c > report.txt"
+    ]
+  }
+}

@@ -1,0 +1,51 @@
+{
+  "lesson": "net.i.03",
+  "variants": [
+    {
+      "name": "-S で見る・規則を書いて消す",
+      "steps": {
+        "look": [
+          "iptables -S INPUT",
+          "iptables -L INPUT -n --line-numbers",
+          "5"
+        ],
+        "web": [
+          "iptables -D INPUT -p tcp --dport 443 -j ACCEPT",
+          "iptables -I INPUT 5 -p tcp --dport 443 -j ACCEPT"
+        ],
+        "ssh": [
+          "iptables -D INPUT -p tcp --dport 22 -j ACCEPT",
+          "iptables -I INPUT 4 -s 10.0.0.0/8 -p tcp --dport 22 -j ACCEPT",
+          "ip netns exec outside nmap -p 22,443 203.0.113.10",
+          "ip netns exec office-pc nmap -p 22 203.0.113.10"
+        ]
+      }
+    },
+    {
+      "name": "DROP を消して最後に付け直す・規則を置き換える",
+      "steps": {
+        "look": [
+          "iptables -nL INPUT --line-numbers",
+          "5"
+        ],
+        "web": [
+          "iptables -D INPUT 5",
+          "iptables -A INPUT -j DROP"
+        ],
+        "ssh": [
+          "iptables -R INPUT 3 -s 10.0.0.0/8 -p tcp --dport 22 -j ACCEPT",
+          "ip netns exec office-pc nmap -p 22 203.0.113.10",
+          "ip netns exec outside nmap -p 22,80,443 203.0.113.10"
+        ]
+      }
+    }
+  ],
+  "wrong": {
+    "step": "look",
+    "why": "443 番の許可の規則の番号を答える",
+    "input": [
+      "iptables -L INPUT -n --line-numbers",
+      "6"
+    ]
+  }
+}

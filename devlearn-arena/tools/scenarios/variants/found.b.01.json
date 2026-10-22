@@ -1,0 +1,84 @@
+{
+  "lesson": "found.b.01",
+  "variants": [
+    {
+      "name": "処理から出力を先につなぎ、線を逆向きに引く",
+      "steps": {
+        "flow": [
+          {
+            "op": "connect",
+            "a": "screen",
+            "b": "cpu"
+          },
+          {
+            "op": "connect",
+            "a": "cpu",
+            "b": "kb"
+          },
+          {
+            "op": "send",
+            "from": "kb",
+            "to": "screen"
+          }
+        ],
+        "save": [
+          {
+            "op": "connect",
+            "a": "disk",
+            "b": "cpu"
+          },
+          {
+            "op": "send",
+            "from": "cpu",
+            "to": "disk"
+          }
+        ]
+      }
+    },
+    {
+      "name": "初めに全ての線を引いてから送る",
+      "steps": {
+        "flow": [
+          {
+            "op": "connect",
+            "a": "cpu",
+            "b": "disk"
+          },
+          {
+            "op": "connect",
+            "a": "cpu",
+            "b": "screen"
+          },
+          {
+            "op": "connect",
+            "a": "kb",
+            "b": "cpu"
+          },
+          {
+            "op": "send",
+            "from": "kb",
+            "to": "screen"
+          }
+        ],
+        "save": [
+          {
+            "op": "send",
+            "from": "cpu",
+            "to": "disk"
+          }
+        ]
+      }
+    }
+  ],
+  "wrong": {
+    "step": "flow",
+    "why": "キーボードと画面を直接つなぐ",
+    "input": [
+      {
+        "op": "connect",
+        "a": "kb",
+        "b": "screen"
+      }
+    ]
+  }
+}

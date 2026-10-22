@@ -1,0 +1,52 @@
+{
+  "lesson": "mon.b.03",
+  "variants": [
+    {
+      "name": "初めに原因を答える",
+      "steps": {
+        "start": [
+          {
+            "op": "answer",
+            "question": "原因",
+            "value": "メモリ"
+          },
+          {
+            "op": "answer",
+            "question": "始まり",
+            "value": "12:00"
+          }
+        ]
+      }
+    },
+    {
+      "name": "順に答える（グラフを読んでから）",
+      "steps": {
+        "start": [
+          {
+            "op": "answer",
+            "question": "始まり",
+            "value": "12:00"
+          }
+        ],
+        "cause": [
+          {
+            "op": "answer",
+            "question": "原因",
+            "value": "メモリ"
+          }
+        ]
+      }
+    }
+  ],
+  "wrong": {
+    "step": "start",
+    "why": "メモリが増え始めた時刻を答える",
+    "input": [
+      {
+        "op": "answer",
+        "question": "始まり",
+        "value": "10:00"
+      }
+    ]
+  }
+}

@@ -1,0 +1,67 @@
+{
+  "lesson": "cloud.b.01",
+  "variants": [
+    {
+      "name": "試しのサービスから答える",
+      "steps": {
+        "amount": [
+          {
+            "op": "answer",
+            "question": "trial",
+            "value": "クラウド・すぐ借りて返せる"
+          },
+          {
+            "op": "answer",
+            "question": "fes",
+            "value": "クラウド・すぐ借りて返せる"
+          }
+        ],
+        "place": [
+          {
+            "op": "answer",
+            "question": "water",
+            "value": "自前・場所と網を自分で決める"
+          }
+        ]
+      }
+    },
+    {
+      "name": "浄水場を先に答える",
+      "steps": {
+        "amount": [
+          {
+            "op": "answer",
+            "question": "water",
+            "value": "自前・場所と網を自分で決める"
+          },
+          {
+            "op": "answer",
+            "question": "fes",
+            "value": "クラウド・すぐ借りて返せる"
+          },
+          {
+            "op": "answer",
+            "question": "trial",
+            "value": "クラウド・すぐ借りて返せる"
+          }
+        ]
+      }
+    }
+  ],
+  "wrong": {
+    "step": "amount",
+    "why": "安さだけで選ぶ",
+    "input": [
+      {
+        "op": "answer",
+        "question": "fes",
+        "value": "クラウド・いつも安い"
+      },
+      {
+        "op": "answer",
+        "question": "trial",
+        "value": "クラウド・いつも安い"
+      }
+    ]
+  }
+}

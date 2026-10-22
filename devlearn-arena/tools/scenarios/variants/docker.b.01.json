@@ -1,0 +1,49 @@
+{
+  "lesson": "docker.b.01",
+  "variants": [
+    {
+      "name": "--version で CLI だけを見る・有効にして動かす・Running を拾う",
+      "steps": {
+        "client": [
+          "docker --version",
+          "27.3.1"
+        ],
+        "start": [
+          "systemctl status docker",
+          "sudo systemctl enable --now docker"
+        ],
+        "info": [
+          "docker info | grep Running",
+          "3"
+        ]
+      }
+    },
+    {
+      "name": "-v で見る・service.名前で動かす・ps で数える",
+      "steps": {
+        "client": [
+          "docker version",
+          "docker -v",
+          " 27.3.1"
+        ],
+        "start": [
+          "sudo systemctl start docker.service",
+          "docker version"
+        ],
+        "info": [
+          "docker info",
+          "docker ps",
+          "３"
+        ]
+      }
+    }
+  ],
+  "wrong": {
+    "step": "client",
+    "why": "API の版を答える",
+    "input": [
+      "docker version",
+      "1.47"
+    ]
+  }
+}

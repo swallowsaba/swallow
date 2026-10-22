@@ -1,0 +1,48 @@
+{
+  "lesson": "git.b.04",
+  "variants": [
+    {
+      "name": "checkout -b・今の枝の名前だけを出す",
+      "steps": {
+        "branch": [
+          "git checkout -b feature",
+          "git branch --show-current"
+        ],
+        "record": [
+          "echo '噴水: 中央' >> map.txt",
+          "git add map.txt",
+          "git commit -m '噴水を足す'"
+        ],
+        "main": [
+          "git checkout main",
+          "git log --oneline | wc -l",
+          "2"
+        ]
+      }
+    },
+    {
+      "name": "作ってから移る・printf で足す・数を数える",
+      "steps": {
+        "branch": [
+          "git branch feature && git switch feature",
+          "git status"
+        ],
+        "record": [
+          "printf '噴水: 中央\\n' >> map.txt && git commit -a -m \"噴水を足す\""
+        ],
+        "main": [
+          "git switch main",
+          "git rev-list --count main",
+          "２"
+        ]
+      }
+    }
+  ],
+  "wrong": {
+    "step": "branch",
+    "why": "まだ無い枝へ移ろうとする",
+    "input": [
+      "git switch feature"
+    ]
+  }
+}

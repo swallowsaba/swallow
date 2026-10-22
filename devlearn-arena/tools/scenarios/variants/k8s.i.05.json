@@ -1,0 +1,28 @@
+{
+  "lesson": "k8s.i.05",
+  "variants": [
+    {
+      "name": "読み込みを待つ秒数と失敗の回数を書く",
+      "steps": {
+        "probes": [
+          "apiVersion: apps/v1\nkind: Deployment\nmetadata:\n  name: guide\nspec:\n  replicas: 2\n  selector:\n    matchLabels:\n      app: guide\n  template:\n    metadata:\n      labels:\n        app: guide\n    spec:\n      containers:\n      - name: guide\n        image: city-guide:1.0\n        ports:\n        - containerPort: 8080\n        readinessProbe:\n          httpGet:\n            path: /ready\n            port: 8080\n          initialDelaySeconds: 20\n          periodSeconds: 5\n          failureThreshold: 3\n        livenessProbe:\n          httpGet:\n            path: /healthz\n            port: 8080\n          initialDelaySeconds: 40\n          periodSeconds: 10\n          timeoutSeconds: 2\n          failureThreshold: 3\n"
+        ]
+      }
+    },
+    {
+      "name": "名前を付けたポートを指す・liveness を先に書く",
+      "steps": {
+        "probes": [
+          "apiVersion: apps/v1\nkind: Deployment\nmetadata:\n  name: guide\nspec:\n  replicas: 2\n  selector:\n    matchLabels:\n      app: guide\n  template:\n    metadata:\n      labels:\n        app: guide\n    spec:\n      containers:\n        - name: guide\n          image: city-guide:1.0\n          ports:\n            - name: http\n              containerPort: 8080\n          livenessProbe:\n            httpGet:\n              path: /healthz\n              port: http\n            initialDelaySeconds: 30\n          readinessProbe:\n            httpGet:\n              path: /ready\n              port: http\n"
+        ]
+      }
+    }
+  ],
+  "wrong": {
+    "step": "probes",
+    "why": "liveness だけを付ける",
+    "input": [
+      "apiVersion: apps/v1\nkind: Deployment\nmetadata:\n  name: guide\nspec:\n  replicas: 2\n  selector:\n    matchLabels:\n      app: guide\n  template:\n    metadata:\n      labels:\n        app: guide\n    spec:\n      containers:\n      - name: guide\n        image: city-guide:1.0\n        ports:\n        - containerPort: 8080\n        livenessProbe:\n          httpGet:\n            path: /healthz\n            port: 8080\n          initialDelaySeconds: 30\n"
+    ]
+  }
+}

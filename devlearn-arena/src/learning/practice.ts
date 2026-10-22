@@ -20,7 +20,7 @@ import { initialShell, resolveSetup } from '@/engines/environments';
 import { request } from '@/engines/http/http';
 import { resolveName, roundTrip } from '@/engines/net/probe';
 import { applyAction, createSim, describeAction, holds, stepSettled } from '@/engines/sim/sim';
-import type { SimState } from '@/engines/sim/types';
+import type { SimAction, SimState } from '@/engines/sim/types';
 import { verify } from '@/engines/tls/tls';
 import type { PracticeAttempt } from '@/game/types';
 
@@ -639,17 +639,39 @@ function shownProblems(practice: Practice, shown: readonly ShownGuide[]): string
  * 端末・設定の編集・画面の操作（模）の実戦。ブラウザ内 SQL は playSqlHints
  */
 export function playHints(practice: Practice, guides: readonly ErrorGuide[]): { shown: ShownGuide[]; missed: string[] } {
+  return playSteps(practice, guides, hintInputs(practice));
+}
+
+/** 手順ごとに行う物（端末・ブラウザ内 SQL は打つ行、設定の編集は保存する中身、模は操作）。答える手順の最後の物は答え */
+export type StepInputs = (step: PracticeStep) => readonly (string | SimAction)[];
+
+/** 最後のヒントに書いた操作 */
+const hintInputs = (practice: Practice): StepInputs => (step) => (practice.mode === 'simulation' ? step.actions ?? [] : answerOf(step));
+
+/** 人と同じ順に通した結果。run はヒントを開かずに通した時の記録（XP の計算に使う） */
+export interface PlayResult {
+  shown: ShownGuide[];
+  missed: string[];
+  run: PracticeRun;
+}
+
+/**
+ * 手順ごとに inputs の物を、人と同じ順で画面と同じ関数（afterCommand）に通す（playHints の一般の形。
+ * VERIFY-FREE.txt【1】の別解も同じ道を通る）。ヒントは開かない
+ */
+export function playSteps(practice: Practice, guides: readonly ErrorGuide[], inputs: StepInputs): PlayResult {
   const shown: ShownGuide[] = [];
   let run = startRun();
   const took = (from: PracticeStep, line: string, out: CommandOutcome, failed: boolean): void => {
     if (out.error) shown.push({ step: currentStep(practice, run)?.id ?? '', from: from.id, line, guide: out.error.id, failed });
     run = out.run;
   };
+  const textsOf = (step: PracticeStep): string[] => inputs(step).filter((x): x is string => typeof x === 'string');
   if (practice.mode === 'simulation') {
     let sim = createSim(practice.environment, practice.setup);
     for (const step of practice.steps) {
       if (run.stepsDone.includes(step.id)) continue;
-      for (const action of step.actions ?? []) {
+      for (const action of inputs(step).filter((x): x is SimAction => typeof x !== 'string')) {
         const said = describeAction(sim, action);
         const out = applyAction(sim, action);
         sim = out.state;
@@ -664,7 +686,7 @@ export function playHints(practice: Practice, guides: readonly ErrorGuide[]): { 
     const clock = createClock();
     for (const step of practice.steps) {
       if (!edit || run.stepsDone.includes(step.id)) continue;
-      for (const content of answerOf(step)) {
+      for (const content of textsOf(step)) {
         const out = saveEdit(shell, edit, content, REGISTRY, clock);
         shell = out.state;
         const stderr = out.results.filter((x) => failedCommand(x, guides)).map((x) => x.stderr).join('');
@@ -677,7 +699,7 @@ export function playHints(practice: Practice, guides: readonly ErrorGuide[]): { 
     const clock = createClock();
     for (const step of practice.steps) {
       if (run.stepsDone.includes(step.id)) continue;
-      const lines = answerOf(step);
+      const lines = textsOf(step);
       for (const [i, line] of lines.entries()) {
         if (step.check.kind === 'answer' && i === lines.length - 1) {
           took(step, line, afterCommand(practice, run, { line: `（答え）${line}`, stderr: '', shell, answer: line }, guides), false);
@@ -691,7 +713,15 @@ export function playHints(practice: Practice, guides: readonly ErrorGuide[]): { 
       }
     }
   }
-  return { shown, missed: practice.steps.filter((s) => !run.stepsDone.includes(s.id)).map((s) => s.id) };
+  return { shown, missed: practice.steps.filter((s) => !run.stepsDone.includes(s.id)).map((s) => s.id), run };
+}
+
+/**
+ * 人と同じ順に通して出たエラーの案内のうち、許されない物（hintGuideProblems と同じ決まり）。
+ * 許されるのは、その手順で想定したエラーで、その手順の間に、本当に失敗した命令の物だけ
+ */
+export function playProblems(practice: Practice, played: Pick<PlayResult, 'shown' | 'missed'>): string[] {
+  return [...shownProblems(practice, played.shown), ...played.missed.map((id) => `実戦 ${id}: この手順を満たさない`)];
 }
 
 /**
@@ -734,6 +764,12 @@ export async function replaySqlAnswers(practice: Practice, guides: readonly Erro
 
 /** ブラウザ内 SQL の最後のヒントを、画面と同じ関数（afterCommand）で人と同じ順に通し、出たエラーの案内と満たせない手順を問題にする（hintGuideProblems と同じ） */
 async function playSqlHints(practice: Practice, guides: readonly ErrorGuide[]): Promise<string[]> {
+  const { shown, missed } = await playSqlSteps(practice, guides, hintInputs(practice));
+  return [...shownProblems(practice, shown), ...missed.map((id) => `実戦 ${id}: 最後のヒントの通りに操作しても、この手順を満たさない`)];
+}
+
+/** ブラウザ内 SQL の実戦で、手順ごとに inputs の SQL を人と同じ順で画面と同じ関数に通す（playSteps の SQL の形） */
+export async function playSqlSteps(practice: Practice, guides: readonly ErrorGuide[], inputs: StepInputs): Promise<PlayResult> {
   const { openDb } = await import('@/engines/db/db');
   const db = await openDb(resolveSetup(practice.environment, practice.setup).sql ?? '');
   const shown: ShownGuide[] = [];
@@ -741,7 +777,7 @@ async function playSqlHints(practice: Practice, guides: readonly ErrorGuide[]): 
   try {
     for (const step of practice.steps) {
       if (run.stepsDone.includes(step.id)) continue;
-      const lines = answerOf(step);
+      const lines = inputs(step).filter((x): x is string => typeof x === 'string');
       for (const [i, line] of lines.entries()) {
         let failed = false;
         let out: CommandOutcome;
@@ -759,7 +795,7 @@ async function playSqlHints(practice: Practice, guides: readonly ErrorGuide[]): 
   } finally {
     db.close();
   }
-  return [...shownProblems(practice, shown), ...practice.steps.filter((s) => !run.stepsDone.includes(s.id)).map((s) => `実戦 ${s.id}: 最後のヒントの通りに操作しても、この手順を満たさない`)];
+  return { shown, missed: practice.steps.filter((s) => !run.stepsDone.includes(s.id)).map((s) => s.id), run };
 }
 
 /* ---------- 設定の編集（編。docs/content-spec.md 2.4.2） ---------- */

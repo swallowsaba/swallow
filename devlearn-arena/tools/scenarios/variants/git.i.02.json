@@ -1,0 +1,54 @@
+{
+  "lesson": "git.i.02",
+  "variants": [
+    {
+      "name": "送り先を書いて送る・origin を書いて取る",
+      "steps": {
+        "look": [
+          "git push origin main",
+          "git fetch origin",
+          "git log main..origin/main",
+          "夏の間は 18 時まで開ける"
+        ],
+        "pull": [
+          "git pull origin main",
+          "printf 'テニスコート 1: 9:00-18:00（月曜は休み）\\n' > slots.txt"
+        ],
+        "push": [
+          "git add slots.txt && git commit -m '夏の時間と月曜の休みを合わせる'",
+          "git push origin main"
+        ]
+      }
+    },
+    {
+      "name": "取ってきた物を merge で取り込む",
+      "steps": {
+        "look": [
+          "git push",
+          "git fetch",
+          "git log --oneline HEAD..origin/main",
+          "夏の間は 18 時まで開ける"
+        ],
+        "pull": [
+          "git merge origin/main",
+          "echo 'テニスコート 1: 9:00-18:00（月曜は休み）' > slots.txt"
+        ],
+        "push": [
+          "git add -A",
+          "git commit --no-edit",
+          "git push -u origin main"
+        ]
+      }
+    }
+  ],
+  "wrong": {
+    "step": "look",
+    "why": "自分の記録の説明を答える",
+    "input": [
+      "git push",
+      "git fetch",
+      "git log --oneline main..origin/main",
+      "テニスコート 1 を月曜は休みにする"
+    ]
+  }
+}

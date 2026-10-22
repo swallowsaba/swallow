@@ -1,0 +1,52 @@
+{
+  "lesson": "trouble.b.03",
+  "variants": [
+    {
+      "name": "-m1 で最初の 1 行・sort -m で並べる",
+      "steps": {
+        "app": [
+          "grep -m1 ERROR /var/log/app/app.log",
+          "10:12:03"
+        ],
+        "cause": [
+          "sort -m /var/log/app/app.log /var/log/db/db.log",
+          "10:11:58"
+        ]
+      }
+    },
+    {
+      "name": "全てのエラーを見る・cat でつないで sort",
+      "steps": {
+        "app": [
+          "grep ERROR /var/log/app/app.log",
+          " 10:12:03"
+        ],
+        "cause": [
+          "cat /var/log/app/app.log /var/log/db/db.log | sort",
+          "１０:１１:５８"
+        ]
+      }
+    },
+    {
+      "name": "head -n 1・異常の行だけを並べる",
+      "steps": {
+        "app": [
+          "grep 'ERROR' /var/log/app/app.log | head -n 1",
+          "10:12:03"
+        ],
+        "cause": [
+          "grep -h -E 'ERROR|FATAL' /var/log/app/app.log /var/log/db/db.log | sort",
+          "10:11:58"
+        ]
+      }
+    }
+  ],
+  "wrong": {
+    "step": "app",
+    "why": "最後のエラーの時刻を答える",
+    "input": [
+      "grep ERROR /var/log/app/app.log",
+      "10:12:40"
+    ]
+  }
+}

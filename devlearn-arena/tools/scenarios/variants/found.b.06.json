@@ -1,0 +1,45 @@
+{
+  "lesson": "found.b.06",
+  "variants": [
+    {
+      "name": "隠しファイルも出す ls -la",
+      "steps": {
+        "memo": [
+          "ls -la",
+          "所有者だけ"
+        ],
+        "team": [
+          "所有者とグループ"
+        ],
+        "board": [
+          "全員"
+        ]
+      }
+    },
+    {
+      "name": "ファイルごとに stat と ls -l で見る",
+      "steps": {
+        "memo": [
+          "stat memo.txt",
+          "所有者だけ"
+        ],
+        "team": [
+          "ls -l team.txt",
+          "所有者とグループ"
+        ],
+        "board": [
+          "ls -l /home/learner/board.txt",
+          "全員"
+        ]
+      }
+    }
+  ],
+  "wrong": {
+    "step": "memo",
+    "why": "読める人と書ける人を取り違える",
+    "input": [
+      "ls -l",
+      "全員"
+    ]
+  }
+}

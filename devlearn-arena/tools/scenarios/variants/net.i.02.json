@@ -1,0 +1,47 @@
+{
+  "lesson": "net.i.02",
+  "variants": [
+    {
+      "name": "-S で規則を書いた形で見る・同じ規則を書いて消す",
+      "steps": {
+        "look": [
+          "ip netns exec outside curl -k https://shop.example/",
+          "iptables -t nat -S PREROUTING",
+          "192.168.1.11"
+        ],
+        "dnat": [
+          "iptables -t nat -D PREROUTING -i eth0 -p tcp --dport 443 -j DNAT --to-destination 192.168.1.11:443",
+          "iptables -t nat -A PREROUTING -i eth0 -p tcp --dport 443 -j DNAT --to-destination 192.168.1.10:443"
+        ],
+        "forward": [
+          "iptables -L FORWARD -n",
+          "iptables -A FORWARD -i eth0 -o eth1 -p tcp -d 192.168.1.10 --dport 443 -j ACCEPT",
+          "ip netns exec outside curl https://shop.example/"
+        ]
+      }
+    },
+    {
+      "name": "規則を置き換える・NEW だけ通す",
+      "steps": {
+        "look": [
+          "iptables -t nat -L -n",
+          "192.168.1.11"
+        ],
+        "dnat": [
+          "iptables -t nat -R PREROUTING 1 -i eth0 -p tcp --dport 443 -j DNAT --to-destination 192.168.1.10:443"
+        ],
+        "forward": [
+          "iptables -I FORWARD 2 -p tcp -d 192.168.1.10 --dport 443 -m conntrack --ctstate NEW -j ACCEPT",
+          "ip netns exec outside curl -s https://203.0.113.5/"
+        ]
+      }
+    }
+  ],
+  "wrong": {
+    "step": "dnat",
+    "why": "転送先を書き落とす",
+    "input": [
+      "iptables -t nat -A PREROUTING -i eth0 -p tcp --dport 443 -j DNAT --to-destination"
+    ]
+  }
+}

@@ -1,0 +1,31 @@
+{
+  "lesson": "found.b.04",
+  "variants": [
+    {
+      "name": "今いる所からの相対パスで移る",
+      "steps": {
+        "move": [
+          "pwd",
+          "ls /srv",
+          "cd ../../srv/app"
+        ]
+      }
+    },
+    {
+      "name": "2 回に分けて移る・末尾の /",
+      "steps": {
+        "move": [
+          "cd /srv",
+          "cd app/"
+        ]
+      }
+    }
+  ],
+  "wrong": {
+    "step": "move",
+    "why": "場所の名前を打ち間違える",
+    "input": [
+      "cd /srv/ap"
+    ]
+  }
+}

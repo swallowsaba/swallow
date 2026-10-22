@@ -1,0 +1,49 @@
+{
+  "lesson": "ctr.i.02",
+  "variants": [
+    {
+      "name": "ps aux を中で・master の行で絞る・-m で上限",
+      "steps": {
+        "inside": [
+          "docker exec web ps aux",
+          "1"
+        ],
+        "outside": [
+          "ps aux | grep 'nginx: master'",
+          "2101"
+        ],
+        "limit": [
+          "docker run -d --name report -p 8081:80 -m 256m city-report:1.0",
+          "docker stats --no-stream",
+          "256MiB"
+        ]
+      }
+    },
+    {
+      "name": "ps -ef・docker top・= で書く上限",
+      "steps": {
+        "inside": [
+          "docker exec web ps -ef",
+          "１"
+        ],
+        "outside": [
+          "docker top web",
+          "2101"
+        ],
+        "limit": [
+          "docker run --memory=256m -d -p 8081:80 --name report city-report:1.0",
+          "docker stats report --no-stream",
+          "256mib"
+        ]
+      }
+    }
+  ],
+  "wrong": {
+    "step": "inside",
+    "why": "外から見た番号を答える",
+    "input": [
+      "docker exec web ps",
+      "2101"
+    ]
+  }
+}

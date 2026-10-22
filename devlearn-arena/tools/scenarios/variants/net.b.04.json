@@ -1,0 +1,56 @@
+{
+  "lesson": "net.b.04",
+  "variants": [
+    {
+      "name": "先に古い Web を止めてから直す",
+      "steps": {
+        "look": [
+          "ss -ltnp",
+          "curl -s localhost",
+          "8080"
+        ],
+        "web": [
+          "systemctl disable --now preview",
+          "sed -i 's/8080/80/' /etc/nginx/conf.d/site.conf",
+          "nginx -t",
+          "systemctl restart nginx",
+          "curl localhost"
+        ],
+        "ssh": [
+          "sed -i 's/Port 2222/Port 22/' /etc/ssh/sshd_config",
+          "systemctl restart sshd",
+          "ss -tlnp | grep sshd"
+        ]
+      }
+    },
+    {
+      "name": "&& でつなぐ・読み直しで変える",
+      "steps": {
+        "look": [
+          "ss -tlpn",
+          "curl http://localhost:80/",
+          "8080"
+        ],
+        "web": [
+          "systemctl stop preview && systemctl disable preview",
+          "sed -i 's/listen 8080/listen 80/' /etc/nginx/conf.d/site.conf",
+          "nginx -t && systemctl reload nginx",
+          "curl -i http://localhost/"
+        ],
+        "ssh": [
+          "sed -i 's/^Port .*/Port 22/' /etc/ssh/sshd_config",
+          "systemctl restart ssh.service",
+          "ss -ltn"
+        ]
+      }
+    }
+  ],
+  "wrong": {
+    "step": "look",
+    "why": "http の既定の番号を答える",
+    "input": [
+      "ss -tlnp",
+      "80"
+    ]
+  }
+}

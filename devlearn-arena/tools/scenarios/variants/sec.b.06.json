@@ -1,0 +1,98 @@
+{
+  "lesson": "sec.b.06",
+  "variants": [
+    {
+      "name": "初めから 5 段を並べる",
+      "steps": {
+        "trust": [
+          {
+            "op": "arrange",
+            "stages": [
+              [
+                "hello"
+              ],
+              [
+                "cert"
+              ],
+              [
+                "verify"
+              ],
+              [
+                "key"
+              ],
+              [
+                "talk"
+              ]
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "4 段まで並べてから全てを並べる",
+      "steps": {
+        "trust": [
+          {
+            "op": "arrange",
+            "stages": [
+              [
+                "hello"
+              ],
+              [
+                "cert"
+              ],
+              [
+                "verify"
+              ],
+              [
+                "key"
+              ]
+            ]
+          }
+        ],
+        "secure": [
+          {
+            "op": "arrange",
+            "stages": [
+              [
+                "hello"
+              ],
+              [
+                "cert"
+              ],
+              [
+                "verify"
+              ],
+              [
+                "key"
+              ],
+              [
+                "talk"
+              ]
+            ]
+          }
+        ]
+      }
+    }
+  ],
+  "wrong": {
+    "step": "trust",
+    "why": "挨拶の前に証明書を見せる",
+    "input": [
+      {
+        "op": "arrange",
+        "stages": [
+          [
+            "cert"
+          ],
+          [
+            "hello"
+          ],
+          [
+            "verify"
+          ]
+        ]
+      }
+    ]
+  }
+}

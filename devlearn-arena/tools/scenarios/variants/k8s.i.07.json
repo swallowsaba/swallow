@@ -1,0 +1,28 @@
+{
+  "lesson": "k8s.i.07",
+  "variants": [
+    {
+      "name": "CPU は 500m・report は要求と上限を分ける",
+      "steps": {
+        "fit": [
+          "apiVersion: apps/v1\nkind: Deployment\nmetadata:\n  name: board\nspec:\n  replicas: 1\n  selector:\n    matchLabels:\n      app: board\n  template:\n    metadata:\n      labels:\n        app: board\n    spec:\n      containers:\n      - name: board\n        image: city-board:1.0\n        resources:\n          requests:\n            cpu: 500m\n            memory: 64Mi\n---\napiVersion: apps/v1\nkind: Deployment\nmetadata:\n  name: report\nspec:\n  replicas: 1\n  selector:\n    matchLabels:\n      app: report\n  template:\n    metadata:\n      labels:\n        app: report\n    spec:\n      containers:\n      - name: report\n        image: city-report:1.0\n        resources:\n          requests:\n            memory: 200Mi\n          limits:\n            memory: 512Mi\n"
+        ]
+      }
+    },
+    {
+      "name": "CPU は 1 個・1Gi を上限に",
+      "steps": {
+        "fit": [
+          "apiVersion: apps/v1\nkind: Deployment\nmetadata:\n  name: board\nspec:\n  replicas: 1\n  selector:\n    matchLabels:\n      app: board\n  template:\n    metadata:\n      labels:\n        app: board\n    spec:\n      containers:\n      - name: board\n        image: city-board:1.0\n        resources:\n          requests:\n            cpu: 1\n            memory: 64Mi\n---\napiVersion: apps/v1\nkind: Deployment\nmetadata:\n  name: report\nspec:\n  replicas: 1\n  selector:\n    matchLabels:\n      app: report\n  template:\n    metadata:\n      labels:\n        app: report\n    spec:\n      containers:\n      - name: report\n        image: city-report:1.0\n        resources:\n          requests:\n            memory: 192Mi\n          limits:\n            memory: 1Gi\n"
+        ]
+      }
+    }
+  ],
+  "wrong": {
+    "step": "fit",
+    "why": "board だけを直し、report の上限はそのまま",
+    "input": [
+      "apiVersion: apps/v1\nkind: Deployment\nmetadata:\n  name: board\nspec:\n  replicas: 1\n  selector:\n    matchLabels:\n      app: board\n  template:\n    metadata:\n      labels:\n        app: board\n    spec:\n      containers:\n      - name: board\n        image: city-board:1.0\n        resources:\n          requests:\n            cpu: \"100m\"\n            memory: 64Mi\n---\napiVersion: apps/v1\nkind: Deployment\nmetadata:\n  name: report\nspec:\n  replicas: 1\n  selector:\n    matchLabels:\n      app: report\n  template:\n    metadata:\n      labels:\n        app: report\n    spec:\n      containers:\n      - name: report\n        image: city-report:1.0\n        resources:\n          requests:\n            memory: 128Mi\n          limits:\n            memory: 128Mi\n"
+    ]
+  }
+}

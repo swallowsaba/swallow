@@ -1,0 +1,45 @@
+{
+  "lesson": "net.b.05",
+  "variants": [
+    {
+      "name": "UDP だけを見る・大文字で答える",
+      "steps": {
+        "read": [
+          "ss -ulnp",
+          "5060"
+        ],
+        "voice": [
+          "遅れる"
+        ],
+        "file": [
+          "ss -tlnp | grep sshd",
+          "TCP"
+        ]
+      }
+    },
+    {
+      "name": "並びの違う指定",
+      "steps": {
+        "read": [
+          "ss -lntup",
+          "5060"
+        ],
+        "voice": [
+          " 遅れる "
+        ],
+        "file": [
+          "ss -tulpn",
+          "tcp"
+        ]
+      }
+    }
+  ],
+  "wrong": {
+    "step": "read",
+    "why": "DNS の番号を答える",
+    "input": [
+      "ss -tulnp",
+      "53"
+    ]
+  }
+}

@@ -1,0 +1,48 @@
+{
+  "lesson": "db.b.01",
+  "variants": [
+    {
+      "name": "残りの列だけ・売った記録の全て・式で直す",
+      "steps": {
+        "read": [
+          "SELECT remaining FROM tickets WHERE id = 1",
+          "SELECT * FROM sales",
+          "3"
+        ],
+        "fix": [
+          "UPDATE tickets SET remaining = 5 - (SELECT COUNT(*) FROM sales) WHERE id = 1;"
+        ],
+        "sell": [
+          "BEGIN TRANSACTION; UPDATE tickets SET remaining = remaining - 1 WHERE id = 1; INSERT INTO sales (counter, sold_at) VALUES ('窓口1', '10:30:00'); COMMIT;",
+          "BEGIN TRANSACTION; UPDATE tickets SET remaining = remaining - 1 WHERE id = 1; INSERT INTO sales (counter, sold_at) VALUES ('窓口2', '10:30:01'); COMMIT;",
+          "SELECT remaining FROM tickets"
+        ]
+      }
+    },
+    {
+      "name": "小文字で書く・記録を先に足して END で閉じる",
+      "steps": {
+        "read": [
+          "select * from tickets;",
+          "select count(*) as sold from sales;",
+          "３"
+        ],
+        "fix": [
+          "update tickets set remaining = 3 where id = 1;"
+        ],
+        "sell": [
+          "BEGIN; INSERT INTO sales (counter, sold_at) VALUES ('窓口1', '10:30:00'); UPDATE tickets SET remaining = remaining - 1 WHERE id = 1; END;",
+          "BEGIN; INSERT INTO sales (counter, sold_at) VALUES ('窓口2', '10:30:00'); UPDATE tickets SET remaining = remaining - 1 WHERE id = 1; END;",
+          "SELECT * FROM tickets; SELECT COUNT(*) FROM sales;"
+        ]
+      }
+    }
+  ],
+  "wrong": {
+    "step": "read",
+    "why": "表の名前を打ち間違える",
+    "input": [
+      "SELECT * FROM ticket"
+    ]
+  }
+}

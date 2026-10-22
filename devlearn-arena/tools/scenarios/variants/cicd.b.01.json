@@ -1,0 +1,34 @@
+{
+  "lesson": "cicd.b.01",
+  "variants": [
+    {
+      "name": "名前を外し npm run test と書く",
+      "steps": {
+        "ci": [
+          "# 予約サイトを本番に届ける流れ\nname: release\non:\n  push:\n    branches: [main]\njobs:\n  release:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@v4\n      - run: npm ci\n      - run: npm run build\n      - run: npm run test\n"
+        ],
+        "cd": [
+          "# 予約サイトを本番に届ける流れ\nname: release\non:\n  push:\n    branches: [main]\njobs:\n  release:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@v4\n      - run: npm ci\n      - run: npm run build\n      - run: npm run test\n      - run: npm run deploy\n"
+        ]
+      }
+    },
+    {
+      "name": "配る手順をいったん # で止める",
+      "steps": {
+        "ci": [
+          "# 予約サイトを本番に届ける流れ（手で配っていた時の手順書の並びのまま）\nname: release\non:\n  push:\n    branches: [main]\njobs:\n  release:\n    runs-on: ubuntu-latest\n    steps:\n      - name: 最新の変更を取ってくる\n        uses: actions/checkout@v4\n      - name: 部品を入れる\n        run: npm ci\n      - name: 組み立てる\n        run: npm run build\n      - name: 検査する\n        run: npm test\n      # - name: 本番に配る\n      #   run: npm run deploy\n"
+        ],
+        "cd": [
+          "# 予約サイトを本番に届ける流れ（手で配っていた時の手順書の並びのまま）\nname: release\non:\n  push:\n    branches: [main]\njobs:\n  release:\n    runs-on: ubuntu-latest\n    steps:\n      - name: 最新の変更を取ってくる\n        uses: actions/checkout@v4\n      - name: 部品を入れる\n        run: npm ci\n      - name: 組み立てる\n        run: npm run build\n      - name: 検査する\n        run: npm test\n      - name: 本番に配る\n        run: npm run deploy\n"
+        ]
+      }
+    }
+  ],
+  "wrong": {
+    "step": "ci",
+    "why": "検査を組み立ての前に置く",
+    "input": [
+      "name: release\non:\n  push:\n    branches: [main]\njobs:\n  release:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@v4\n      - run: npm ci\n      - run: npm test\n      - run: npm run build\n"
+    ]
+  }
+}

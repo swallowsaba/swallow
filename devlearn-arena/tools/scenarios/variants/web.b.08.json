@@ -1,0 +1,42 @@
+{
+  "lesson": "web.b.08",
+  "variants": [
+    {
+      "name": "c で行を置き換える・nginx -s reload",
+      "steps": {
+        "redirect": [
+          "sed -i '4c\\  return 301 https://$host$request_uri;' /etc/nginx/conf.d/city.conf",
+          "nginx -t",
+          "nginx -s reload",
+          "curl -I http://city.example/"
+        ],
+        "mixed": [
+          "sed -i 's/http:/https:/' /var/www/html/index.html",
+          "curl -s https://city.example/ | grep img"
+        ]
+      }
+    },
+    {
+      "name": "4 行目だけで置き換える・動かし直す",
+      "steps": {
+        "redirect": [
+          "sed -i '4s|root /var/www/html;|return 301 https://$host$request_uri;|' /etc/nginx/conf.d/city.conf",
+          "systemctl restart nginx",
+          "curl -sI http://city.example/ | head -n 1"
+        ],
+        "mixed": [
+          "sed -i 's#src=\"http://#src=\"https://#' /var/www/html/index.html",
+          "curl -i https://city.example/"
+        ]
+      }
+    }
+  ],
+  "wrong": {
+    "step": "redirect",
+    "why": "行の終わりの ; を書き落とす",
+    "input": [
+      "sed -i '4s|.*|  return 301 https://$host$request_uri|' /etc/nginx/conf.d/city.conf",
+      "systemctl reload nginx"
+    ]
+  }
+}

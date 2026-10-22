@@ -1,0 +1,38 @@
+{
+  "lesson": "git.b.01",
+  "variants": [
+    {
+      "name": "1 行ずつの履歴・checkout -- で取り出す",
+      "steps": {
+        "find": [
+          "git log --oneline",
+          "入口を北側に移す"
+        ],
+        "restore": [
+          "git checkout 11da075 -- plan.txt"
+        ]
+      }
+    },
+    {
+      "name": "差分つきの履歴・HEAD~2 から取り出す",
+      "steps": {
+        "find": [
+          "git log -p plan.txt",
+          " 入口を北側に移す"
+        ],
+        "restore": [
+          "git restore -s HEAD~2 plan.txt",
+          "cat plan.txt"
+        ]
+      }
+    }
+  ],
+  "wrong": {
+    "step": "find",
+    "why": "最初の案を答える",
+    "input": [
+      "git log",
+      "最初の案"
+    ]
+  }
+}

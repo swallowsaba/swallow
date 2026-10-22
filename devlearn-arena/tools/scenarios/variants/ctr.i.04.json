@@ -1,0 +1,58 @@
+{
+  "lesson": "ctr.i.04",
+  "variants": [
+    {
+      "name": "Mounts だけを出す・止めてから消す",
+      "steps": {
+        "where": [
+          "podman inspect db --format '{{json .Mounts}}'",
+          "podman exec db psql -U postgres -d reserve -c 'SHOW data_directory'",
+          "/var/lib/postgresql/data"
+        ],
+        "mount": [
+          "podman stop db && podman rm db",
+          "podman run -d --name db -v db-data:/var/lib/postgresql/data city-db:1.0",
+          "podman exec db psql -U postgres -d reserve -c 'SELECT * FROM reservations'",
+          "podman exec db psql -U postgres -d reserve -c \"INSERT INTO reservations VALUES (4, '市民ホール')\""
+        ],
+        "recreate": [
+          "podman rm -f db",
+          "podman run -d --name db -v db-data:/var/lib/postgresql/data city-db:1.0",
+          "podman logs db",
+          "podman exec db psql -U postgres -d reserve -c 'SELECT count(*) FROM reservations'"
+        ]
+      }
+    },
+    {
+      "name": "--mount の書き方で付ける",
+      "steps": {
+        "where": [
+          "podman inspect db",
+          "podman exec db psql -U postgres -c 'SHOW data_directory;'",
+          "podman exec db ls /var/lib/postgresql/data",
+          "/var/lib/postgresql/data"
+        ],
+        "mount": [
+          "podman rm -f db",
+          "podman run -d --name db --mount type=volume,source=db-data,target=/var/lib/postgresql/data city-db:1.0",
+          "podman exec db psql -U postgres -d reserve -c \"INSERT INTO reservations VALUES (4, '市民ホール')\""
+        ],
+        "recreate": [
+          "podman stop db",
+          "podman rm db",
+          "podman run -d --name db --mount type=volume,source=db-data,target=/var/lib/postgresql/data city-db:1.0",
+          "podman logs db | grep -i skipping",
+          "podman exec db psql -U postgres -d reserve -c 'SELECT count(*) FROM reservations;'"
+        ]
+      }
+    }
+  ],
+  "wrong": {
+    "step": "where",
+    "why": "ボリュームを付けた場所を答える",
+    "input": [
+      "podman inspect db",
+      "/data"
+    ]
+  }
+}

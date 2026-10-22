@@ -1,0 +1,28 @@
+{
+  "lesson": "docker.i.01",
+  "variants": [
+    {
+      "name": "package*.json を写す・EXPOSE を書く",
+      "steps": {
+        "write": [
+          "# 窓口のアプリ（server.js）のイメージを作る\nFROM node:20-alpine\nWORKDIR /app\nCOPY package*.json ./\nRUN npm install\nCOPY . .\nEXPOSE 3000\nCMD [\"node\", \"server.js\"]\n"
+        ]
+      }
+    },
+    {
+      "name": "全てを /app へ写す・シェルの形の CMD",
+      "steps": {
+        "write": [
+          "FROM node:20-alpine\nWORKDIR /app\nCOPY . /app\nRUN npm install --omit=dev\nCMD node server.js"
+        ]
+      }
+    }
+  ],
+  "wrong": {
+    "step": "write",
+    "why": "動かすファイルの名前を間違える",
+    "input": [
+      "FROM node:20-alpine\nWORKDIR /app\nCOPY package.json .\nRUN npm install\nCOPY . .\nCMD [\"node\", \"app.js\"]"
+    ]
+  }
+}

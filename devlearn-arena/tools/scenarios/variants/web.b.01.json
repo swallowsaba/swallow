@@ -1,0 +1,38 @@
+{
+  "lesson": "web.b.01",
+  "variants": [
+    {
+      "name": "静かに取る・引用符で囲む",
+      "steps": {
+        "list": [
+          "curl -s https://shop.example:8443/items",
+          "4"
+        ],
+        "query": [
+          "curl 'https://shop.example:8443/items?id=3'",
+          "灯台の模型"
+        ]
+      }
+    },
+    {
+      "name": "jq で数える・-G で条件を付ける",
+      "steps": {
+        "list": [
+          "curl -s https://shop.example:8443/items | jq length",
+          "４"
+        ],
+        "query": [
+          "curl -G -d id=3 https://shop.example:8443/items",
+          " 灯台の模型 "
+        ]
+      }
+    }
+  ],
+  "wrong": {
+    "step": "list",
+    "why": "待っている番号を書き落とす",
+    "input": [
+      "curl https://shop.example/items"
+    ]
+  }
+}

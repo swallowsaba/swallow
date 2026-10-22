@@ -1,0 +1,38 @@
+{
+  "lesson": "linux.b.08",
+  "variants": [
+    {
+      "name": "CPU の多い順に並べる・合図の名前で止める",
+      "steps": {
+        "find": [
+          "ps aux --sort=-%cpu | head -n 3",
+          "102"
+        ],
+        "stop": [
+          "kill -TERM 102",
+          "ps aux"
+        ]
+      }
+    },
+    {
+      "name": "top を一度だけ・名前で止める",
+      "steps": {
+        "find": [
+          "top -b -n 1",
+          "102"
+        ],
+        "stop": [
+          "pkill -f resize.py"
+        ]
+      }
+    }
+  ],
+  "wrong": {
+    "step": "find",
+    "why": "CPU でなくメモリの多い処理を答える",
+    "input": [
+      "top",
+      "101"
+    ]
+  }
+}

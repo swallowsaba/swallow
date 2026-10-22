@@ -1,0 +1,45 @@
+{
+  "lesson": "web.b.07",
+  "variants": [
+    {
+      "name": "名前まで書いて写す・o+r で読めるようにする",
+      "steps": {
+        "place": [
+          "grep root /etc/nginx/conf.d/site.conf",
+          "cp /root/site/index.html /var/www/html/index.html"
+        ],
+        "start": [
+          "systemctl start nginx.service"
+        ],
+        "serve": [
+          "curl -I http://localhost/",
+          "chmod o+r /var/www/html/index.html",
+          "curl localhost"
+        ]
+      }
+    },
+    {
+      "name": "写して確かめる・有効にして動かす・a+r",
+      "steps": {
+        "place": [
+          "cat /etc/nginx/conf.d/site.conf",
+          "cp /root/site/index.html /var/www/html/ && ls -l /var/www/html"
+        ],
+        "start": [
+          "systemctl enable --now nginx"
+        ],
+        "serve": [
+          "chmod a+r /var/www/html/index.html",
+          "curl -i localhost"
+        ]
+      }
+    }
+  ],
+  "wrong": {
+    "step": "place",
+    "why": "下書きの名前を打ち間違える",
+    "input": [
+      "cp /root/site/index.htm /var/www/html/"
+    ]
+  }
+}

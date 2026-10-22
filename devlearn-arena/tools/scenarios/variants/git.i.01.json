@@ -1,0 +1,46 @@
+{
+  "lesson": "git.i.01",
+  "variants": [
+    {
+      "name": "置き場所の名前を書いて複製・名前だけを出す",
+      "steps": {
+        "clone": [
+          "git clone https://git.city.example/park/reserve.git reserve"
+        ],
+        "name": [
+          "cd reserve && git remote",
+          "origin"
+        ],
+        "place": [
+          "git remote get-url origin",
+          "https://git.city.example/park/reserve.git"
+        ]
+      }
+    },
+    {
+      "name": "SSH で断られてから https で複製・設定から読む",
+      "steps": {
+        "clone": [
+          "git clone git@git.city.example:park/reserve.git",
+          "git clone https://git.city.example/park/reserve.git"
+        ],
+        "name": [
+          "cd ~/reserve",
+          "git remote show",
+          "origin"
+        ],
+        "place": [
+          "git config --get remote.origin.url",
+          "https://git.city.example/park/reserve.git"
+        ]
+      }
+    }
+  ],
+  "wrong": {
+    "step": "clone",
+    "why": "鍵を登録していないのに SSH の場所で複製する",
+    "input": [
+      "git clone git@git.city.example:park/reserve.git"
+    ]
+  }
+}

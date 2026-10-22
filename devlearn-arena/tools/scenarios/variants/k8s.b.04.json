@@ -1,0 +1,35 @@
+{
+  "lesson": "k8s.b.04",
+  "variants": [
+    {
+      "name": "--image の後を空白で書く・1 つの Pod を追う",
+      "steps": {
+        "run": [
+          "kubectl run web --image nginx"
+        ],
+        "running": [
+          "kubectl get pod web -w"
+        ]
+      }
+    },
+    {
+      "name": "作り直さない指定・Ready まで待つ",
+      "steps": {
+        "run": [
+          "kubectl run web --image=nginx --restart=Never"
+        ],
+        "running": [
+          "kubectl wait --for=condition=Ready pod/web",
+          "kubectl get po"
+        ]
+      }
+    }
+  ],
+  "wrong": {
+    "step": "run",
+    "why": "イメージを書き落とす",
+    "input": [
+      "kubectl run web"
+    ]
+  }
+}

@@ -1,0 +1,43 @@
+{
+  "lesson": "git.b.05",
+  "variants": [
+    {
+      "name": "checkout で移る・説明だけを出す",
+      "steps": {
+        "merge": [
+          "git checkout main",
+          "git merge feature",
+          "git log -1 --format=%s",
+          "Merge branch 'feature'"
+        ],
+        "confirm": [
+          "cat map.txt notice.txt"
+        ]
+      }
+    },
+    {
+      "name": "&& でつなぐ・--no-edit",
+      "steps": {
+        "merge": [
+          "git switch main && git merge --no-edit feature",
+          "git log --oneline -n 1",
+          "Merge branch 'feature'"
+        ],
+        "confirm": [
+          "grep 噴水 map.txt",
+          "grep 雨 notice.txt"
+        ]
+      }
+    }
+  ],
+  "wrong": {
+    "step": "merge",
+    "why": "説明の一部だけを答える",
+    "input": [
+      "git switch main",
+      "git merge feature",
+      "git log --oneline -1",
+      "Merge feature"
+    ]
+  }
+}

@@ -1,0 +1,54 @@
+{
+  "lesson": "k8s.b.06",
+  "variants": [
+    {
+      "name": "短い名前・宛先の番号も書く・ep・svc",
+      "steps": {
+        "expose": [
+          "kubectl expose deploy web --port 80 --target-port 80"
+        ],
+        "endpoints": [
+          "kubectl get ep web",
+          "3"
+        ],
+        "replace": [
+          "kubectl delete pods -l app=web",
+          "kubectl rollout status deploy/web",
+          "kubectl get ep web"
+        ],
+        "ip": [
+          "kubectl get service web",
+          "10.107.155.174"
+        ]
+      }
+    },
+    {
+      "name": "deployment/web の形・describe で見る・入れ替えを頼む・jsonpath",
+      "steps": {
+        "expose": [
+          "kubectl expose deployment/web --port=80"
+        ],
+        "endpoints": [
+          "kubectl describe svc web",
+          "３"
+        ],
+        "replace": [
+          "kubectl rollout restart deployment web",
+          "kubectl get pods -w",
+          "kubectl get endpoints web"
+        ],
+        "ip": [
+          "kubectl get svc web -o jsonpath='{.spec.clusterIP}'",
+          " 10.107.155.174"
+        ]
+      }
+    }
+  ],
+  "wrong": {
+    "step": "expose",
+    "why": "Deployment の名前を打ち間違える",
+    "input": [
+      "kubectl expose deployment wbe --port=80"
+    ]
+  }
+}

@@ -1,0 +1,39 @@
+{
+  "lesson": "found.b.05",
+  "variants": [
+    {
+      "name": "CPU の多い順に並べて見る・pgrep で数える",
+      "steps": {
+        "heavy": [
+          "ps aux --sort=-%cpu",
+          "102"
+        ],
+        "count": [
+          "pgrep -c browser",
+          "2"
+        ]
+      }
+    },
+    {
+      "name": "top で一度だけ見る・grep で数える",
+      "steps": {
+        "heavy": [
+          "top -b -n 1",
+          "１０２"
+        ],
+        "count": [
+          "ps aux | grep -c [b]rowser",
+          "２"
+        ]
+      }
+    }
+  ],
+  "wrong": {
+    "step": "heavy",
+    "why": "CPU の欄でなくメモリの欄を見て答える",
+    "input": [
+      "ps aux",
+      "101"
+    ]
+  }
+}

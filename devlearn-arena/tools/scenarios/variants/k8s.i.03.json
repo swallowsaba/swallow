@@ -1,0 +1,28 @@
+{
+  "lesson": "k8s.i.03",
+  "variants": [
+    {
+      "name": "PV の名前を書いて結ぶ・5Gi を頼む",
+      "steps": {
+        "keep": [
+          "apiVersion: v1\nkind: PersistentVolumeClaim\nmetadata:\n  name: db-data\nspec:\n  storageClassName: manual\n  volumeName: pv-db-1\n  accessModes:\n  - ReadWriteOnce\n  resources:\n    requests:\n      storage: 5Gi\n---\napiVersion: apps/v1\nkind: Deployment\nmetadata:\n  name: db\nspec:\n  replicas: 1\n  selector:\n    matchLabels:\n      app: db\n  template:\n    metadata:\n      labels:\n        app: db\n    spec:\n      containers:\n      - name: postgres\n        image: city-db:1.0\n        ports:\n        - containerPort: 5432\n        volumeMounts:\n        - name: data\n          mountPath: /var/lib/postgresql/data\n      volumes:\n      - name: data\n        persistentVolumeClaim:\n          claimName: db-data\n"
+        ]
+      }
+    },
+    {
+      "name": "ボリュームの名前を db-data にする・Deployment を先に書く",
+      "steps": {
+        "keep": [
+          "apiVersion: apps/v1\nkind: Deployment\nmetadata:\n  name: db\nspec:\n  replicas: 1\n  selector:\n    matchLabels:\n      app: db\n  template:\n    metadata:\n      labels:\n        app: db\n    spec:\n      volumes:\n        - name: db-data\n          persistentVolumeClaim:\n            claimName: db-data\n      containers:\n        - name: postgres\n          image: city-db:1.0\n          ports:\n            - containerPort: 5432\n          volumeMounts:\n            - name: db-data\n              mountPath: /var/lib/postgresql/data\n---\napiVersion: v1\nkind: PersistentVolumeClaim\nmetadata:\n  name: db-data\nspec:\n  storageClassName: manual\n  accessModes:\n    - ReadWriteOnce\n  resources:\n    requests:\n      storage: 5Gi\n"
+        ]
+      }
+    }
+  ],
+  "wrong": {
+    "step": "keep",
+    "why": "volumeMounts と volumes の名前が合っていない",
+    "input": [
+      "apiVersion: v1\nkind: PersistentVolumeClaim\nmetadata:\n  name: db-data\nspec:\n  storageClassName: manual\n  accessModes:\n  - ReadWriteOnce\n  resources:\n    requests:\n      storage: 1Gi\n---\napiVersion: apps/v1\nkind: Deployment\nmetadata:\n  name: db\nspec:\n  replicas: 1\n  selector:\n    matchLabels:\n      app: db\n  template:\n    metadata:\n      labels:\n        app: db\n    spec:\n      containers:\n      - name: postgres\n        image: city-db:1.0\n        volumeMounts:\n        - name: data\n          mountPath: /var/lib/postgresql/data\n      volumes:\n      - name: db\n        persistentVolumeClaim:\n          claimName: db-data\n"
+    ]
+  }
+}

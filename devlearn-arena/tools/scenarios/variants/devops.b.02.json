@@ -1,0 +1,74 @@
+{
+  "lesson": "devops.b.02",
+  "variants": [
+    {
+      "name": "配布から入れる",
+      "steps": {
+        "review": [
+          {
+            "op": "put",
+            "item": "古い確認",
+            "slot": "やめる"
+          }
+        ],
+        "big": [
+          {
+            "op": "put",
+            "item": "配布",
+            "slot": "自動"
+          },
+          {
+            "op": "put",
+            "item": "検査",
+            "slot": "自動"
+          }
+        ],
+        "third": [
+          {
+            "op": "put",
+            "item": "朝の確認",
+            "slot": "自動"
+          }
+        ]
+      }
+    },
+    {
+      "name": "初めに全ての札を置く",
+      "steps": {
+        "review": [
+          {
+            "op": "put",
+            "item": "朝の確認",
+            "slot": "自動"
+          },
+          {
+            "op": "put",
+            "item": "配布",
+            "slot": "自動"
+          },
+          {
+            "op": "put",
+            "item": "検査",
+            "slot": "自動"
+          },
+          {
+            "op": "put",
+            "item": "古い確認",
+            "slot": "やめる"
+          }
+        ]
+      }
+    }
+  ],
+  "wrong": {
+    "step": "big",
+    "why": "毎回判断の要る障害の見極めを自動にする",
+    "input": [
+      {
+        "op": "put",
+        "item": "障害の見極め",
+        "slot": "自動"
+      }
+    ]
+  }
+}

@@ -1,0 +1,34 @@
+{
+  "lesson": "ctr.i.05",
+  "variants": [
+    {
+      "name": "環境変数を - の並びで書く・引用符なしのポート",
+      "steps": {
+        "split": [
+          "services:\n  web:\n    image: city-reserve-ui:1.0\n    ports:\n      - 8080:80\n    environment:\n      - API_URL=http://localhost:3000\n  api:\n    image: city-reserve-api:1.0\n    environment:\n      - DATABASE_URL=postgres://postgres@localhost:5432/reserve\n  db:\n    image: city-db:1.0\n"
+        ],
+        "connect": [
+          "services:\n  web:\n    image: city-reserve-ui:1.0\n    ports:\n      - 8080:80\n    environment:\n      - API_URL=http://api:3000\n    depends_on:\n      - api\n  api:\n    image: city-reserve-api:1.0\n    environment:\n      - DATABASE_URL=postgres://postgres@db:5432/reserve\n    depends_on:\n      - db\n  db:\n    image: city-db:1.0\n"
+        ]
+      }
+    },
+    {
+      "name": "db から書く・depends_on を名前の表で書く",
+      "steps": {
+        "split": [
+          "# 予約のサービス（画面・API・DB を、役割ごとのコンテナに分ける）\nservices:\n  db:\n    image: \"city-db:1.0\"\n  api:\n    image: \"city-reserve-api:1.0\"\n    environment:\n      DATABASE_URL: \"postgres://postgres@localhost:5432/reserve\"\n  web:\n    image: \"city-reserve-ui:1.0\"\n    environment:\n      API_URL: \"http://localhost:3000\"\n    ports:\n      - \"8080:80\""
+        ],
+        "connect": [
+          "# 予約のサービス（画面・API・DB を、役割ごとのコンテナに分ける）\nservices:\n  db:\n    image: \"city-db:1.0\"\n  api:\n    image: \"city-reserve-api:1.0\"\n    depends_on:\n      db:\n        condition: service_started\n    environment:\n      DATABASE_URL: \"postgres://postgres@db:5432/reserve\"\n  web:\n    image: \"city-reserve-ui:1.0\"\n    depends_on:\n      api:\n        condition: service_started\n    environment:\n      API_URL: \"http://api:3000\"\n    ports:\n      - \"8080:80\""
+        ]
+      }
+    }
+  ],
+  "wrong": {
+    "step": "split",
+    "why": "image の綴りを間違える",
+    "input": [
+      "services:\n  web:\n    imgae: city-reserve-ui:1.0\n    ports:\n      - \"8080:80\"\n  api:\n    image: city-reserve-api:1.0\n  db:\n    image: city-db:1.0\n"
+    ]
+  }
+}

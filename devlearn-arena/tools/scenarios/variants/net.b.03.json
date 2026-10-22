@@ -1,0 +1,56 @@
+{
+  "lesson": "net.b.03",
+  "variants": [
+    {
+      "name": "ip a・まとめて消してから振る",
+      "steps": {
+        "read": [
+          "ip a",
+          "ping -c 3 192.168.10.1",
+          "192.168.1.0/24"
+        ],
+        "self": [
+          "ip addr flush dev eth0",
+          "ip addr add 192.168.10.14/24 dev eth0",
+          "ping -c 2 192.168.10.11"
+        ],
+        "pc3": [
+          "ping -c 1 192.168.10.13",
+          "ip -n pc3 addr show",
+          "ip -n pc3 addr flush dev eth0",
+          "ip -n pc3 addr add 192.168.10.13/24 dev eth0",
+          "ping -c 1 192.168.10.13"
+        ]
+      }
+    },
+    {
+      "name": "短い名前 ip a del/add・機械の中で ip を打つ",
+      "steps": {
+        "read": [
+          "ip -4 addr show dev eth0",
+          "ping -c 1 192.168.10.1",
+          " 192.168.1.0/24"
+        ],
+        "self": [
+          "ip a del 192.168.1.14/24 dev eth0",
+          "ip a add 192.168.10.14/24 dev eth0",
+          "ping -c 1 192.168.10.12"
+        ],
+        "pc3": [
+          "ip netns exec pc3 ip addr",
+          "ip netns exec pc3 ip addr del 192.168.20.13/24 dev eth0",
+          "ip netns exec pc3 ip addr add 192.168.10.13/24 dev eth0",
+          "ping -c 1 192.168.10.13"
+        ]
+      }
+    }
+  ],
+  "wrong": {
+    "step": "read",
+    "why": "新しい網の住所を答える",
+    "input": [
+      "ip addr",
+      "192.168.10.0/24"
+    ]
+  }
+}

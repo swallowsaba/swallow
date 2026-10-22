@@ -1,0 +1,44 @@
+{
+  "lesson": "docker.i.04",
+  "variants": [
+    {
+      "name": "種類を書いて作る・--net で入れる",
+      "steps": {
+        "create": [
+          "docker network create --driver bridge city-net"
+        ],
+        "db": [
+          "docker network connect city-net db",
+          "docker network inspect city-net"
+        ],
+        "web": [
+          "docker rm web",
+          "docker run -d --name web --net city-net -e DATABASE_URL=postgres://postgres@db:5432/reserve city-reserve:2.0"
+        ]
+      }
+    },
+    {
+      "name": "作って一覧で見る・= で書く・&& でつなぐ",
+      "steps": {
+        "create": [
+          "docker logs web",
+          "docker network create city-net && docker network ls"
+        ],
+        "db": [
+          "docker network connect city-net db"
+        ],
+        "web": [
+          "docker rm -f web && docker run -d --network=city-net --name web --env DATABASE_URL=postgres://postgres@db:5432/reserve city-reserve:2.0",
+          "docker logs web"
+        ]
+      }
+    }
+  ],
+  "wrong": {
+    "step": "db",
+    "why": "網の名前を打ち間違える",
+    "input": [
+      "docker network connect city-nett db"
+    ]
+  }
+}

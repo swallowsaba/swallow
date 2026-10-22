@@ -1,0 +1,39 @@
+{
+  "lesson": "k8s.b.03",
+  "variants": [
+    {
+      "name": "短い名前・NotReady を grep",
+      "steps": {
+        "count": [
+          "kubectl get no",
+          "3"
+        ],
+        "status": [
+          "kubectl get nodes | grep NotReady",
+          "node-2"
+        ]
+      }
+    },
+    {
+      "name": "-o wide・見出しを外す",
+      "steps": {
+        "count": [
+          "kubectl get nodes -o wide",
+          "３"
+        ],
+        "status": [
+          "kubectl get nodes --no-headers",
+          "NODE-2"
+        ]
+      }
+    }
+  ],
+  "wrong": {
+    "step": "count",
+    "why": "control-plane も数える",
+    "input": [
+      "kubectl get nodes",
+      "4"
+    ]
+  }
+}

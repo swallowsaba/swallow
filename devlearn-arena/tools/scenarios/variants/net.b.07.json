@@ -1,0 +1,39 @@
+{
+  "lesson": "net.b.07",
+  "variants": [
+    {
+      "name": "回数を決めて打つ・数字のまま道すじを見る",
+      "steps": {
+        "ping": [
+          "ping -c 4 shop.example",
+          "0"
+        ],
+        "trace": [
+          "traceroute -n shop.example",
+          "10.0.23.2"
+        ]
+      }
+    },
+    {
+      "name": "アドレスで打つ",
+      "steps": {
+        "ping": [
+          "ping -c 3 192.0.2.10",
+          "０"
+        ],
+        "trace": [
+          "traceroute 192.0.2.10",
+          "10.0.23.2"
+        ]
+      }
+    }
+  ],
+  "wrong": {
+    "step": "ping",
+    "why": "送った数を答える",
+    "input": [
+      "ping shop.example",
+      "4"
+    ]
+  }
+}

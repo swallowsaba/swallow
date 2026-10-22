@@ -1,0 +1,34 @@
+{
+  "lesson": "cicd.b.04",
+  "variants": [
+    {
+      "name": "末尾の / を付けない path・名前を引用符で",
+      "steps": {
+        "save": [
+          "name: deploy\non:\n  push:\n    branches: [main]\njobs:\n  build:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@v4\n      - run: npm install\n      - run: npm run build\n      - name: 成果物を上げる\n        uses: actions/upload-artifact@v4\n        with:\n          name: 'app'\n          path: dist\n  test:\n    needs: build\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@v4\n      - run: npm install\n      - run: npm run build\n      - run: npm run e2e\n  deploy:\n    needs: test\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@v4\n      - run: npm install\n      - run: npm run build\n      - run: npm run deploy\n"
+        ],
+        "pass": [
+          "name: deploy\non:\n  push:\n    branches: [main]\njobs:\n  build:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@v4\n      - run: npm install\n      - run: npm run build\n      - name: 成果物を上げる\n        uses: actions/upload-artifact@v4\n        with:\n          name: 'app'\n          path: dist\n  test:\n    needs: build\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@v4\n      - name: 成果物を受け取る\n        uses: actions/download-artifact@v4\n        with:\n          name: 'app'\n          path: dist\n      - run: npm install\n      - run: npm run e2e\n  deploy:\n    needs: test\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@v4\n      - name: 成果物を受け取る\n        uses: actions/download-artifact@v4\n        with:\n          name: 'app'\n          path: dist\n      - run: npm run deploy\n"
+        ]
+      }
+    },
+    {
+      "name": "./dist と書く・受け取りを npm install の後に",
+      "steps": {
+        "save": [
+          "# 予約サイトを組み立てて、検査して、本番に配る\nname: deploy\non:\n  push:\n    branches: [main]\njobs:\n  build:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@v4\n      - run: npm install\n      - run: npm run build\n      - uses: actions/upload-artifact@v4\n        with:\n          name: \"app\"\n          path: ./dist\n  test:\n    needs: build\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@v4\n      - run: npm install\n      - run: npm run build\n      - run: npm run e2e\n  deploy:\n    needs: test\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@v4\n      - run: npm install\n      - run: npm run build\n      - run: npm run deploy\n"
+        ],
+        "pass": [
+          "# 予約サイトを組み立てて、検査して、本番に配る\nname: deploy\non:\n  push:\n    branches: [main]\njobs:\n  build:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@v4\n      - run: npm install\n      - run: npm run build\n      - uses: actions/upload-artifact@v4\n        with:\n          name: \"app\"\n          path: ./dist\n  test:\n    needs: build\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@v4\n      - run: npm install\n      - uses: actions/download-artifact@v4\n        with:\n          name: \"app\"\n          path: ./dist\n      - run: npm run e2e\n  deploy:\n    needs: test\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@v4\n      - uses: actions/download-artifact@v4\n        with:\n          name: \"app\"\n          path: ./dist\n      - run: npm run deploy\n"
+        ]
+      }
+    }
+  ],
+  "wrong": {
+    "step": "save",
+    "why": "上げる場所を build/ と書く",
+    "input": [
+      "name: deploy\non:\n  push:\n    branches: [main]\njobs:\n  build:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@v4\n      - run: npm install\n      - run: npm run build\n      - uses: actions/upload-artifact@v4\n        with:\n          name: app\n          path: build/\n  test:\n    needs: build\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@v4\n      - run: npm install\n      - run: npm run build\n      - run: npm run e2e\n  deploy:\n    needs: test\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@v4\n      - run: npm install\n      - run: npm run build\n      - run: npm run deploy\n"
+    ]
+  }
+}

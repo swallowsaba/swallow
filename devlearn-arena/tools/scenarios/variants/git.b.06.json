@@ -1,0 +1,49 @@
+{
+  "lesson": "git.b.06",
+  "variants": [
+    {
+      "name": "短い様子・printf で 2 行を書く・add してから -m",
+      "steps": {
+        "merge": [
+          "git merge feature",
+          "git status -s",
+          "price.txt"
+        ],
+        "fix": [
+          "printf '大人: 350 円（65 歳以上は 150 円）\\n子ども: 100 円\\n' > price.txt"
+        ],
+        "commit": [
+          "git add price.txt",
+          "git commit -m '料金表の衝突を解く'"
+        ]
+      }
+    },
+    {
+      "name": "衝突したファイルだけを出す・ヒアドキュメント・--no-edit",
+      "steps": {
+        "merge": [
+          "git merge feature",
+          "git diff --name-only --diff-filter=U",
+          "price.txt"
+        ],
+        "fix": [
+          "cat > price.txt << 'EOF'\n大人: 350 円（65 歳以上は 150 円）\n子ども: 100 円\nEOF"
+        ],
+        "commit": [
+          "git diff --check",
+          "git add -A",
+          "git commit --no-edit"
+        ]
+      }
+    }
+  ],
+  "wrong": {
+    "step": "merge",
+    "why": "衝突していないファイルを答える",
+    "input": [
+      "git merge feature",
+      "git status",
+      "README.md"
+    ]
+  }
+}

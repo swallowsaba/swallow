@@ -1,0 +1,46 @@
+{
+  "lesson": "linux.b.00",
+  "variants": [
+    {
+      "name": "名前の欄だけを出す・grep で行を拾う",
+      "steps": {
+        "os": [
+          "uname -s"
+        ],
+        "distro": [
+          "grep ^NAME= /etc/os-release",
+          "ubuntu"
+        ],
+        "version": [
+          "uname -r",
+          "grep VERSION_ID /etc/os-release",
+          "24.04"
+        ]
+      }
+    },
+    {
+      "name": "長い名前の指定・ファイルを読み込んで変数で見る",
+      "steps": {
+        "os": [
+          "uname --kernel-name"
+        ],
+        "distro": [
+          "head -n 3 /etc/os-release",
+          "Ubuntu"
+        ],
+        "version": [
+          ". /etc/os-release && echo $VERSION_ID",
+          "uname -r",
+          "２４．０４"
+        ]
+      }
+    }
+  ],
+  "wrong": {
+    "step": "os",
+    "why": "カーネルの版を出す -r を付ける",
+    "input": [
+      "uname -r"
+    ]
+  }
+}

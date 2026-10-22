@@ -1,0 +1,38 @@
+{
+  "lesson": "web.b.02",
+  "variants": [
+    {
+      "name": "頭だけを取る・grep で拾う",
+      "steps": {
+        "status": [
+          "curl -I http://shop.example/",
+          "200"
+        ],
+        "type": [
+          "curl -sI http://shop.example/ | grep -i content-type",
+          "text/html"
+        ]
+      }
+    },
+    {
+      "name": "スキームを省く・数字だけを出す",
+      "steps": {
+        "status": [
+          "curl -s -o /dev/null -w '%{http_code}' http://shop.example/",
+          "200"
+        ],
+        "type": [
+          "curl -i shop.example",
+          "text/html"
+        ]
+      }
+    }
+  ],
+  "wrong": {
+    "step": "status",
+    "why": "店の名前を打ち間違える",
+    "input": [
+      "curl -i http://shop.exmaple/"
+    ]
+  }
+}

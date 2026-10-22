@@ -1,0 +1,36 @@
+{
+  "lesson": "docker.b.02",
+  "variants": [
+    {
+      "name": "image pull・image ls",
+      "steps": {
+        "pull": [
+          "docker image pull nginx:1.27"
+        ],
+        "list": [
+          "docker image ls",
+          "192MB"
+        ]
+      }
+    },
+    {
+      "name": "置き場まで書いた名前で取る・名前で絞って見る",
+      "steps": {
+        "pull": [
+          "docker pull docker.io/library/nginx:1.27"
+        ],
+        "list": [
+          "docker images nginx",
+          "192mb"
+        ]
+      }
+    }
+  ],
+  "wrong": {
+    "step": "pull",
+    "why": "版の数を打ち間違える",
+    "input": [
+      "docker pull nginx:1.72"
+    ]
+  }
+}

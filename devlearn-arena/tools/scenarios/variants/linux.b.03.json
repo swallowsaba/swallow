@@ -1,0 +1,31 @@
+{
+  "lesson": "linux.b.03",
+  "variants": [
+    {
+      "name": "古い書き方 tail -5",
+      "steps": {
+        "last-error": [
+          "tail -5 app.log",
+          " 14:58:41 "
+        ]
+      }
+    },
+    {
+      "name": "ERROR の行の最後を拾う",
+      "steps": {
+        "last-error": [
+          "grep ERROR app.log | tail -n 1",
+          "14:58:41"
+        ]
+      }
+    }
+  ],
+  "wrong": {
+    "step": "last-error",
+    "why": "最後でなく、その前のエラーの時刻を答える",
+    "input": [
+      "tail -n 5 app.log",
+      "13:20:51"
+    ]
+  }
+}

@@ -1,0 +1,50 @@
+{
+  "lesson": "trouble.b.01",
+  "variants": [
+    {
+      "name": "頭だけで比べる・最後の 1 行・start で動かす",
+      "steps": {
+        "scope": [
+          "curl -I http://reserve.example/",
+          "curl -I http://reserve.example/info/",
+          "502"
+        ],
+        "cause": [
+          "tail -1 /var/log/nginx/error.log",
+          "systemctl status reserve.service",
+          "oom-kill"
+        ],
+        "fix": [
+          "systemctl start reserve",
+          "curl -sI http://reserve.example/"
+        ]
+      }
+    },
+    {
+      "name": "数だけを出す・記録を全部読む・&& で確かめる",
+      "steps": {
+        "scope": [
+          "curl -s -o /dev/null -w '%{http_code}\\n' http://reserve.example/",
+          "curl -s http://reserve.example/info/",
+          "５０２"
+        ],
+        "cause": [
+          "journalctl -u reserve --no-pager",
+          "systemctl status reserve",
+          " oom-kill"
+        ],
+        "fix": [
+          "systemctl restart reserve.service && curl -i reserve.example"
+        ]
+      }
+    }
+  ],
+  "wrong": {
+    "step": "scope",
+    "why": "案内のページの数を答える",
+    "input": [
+      "curl -i http://reserve.example/info/",
+      "200"
+    ]
+  }
+}

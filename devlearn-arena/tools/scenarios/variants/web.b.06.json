@@ -1,0 +1,58 @@
+{
+  "lesson": "web.b.06",
+  "variants": [
+    {
+      "name": "置き換えの式を広く・-e で 2 つ直す",
+      "steps": {
+        "look": [
+          "curl -si -c cookies.txt -d 'user=minato&pass=harbor' https://shop.example/login",
+          "curl -b cookies.txt https://shop.example/cart",
+          "/login"
+        ],
+        "scope": [
+          "sed -i 's|^session.cookie_path = .*|session.cookie_path = /|' /etc/php/8.3/apache2/php.ini",
+          "systemctl restart apache2",
+          "curl -c cookies.txt -d 'user=minato&pass=harbor' https://shop.example/login",
+          "curl -b cookies.txt https://shop.example/orders",
+          "3"
+        ],
+        "flags": [
+          "sed -i -e 's/^session.cookie_secure = Off/session.cookie_secure = On/' -e 's/^session.cookie_httponly = Off/session.cookie_httponly = On/' /etc/php/8.3/apache2/php.ini",
+          "systemctl restart apache2",
+          "curl -si -d 'user=minato&pass=harbor' https://shop.example/login | grep -i set-cookie"
+        ]
+      }
+    },
+    {
+      "name": "-d を 2 つに分ける・行を選んで直す",
+      "steps": {
+        "look": [
+          "curl -i -c cookies.txt -d user=minato -d pass=harbor https://shop.example/login",
+          "cat cookies.txt",
+          "/login"
+        ],
+        "scope": [
+          "sed -i '/^session.cookie_path/s|/login|/|' /etc/php/8.3/apache2/php.ini",
+          "systemctl restart apache2.service",
+          "curl -c c.txt -d 'user=minato&pass=harbor' https://shop.example/login",
+          "curl -b c.txt https://shop.example/orders",
+          "３"
+        ],
+        "flags": [
+          "sed -i 's/cookie_secure = Off/cookie_secure = On/' /etc/php/8.3/apache2/php.ini",
+          "sed -i 's/cookie_httponly = Off/cookie_httponly = On/' /etc/php/8.3/apache2/php.ini",
+          "systemctl restart apache2",
+          "curl -i -d 'user=minato&pass=harbor' https://shop.example/login"
+        ]
+      }
+    }
+  ],
+  "wrong": {
+    "step": "look",
+    "why": "札の範囲を / と読む",
+    "input": [
+      "curl -i -c cookies.txt -d 'user=minato&pass=harbor' https://shop.example/login",
+      "/"
+    ]
+  }
+}

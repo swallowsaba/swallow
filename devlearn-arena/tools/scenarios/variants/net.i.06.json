@@ -1,0 +1,49 @@
+{
+  "lesson": "net.i.06",
+  "variants": [
+    {
+      "name": "先に古い VLAN を消す・差し込んで止める",
+      "steps": {
+        "split": [
+          "ip netns exec sw bridge vlan show",
+          "ip netns exec sw bridge vlan del dev port6 vid 10",
+          "ip netns exec sw bridge vlan add dev port6 vid 20 pvid untagged",
+          "ip netns exec sw bridge vlan del dev port7 vid 10",
+          "ip netns exec sw bridge vlan add dev port7 vid 30 pvid untagged",
+          "ip netns exec guest ping -c 1 10.0.30.1",
+          "ip netns exec pc1 nmap -p 445 10.0.20.50"
+        ],
+        "rules": [
+          "iptables -I FORWARD -i eth3 -o eth2 -j DROP",
+          "iptables -I FORWARD -i eth3 -o eth1 -j DROP",
+          "ip netns exec guest nmap -p 443 198.51.100.80",
+          "ip netns exec pc1 nmap -p 445 10.0.20.50"
+        ]
+      }
+    },
+    {
+      "name": "送り元の網で止める",
+      "steps": {
+        "split": [
+          "ip netns exec sw bridge vlan add dev port6 vid 20 pvid untagged",
+          "ip netns exec sw bridge vlan add dev port7 vid 30 pvid untagged",
+          "ip netns exec sw bridge vlan del dev port6 vid 10",
+          "ip netns exec sw bridge vlan del dev port7 vid 10",
+          "ip netns exec sw bridge vlan show"
+        ],
+        "rules": [
+          "iptables -A FORWARD -s 10.0.30.0/24 -d 10.0.10.0/24 -j DROP",
+          "iptables -A FORWARD -s 10.0.30.0/24 -d 10.0.20.0/24 -j DROP",
+          "ip netns exec guest nmap -p 445 10.0.20.50"
+        ]
+      }
+    }
+  ],
+  "wrong": {
+    "step": "split",
+    "why": "スイッチの口の名前を間違える",
+    "input": [
+      "ip netns exec sw bridge vlan add dev port9 vid 20 pvid untagged"
+    ]
+  }
+}

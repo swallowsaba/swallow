@@ -1,0 +1,31 @@
+{
+  "lesson": "docker.i.06",
+  "variants": [
+    {
+      "name": "環境変数を - の並びで書く",
+      "steps": {
+        "connect": [
+          "services:\n  web:\n    image: city-reserve:2.0\n    ports:\n      - 8080:3000\n    environment:\n      - DATABASE_URL=postgres://postgres@db:5432/reserve\n    depends_on:\n      - db\n  db:\n    image: city-db:1.0\n    volumes:\n      - db-data:/var/lib/postgresql/data\n\nvolumes:\n  db-data:\n"
+        ]
+      }
+    },
+    {
+      "name": "初めは db をつなぐだけ・次にボリュームを足す",
+      "steps": {
+        "connect": [
+          "# 予約の窓口（web）と DB（db）を一緒に動かす\nservices:\n  db:\n    image: \"city-db:1.0\"\n  web:\n    image: \"city-reserve:2.0\"\n    depends_on:\n      db:\n        condition: service_started\n    ports:\n      - \"8080:3000\"\n    environment:\n      DATABASE_URL: \"postgres://postgres@db:5432/reserve\"\n"
+        ],
+        "keep": [
+          "# 予約の窓口（web）と DB（db）を一緒に動かす\nservices:\n  db:\n    image: \"city-db:1.0\"\n    volumes:\n      - \"db-data:/var/lib/postgresql/data\"\n  web:\n    image: \"city-reserve:2.0\"\n    depends_on:\n      db:\n        condition: service_started\n    ports:\n      - \"8080:3000\"\n    environment:\n      DATABASE_URL: \"postgres://postgres@db:5432/reserve\"\nvolumes:\n  db-data: {}\n"
+        ]
+      }
+    }
+  ],
+  "wrong": {
+    "step": "connect",
+    "why": "DB の場所を localhost のままにする",
+    "input": [
+      "services:\n  web:\n    image: city-reserve:2.0\n    ports:\n      - \"8080:3000\"\n    environment:\n      DATABASE_URL: postgres://postgres@localhost:5432/reserve\n    depends_on:\n      - db\n  db:\n    image: city-db:1.0\n"
+    ]
+  }
+}

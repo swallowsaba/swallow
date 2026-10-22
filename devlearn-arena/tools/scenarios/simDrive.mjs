@@ -41,6 +41,8 @@ export async function dragTo(page, from, to, midShot) {
   if (midShot) await midShot();
   await page.mouse.up();
   await wait(page, 350);
+  // 放すたびに呼ぶ（page.__dropHook。1 つの操作の途中で出て、次に放した時に消えるエラーの案内を、その瞬間に見るため）
+  await page.__dropHook?.();
 }
 
 /** 置き場（無ければ枠）にある札の印 */
@@ -77,6 +79,12 @@ export async function perform(page, action, setup, midShot) {
     case 'arrange': {
       // 並んでいる札を置き場へ戻してから、上の段から順に並べる（同じ段の 2 枚目からは、その段の上へ落とす）
       for (const id of (await stagesNow(page)).flat()) await dragTo(page, `.sim-stages [data-card="${id}"]`, '.sim-pool');
+      if (action.dropOrder === 'reverse') {
+        // 下の段から置く（VERIFY-FREE.txt【1】の順番の入れ替え）。1 列の並びでは、並んだ札の上に落とすとその前に入る
+        const flat = action.stages.map((g) => g[0]);
+        for (const [k, id] of [...flat].reverse().entries()) await dragTo(page, `.sim-pool [data-card="${id}"]`, k === 0 ? '[data-drop="end"]' : '[data-stage="0"]', k === flat.length - 1 ? midShot : undefined);
+        return wait(page, 400 * (action.stages.length + 1));
+      }
       for (const [i, g] of action.stages.entries()) {
         for (const [k, id] of g.entries()) await dragTo(page, `.sim-pool [data-card="${id}"]`, k === 0 ? '[data-drop="end"]' : `[data-stage="${String(i)}"]`, k === g.length - 1 && i === action.stages.length - 1 ? midShot : undefined);
       }

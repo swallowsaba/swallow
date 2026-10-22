@@ -1,0 +1,52 @@
+{
+  "lesson": "git.i.06",
+  "variants": [
+    {
+      "name": "printf でまとめて書く・短い様子・-- の後に dist/",
+      "steps": {
+        "ignore": [
+          "printf 'dist/\\n.env\\nnode_modules/\\n' > .gitignore"
+        ],
+        "still": [
+          "git status -s",
+          "dist/app.min.js"
+        ],
+        "untrack": [
+          "git rm --cached -r dist/",
+          "git add .gitignore",
+          "git commit -m '作った物と秘密を管理から外す'"
+        ],
+        "tag": [
+          "git tag -a v1.0 -m 'v1.0'"
+        ]
+      }
+    },
+    {
+      "name": "ヒアドキュメント・追跡中の一覧で見る・&& でつなぐ",
+      "steps": {
+        "ignore": [
+          "cat > .gitignore << 'EOF'\ndist/\n.env\nnode_modules/\nEOF"
+        ],
+        "still": [
+          "git ls-files dist",
+          "dist/app.min.js"
+        ],
+        "untrack": [
+          "git rm -r --cached dist && git add .gitignore && git commit -m \"作った物と秘密を管理から外す\""
+        ],
+        "tag": [
+          "git tag v1.0 HEAD",
+          "git tag"
+        ]
+      }
+    }
+  ],
+  "wrong": {
+    "step": "still",
+    "why": "秘密のファイルを答える",
+    "input": [
+      "git status",
+      ".env"
+    ]
+  }
+}

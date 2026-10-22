@@ -1,0 +1,48 @@
+{
+  "lesson": "k8s.b.02",
+  "variants": [
+    {
+      "name": "短い名前・1 つの Pod を見る・jsonpath で名前を出す",
+      "steps": {
+        "nodes": [
+          "kubectl get no",
+          "2"
+        ],
+        "where": [
+          "kubectl get pod web -o wide",
+          "node-1"
+        ],
+        "inside": [
+          "kubectl get pod web -o jsonpath='{.spec.containers[*].name}'",
+          "log-agent"
+        ]
+      }
+    },
+    {
+      "name": "-o wide の Node・describe を grep・po の短い名前",
+      "steps": {
+        "nodes": [
+          "kubectl get nodes -o wide",
+          "２"
+        ],
+        "where": [
+          "kubectl describe pod web | grep Node:",
+          " node-1"
+        ],
+        "inside": [
+          "kubectl get pods",
+          "kubectl describe po web",
+          "log-agent"
+        ]
+      }
+    }
+  ],
+  "wrong": {
+    "step": "inside",
+    "why": "Web のコンテナの名前を答える",
+    "input": [
+      "kubectl describe pod web",
+      "nginx"
+    ]
+  }
+}

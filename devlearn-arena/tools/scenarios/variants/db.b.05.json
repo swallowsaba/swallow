@@ -1,0 +1,39 @@
+{
+  "lesson": "db.b.05",
+  "variants": [
+    {
+      "name": "名前で選んで変える・名前で消す",
+      "steps": {
+        "move": [
+          "SELECT * FROM members WHERE name = '上野'",
+          "UPDATE members SET city = '横浜' WHERE name = '上野'"
+        ],
+        "leave": [
+          "SELECT * FROM members WHERE name = '小川'",
+          "DELETE FROM members WHERE name = '小川'"
+        ]
+      }
+    },
+    {
+      "name": "当たる数を数える・小文字で書く",
+      "steps": {
+        "move": [
+          "SELECT COUNT(*) FROM members WHERE id = 3;",
+          "update members set city='横浜' where id=3;"
+        ],
+        "leave": [
+          "select * from members where id = 5;",
+          "delete from members where id = 5;",
+          "SELECT * FROM members;"
+        ]
+      }
+    }
+  ],
+  "wrong": {
+    "step": "move",
+    "why": "表の名前を打ち間違える",
+    "input": [
+      "UPDATE member SET city = '横浜' WHERE id = 3"
+    ]
+  }
+}

@@ -1,0 +1,31 @@
+{
+  "lesson": "k8s.i.04",
+  "variants": [
+    {
+      "name": "host を書かない規則",
+      "steps": {
+        "shop": [
+          "apiVersion: networking.k8s.io/v1\nkind: Ingress\nmetadata:\n  name: city\nspec:\n  ingressClassName: nginx\n  rules:\n  - http:\n      paths:\n      - path: /\n        pathType: Prefix\n        backend:\n          service:\n            name: shop\n            port:\n              number: 80\n"
+        ],
+        "api": [
+          "apiVersion: networking.k8s.io/v1\nkind: Ingress\nmetadata:\n  name: city\nspec:\n  ingressClassName: nginx\n  rules:\n  - http:\n      paths:\n      - path: /api\n        pathType: Prefix\n        backend:\n          service:\n            name: api\n            port:\n              number: 80\n      - path: /\n        pathType: Prefix\n        backend:\n          service:\n            name: shop\n            port:\n              number: 80\n"
+        ]
+      }
+    },
+    {
+      "name": "初めから 2 つの道を書く・字下げを深くする",
+      "steps": {
+        "shop": [
+          "apiVersion: networking.k8s.io/v1\nkind: Ingress\nmetadata:\n  name: city\nspec:\n  ingressClassName: nginx\n  rules:\n    - host: city.example\n      http:\n        paths:\n          - path: /api\n            pathType: Prefix\n            backend:\n              service:\n                name: api\n                port:\n                  number: 80\n          - path: /\n            pathType: Prefix\n            backend:\n              service:\n                name: shop\n                port:\n                  number: 80\n"
+        ]
+      }
+    }
+  ],
+  "wrong": {
+    "step": "shop",
+    "why": "Service の名前を打ち間違える",
+    "input": [
+      "apiVersion: networking.k8s.io/v1\nkind: Ingress\nmetadata:\n  name: city\nspec:\n  ingressClassName: nginx\n  rules:\n  - host: city.example\n    http:\n      paths:\n      - path: /\n        pathType: Prefix\n        backend:\n          service:\n            name: shops\n            port:\n              number: 80\n"
+    ]
+  }
+}

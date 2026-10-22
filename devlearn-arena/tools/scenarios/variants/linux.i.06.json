@@ -1,0 +1,35 @@
+{
+  "lesson": "linux.i.06",
+  "variants": [
+    {
+      "name": "引用符で囲んだ PATH・. で読み直す",
+      "steps": {
+        "persist": [
+          "echo 'export PATH=\"$HOME/bin:$PATH\"' >> ~/.bashrc"
+        ],
+        "reload": [
+          ". ~/.bashrc",
+          "report"
+        ]
+      }
+    },
+    {
+      "name": "~ で書く PATH・場所を書いて読み直す",
+      "steps": {
+        "persist": [
+          "echo 'export PATH=~/bin:$PATH' >> ~/.bashrc"
+        ],
+        "reload": [
+          "source /home/learner/.bashrc && report"
+        ]
+      }
+    }
+  ],
+  "wrong": {
+    "step": "reload",
+    "why": "読み直さずに名前で動かす",
+    "input": [
+      "report"
+    ]
+  }
+}

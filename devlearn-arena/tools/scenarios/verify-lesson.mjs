@@ -83,14 +83,19 @@ const progressOf = (page) => page.evaluate(() => {
  * レッスン id を、都市の画面から人と同じ道で通す。page は都市の画面を開いた直後（操作説明は閉じた）。
  * opts.opened: レッスンの画面をもう開いた（施設の情報パネルから入った時など）。学習ライブラリから開く所を飛ばす
  * opts.onStage(段階): 解説・理解・クイズ・実戦・結果・まとめ の各段の初めに呼ぶ（途中でページを読み直す時など）
- * 返す物: { id, ok, stage, did, saw, shot, notes }
+ * opts.inputs(手順): 実戦で、最後のヒントの代わりに行う物（端末・SQL は打つ行、設定の編集は保存する中身、模は操作）。
+ *   渡すとヒントを一度も開かず、実戦の XP がヒント無しの満額で入ることも確かめる（VERIFY-FREE.txt【1】）
+ * opts.shotName: 画像の名前（既定はレッスンの ID）
+ * 返す物: { id, ok, stage, did, saw, shot, notes, errors, designed, xp }
  */
 export async function verifyLesson(page, id, opts = {}) {
   const shotDir = opts.shotDir ?? 'shots/verify';
   const words = glossaryWords();
   const lesson = readLesson(id);
   const plain = (s) => s.replace(/\{\{term:([a-z0-9-]+)\}\}/g, (_, t) => words[t] ?? t).replace(/`([^`]+)`/g, '$1');
-  const rec = { id, ok: false, stage: '都市', did: [], saw: '', shot: null, notes: [], errors: [] };
+  const free = opts.inputs !== undefined;
+  const rec = { id, ok: false, stage: '都市', did: [], saw: '', shot: null, notes: [], errors: [], designed: [], xp: null };
+  const shotPath = () => `${shotDir}/${opts.shotName ?? id}.png`;
   const did = (s) => {
     rec.did.push(s);
     if (rec.did.length > 12) rec.did.shift();
@@ -225,44 +230,68 @@ export async function verifyLesson(page, id, opts = {}) {
     else if (p.mode === 'terminal') await page.waitForSelector('.term-host .xterm');
     await wait(page, 500);
 
+    // エラーの案内が出るたびに、その案内と、その時の今の手順を残す（1 行に区切りが並ぶ時や、何枚も運ぶ操作の途中で出て、
+    // 次の操作で消える案内も逃さない）
+    await page.evaluate(() => {
+      const w = window;
+      w.__seenErrors = [];
+      let last = '';
+      const look = () => {
+        const el = document.querySelector('[data-testid="practice-error"]');
+        const sig = el ? `${el.getAttribute('data-guide')}
+${el.innerText}` : '';
+        if (sig && sig !== last) {
+          w.__seenErrors.push({ guide: el.getAttribute('data-guide'), text: el.innerText.replace(/\s+/g, ' ').trim(), current: document.querySelector('.practice-step.is-current')?.getAttribute('data-step') ?? null });
+        }
+        last = sig;
+      };
+      new MutationObserver(look).observe(document.body, { childList: true, subtree: true, attributes: true, characterData: true });
+    });
     // エラーの案内が出たら、その瞬間の画面を撮り、何を打った時の何という案内かを残して、閉じて続ける（達成になるかも確かめる）
     const checkError = async (what, step) => {
-      const g = await errorGuide(page);
-      if (!g) return;
-      const current = await page.evaluate(() => document.querySelector('.practice-step.is-current')?.getAttribute('data-step') ?? null);
-      // 想定した失敗の案内（下の designed）は撮らない。最初の、想定していない案内の瞬間を撮る
-      const expected = current === step.id && (step.expectedErrors ?? []).includes(g.guide);
-      if (!expected && !rec.shot) {
-        mkdirSync(shotDir, { recursive: true });
-        rec.shot = `${shotDir}/${id}.png`;
-        await page.screenshot({ path: rec.shot });
+      const seen = await page.evaluate(() => (window.__seenErrors ?? []).splice(0));
+      for (const g of seen) {
+        // 想定した失敗の案内（下の designed）は撮らない。最初の、想定していない案内の瞬間を撮る（もう消えていれば、その後の画面）
+        const expected = g.current === step.id && (step.expectedErrors ?? []).includes(g.guide);
+        if ((!expected || free) && !rec.shot) {
+          mkdirSync(shotDir, { recursive: true });
+          rec.shot = shotPath();
+          await page.screenshot({ path: rec.shot });
+        }
+        rec.errors.push({ line: what, step: step.id, current: g.current, guide: g.guide, text: g.text });
       }
-      rec.errors.push({ line: what, step: step.id, current, guide: g.guide, text: g.text });
-      await page.locator('.practice-error-close').click().catch(() => {});
-      await wait(page, 120);
+      if (await errorGuide(page)) {
+        await page.locator('.practice-error-close').click().catch(() => {});
+        await wait(page, 120);
+      }
     };
     for (const [i, step] of p.steps.entries()) {
       // 前の手順の操作で、もう満たした手順
       if ((await page.getAttribute(`[data-step="${step.id}"]`, 'data-done')) === 'true') continue;
-      // 人と同じく、ヒントを最後の段まで開く（画面の最後のヒントが中身と同じかも見る）
-      for (let k = 0; k < 3 && (await page.$('[data-testid="practice-hint"]')); k += 1) await page.click('[data-testid="practice-hint"]');
-      await wait(page, 100);
-      const shown = await text(page, '.practice-hint[data-hint="3"]');
-      if (!shown) throw fail(`手順 ${String(i + 1)}（${step.id}）の最後のヒントが開けない`);
+      if (!free) {
+        // 人と同じく、ヒントを最後の段まで開く（画面の最後のヒントが中身と同じかも見る）
+        for (let k = 0; k < 3 && (await page.$('[data-testid="practice-hint"]')); k += 1) await page.click('[data-testid="practice-hint"]');
+        await wait(page, 100);
+        const shown = await text(page, '.practice-hint[data-hint="3"]');
+        if (!shown) throw fail(`手順 ${String(i + 1)}（${step.id}）の最後のヒントが開けない`);
+      }
       if (p.mode === 'terminal') {
         const cands = await page.evaluate(() => [...document.querySelectorAll('.practice-candidate')].map((c) => c.textContent));
         rec.candidates = [...new Set([...(rec.candidates ?? []), ...cands])];
       }
       if (p.mode === 'simulation') {
-        for (const a of step.actions ?? []) {
+        for (const a of free ? opts.inputs(step) : step.actions ?? []) {
+          // 何枚も運ぶ操作は、1 枚放すたびに見る
+          page.__dropHook = () => checkError(`${JSON.stringify(a)}（途中の 1 枚）`, step);
           await perform(page, a, p.setup);
+          page.__dropHook = undefined;
           did(`手順 ${step.id}: ${JSON.stringify(a)}`);
           await checkError(JSON.stringify(a), step);
         }
         continue;
       }
-      const lines = answersOf(step);
-      if (lines.length === 0) throw fail(`手順 ${step.id} の最後のヒントに、打つ物（\`\`）が無い: ${squash(step.hints[2])}`);
+      const lines = free ? opts.inputs(step) : answersOf(step);
+      if (lines.length === 0 && !free) throw fail(`手順 ${step.id} の最後のヒントに、打つ物（\`\`）が無い: ${squash(step.hints[2])}`);
       const answerStep = step.check.kind === 'answer';
       for (const [j, line] of lines.entries()) {
         if (answerStep && j === lines.length - 1) {
@@ -303,6 +332,7 @@ export async function verifyLesson(page, id, opts = {}) {
       return e.current === e.step && (step?.expectedErrors ?? []).includes(e.guide);
     };
     for (const e of rec.errors.filter(designed)) rec.notes.push(`想定した失敗の案内 ${e.guide}（${e.line}）`);
+    rec.designed = rec.errors.filter(designed);
     rec.errors = rec.errors.filter((e) => !designed(e));
     if (rec.errors.length > 0) rec.saw = `正しい操作でエラーの案内が出た: ${rec.errors.map((e) => `${e.line} → ${e.text.slice(0, 160)}`).join(' ／ ')}`;
     if (unfinished.length > 0) {
@@ -347,6 +377,13 @@ export async function verifyLesson(page, id, opts = {}) {
     if (!after || !before || after.xp <= before.xp) throw fail(`XP が増えていない（前 ${String(before?.xp)}、後 ${String(after?.xp)}。画面 ${xpShown ?? '-'}）`);
     if (!(skill > 0)) throw fail(`スキルが増えていない（${String(skill)} / 100）`);
     rec.notes.push(`XP +${String(after.xp - before.xp)}・スキル ${String(skill)}`);
+    // XP の内訳（まとめの右の欄）。ヒントを開かずに通した時は、実戦の成功がヒント無しの満額（docs/game-design.md 3 章）
+    rec.xp = await page.evaluate(() => Object.fromEntries([...document.querySelectorAll('[data-testid="done-xp"] .done-xp-list li')].map((li) => [li.children[0]?.textContent ?? '', Number((li.children[1]?.textContent ?? '').replace(/[^0-9]/g, ''))])));
+    if (free) {
+      const full = { beginner: 20, intermediate: 35, advanced: 55 }[lesson.level];
+      const got = rec.xp['実戦の成功'];
+      if (got !== full) throw fail(`ヒントを開かずに通したのに、実戦の XP が満額（${String(full)}）でない: ${String(got)}（内訳 ${JSON.stringify(rec.xp)}）`);
+    }
 
     // i. 都市の画面に戻る
     rec.stage = '都市へ戻る';
@@ -364,7 +401,7 @@ export async function verifyLesson(page, id, opts = {}) {
     // その瞬間の画面（エラーの案内が出た時は、もう撮ってある）
     if (!rec.shot) {
       mkdirSync(shotDir, { recursive: true });
-      rec.shot = `${shotDir}/${id}.png`;
+      rec.shot = shotPath();
       await page.screenshot({ path: rec.shot }).catch(() => {
         rec.shot = null;
       });
