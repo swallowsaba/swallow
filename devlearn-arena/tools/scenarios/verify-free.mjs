@@ -14,15 +14,11 @@
 // その手順の想定エラーで、その手順の間に出た案内は「想定した案内」として残す（表に打った物と一緒に出し、目で見て判断する）。
 // 結果は shots/verify-free/results.json と shots/verify-free/table.md。不合格の画面は shots/verify-free/<ID>-<番号>.png。
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
-import { allLessonIds, openCity, siteRoot, verifyLesson } from './verify-lesson.mjs';
+import { allLessonIds, DESIGNED_FAILURES, openCity, siteRoot, verifyLesson } from './verify-lesson.mjs';
 
 const DIR = 'shots/verify-free';
 const RESULTS = `${DIR}/results.json`;
 const VARIANTS = new URL('./variants/', import.meta.url);
-/** 手順の目的そのものが、失敗を見て読むことのレッスン（docs/progress/verify-all.md の C2「想定した失敗」） */
-const DESIGNED_FAILURES = new Set(['git.b.06', 'git.i.05', 'git.i.02', 'trouble.b.02', 'docker.b.01', 'k8s.b.01', 'net.b.03', 'net.b.04', 'net.i.01', 'net.i.02',
-  // 目的の文が「送って、どこで止まるかを見る」「入れ替えが進むかを見る」「curl の誤りを読む」「200 が返らなければ返事の数から原因を探す」と、失敗を見ることを書いている手順（最後のヒントは先に直すので通らないが、目的の文のとおりに打つと通る。docs/progress/verify-free.md）
-  'found.b.07', 'net.b.01', 'k8s.i.08', 'sec.b.07', 'web.b.07']);
 const cell = (s) => String(s ?? '').replace(/\|/g, '\\|').replace(/\n/g, ' ').replace(/\s+/g, ' ').trim();
 const cut = (s, n) => (s.length > n ? `${s.slice(0, n)}…` : s);
 

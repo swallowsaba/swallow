@@ -29,6 +29,7 @@
     "why": "確かめを前の版を消した後に置く",
     "input": [
       "name: deploy\non:\n  push:\n    branches: [main]\njobs:\n  release:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@v4\n      - run: npm ci\n      - run: npm run build\n      - name: 本番に配る\n        run: npm run deploy\n      - name: 前の版を消す\n        run: npm run prune\n      - name: 配った後に確かめる\n        run: curl -fsS https://reserve.example/health\n"
-    ]
+    ],
+    "reset": true
   }
 }

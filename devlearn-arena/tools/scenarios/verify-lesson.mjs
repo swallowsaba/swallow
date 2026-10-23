@@ -18,6 +18,17 @@ import { perform } from './simDrive.mjs';
 
 const ROOT = new URL('../../content/', import.meta.url);
 
+/** 手順の目的そのものが、失敗を見て読むことのレッスン（docs/progress/verify-all.md の C2「想定した失敗」） */
+export const DESIGNED_FAILURES = new Set(['git.b.06', 'git.i.05', 'git.i.02', 'trouble.b.02', 'docker.b.01', 'k8s.b.01', 'net.b.03', 'net.b.04', 'net.i.01', 'net.i.02',
+  // 目的の文が「送って、どこで止まるかを見る」「入れ替えが進むかを見る」「curl の誤りを読む」「200 が返らなければ返事の数から原因を探す」と、失敗を見ることを書いている手順（最後のヒントは先に直すので通らないが、目的の文のとおりに打つと通る。docs/progress/verify-free.md）
+  'found.b.07', 'net.b.01', 'k8s.i.08', 'sec.b.07', 'web.b.07']);
+
+/** 確かめるための台本側の別解と、間違える操作（tools/scenarios/variants/<ID>.json。無ければ null） */
+export function variantsFile(id) {
+  const f = new URL(`./variants/${id}.json`, import.meta.url);
+  return existsSync(f) ? JSON.parse(readFileSync(f, 'utf8')) : null;
+}
+
 /** 用語の ID → 画面の語 */
 function glossaryWords() {
   const words = {};
@@ -94,7 +105,7 @@ export async function verifyLesson(page, id, opts = {}) {
   const lesson = readLesson(id);
   const plain = (s) => s.replace(/\{\{term:([a-z0-9-]+)\}\}/g, (_, t) => words[t] ?? t).replace(/`([^`]+)`/g, '$1');
   const free = opts.inputs !== undefined;
-  const rec = { id, ok: false, stage: '都市', did: [], saw: '', shot: null, notes: [], errors: [], designed: [], xp: null };
+  const rec = { id, ok: false, stage: '都市', did: [], saw: '', shot: null, notes: [], errors: [], designed: [], xp: null, wrong: {}, problems: [] };
   const shotPath = () => `${shotDir}/${opts.shotName ?? id}.png`;
   const did = (s) => {
     rec.did.push(s);
@@ -142,12 +153,14 @@ export async function verifyLesson(page, id, opts = {}) {
     }
     if (await page.$('[data-testid="stage-explain"]')) throw fail('解説から先へ進めない');
 
-    // d. 理解の問いに全て正しく答える
+    // d. 理解の問いに全て正しく答える（opts.wrong なら、1 問をわざと誤ってから正しく答える）
     await stageStart('理解');
     await page.waitForSelector('[data-testid="stage-understand"]');
+    const wrongAt = opts.wrong ? Math.max(0, lesson.understand.findIndex((u) => u.kind !== 'figure-pick')) : -1;
     for (const [i, u] of lesson.understand.entries()) {
       await page.waitForSelector('[data-testid="understand-item"]');
       const n = `理解 ${String(i + 1)}（${u.kind}）`;
+      if (i === wrongAt) await wrongUnderstand(page, u, n, plain, rec, did, fail);
       if (u.kind === 'figure-pick') {
         for (const part of u.answer) {
           // 人と同じく、その部分の見えている所を押す。真ん中から探し、周り 8px も全てその部分に当たる所（指先の幅で外れない所）を押す。
@@ -204,8 +217,9 @@ export async function verifyLesson(page, id, opts = {}) {
     // e. クイズに全て正しく答える
     await stageStart('クイズ');
     await page.waitForSelector('[data-testid="stage-quiz"]');
-    for (const q of lesson.quiz) {
+    for (const [qi, q] of lesson.quiz.entries()) {
       await page.waitForSelector('[data-testid="quiz-question"]');
+      if (opts.wrong && qi === 0) await wrongQuiz(page, q, plain, rec, did, fail);
       if (q.kind === 'order') {
         for (const item of q.order) await clickText(page, '.order-pool .order-item', plain(item));
         did(`クイズ ${q.id}: ${q.order.map(plain).join(' → ')}`);
@@ -279,18 +293,27 @@ ${el.innerText}` : '';
         const cands = await page.evaluate(() => [...document.querySelectorAll('.practice-candidate')].map((c) => c.textContent));
         rec.candidates = [...new Set([...(rec.candidates ?? []), ...cands])];
       }
+      // わざと間違える（VERIFY-FREE.txt【2】）: 間違った操作 → エラーの案内と原因候補 → そこからヒントを開く → 閉じて正しく打ち直す
+      if (opts.wrong?.practice && step.id === opts.wrong.practice.step) {
+        await doItems(step, opts.wrong.practice.input, true);
+        await wrongPractice(page, step, opts.wrong.practice, p, rec, did);
+      }
+      await doItems(step, free ? opts.inputs(step) : p.mode === 'simulation' ? step.actions ?? [] : answersOf(step), false);
+    }
+    // 端末・SQL・設定の編集は打つ行、模は操作を、人と同じく行う。keep なら、出たエラーの案内を閉じない（わざと間違えた時）
+    async function doItems(step, items, keep) {
       if (p.mode === 'simulation') {
-        for (const a of free ? opts.inputs(step) : step.actions ?? []) {
+        for (const a of items) {
           // 何枚も運ぶ操作は、1 枚放すたびに見る
-          page.__dropHook = () => checkError(`${JSON.stringify(a)}（途中の 1 枚）`, step);
+          page.__dropHook = keep ? undefined : () => checkError(`${JSON.stringify(a)}（途中の 1 枚）`, step);
           await perform(page, a, p.setup);
           page.__dropHook = undefined;
           did(`手順 ${step.id}: ${JSON.stringify(a)}`);
-          await checkError(JSON.stringify(a), step);
+          if (!keep) await checkError(JSON.stringify(a), step);
         }
-        continue;
+        return;
       }
-      const lines = free ? opts.inputs(step) : answersOf(step);
+      const lines = items;
       if (lines.length === 0 && !free) throw fail(`手順 ${step.id} の最後のヒントに、打つ物（\`\`）が無い: ${squash(step.hints[2])}`);
       const answerStep = step.check.kind === 'answer';
       for (const [j, line] of lines.entries()) {
@@ -321,7 +344,7 @@ ${el.innerText}` : '';
         }
         // 端末の命令が終わるまで待つ（kubectl の待ち・git push の流れなど）
         await wait(page, p.mode === 'terminal' ? 500 : 350);
-        await checkError(squash(line).slice(0, 120), step);
+        if (!keep) await checkError(squash(line).slice(0, 120), step);
       }
     }
     const unfinished = await page.evaluate(() => [...document.querySelectorAll('.practice-step')].filter((s) => s.dataset.done !== 'true').map((s) => s.querySelector('.practice-step-text')?.innerText.replace(/\s+/g, ' ').trim()));
@@ -382,7 +405,16 @@ ${el.innerText}` : '';
     if (free) {
       const full = { beginner: 20, intermediate: 35, advanced: 55 }[lesson.level];
       const got = rec.xp['実戦の成功'];
-      if (got !== full) throw fail(`ヒントを開かずに通したのに、実戦の XP が満額（${String(full)}）でない: ${String(got)}（内訳 ${JSON.stringify(rec.xp)}）`);
+      // わざと間違えてヒントを開いた時は、ヒントありの半分（docs/game-design.md 3 章。端数は四捨五入）
+      const hinted = rec.wrong.practice?.hint !== undefined;
+      const want = hinted ? Math.round(full / 2) : full;
+      if (got !== want) throw fail(`${hinted ? 'ヒントを開いて通したのに、実戦の XP がヒントありの半分' : 'ヒントを開かずに通したのに、実戦の XP が満額'}（${String(want)}）でない: ${String(got)}（内訳 ${JSON.stringify(rec.xp)}）`);
+      if (hinted && rec.xp['エラーから自力で立て直した'] !== undefined) throw fail(`ヒントを開いたのに「エラーから自力で立て直した」の XP が入った（内訳 ${JSON.stringify(rec.xp)}）`);
+    }
+    if (opts.wrong) {
+      // 1 問目を誤ってから正解: その問題は 2、ほかは初回の正解の 5
+      const want = 5 * (lesson.quiz.length - 1) + 2;
+      if (rec.xp['クイズの正解'] !== want) throw fail(`クイズを 1 問誤った後の XP が決まり（${String(want)}）でない: ${String(rec.xp['クイズの正解'])}（内訳 ${JSON.stringify(rec.xp)}）`);
     }
 
     // i. 都市の画面に戻る
@@ -394,6 +426,7 @@ ${el.innerText}` : '';
     await page.waitForSelector('[data-testid="lesson-screen"]', { state: 'detached', timeout: 5000 }).catch(() => {});
     if (await page.$('[data-testid="lesson-screen"]')) throw fail('レッスンの画面が閉じない');
     if (pageErrors.length > 0) throw fail(`ページの誤り: ${pageErrors.join(' ／ ')}`);
+    if (rec.problems.length > 0) throw fail(rec.problems.join(' ／ '));
     rec.ok = true;
     rec.stage = '';
   } catch (e) {
@@ -410,6 +443,159 @@ ${el.innerText}` : '';
     page.off('pageerror', onError);
   }
   return rec;
+}
+
+/* ---------- わざと間違える（VERIFY-FREE.txt【2】。tools/scenarios/verify-wrong.mjs） ---------- */
+
+const RELATION_WORDS = { contains: 'を含む', before: 'より先に起きる', cause: 'が原因で' };
+
+/** 誤った後の知らせ（判定・題・何が違うかの文） */
+const feedbackOf = (page) => page.evaluate(() => {
+  const el = document.querySelector('[data-testid="feedback"]');
+  if (!el) return null;
+  const sq = (s) => s.replace(/\s+/g, ' ').trim();
+  const why = [...document.querySelectorAll('.choice-note, [data-testid="feedback"] .feedback-text, [data-testid="feedback-see"]')].map((e) => sq(e.innerText)).filter(Boolean);
+  return { ok: el.classList.contains('is-ok'), title: sq(el.querySelector('.feedback-title')?.innerText ?? ''), why: [...new Set(why)] };
+});
+
+/** 図の部分の、押して当たる所（verifyLesson の理解の図と同じ探し方） */
+const figureSpot = (page, name) => page.evaluate((part) => {
+  const el = document.querySelector(`[data-testid="lesson-figure"] [data-part="${part}"]`);
+  if (!el) return null;
+  const r = el.getBoundingClientRect();
+  const owner = (x, y) => document.elementFromPoint(x, y)?.closest('[data-part]')?.getAttribute('data-part') ?? '';
+  const firm = (x, y) => [[0, 0], [8, 0], [-8, 0], [0, 8], [0, -8]].every(([dx, dy]) => owner(x + dx, y + dy) === part);
+  const tries = [[r.left + r.width / 2, r.top + r.height / 2]];
+  for (let x = r.left + 4; x < r.right; x += 6) for (let y = r.top + 4; y < r.bottom; y += 6) tries.push([x, y]);
+  const at = tries.find(([x, y]) => firm(x, y));
+  return at ? { x: at[0], y: at[1] } : null;
+}, name);
+
+/** 理解の 1 問をわざと誤り、何が違うのかが出てやり直せる形に戻す */
+async function wrongUnderstand(page, u, n, plain, rec, did, fail) {
+  let what = '';
+  let wrongPart = null;
+  if (u.kind === 'yesno') {
+    what = u.answer ? 'いいえ' : 'はい';
+    await clickText(page, '.yesno-button', what);
+  } else if (u.kind === 'situation') {
+    const c = u.choices.find((x) => !x.correct);
+    what = plain(c.text);
+    await page.click(`.choice-button[data-choice="${c.id}"]`);
+  } else if (u.kind === 'relation') {
+    what = RELATION_WORDS[Object.keys(RELATION_WORDS).find((k) => k !== u.answer)];
+    await page.click(`.choice-button >> text=${what}`);
+  } else if (u.kind === 'order') {
+    const rev = [...u.items].reverse();
+    for (const item of rev) await clickText(page, '.order-pool .order-item', plain(item));
+    await page.click('.stage-check');
+    what = rev.map(plain).join(' → ');
+  } else if (u.kind === 'match') {
+    const rights = u.pairs.map((x) => x[1]);
+    for (const [k, [a]] of u.pairs.entries()) {
+      await clickText(page, '.match-col:first-child .match-item', plain(a));
+      await clickText(page, '.match-col:last-child .match-item', plain(rights[(k + 1) % rights.length]));
+    }
+    await page.click('.stage-check');
+    what = u.pairs.map(([a], k) => `${plain(a)}=${plain(rights[(k + 1) % rights.length])}`).join('・');
+  } else if (u.kind === 'figure-pick') {
+    const parts = await page.evaluate(() => [...document.querySelectorAll('[data-testid="lesson-figure"] [data-part]')].map((e) => e.getAttribute('data-part')));
+    wrongPart = parts.find((x) => !u.answer.includes(x)) ?? null;
+    const spot = wrongPart ? await figureSpot(page, wrongPart) : null;
+    if (!spot) throw fail(`${n}: わざと誤るために押す、答えでない部分が図に無い`);
+    await page.mouse.click(spot.x, spot.y);
+    if (u.answer.length > 1) await page.click('.stage-check');
+    what = `図の ${wrongPart}`;
+  }
+  await wait(page);
+  const fb = await feedbackOf(page);
+  did(`${n}: わざと誤る（${what}）`);
+  if (!fb) throw fail(`${n}: わざと誤った（${what}）のに、知らせが出ない`);
+  if (fb.ok) throw fail(`${n}: わざと誤った（${what}）のに、正解になった`);
+  rec.wrong.understand = { item: n, did: what, title: fb.title, why: fb.why };
+  if (fb.why.length === 0) rec.problems.push(`${n}: 誤った時に、何が違うのかが出ない（「${fb.title}」だけ）`);
+  // やり直す: 並べた札を外す・押した部分を外す（ほかの形は、正しい答えを押し直せばよい）
+  if (u.kind === 'order') for (let k = 0; k < 20 && (await page.$('.order-placed .order-item')); k += 1) await page.click('.order-placed .order-item');
+  if (u.kind === 'figure-pick' && u.answer.length > 1 && wrongPart) {
+    const spot = await figureSpot(page, wrongPart);
+    if (spot) await page.mouse.click(spot.x, spot.y);
+  }
+}
+
+/** クイズの 1 問目をわざと誤り、何が違うのかが出てやり直せる形に戻す */
+async function wrongQuiz(page, q, plain, rec, did, fail) {
+  let what;
+  let picked = null;
+  if (q.kind === 'order') {
+    const rev = [...q.order].reverse();
+    for (const item of rev) await clickText(page, '.order-pool .order-item', plain(item));
+    what = rev.map(plain).join(' → ');
+  } else {
+    picked = q.choices.find((x) => !x.correct);
+    await page.click(`.choice-button[data-choice="${picked.id}"]`);
+    what = plain(picked.text);
+  }
+  await page.click('[data-testid="quiz-submit"]');
+  await wait(page);
+  const fb = await feedbackOf(page);
+  did(`クイズ ${q.id}: わざと誤る（${what}）`);
+  if (!fb) throw fail(`クイズ ${q.id}: わざと誤った（${what}）のに、知らせが出ない`);
+  if (fb.ok) throw fail(`クイズ ${q.id}: わざと誤った（${what}）のに、正解になった`);
+  rec.wrong.quiz = { item: q.id, did: what, title: fb.title, why: fb.why };
+  if (fb.why.length === 0) rec.problems.push(`クイズ ${q.id}: 誤った時に、何が違うのかが出ない（「${fb.title}」だけ）`);
+  // やり直す: 並べた札を外す・複数選ぶ問題は誤った選択を外す（1 つ選ぶ問題は、正しい物を押せば替わる）
+  if (q.kind === 'order') for (let k = 0; k < 20 && (await page.$('.order-placed .order-item')); k += 1) await page.click('.order-placed .order-item');
+  else if (q.kind === 'multi' || q.choices.filter((c) => c.correct).length > 1) await page.click(`.choice-button[data-choice="${picked.id}"]`);
+}
+
+/** 実戦でわざと間違えた後: エラーの案内と原因候補が出て、そこからヒントを開け、閉じて打ち直せる（模は置き違えた札・線を戻す） */
+async function wrongPractice(page, step, wrong, practice, rec, did) {
+  await wait(page, 300);
+  const seen = await page.evaluate(() => (window.__seenErrors ?? []).splice(0));
+  const card = await page.evaluate(() => {
+    const el = document.querySelector('[data-testid="practice-error"]');
+    if (!el) return null;
+    const sq = (s) => s.replace(/\s+/g, ' ').trim();
+    const sec = [...el.querySelectorAll('.practice-error-flow > li')].map((li) => sq(li.querySelector('p')?.innerText ?? ''));
+    return {
+      guide: el.getAttribute('data-guide'),
+      said: el.querySelector('.practice-error-said')?.innerText.trim() ?? '',
+      meaning: sec[0] ?? '',
+      causes: [...el.querySelectorAll('.practice-error-causes li')].map((li) => sq(li.innerText)),
+      next: sec[2] ?? '',
+    };
+  });
+  const done = (await page.getAttribute(`[data-step="${step.id}"]`, 'data-done')) === 'true';
+  const out = { step: step.id, why: wrong.why, input: wrong.input.map((x) => (typeof x === 'string' ? x : JSON.stringify(x))), card, seen: seen.map((g) => g.guide), done };
+  rec.wrong.practice = out;
+  did(`手順 ${step.id}: わざと間違える（${wrong.why}）`);
+  if (done) rec.problems.push(`実戦 ${step.id}: わざと間違えた（${wrong.why}）のに、手順が達成になった`);
+  if (!card) rec.problems.push(`実戦 ${step.id}: わざと間違えた（${wrong.why}）のに、エラーの案内が出ない${seen.length ? `（出て消えた: ${seen.map((g) => g.guide).join('・')}）` : ''}`);
+  else if (card.causes.length === 0) rec.problems.push(`実戦 ${step.id}: エラーの案内に原因候補が無い（${card.guide}）`);
+  // そこからヒントを開ける（案内を出したまま。案内が出なかった時は開かない）
+  const hint = page.locator('[data-testid="practice-hint"]');
+  if (!card) {
+    // 開かない
+  } else if (!(await hint.isVisible().catch(() => false)) || !(await hint.isEnabled().catch(() => false))) {
+    rec.problems.push(`実戦 ${step.id}: エラーの案内が出ている時に、ヒントを開けない`);
+  } else {
+    await hint.click();
+    await wait(page, 150);
+    out.hint = await text(page, '.practice-hint[data-hint="1"]');
+    if (!out.hint) rec.problems.push(`実戦 ${step.id}: ヒントを押しても、ヒントが出ない`);
+    did(`手順 ${step.id}: エラーの案内からヒントを開いた`);
+  }
+  // 閉じて打ち直す。模は、置き違えた札を置き場へ戻し、引いた線を外す
+  if (await page.$('[data-testid="practice-error"]')) await page.locator('.practice-error-close').click();
+  await wait(page, 120);
+  if (practice.mode === 'simulation') {
+    for (const a of [...wrong.input].reverse()) {
+      if (a.op === 'put') await perform(page, { op: 'take', item: a.item, slot: a.slot }, practice.setup).catch(() => {});
+      else if (a.op === 'connect') await perform(page, { op: 'cut', a: a.a, b: a.b }, practice.setup).catch(() => {});
+    }
+    await page.evaluate(() => (window.__seenErrors ?? []).splice(0));
+    if (await page.$('[data-testid="practice-error"]')) await page.locator('.practice-error-close').click();
+  }
 }
 
 /** 開発用のサーバを立てる（VERIFY_URL が無い時）。根の URL と片付けを返す */

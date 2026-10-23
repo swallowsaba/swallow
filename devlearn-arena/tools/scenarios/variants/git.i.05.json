@@ -45,6 +45,9 @@
       "git rebase main",
       "git status",
       "rules.txt"
+    ],
+    "retry": [
+      "boat.txt"
     ]
   }
 }

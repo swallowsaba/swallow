@@ -9,8 +9,8 @@
 
 | 段 | 状態 |
 |---|---|
-| 【1】ヒントを開かず、別の書き方で通す（`tools/scenarios/verify-free.mjs`） | 1 回目を流した（131 本中 58 本が不合格）。原因ごとに直した（下の「直したこと」）。公開した所で 2 回目を流す |
-| 【2】間違えた時の道（`tools/scenarios/verify-wrong.mjs`） | まだ |
+| 【1】ヒントを開かず、別の書き方で通す（`tools/scenarios/verify-free.mjs`） | 終わり。1 回目は 131 本中 58 本が不合格。原因ごとに直し、2 回目は 131 本全て合格（別解 268 通り全て） |
+| 【2】間違えた時の道（`tools/scenarios/verify-wrong.mjs`） | 台本を作った。1 回目を流す |
 | 【3】1280x720 で確かめる | まだ |
 | 【4】ミッション 6 本を通しで遊ぶ（`tools/scenarios/verify-mission.mjs`） | まだ |
 | 【5】「想定した失敗」の 8 本を、人の目で見直す | まだ |
@@ -229,3 +229,150 @@ VERIFY_URL=https://swallowsaba.github.io/swallow/devlearn-arena/ を付けると
 | devops.b.01 | 合格 | 1○ 2○ |  |  |
 | devops.b.02 | 合格 | 1○ 2○ |  |  |
 | devops.b.03 | 不合格 | 1× 2× | #1「下の段から並べる」[実戦] 正しい操作でエラーの案内が出た（想定した失敗の一覧に無いレッスン）: {"op":"arrange","stages":[["ci"],["approve"],["deploy"]],"dropOrder":"reverse"}（途中の 1 枚） → devops-flow-order ／ {"op":"arrange","stages":[["ci"],["approve"],["deploy"]],"dropOrder":"reverse"}（途中の 1 枚） → devops-flow-order ／ {"op":"arrange","stages":[["ci"],["auto"],[… ／ #2「上の段から並べる（並びは 1 通り）」[実戦] 正しい操作でエラーの案内が出た（想定した失敗の一覧に無いレッスン）: {"op":"arrange","stages":[["ci"],["auto"],["deploy"]]}（途中の 1 枚） → devops-fast-step ／ {"op":"arrange","stages":[["ci"],["auto"],["deploy"]]}（途中の 1 枚） → devops-fast-step | `docs/progress/shots/verify-free/devops.b.03-1.png` `docs/progress/shots/verify-free/devops.b.03-2.png` |
+
+## 【1】2 回目（直した後）
+
+- 流した日: 2026-10-23。相手: 公開 URL（https://swallowsaba.github.io/swallow/devlearn-arena/ 。配信されていたのは 0c0f8ef の物。GitHub Actions の Deploy to GitHub Pages が 0c0f8ef で成功したことを確かめた）
+- 画面: 1920×1080。4 通りずつ同時に流し、268 通りで 916 秒
+- **131 本中、合格 131・不合格 0（別解 268 通り全てが合格）**
+- 1 回目に不合格だった 58 本（73 通り）は、全て合格。表の「起きたこと」の頭に、1 回目に不合格だった別解の番号を書いた
+- 正しい操作で、想定していないエラーの案内が出た物は無い。出た案内は全て、想定した失敗の一覧（C2 と、上の「直したこと」で足した 5 本）のレッスンの、その手順の想定エラー（表の「想定した案内」）
+- 268 通り全てで、まとめの「実戦の成功」の XP がヒント無しの満額（入門 20 が 176 通り・中級 35 が 92 通り。上級のレッスンは無い）。ヒントありの半分になった物は無い
+- 268 通り全てで、XP とスキルが増え、都市に戻れた。ページの誤り（pageerror）は無い
+- 検査: `npm run typecheck`・`npm run lint`・`npm run test`（181 本 2015 件）・`npm run content:check` が全て通った
+
+### 表（2 回目）
+
+| レッスン | 結果 | 別解 | 起きたこと | 画像 |
+|---|---|---|---|---|
+| found.b.01 | 合格 | 1○ 2○ |  |  |
+| found.b.02 | 合格 | 1○ 2○ |  |  |
+| found.b.03 | 合格 | 1○ 2○ |  |  |
+| found.b.04 | 合格 | 1○ 2○ |  |  |
+| found.b.05 | 合格 | 1○ 2○ |  |  |
+| found.b.06 | 合格 | 1○ 2○ |  |  |
+| found.b.07 | 合格 | 1○ 2○ | 1 回目は #1 が不合格。想定した案内: not-reached（`{"op":"send","from":"pc","to":"server"}`） |  |
+| found.b.08 | 合格 | 1○ 2○ | 1 回目は #2 が不合格 |  |
+| linux.b.00 | 合格 | 1○ 2○ | 1 回目は #2 が不合格 |  |
+| linux.b.01 | 合格 | 1○ 2○ 3○ | 1 回目は #1・#2 が不合格 |  |
+| linux.b.02 | 合格 | 1○ 2○ |  |  |
+| linux.b.03 | 合格 | 1○ 2○ |  |  |
+| linux.b.04 | 合格 | 1○ 2○ 3○ | 1 回目は #1・#2 が不合格 |  |
+| linux.b.05 | 合格 | 1○ 2○ |  |  |
+| linux.b.06 | 合格 | 1○ 2○ |  |  |
+| linux.b.07 | 合格 | 1○ 2○ | 1 回目は #1 が不合格 |  |
+| linux.b.08 | 合格 | 1○ 2○ | 1 回目は #2 が不合格 |  |
+| linux.i.01 | 合格 | 1○ 2○ |  |  |
+| linux.i.02 | 合格 | 1○ 2○ |  |  |
+| linux.i.03 | 合格 | 1○ 2○ |  |  |
+| linux.i.04 | 合格 | 1○ 2○ | 1 回目は #2 が不合格 |  |
+| linux.i.05 | 合格 | 1○ 2○ |  |  |
+| linux.i.06 | 合格 | 1○ 2○ | 1 回目は #1・#2 が不合格 |  |
+| linux.i.07 | 合格 | 1○ 2○ | 1 回目は #1・#2 が不合格 |  |
+| linux.i.08 | 合格 | 1○ 2○ 3○ | 1 回目は #2・#3 が不合格 |  |
+| net.b.01 | 合格 | 1○ 2○ | 1 回目は #2 が不合格。想定した案内: net-lan-only（`{"op":"send","from":"pc","to":"srv"}`） |  |
+| net.b.02 | 合格 | 1○ 2○ |  |  |
+| net.b.03 | 合格 | 1○ 2○ | 想定した案内: net-unreachable（`ping -c 3 192.168.10.1`）・net-host-unreachable（`ping -c 1 192.168.10.13`）・net-unreachable（`ping -c 1 192.168.10.1`） |  |
+| net.b.04 | 合格 | 1○ 2○ | 1 回目は #1 が不合格 |  |
+| net.b.05 | 合格 | 1○ 2○ |  |  |
+| net.b.06 | 合格 | 1○ 2○ | 1 回目は #1 が不合格 |  |
+| net.b.07 | 合格 | 1○ 2○ |  |  |
+| net.b.08 | 合格 | 1○ 2○ |  |  |
+| net.i.01 | 合格 | 1○ 2○ | 想定した案内: net-one-way（`ip netns exec srv-c ping -c 1 10.0.1.10`） |  |
+| net.i.02 | 合格 | 1○ 2○ | 1 回目は #2 が不合格。想定した案内: net-fw-timeout（`ip netns exec outside curl -k https://shop.example/`） |  |
+| net.i.03 | 合格 | 1○ 2○ | 1 回目は #2 が不合格 |  |
+| net.i.04 | 合格 | 1○ 2○ |  |  |
+| net.i.05 | 合格 | 1○ 2○ |  |  |
+| net.i.06 | 合格 | 1○ 2○ |  |  |
+| web.b.01 | 合格 | 1○ 2○ |  |  |
+| web.b.02 | 合格 | 1○ 2○ |  |  |
+| web.b.03 | 合格 | 1○ 2○ |  |  |
+| web.b.04 | 合格 | 1○ 2○ | 1 回目は #1 が不合格 |  |
+| web.b.05 | 合格 | 1○ 2○ | 1 回目は #2 が不合格 |  |
+| web.b.06 | 合格 | 1○ 2○ | 1 回目は #1・#2 が不合格 |  |
+| web.b.07 | 合格 | 1○ 2○ | 1 回目は #1 が不合格。想定した案内: web-403（`curl -I http://localhost/`） |  |
+| web.b.08 | 合格 | 1○ 2○ | 1 回目は #1 が不合格 |  |
+| web.i.01 | 合格 | 1○ 2○ |  |  |
+| web.i.02 | 合格 | 1○ 2○ 3○ |  |  |
+| web.i.03 | 合格 | 1○ 2○ |  |  |
+| web.i.04 | 合格 | 1○ 2○ | 1 回目は #1 が不合格 |  |
+| web.i.05 | 合格 | 1○ 2○ |  |  |
+| web.i.06 | 合格 | 1○ 2○ |  |  |
+| sec.b.01 | 合格 | 1○ 2○ |  |  |
+| sec.b.02 | 合格 | 1○ 2○ | 1 回目は #1 が不合格 |  |
+| sec.b.03 | 合格 | 1○ 2○ | 1 回目は #1 が不合格 |  |
+| sec.b.04 | 合格 | 1○ 2○ | 1 回目は #1・#2 が不合格 |  |
+| sec.b.05 | 合格 | 1○ 2○ | 1 回目は #2 が不合格 |  |
+| sec.b.06 | 合格 | 1○ 2○ |  |  |
+| sec.b.07 | 合格 | 1○ 2○ | 1 回目は #1・#2 が不合格。想定した案内: sec-chain-incomplete（`curl https://shop.example/`） |  |
+| git.b.01 | 合格 | 1○ 2○ | 1 回目は #1・#2 が不合格 |  |
+| git.b.02 | 合格 | 1○ 2○ |  |  |
+| git.b.03 | 合格 | 1○ 2○ | 1 回目は #1 が不合格 |  |
+| git.b.04 | 合格 | 1○ 2○ | 1 回目は #2 が不合格 |  |
+| git.b.05 | 合格 | 1○ 2○ |  |  |
+| git.b.06 | 合格 | 1○ 2○ | 1 回目は #2 が不合格。想定した案内: git-conflict（`git merge feature`） |  |
+| git.i.01 | 合格 | 1○ 2○ | 1 回目は #2 が不合格 |  |
+| git.i.02 | 合格 | 1○ 2○ | 1 回目は #2 が不合格。想定した案内: git-push-rejected（`git push origin main`）・git-conflict（`git pull origin main`）・git-push-rejected（`git push`）・git-conflict（`git merge origin/main`） |  |
+| git.i.03 | 合格 | 1○ 2○ |  |  |
+| git.i.04 | 合格 | 1○ 2○ | 1 回目は #2 が不合格 |  |
+| git.i.05 | 合格 | 1○ 2○ | 1 回目は #2 が不合格。想定した案内: git-rebase-conflict（`git rebase main`）・git-rebase-conflict（`git rebase main feature`） |  |
+| git.i.06 | 合格 | 1○ 2○ |  |  |
+| trouble.b.01 | 合格 | 1○ 2○ |  |  |
+| trouble.b.02 | 合格 | 1○ 2○ | 1 回目は #2 が不合格。想定した案内: trouble-read-denied（`cat /srv/report/summary.txt`）・trouble-read-notfound（`cat /srv/report/dayly.log`）・trouble-read-refused（`curl -sS http://report.city.example:8080/`）・trouble-read-timeout（`curl -sS https://api.city.example/`）・trouble-read-first（`sh /srv/report/build.sh`）・trouble-read-timeout（`curl https://api.city.example/`）・trouble-read-refused（`curl http://report.city.example:8080/`）・trouble-read-first（`bash /srv/report/build.sh`） |  |
+| trouble.b.03 | 合格 | 1○ 2○ 3○ |  |  |
+| db.b.01 | 合格 | 1○ 2○ |  |  |
+| db.b.02 | 合格 | 1○ 2○ |  |  |
+| db.b.03 | 合格 | 1○ 2○ |  |  |
+| db.b.04 | 合格 | 1○ 2○ |  |  |
+| db.b.05 | 合格 | 1○ 2○ |  |  |
+| cicd.b.01 | 合格 | 1○ 2○ | 1 回目は #1 が不合格 |  |
+| cicd.b.02 | 合格 | 1○ 2○ |  |  |
+| cicd.b.03 | 合格 | 1○ 2○ |  |  |
+| cicd.b.04 | 合格 | 1○ 2○ |  |  |
+| cicd.b.05 | 合格 | 1○ 2○ |  |  |
+| ctr.b.01 | 合格 | 1○ 2○ |  |  |
+| ctr.b.02 | 合格 | 1○ 2○ |  |  |
+| ctr.b.03 | 合格 | 1○ 2○ | 1 回目は #2 が不合格 |  |
+| ctr.b.04 | 合格 | 1○ 2○ | 1 回目は #1 が不合格 |  |
+| ctr.b.05 | 合格 | 1○ 2○ |  |  |
+| ctr.i.01 | 合格 | 1○ 2○ |  |  |
+| ctr.i.02 | 合格 | 1○ 2○ | 1 回目は #2 が不合格 |  |
+| ctr.i.03 | 合格 | 1○ 2○ | 1 回目は #1 が不合格 |  |
+| ctr.i.04 | 合格 | 1○ 2○ | 1 回目は #2 が不合格 |  |
+| ctr.i.05 | 合格 | 1○ 2○ |  |  |
+| docker.b.01 | 合格 | 1○ 2○ | 想定した案内: docker-daemon（`docker --version`）・docker-daemon（`docker version`）・docker-daemon（`docker -v`） |  |
+| docker.b.02 | 合格 | 1○ 2○ | 1 回目は #1・#2 が不合格 |  |
+| docker.b.03 | 合格 | 1○ 2○ | 1 回目は #1・#2 が不合格 |  |
+| docker.b.04 | 合格 | 1○ 2○ |  |  |
+| docker.b.05 | 合格 | 1○ 2○ | 1 回目は #1・#2 が不合格 |  |
+| docker.i.01 | 合格 | 1○ 2○ | 1 回目は #1 が不合格 |  |
+| docker.i.02 | 合格 | 1○ 2○ | 1 回目は #2 が不合格 |  |
+| docker.i.03 | 合格 | 1○ 2○ | 1 回目は #1・#2 が不合格 |  |
+| docker.i.04 | 合格 | 1○ 2○ | 1 回目は #1・#2 が不合格 |  |
+| docker.i.05 | 合格 | 1○ 2○ | 1 回目は #1 が不合格 |  |
+| docker.i.06 | 合格 | 1○ 2○ |  |  |
+| k8s.b.01 | 合格 | 1○ 2○ | 想定した案内: k8s-no-controller（`kubectl drain node-2`） |  |
+| k8s.b.02 | 合格 | 1○ 2○ |  |  |
+| k8s.b.03 | 合格 | 1○ 2○ |  |  |
+| k8s.b.04 | 合格 | 1○ 2○ |  |  |
+| k8s.b.05 | 合格 | 1○ 2○ | 1 回目は #1 が不合格 |  |
+| k8s.b.06 | 合格 | 1○ 2○ |  |  |
+| k8s.b.07 | 合格 | 1○ 2○ | 1 回目は #1 が不合格 |  |
+| k8s.i.01 | 合格 | 1○ 2○ | 1 回目は #1 が不合格 |  |
+| k8s.i.02 | 合格 | 1○ 2○ |  |  |
+| k8s.i.03 | 合格 | 1○ 2○ |  |  |
+| k8s.i.04 | 合格 | 1○ 2○ |  |  |
+| k8s.i.05 | 合格 | 1○ 2○ | 1 回目は #2 が不合格 |  |
+| k8s.i.06 | 合格 | 1○ 2○ | 1 回目は #2 が不合格 |  |
+| k8s.i.07 | 合格 | 1○ 2○ |  |  |
+| k8s.i.08 | 合格 | 1○ 2○ | 1 回目は #1 が不合格。想定した案内: k8s-rollout-stuck（`kubectl rollout status deploy/web --timeout=30s`） |  |
+| mon.b.01 | 合格 | 1○ 2○ |  |  |
+| mon.b.02 | 合格 | 1○ 2○ 3○ | 1 回目は #1 が不合格 |  |
+| mon.b.03 | 合格 | 1○ 2○ |  |  |
+| mon.b.04 | 合格 | 1○ 2○ |  |  |
+| cloud.b.01 | 合格 | 1○ 2○ |  |  |
+| cloud.b.02 | 合格 | 1○ 2○ |  |  |
+| cloud.b.03 | 合格 | 1○ 2○ |  |  |
+| devops.b.01 | 合格 | 1○ 2○ |  |  |
+| devops.b.02 | 合格 | 1○ 2○ |  |  |
+| devops.b.03 | 合格 | 1○ 2○ | 1 回目は #1・#2 が不合格 |  |
