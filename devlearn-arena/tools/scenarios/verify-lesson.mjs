@@ -101,6 +101,7 @@ const progressOf = (page) => page.evaluate(() => {
  * opts.opened: レッスンの画面をもう開いた（施設の情報パネルから入った時など）。学習ライブラリから開く所を飛ばす
  * opts.onStage(段階): 解説・理解・クイズ・実戦・結果・まとめ の各段の初めに呼ぶ（途中でページを読み直す時など）
  * opts.onLook(場面): 解説の各ページと、実戦の操作を終えた所で呼ぶ（画面の崩れを見る時。VERIFY-FREE.txt【3】）
+ * opts.onDesigned(案内): 想定した失敗の案内（その手順の想定エラー）が出た瞬間に、閉じる前に呼ぶ（VERIFY-FREE.txt【5】）
  * opts.inputs(手順): 実戦で、最後のヒントの代わりに行う物（端末・SQL は打つ行、設定の編集は保存する中身、模は操作）。
  *   渡すとヒントを一度も開かず、実戦の XP がヒント無しの満額で入ることも確かめる（VERIFY-FREE.txt【1】）
  * opts.shotName: 画像の名前（既定はレッスンの ID）
@@ -281,6 +282,8 @@ ${el.innerText}` : '';
           await page.screenshot({ path: rec.shot });
         }
         rec.errors.push({ line: what, step: step.id, current: g.current, guide: g.guide, text: g.text });
+        // 想定した失敗の案内が出た瞬間（案内を閉じる前）。VERIFY-FREE.txt【5】で画面を撮る
+        if (expected) await opts.onDesigned?.({ ...g, step: step.id, line: what });
       }
       if (await errorGuide(page)) {
         await page.locator('.practice-error-close').click().catch(() => {});

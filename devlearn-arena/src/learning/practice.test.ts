@@ -13,7 +13,7 @@ import { applyAction, createSim, describeAction } from '@/engines/sim/sim';
 import type { SimAction } from '@/engines/sim/types';
 import {
   afterCommand, answerOf, attemptOf, checkState, commandCandidates, currentStep, failedCommand, findGuide, GENERIC_GUIDE, hintsUsed, isFinished,
-  editedText, editOf, hintGuideProblems, openHint, playHints, replayAnswers, replaySqlAnswers, resultKind, saveEdit, sqlParts, startRun, type PracticeRun,
+  editedText, editOf, hintGuideProblems, openHint, playHints, playSteps, replayAnswers, replaySqlAnswers, resultKind, saveEdit, sqlParts, startRun, type PracticeRun,
 } from './practice';
 
 /** 端末で 1 行打ち、実戦を進める（画面と同じ道筋） */
@@ -353,6 +353,16 @@ describe('模擬環境（模）の実戦（docs/content-spec.md 2.4.1、docs/dec
 
   it('模擬の状態が無ければ、模擬の判定は満たさない', () => {
     expect(checkState({ kind: 'sim', expr: 'link 入力 処理' }, {})).toBe(false);
+  });
+
+  it('並べるの 1 つ目の手順で順を誤ると、その手順の「合っていない」の解説が出る（sec.b.06・devops.b.01。VERIFY-FREE.txt【2】）', async () => {
+    const first = async (id: string, stages: string[][]) => {
+      const { practice: p } = await lesson(id);
+      const played = playSteps(p, ERROR_GUIDES, (step) => (step.id === p.steps[0]?.id ? [{ op: 'arrange', stages }] : []) as never[]);
+      return { shown: played.shown.map((s) => s.guide), done: played.run.stepsDone };
+    };
+    expect(await first('sec.b.06', [['cert'], ['hello'], ['verify']])).toEqual({ shown: ['sec-handshake-order'], done: [] });
+    expect(await first('devops.b.01', [['localtest'], ['code'], ['deploy']])).toEqual({ shown: ['devops-handoff-first'], done: [] });
   });
 });
 

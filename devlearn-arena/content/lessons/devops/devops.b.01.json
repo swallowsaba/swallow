@@ -269,7 +269,7 @@
           "上から 「変更を書く（開発）」 → 「開発の手元だけで検査」 → 「一緒に作った手順で、自動で配る」 の順に、札をドラッグして並べる。"
         ],
         "expectedErrors": [
-          "devops-handoff-left"
+          "devops-handoff-first"
         ],
         "actions": [
           {
