@@ -13,8 +13,9 @@ content/
   lessons/<分野>/<ID>.json   レッスン 1 本 = 1 ファイル
   glossary/<分野>.json       用語集
   missions/<ID>.json         ミッション
-  facilities.json            施設の定義（見た目は src/city/assets、規則は docs/game-design.md）
+  facilities.json            施設の定義（見た目は src/city/assets、規則は docs/game-design.md）。公共サービス・発電所・褒賞の建物も（7.9）
   errors/<分野>.json         エラーの解説（errorGuides）
+  politics/                  市政のデータ: 反対の理由と公聴会の答え・議員・請願・公約・新聞と説明の型の文・地区の名前（7 章）
 ```
 
 - 形式は JSON。読み込み時に zod で検証する。**検証に失敗したコンテンツはビルドで落とす**
@@ -316,3 +317,261 @@ interface Mission {
 - 全実戦の最後のヒントを、人と同じ順に画面と同じ関数で通すと、全ての手順を満たし、出るエラーの案内は想定した失敗だけ（2.4）
 - 押す図（理解の「図を押す」に使える図）の部分は、押せる所が、後に描いた物に覆われていない（押せる面の無い線と字だけの部分は、画面が描いた物ごとに 24×24 まで広げた透明な面を敷く）
 - `docs/curriculum.md` の表にあるレッスン ID と、`docs/lessons/` の設計と、`content/lessons/` のファイルが一致する（公開範囲のもの）
+
+市政のデータ（7 章）は、`src/content/politics.test.ts` で次を確かめる。
+
+- 全ファイルが型の通り（zod）
+- 申請の対象になる全ての種類（IT 施設 15・公共サービス 4・発電所 2・褒賞の建物 5・アップグレード・用途地域の変更の 4 つの区画）に、反対の理由が 2 つ以上ある
+- **全ての理由に、`requires` の無い譲歩が 1 つ以上ある**（スキルが無くても通せる道。`docs/game-design.md` 20 章）。その譲歩のどれかが、理由の `measure` の元の値を下げる（騒音の理由なら `noise` か `nightNoise` か `height`）
+- 譲歩の `mods` の名前が 7.1.1 の表にある。`misconception` が 0〜0.8
+- IT 施設の理由は、その施設の分野（`docs/curriculum.md` 1 章の対応）か関連の分野の説明を持ち、`sound` の説明が段階 1〜2 に 1 つ以上と段階 3 に 1 つ以上ある（学ぶと答えが増えることを保つ）
+- `wrong` と `partial` の説明に `lesson` がある。理由の `lessons`・説明の `lesson` のレッスン ID が存在する
+- 本文に出る用語がすべて用語集にある
+- 議員がちょうど 7 人で、7 つの論点のそれぞれが、ちょうど 1 人の主な論点になっている
+- 請願の `when` と公約の `goal` が 7.7 の式として読める。公約に学習の語が無い
+- 新聞の型の文が全ての `NewsKind` にあり、差し込む名前がその種類で入る物だけ。説明の型の文が全ての要因と原因の種類にある
+- `facilities.json` の公共サービス・発電所・褒賞の建物の値が、`docs/game-design.md` の表と一致する
+
+## 7. 市政のデータ
+
+都市の模擬と市政（`docs/game-design.md` 13〜27 章、`docs/decisions.md` D-20）の中身。アプリ本体を改修せずに、反対の理由・答え・議員・請願・公約・記事を足せるように、データとして `content/politics/` に置く。
+規則と数値は game-design、プレイヤー側の記録（どの手を出したか）は `docs/data-model.md` 10・11 章が決める。ここは**作る側が書くデータの形**だけを決める（D-06 と同じ分け方）。
+
+```text
+content/politics/
+  objections/<申請の種類>.json   反対の理由と、譲歩・説明（7.1）。datacenter.json・rezone-industrial.json など
+  council.json                   議員 7 人（7.2）
+  petitions.json                 請願（7.3）
+  pledges.json                   公約の候補（7.4）
+  news.json                      新聞の型の文（7.5）
+  explain.json                   平易な言葉の説明と、議員の判断の 1 行の型の文（7.6）
+  names.json                     地区の名前の部品（7.8）
+```
+
+### 7.1 反対の理由（公聴会の論点）と、出せる答え
+
+```ts
+interface ObjectionReason {
+  id: string;                     // 'dc-night-noise'
+  title: string;                  // 「夜間の騒音」（論点の名前。画面と新聞に出る）
+  targets: string[];              // 立つ申請: 施設の種類（'datacenter'）・'upgrade:datacenter'・'rezone:industrial'・'civic:power-thermal' など
+  group: GroupId;                 // 'neighbors' | 'merchants' | 'environment' | 'taxpayers' | 'workers'（docs/game-design.md 16.1）
+  issue: IssueId;                 // 議員が見る論点: 'afford' | 'environment' | 'jobs' | 'finance' | 'safety' | 'traffic' | 'tech'（同 18.1）
+  measure: Measure;               // 強さの計算（同 16.2）
+  radius?: number;                // 影響の半径（マス）。都市全体の集団（environment・taxpayers）は書かない
+  misconception: number;          // 誤解から来る割合（0〜0.8。説明で下げられる上限。同 17.2）
+  claim: Rich;                    // 反対する側の言い分（1〜2 文）。その分野の実務の論点として書く
+  concessions: Concession[];      // 1 つ以上
+  explanations: Explanation[];    // 0 個以上
+  lessons: string[];              // この論点を学べるレッスン（1 つ以上。公聴会の「この論点を学ぶ」）
+}
+type Measure =
+  | { kind: 'noise'; night?: boolean }         // 騒音の増え方（night: 夜も動く施設の夜の騒音）
+  | { kind: 'power' }                          // 電力の余裕
+  | { kind: 'jobs-density' }                   // 雇用の少なさ
+  | { kind: 'sunlight' }                       // 日照
+  | { kind: 'traffic' }                        // 交通の増え方
+  | { kind: 'rent' }                           // 地価・家賃の上がり方
+  | { kind: 'trait'; trait: ModKey }           // 施設の性質の値（冷却水の量など。7.1.1）
+  | { kind: 'cost' };                          // 費用
+interface Concession {
+  id: string;
+  label: string;                  // 「夜間（22 時〜6 時）の重い処理を止める」
+  mods: Partial<Record<ModKey, number>>;       // 申請の性質に掛ける倍率（height だけは足す段の数）。7.1.1
+  cost?: { ratio?: number; fixed?: number };   // 費用（建てた費用に対する割合か、決まった額）。財布は建物の物（docs/game-design.md 2 章）
+  loss?: Rich;                    // 効果が落ちる中身（「技術力への効きが 2 割下がる」）。mods から作れる物は書かなくてよい
+  requires?: { domain: DomainId; stage: 1 | 2 | 3 | 4 | 5 };  // 技術の代案（同 20 章）。書いた物は、その分野のスキル段階がその段階以上の時だけ出る
+}
+interface Explanation {
+  id: string;
+  domain: DomainId;               // どの分野の知識で言える説明か
+  stage: 1 | 2 | 3 | 4 | 5;       // 出せるスキル段階（同 17.2・20 章）
+  text: Rich;                     // 市長が言う説明（1〜2 文。用語は {{term:ID}}）
+  quality: 'sound' | 'partial' | 'wrong';   // 画面には出さない
+  why: Rich;                      // 住民と議員の受け取り方（1 行）。誤り・一部なら、どこが足りないか
+  lesson?: string;                // この説明の根拠を学べるレッスン（誤り・一部では必須）
+}
+```
+
+#### 7.1.1 譲歩で変えられる性質（ModKey）
+
+譲歩は模擬に実際に効く（`docs/game-design.md` 17.1）。`mods` に書けるのは、模擬が読む次の性質だけ（検証で確かめる）。
+
+| ModKey | 模擬の中の意味 | 効く所 |
+|---|---|---|
+| `height` | 建物の高さの段（足す段の数。−1 で 1 段低く） | 日照・戸数（用途地域の変更）・雇用・技術力への効き |
+| `noise` | 騒音の倍率 | 騒音・地価 |
+| `nightNoise` | 夜の騒音の倍率（夜も動く施設） | 騒音（夜の分）・地価 |
+| `traffic` | 生む交通の流れの倍率（駐車場を増やす・送迎の車を出す） | 通勤の混み具合 |
+| `tech` | 技術力への効きの倍率 | 技術力・オフィスの需要 |
+| `jobs` | 雇う人数の倍率 | 雇用 |
+| `power` | 電力の使用量の倍率 | 電力の余裕 |
+| `coolingWater` | 冷却水の量の倍率 | 施設の性質（冷却水の使用） |
+| `green` | 敷地の中の緑地（公園の行き届きを足す。0〜1） | 緑地・地価 |
+| `units` | 戸数の倍率（住宅の用途地域の変更） | 住まい・手頃さ |
+
+- 施設の性質の初めの値（冷却水の量など）は `content/facilities.json` の施設に `traits` として書く（`{ "coolingWater": 0.15 }`。Lv を掛けて使う）
+
+#### 7.1.2 書き方の規則
+
+- **理由は、その分野の実務の論点そのものにする**（`docs/game-design.md` 20 章）。架空の論点や、IT と関係の無い言いがかりにしない。
+  例: データセンター → 夜間の騒音（冷却の送風機）・電力の逼迫（使う電力と送電の余裕）・雇用が少ない（運用の人数）・冷却水の使用（冷やし方）。
+  クラスタ施設 → 電力・排熱。Web 施設 → 夜の光と人の流れ。発電所 → 騒音と排気・景観
+- 説明の `text` は、本物の技術の言葉で正確に書く。`sound` は正しく論点に答える物、`partial` は正しいが論点の一部にしか答えない物、`wrong` は**学習者が実際に誤解しやすい物**（でたらめにしない。クイズの誤答と同じ規則。`docs/learning-design.md` 5 章）
+- 段階の目安: 1〜2 は仕組みを言い表す説明、3 は測り方・数字を示す説明、4〜5 は技術の代案の譲歩（`requires`）として書く
+- 誤解から来る割合（`misconception`）は、論点のうち説明で解ける分。騒音のように本当に出る物は小さく（0.1〜0.3）、冷却水の「使い切る」のような誤解の多い物は大きく（0.5〜0.8）する
+- 用語は `{{term:ID}}` で書き、用語集に無い専門用語を書くとテストで落ちる（5 章と同じ）
+
+例（データセンターの冷却水）:
+
+```json
+{
+  "id": "dc-cooling-water",
+  "title": "冷却水の使用",
+  "targets": ["datacenter", "upgrade:datacenter"],
+  "group": "environment",
+  "issue": "environment",
+  "measure": { "kind": "trait", "trait": "coolingWater" },
+  "misconception": 0.6,
+  "claim": "サーバを冷やすのに大量の水を使い、川の水が減るのではないか。",
+  "concessions": [
+    { "id": "dc-water-closed", "label": "冷却水を閉じた回路で回し、補給は雨水をためて使う", "mods": { "coolingWater": 0.3 }, "cost": { "ratio": 0.2 } },
+    { "id": "dc-water-air", "label": "外気で冷やす方式に切り替える（夏は能力を落とす）", "mods": { "coolingWater": 0.1, "tech": 0.85 }, "requires": { "domain": "cloud", "stage": 4 } }
+  ],
+  "explanations": [
+    { "id": "dc-water-loop", "domain": "cloud", "stage": 2, "quality": "sound", "text": "冷却の水は配管の中を回り続け、使い切る量は蒸発する分だけです。", "why": "水を使い捨てると思っていた人の心配が和らいだ。" },
+    { "id": "dc-water-pue", "domain": "cloud", "stage": 3, "quality": "sound", "text": "冷却に使う電力と水の量を毎月測って公開します。{{term:pue}} の目標も決めます。", "why": "数字で確かめられると分かり、議員も評価した。" },
+    { "id": "dc-water-cloud", "domain": "cloud", "stage": 1, "quality": "wrong", "text": "クラウドなので、建物で水は使いません。", "why": "クラウドの裏側にも建物と冷却がある。かえって不信を招いた。", "lesson": "cloud.b.01" }
+  ],
+  "lessons": ["cloud.b.01"]
+}
+```
+
+（例のレッスン ID と用語は形を示すための物。実際に書く時は、`docs/curriculum.md` と用語集にある ID を使う）
+
+### 7.2 議員
+
+```ts
+interface CouncilMember {
+  id: string;
+  name: string;                   // 自分たちで決めた名前（docs/decisions.md D-20）
+  profile: string;                // 人柄の 1 行（「元 小学校の先生。子どもの暮らしを重く見る」）
+  main: IssueId;                  // 主な論点（重み 3）
+  second: IssueId;                // 次の論点（重み 1.5）
+  stance: -3 | -2 | -1 | 0 | 1 | 2 | 3;   // 姿勢（docs/game-design.md 18.2）
+  icon: string;                   // 人の影の SVG の ID（顔を描かない）
+}
+```
+
+- `council.json` は 7 人ちょうど。7 つの論点のそれぞれが、ちょうど 1 人の `main` になる（検証）
+
+### 7.3 請願
+
+```ts
+interface Petition {
+  id: string;
+  title: string;                  // 「家賃が上がって住み続けられない」
+  text: Rich;                     // 市民の要望（1〜2 文）
+  group: GroupId;
+  layers?: number[];              // 送ってくる層（層の番号。docs/data-model.md 8 章）
+  when: string;                   // 届く条件（7.7 の式）
+  priority: number;               // 同じ週に複数が条件を満たした時、大きい物から
+  accept: {
+    effect: PetitionEffect;       // 受理の中身。模擬に実際に効く
+    cost?: { treasury?: number; weekly?: number; weeks?: number };
+    why: Rich;                    // 受理した時の受け取られ方
+  };
+  reject: { why: Rich };
+}
+type PetitionEffect =
+  | { kind: 'rent-subsidy'; ratio: number; weeks: number }   // 届いた地区の、その層の家賃を ratio だけ下げる
+  | { kind: 'apply'; type: FacilityType }                    // 届いた地区の空き地に、その種類の申請を出す（場所は模擬が決める）
+  | { kind: 'power-cap'; mw: number }                        // 外からの電気の上限を足す（代金は cost）
+  | { kind: 'noise-limit'; factor: number; weeks: number }   // 届いた地区の工業の騒音の倍率（その間、工場の売上も同じ割合で下がる）
+  | { kind: 'bus'; traffic: number; weeks: number };         // 届いた地区の通勤の混み具合の倍率
+```
+
+### 7.4 公約
+
+```ts
+interface Pledge {
+  id: string;
+  title: string;                  // 「人口を 2 割増やす」
+  goal: string;                   // 果たす条件（7.7 の式。start. を付けると任期の初めの値）
+  layers: number[];               // この公約を重く見る層（果たした・果たせない時に信頼が動く。docs/game-design.md 21.4）
+}
+```
+
+- 公約の `goal` に、レッスンの修了の数を入れない（docs/game-design.md 21.4。検証で、7.7 の学習の語が無いことを確かめる。`missions` は使ってよい）
+
+### 7.5 新聞の型の文
+
+```ts
+interface NewsTemplate {
+  kind: NewsKind;                 // docs/data-model.md 9 章の Article.kind
+  variant?: string;               // 同じ種類の中の場合分け（'scandal' の 'push' など）
+  headline: string;               // 「{facility}、議会で可決 賛成 {yes} 反対 {no}」
+  body: string;                   // 2〜3 行。{名前} の所に名前と数字が入る
+}
+```
+
+- 差し込める名前: `{city}` `{mayor}` `{facility}` `{district}` `{group}` `{reason}` `{yes}` `{no}` `{n}` `{rate}` `{value}` `{week}` `{year}`。書いた名前が、その種類で入る物かを検証で確かめる
+- 新聞の名前（「市民新報」）は `news.json` の `title` に 1 つ書く
+
+### 7.6 説明と判断の 1 行の型の文
+
+```ts
+interface ExplainTemplates {
+  approval: { up: string; down: string; flat: string };        // 「この {weeks} 週で支持率が {delta} {dir}。主な理由は、{cause}（{factor}）」
+  layer: string;                                                // 「特に、{layer}で {delta} {dir}」
+  causes: Record<'facility' | 'zone' | 'road' | 'building' | 'decision' | 'demand', string>;  // 原因の言い表し方（「{name}が{district}に建ったこと」）
+  factors: Record<FactorId, string>;                            // 要因の名前（「騒音」「家賃の負担」）
+  member: Record<'gain' | 'concern' | 'unanswered' | 'explained' | 'wrong' | 'pushed' | 'approval' | 'persuaded' | 'stance', string>; // 議員の 1 行（docs/game-design.md 18.2）
+}
+```
+
+- 数字は四捨五入した整数で入れる。全ての要因と原因の種類に文があることを検証で確かめる
+
+### 7.7 条件の式
+
+請願の `when` と公約の `goal` に使う。`&&` でつなぎ、比べ方は `>=` `<=` `>` `<` `=`。
+
+| 語 | 値 |
+|---|---|
+| `population` `jobs` `unemployment` `approval` `treasury` `taxRate` | 都市全体の値（失業率と支持率は 0〜100） |
+| `rentBurden.<低|中|高>` | その収入の帯の家賃の負担の平均（%） |
+| `outageDays` | 直近 28 日に停電した日の数（どこかの地区） |
+| `noiseAtHome` | 住まいのマスの騒音の大きい方から 1 割の平均 |
+| `coverage.<police|fire|school|clinic|park>` | 住民の行き届きの平均（0〜100） |
+| `facilities.it` `facilities.civic` | 完成した IT 施設・公共サービスの数 |
+| `missionsDone` | 達成したミッションの数（公約に使ってよい） |
+| `any:<語>` | 地区ごとの値の、どこかの地区で満たす（請願だけ。満たした地区に届く） |
+| `start.<語>` | 任期の初めの値（公約だけ） |
+
+- 式は `src/sim` の 1 つの関数で読む。読めない式は検証で落とす。レッスンの修了・XP・スキルの語は無い（学習を市政の条件にしない）
+
+### 7.8 地区の名前
+
+- `names.json` に、地区の名前の前の部品（方角・地形: 北・南・浜・丘・川・森 …）と後ろの部品（町・台・野・原 …）を並べ、新しい都市を作る時に seed で 144 地区に重ならないよう組み合わせる（`docs/game-design.md` 16.1）
+- 実在の地名をそのまま写さない。Permit Pending の都市名・地名は使わない（D-20）
+
+### 7.9 公共サービス・発電所・褒賞の建物の定義
+
+`content/facilities.json` に、IT 施設と同じ形で足す。足す欄:
+
+```ts
+interface FacilityDef {             // 今の欄（id・name・cost・domain・大きさ）に足す
+  wallet: 'funds' | 'treasury';     // 財布（docs/game-design.md 2 章）
+  role: 'it' | 'civic' | 'power' | 'reward' | 'park';
+  jobs?: number;                    // Lv あたりの雇う人数（今の 15 を既定）
+  powerMW?: number;                 // 使う電力（Lv あたり）。発電所は負の値で作る量
+  noise?: { value: number; radius: number; night?: boolean };
+  traits?: Partial<Record<ModKey, number>>;   // 譲歩で変えられる性質の初めの値
+  coverage?: { kind: 'police' | 'fire' | 'school' | 'clinic' | 'park'; distance: number; capacity?: number };
+  upkeep?: number;                  // 週の維持費（財政）
+  buildDays?: number;               // 工事の日数（無ければ大きさで決まる。docs/game-design.md 15.2）
+  unlock?: string;                  // 褒賞の節目（7.7 の式。届いたら建てられる）
+}
+```
+
+- 値は `docs/game-design.md` 13・24・25 章の表と一致させる（テストで確かめる）
