@@ -373,12 +373,13 @@ type Measure =
   | { kind: 'traffic' }                        // 交通の増え方
   | { kind: 'rent' }                           // 地価・家賃の上がり方
   | { kind: 'trait'; trait: ModKey }           // 施設の性質の値（冷却水の量など。7.1.1）
+  | { kind: 'service-load'; service: 'police' | 'fire' | 'school' | 'clinic' }  // 公共サービスの負担（定員の余りが減る割合）
   | { kind: 'cost' };                          // 費用
 interface Concession {
   id: string;
   label: string;                  // 「夜間（22 時〜6 時）の重い処理を止める」
   mods: Partial<Record<ModKey, number>>;       // 申請の性質に掛ける倍率（height だけは足す段の数）。7.1.1
-  cost?: { ratio?: number; fixed?: number };   // 費用（建てた費用に対する割合か、決まった額）。財布は建物の物（docs/game-design.md 2 章）
+  cost?: { ratio?: number; fixed?: number };   // 費用（建てた費用に対する割合か、決まった額）。財布は建物の物（docs/game-design.md 2 章）。ratio の負の値は費用が下がる（規模を小さくする譲歩）
   loss?: Rich;                    // 効果が落ちる中身（「技術力への効きが 2 割下がる」）。mods から作れる物は書かなくてよい
   requires?: { domain: DomainId; stage: 1 | 2 | 3 | 4 | 5 };  // 技術の代案（同 20 章）。書いた物は、その分野のスキル段階がその段階以上の時だけ出る
 }
@@ -408,9 +409,11 @@ interface Explanation {
 | `power` | 電力の使用量の倍率 | 電力の余裕 |
 | `coolingWater` | 冷却水の量の倍率 | 施設の性質（冷却水の使用） |
 | `green` | 敷地の中の緑地（公園の行き届きを足す。0〜1） | 緑地・地価 |
-| `units` | 戸数の倍率（住宅の用途地域の変更） | 住まい・手頃さ |
+| `units` | 戸数の倍率（住宅の用途地域の変更） | 住まい・手頃さ・公共サービスの負担 |
 
 - 施設の性質の初めの値（冷却水の量など）は `content/facilities.json` の施設に `traits` として書く（`{ "coolingWater": 0.15 }`。Lv を掛けて使う）
+- 理由の強さ（`measure`）を下げられる性質: `noise` → `noise`・`nightNoise`・`height` / `power` → `power` / `jobs-density` → `jobs` / `sunlight` → `height` / `traffic` → `traffic` / `rent` → `units`・`height` / `trait` → その性質 / `service-load` → `units`・`height` / `cost` → `cost.ratio` が負の譲歩（規模を小さくして費用を下げる。`height` か `units` も一緒に下げる）。
+  6 章の検証の「理由の元の値を下げる」は、この対応で確かめる
 
 #### 7.1.2 書き方の規則
 
@@ -485,7 +488,7 @@ interface Petition {
 }
 type PetitionEffect =
   | { kind: 'rent-subsidy'; ratio: number; weeks: number }   // 届いた地区の、その層の家賃を ratio だけ下げる
-  | { kind: 'apply'; type: FacilityType }                    // 届いた地区の空き地に、その種類の申請を出す（場所は模擬が決める）
+  | { kind: 'build'; type: FacilityType }                    // 届いた地区の空き地に、その種類を建てる。申請の要る種類は申請を出し、要らない種類（公園の類）はそのまま置く。費用は財政（場所は模擬が決める）
   | { kind: 'power-cap'; mw: number }                        // 外からの電気の上限を足す（代金は cost）
   | { kind: 'noise-limit'; factor: number; weeks: number }   // 届いた地区の工業の騒音の倍率（その間、工場の売上も同じ割合で下がる）
   | { kind: 'bus'; traffic: number; weeks: number };         // 届いた地区の通勤の混み具合の倍率
