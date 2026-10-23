@@ -232,7 +232,8 @@
           "k8s-rollout-outage",
           "k8s-set-image-container",
           "k8s-notfound"
-        ]
+        ],
+        "designedErrors": ["k8s-rollout-stuck"]
       }
     ]
   },

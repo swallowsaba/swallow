@@ -640,6 +640,10 @@ describe('見本の 2 本を最後まで通せる（docs/development-plan.md Pha
     typeLine('cd /srv/ap');
     const err = $(host, '[data-testid="practice-error"]');
     expect(err.dataset.guide).toBe('enoent');
+    // 打ち間違いは、調べて打ち直す案内（見せるための失敗ではない）
+    expect(err.dataset.designed).toBe('false');
+    expect($(host, '.practice-error-title').textContent).toBe('エラーが出た。調べてみよう');
+    expect($(host, '.practice-error-retry').textContent).toContain('もう一度やってみよう');
     expect(err.textContent).toContain('No such file or directory');
     expect(err.textContent).toContain('何と言われたか');
     expect(err.querySelectorAll('.practice-error-causes li').length).toBeGreaterThanOrEqual(2);
@@ -664,7 +668,22 @@ describe('見本の 2 本を最後まで通せる（docs/development-plan.md Pha
     expect(session.city.getState().city.funds - funds0).toBe(session.progress.getState().progress.xp);
   });
 
-  it('found.b.01（模擬環境）: ヒントを開いても「中断した所から」と言わない。ドラッグと押す操作で手順を満たし、結果に「画面でした操作」を $ を付けずに並べる', async () => {
+  it('trouble.b.02: 見せるための失敗（手順の目的がエラーを読むこと）は、「想定どおり」と言い、打ち直しではなく目的の続きへ促す', async () => {
+    const session = createSession(1);
+    const id = 'trouble.b.02';
+    const l = await lesson(id);
+    const { host } = await toPractice(session, id, l);
+    typeLine('cat /srv/report/summary.txt');
+    const err = $(host, '[data-testid="practice-error"]');
+    expect(err.dataset.guide).toBe('trouble-read-denied');
+    expect(err.dataset.designed).toBe('true');
+    expect($(host, '.practice-error-title').textContent).toBe('想定どおりのエラー。読んでみよう');
+    const retry = $(host, '.practice-error-retry').textContent;
+    expect(retry).toContain('この手順は、このエラーを見て読むための物');
+    expect(retry).not.toContain('もう一度やってみよう');
+  });
+
+  it('found.b.01（模擬環境）:ヒントを開いても「中断した所から」と言わない。ドラッグと押す操作で手順を満たし、結果に「画面でした操作」を $ を付けずに並べる', async () => {
     const session = createSession(1);
     const id = 'found.b.01';
     const l = await lesson(id);

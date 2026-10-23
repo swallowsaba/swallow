@@ -731,9 +731,12 @@ describe('最後のヒントの通りに打つ（画面と同じ関数で通す�
     expect(hintGuideProblems({ ...p, setup: { files: { '/home/learner/notes.txt': 'x' } } }, [openGuide]).join()).toContain('実戦 make: 最後のヒントの「ls /home/learner」で、エラーの案内（open-test）が出る');
   });
 
-  it('その手順で想定した、本当に失敗する命令（衝突・拒否を見せる）の案内は、問題にしない', () => {
+  it('その手順で見せるための、本当に失敗する命令（衝突・拒否を見せる）の案内は、問題にしない', () => {
     const p = two('`touch /tmp/a` と打つ。', '`cat /root/x` を打つと無いと言われる。`touch /tmp/b` と打つ。', ['denied-test']);
-    expect(hintGuideProblems(p, [okGuide])).toEqual([]);
+    const designed = { ...p, steps: p.steps.map((s) => (s.id === 'more' ? { ...s, designedErrors: ['denied-test'] } : s)) };
+    expect(hintGuideProblems(designed, [okGuide])).toEqual([]);
+    // 想定エラーにあっても、見せるための失敗の印（designedErrors）が無ければ問題（画面が「想定どおり」と言えない）
+    expect(hintGuideProblems(p, [okGuide]).join()).toContain('見せるための失敗（designedErrors）に無い');
     // 想定していない手順で失敗すれば問題
     expect(hintGuideProblems(two('`touch /tmp/a` と打つ。', '`cat /root/x` `touch /tmp/b` と打つ。'), [okGuide]).join()).toContain('（denied-test）が出る');
   });

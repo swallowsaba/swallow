@@ -212,12 +212,13 @@
         "hints": [
           "`docker version` は、`Client:` の段に CLI の版、`Server:` の段に本体の版を出す。本体につながらない時は、どこで止まるかを見る。",
           "`Client:` の下の `Version` の行が CLI の版。その後の `Cannot connect to the Docker daemon` は、本体に届かないという意味。",
-          "`docker version` を打ち、`27.3.1` と答える。"
+          "`docker version` を打つ（本体につながらず、途中で止まる）。止まる前に出た CLI の版を見て、`27.3.1` と答える。"
         ],
         "expectedErrors": [
           "docker-daemon",
           "docker-engine-misread"
-        ]
+        ],
+        "designedErrors": ["docker-daemon"]
       },
       {
         "id": "start",

@@ -285,7 +285,8 @@
         "expectedErrors": [
           "trouble-read-denied",
           "trouble-kind-misread"
-        ]
+        ],
+        "designedErrors": ["trouble-read-denied"]
       },
       {
         "id": "notfound",
@@ -303,7 +304,8 @@
         "expectedErrors": [
           "trouble-read-notfound",
           "trouble-next-misread"
-        ]
+        ],
+        "designedErrors": ["trouble-read-notfound"]
       },
       {
         "id": "network",
@@ -322,7 +324,8 @@
           "trouble-read-refused",
           "trouble-read-timeout",
           "trouble-refused-misread"
-        ]
+        ],
+        "designedErrors": ["trouble-read-refused", "trouble-read-timeout"]
       },
       {
         "id": "first",
@@ -340,7 +343,8 @@
         "expectedErrors": [
           "trouble-read-first",
           "trouble-last-line"
-        ]
+        ],
+        "designedErrors": ["trouble-read-first"]
       }
     ]
   },

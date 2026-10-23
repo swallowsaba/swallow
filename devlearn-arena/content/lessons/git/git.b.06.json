@@ -182,12 +182,13 @@
         "hints": [
           "取り込むのは `git merge`。止まったら、どのファイルかを `git status` で見る。",
           "`git status` の `Unmerged paths` の下、`both modified` の行が衝突したファイル。",
-          "`git merge feature` と `git status` を順に打ち、`price.txt` と答える。"
+          "`git merge feature` を打つ（衝突で止まる）。続けて `git status` を打ち、`price.txt` と答える。"
         ],
         "expectedErrors": [
           "git-conflict",
           "git-conflict-which"
-        ]
+        ],
+        "designedErrors": ["git-conflict"]
       },
       {
         "id": "fix",

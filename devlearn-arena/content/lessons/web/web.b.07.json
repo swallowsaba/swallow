@@ -221,7 +221,8 @@
         "expectedErrors": [
           "web-403",
           "web-404"
-        ]
+        ],
+        "designedErrors": ["web-403", "web-404"]
       }
     ]
   },

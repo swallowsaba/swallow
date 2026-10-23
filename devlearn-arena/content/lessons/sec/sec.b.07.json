@@ -183,7 +183,8 @@
         "expectedErrors": [
           "sec-chain-incomplete",
           "sec-chain-answer"
-        ]
+        ],
+        "designedErrors": ["sec-chain-incomplete"]
       },
       {
         "id": "chain",

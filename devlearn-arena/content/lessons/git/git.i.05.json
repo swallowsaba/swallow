@@ -188,12 +188,13 @@
         "hints": [
           "付け替えるのは自分の枝。今いる枝を確かめ、feature に移ってから、付け替え先を指定する。",
           "`git rebase main` は、今の枝を main の先に載せ直す。止まったら `git status` の `both modified` を見る。",
-          "`git switch feature` と `git rebase main` と `git status` を順に打ち、`boat.txt` と答える。"
+          "`git switch feature` と `git rebase main` を順に打つ（衝突で止まる）。続けて `git status` を打ち、`boat.txt` と答える。"
         ],
         "expectedErrors": [
           "git-rebase-conflict",
           "git-rebase-which"
-        ]
+        ],
+        "designedErrors": ["git-rebase-conflict"]
       },
       {
         "id": "fix",

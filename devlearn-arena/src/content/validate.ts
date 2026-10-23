@@ -161,6 +161,7 @@ export function validateLesson(l: Lesson, ctx: ValidateContext): string[] {
 function practiceProblems(practice: Practice, ctx: Pick<ValidateContext, 'errors' | 'guides'>): string[] {
   const p: string[] = [];
   for (const s of practice.steps) for (const e of s.expectedErrors ?? []) if (!ctx.errors.has(e)) p.push(`実戦 ${s.id}: エラーの解説 ${e} が無い（content/errors）`);
+  for (const s of practice.steps) for (const e of s.designedErrors ?? []) if (!(s.expectedErrors ?? []).includes(e)) p.push(`実戦 ${s.id}: 見せるための失敗 ${e} が、想定エラー（expectedErrors）に無い`);
   if (new Set(practice.steps.map((s) => s.id)).size !== practice.steps.length) p.push('実戦の手順の ID が重なる');
   if (practice.mode === 'simulation') {
     if (!isSimEnvironment(practice.environment)) {

@@ -64,7 +64,8 @@ export function PracticeStage(props: PracticeStageProps) {
   return edit ? <EditorPractice {...props} edit={edit} /> : <TerminalPractice {...props} />;
 }
 
-type ShownError = { guide: ErrorGuide; said: string; line: string };
+/** 出したエラーの案内。designed は、手順の目的そのものが、このエラーを見て読むこと（見せるための失敗。docs/content-spec.md 2.4） */
+type ShownError = { guide: ErrorGuide; said: string; line: string; designed: boolean };
 
 /** 実戦の進み（手順・ヒント・エラー・危ない手）。どの模擬環境でも同じ */
 function useRun(p: Practice, initial: PracticeRun | undefined) {
@@ -90,7 +91,7 @@ function useRun(p: Practice, initial: PracticeRun | undefined) {
     took(r: CommandOutcome, said: string, line: string): PracticeRun {
       if (sound && r.error) sfx.error();
       else if (sound && r.run.stepIndex > runRef.current.stepIndex) sfx.step();
-      setError(r.error ? { guide: r.error, said: said.trim(), line: line.trim() } : null);
+      setError(r.error ? { guide: r.error, said: said.trim(), line: line.trim(), designed: r.designed } : null);
       if (r.danger) setDanger(r.danger.why);
       return set(r.run);
     },
@@ -601,11 +602,12 @@ function AnswerForm({ onAnswer, label = '端末で調べて答える' }: { onAns
 function ErrorGuidePanel({ error, onTerm, onClose }: { error: ShownError; onTerm: OnTerm; onClose: () => void }) {
   const g = error.guide;
   return (
-    <section className="practice-error" role="status" aria-label="エラーを調べる" data-testid="practice-error" data-guide={g.id}>
+    <section className="practice-error" role="status" aria-label="エラーを調べる" data-testid="practice-error" data-guide={g.id} data-designed={String(error.designed)}>
       <header className="practice-error-head">
         <Icon name="search" size={16} />
-        <h3 className="practice-error-title">エラーが出た。調べてみよう</h3>
-        <button type="button" className="practice-error-close" onClick={onClose} aria-label="閉じて打ち直す"><Icon name="close" size={14} /></button>
+        {/* 見せるための失敗は、打った人の誤りではない。言われたとおり打ったのにエラー、と迷わせない */}
+        <h3 className="practice-error-title">{error.designed ? '想定どおりのエラー。読んでみよう' : 'エラーが出た。調べてみよう'}</h3>
+        <button type="button" className="practice-error-close" onClick={onClose} aria-label={error.designed ? '閉じて続ける' : '閉じて打ち直す'}><Icon name="close" size={14} /></button>
       </header>
       <pre className="practice-error-said"><span className="practice-error-line">{error.line}</span>{'\n'}{error.said}</pre>
       <ol className="practice-error-flow">
@@ -624,7 +626,7 @@ function ErrorGuidePanel({ error, onTerm, onClose }: { error: ShownError; onTerm
           <p><Rich text={g.hint} onTerm={onTerm} /></p>
         </li>
       </ol>
-      <p className="practice-error-retry">確かめたら、もう一度やってみよう。</p>
+      <p className="practice-error-retry">{error.designed ? 'この手順は、このエラーを見て読むための物。読めたら、手順の目的の続きへ進もう。' : '確かめたら、もう一度やってみよう。'}</p>
     </section>
   );
 }

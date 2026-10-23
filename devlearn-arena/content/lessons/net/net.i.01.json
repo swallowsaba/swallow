@@ -235,12 +235,13 @@
         "hints": [
           "`srv-c` の出口は `r2`（10.0.3.1）。`r2` が `A` の網（10.0.1.0/24）を知らないと、返事を `A` へ渡せない。",
           "`r2` に「`A` の網は `r1`（10.0.2.1）へ」の経路を足す。",
-          "`ip netns exec srv-c ping -c 1 10.0.1.10` `ip -n r2 route add 10.0.1.0/24 via 10.0.2.1` `ping -c 1 10.0.3.10` の順に打つ。"
+          "`ip netns exec srv-c ping -c 1 10.0.1.10` を打つ（帰りの経路が無く、届かない）。続けて `ip -n r2 route add 10.0.1.0/24 via 10.0.2.1` `ping -c 1 10.0.3.10` の順に打つ。"
         ],
         "expectedErrors": [
           "net-one-way",
           "net-route-nexthop"
-        ]
+        ],
+        "designedErrors": ["net-one-way"]
       }
     ]
   },

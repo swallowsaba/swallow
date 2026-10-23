@@ -153,6 +153,11 @@ export const practiceStepSchema = z.object({
   hints: z.tuple([rich, rich, rich]),
   expectedErrors: z.array(z.string().min(1)).optional(),
   /**
+   * 見せるための失敗（docs/content-spec.md 2.4）: 手順の目的そのものが、失敗を見て読むこと（衝突・拒否・届かない）の時、
+   * その失敗の解説の ID（expectedErrors の中の物）。この案内が出た時、画面は「想定どおりのエラー」と言い、打ち直しではなく目的の続きへ促す
+   */
+  designedErrors: z.array(z.string().min(1)).optional(),
+  /**
    * 画面で操作する実戦（模）の、最後のヒントで通る操作（画面の操作と同じ形。docs/content-spec.md 2.4.1）。
    * 最後のヒントは「何をどこへ置く・つなぐ・並べる」を日本語で書き、テストはこの操作を画面と同じ関数に与えて確かめる
    */

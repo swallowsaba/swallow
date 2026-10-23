@@ -235,7 +235,8 @@
           "net-port-in-use",
           "service-failed",
           "nginx-emerg"
-        ]
+        ],
+        "designedErrors": ["service-failed"]
       },
       {
         "id": "ssh",

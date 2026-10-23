@@ -405,6 +405,8 @@ export interface CommandOutcome {
   done: PracticeStep[];
   /** エラーが出た時の解説 */
   error: ErrorGuide | null;
+  /** その解説が、打った時の手順の見せるための失敗（designedErrors）。画面は「想定どおり」と言い、打ち直しではなく目的の続きへ促す */
+  designed: boolean;
   /** 使った危ない手 */
   danger: { id: string; why: string } | null;
 }
@@ -444,6 +446,8 @@ export function afterCommand(
   if (danger && !next.dangerousUsed.includes(danger.id)) next = { ...next, dangerousUsed: [...next.dangerousUsed, danger.id] };
 
   let error: ErrorGuide | null = null;
+  // 打った時の手順（エラーの解説を当てる手順。見せるための失敗かを決める）
+  const typedIn = currentStep(practice, next);
   const failure = failureOf(a, guides);
   if (failure !== null) {
     error = findGuide(failure, currentStep(practice, next), guides);
@@ -484,7 +488,8 @@ export function afterCommand(
     error = notYet;
     next = { ...next, errors: [...next.errors, notYet.id], errorOpen: true };
   }
-  return { run: next, done, error, danger: danger ? { id: danger.id, why: danger.why } : null };
+  const designed = error !== null && (typedIn?.designedErrors ?? []).includes(error.id);
+  return { run: next, done, error, designed, danger: danger ? { id: danger.id, why: danger.why } : null };
 }
 
 /** 打った行が、そのファイルへ書き出した（> ・ >> ・ tee の先がそのファイル） */
@@ -649,7 +654,7 @@ export interface ShownGuide {
 
 /**
  * 最後のヒントの通りに操作して出るエラーの案内が、許される物か（docs/content-spec.md 2.4）。許されるのは、
- * その手順で想定したエラー（expectedErrors）で、その手順の間に、本当に失敗した命令（衝突・拒否・届かないことを見せる）の物だけ。
+ * その手順で見せるための失敗（designedErrors）で、その手順の間に、本当に失敗した命令（衝突・拒否・届かないことを見せる）の物だけ。
  * うまくいった命令の出力に当たった案内・次の手順に移ってから出た案内・想定していない案内は問題。最後に満たせない手順も問題
  */
 export function hintGuideProblems(practice: Practice, guides: readonly ErrorGuide[]): string[] {
@@ -664,7 +669,8 @@ function shownProblems(practice: Practice, shown: readonly ShownGuide[]): string
     const from = practice.steps.find((x) => x.id === s.from);
     const why = !s.failed ? 'うまくいった命令の出力に当たった'
       : s.step !== s.from ? `次の手順 ${s.step} に移ってから出た`
-        : !(from?.expectedErrors ?? []).includes(s.guide) ? 'その手順の想定エラーに無い' : null;
+        : !(from?.expectedErrors ?? []).includes(s.guide) ? 'その手順の想定エラーに無い'
+          : !(from?.designedErrors ?? []).includes(s.guide) ? 'その手順の見せるための失敗（designedErrors）に無い' : null;
     return why ? [`実戦 ${s.from}: 最後のヒントの「${s.line}」で、エラーの案内（${s.guide}）が出る（${why}）`] : [];
   });
 }

@@ -180,7 +180,8 @@
         ],
         "expectedErrors": [
           "k8s-no-controller"
-        ]
+        ],
+        "designedErrors": ["k8s-no-controller"]
       },
       {
         "id": "count",

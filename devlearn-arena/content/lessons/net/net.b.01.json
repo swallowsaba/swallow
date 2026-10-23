@@ -339,6 +339,7 @@
           "net-lan-only",
           "sim-forbidden"
         ],
+        "designedErrors": ["net-lan-only"],
         "actions": [
           {
             "op": "connect",

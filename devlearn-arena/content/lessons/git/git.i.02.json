@@ -213,12 +213,13 @@
         "hints": [
           "送るのは `git push`。拒否されたら、手元の枝を変えずに、リモートの記録だけを取ってくる。",
           "`git fetch` で取ってきた記録は `origin/main` に置かれる。`main..origin/main` は、手元の main に無い記録だけを指す。",
-          "`git push` と `git fetch` と `git log --oneline main..origin/main` を順に打ち、`夏の間は 18 時まで開ける` と答える。"
+          "`git push` を打つ（拒否される）。続けて `git fetch` と `git log --oneline main..origin/main` を順に打ち、`夏の間は 18 時まで開ける` と答える。"
         ],
         "expectedErrors": [
           "git-push-rejected",
           "git-other-misread"
-        ]
+        ],
+        "designedErrors": ["git-push-rejected"]
       },
       {
         "id": "pull",
@@ -232,11 +233,12 @@
         "hints": [
           "取り込むのは `git pull`。衝突したら、`cat slots.txt` で印の間の 2 つの版を読む。",
           "上（{{term:git-head}}）が自分の版、下（{{term:git-origin}}/main）が佐藤さんの版。両方を 1 行にまとめ、印の 3 行は残さない。",
-          "`git pull` と `echo 'テニスコート 1: 9:00-18:00（月曜は休み）' > slots.txt` を順に打つ。"
+          "`git pull` を打つ（衝突で止まる）。続けて `echo 'テニスコート 1: 9:00-18:00（月曜は休み）' > slots.txt` を打つ。"
         ],
         "expectedErrors": [
           "git-conflict"
-        ]
+        ],
+        "designedErrors": ["git-conflict"]
       },
       {
         "id": "push",

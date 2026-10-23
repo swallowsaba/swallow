@@ -241,7 +241,8 @@
         "expectedErrors": [
           "net-fw-timeout",
           "net-nat-wrong"
-        ]
+        ],
+        "designedErrors": ["net-fw-timeout"]
       },
       {
         "id": "dnat",
