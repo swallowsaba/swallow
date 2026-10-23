@@ -1,4 +1,5 @@
 import type { City } from '@/city/types';
+import type { World } from '@/sim/types';
 import type { PracticeSession, Progress } from '@/game/types';
 import { createCityStore, type CityStore } from './city/cityStore';
 import { newPlayer, type PlayerMeta } from '@/save/saveData';
@@ -31,6 +32,8 @@ const createPlayerStore = (initial: PlayerMeta) =>
 /** 保存から戻す時の、遊んでいる状態（src/save/autosave.ts）。無い物は新しく始める */
 export interface SessionStart {
   city?: City;
+  /** 版 4 の保存データの、都市と模擬と市政の世界（あれば city より先に使う） */
+  world?: World;
   progress?: Progress;
   practiceSessions?: Record<string, PracticeSession>;
   settings?: Settings;
@@ -38,10 +41,7 @@ export interface SessionStart {
 }
 
 export function createSession(seed?: number, start?: SessionStart): Session {
-  const city = createCityStore(seed, start?.city);
-  const progress = createProgressStore((amount) => {
-    const c = city.getState().city;
-    city.getState().setCity({ ...c, funds: c.funds + amount });
-  }, start?.progress, start?.practiceSessions);
+  const city = createCityStore(seed, start?.city, start?.world ? { world: start.world } : {});
+  const progress = createProgressStore((amount) => city.getState().dispatch({ kind: 'funds', amount }), start?.progress, start?.practiceSessions);
   return { city, progress, settings: createSettingsStore(start?.settings), player: createPlayerStore(start?.player ?? newPlayer('local', '')) };
 }

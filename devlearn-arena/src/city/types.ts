@@ -20,7 +20,7 @@ export interface Road {
   path: Point[];
 }
 
-export type ZoneKind = 'residential' | 'commercial' | 'office';
+export type ZoneKind = 'residential' | 'commercial' | 'office' | 'industrial';
 export interface Zone {
   id: string;
   kind: ZoneKind;
@@ -57,6 +57,10 @@ export interface Facility {
   builtDay: number;
   /** 記念碑のとき、どの記念碑か（ミッションの報酬。content/facilities.json の landmarks の ID） */
   landmark?: string;
+  /** 譲歩で変わった性質（申請の mods を写す。docs/game-design.md 17.1・docs/data-model.md 12 章） */
+  mods?: Record<string, number>;
+  /** 工事が終わる日 */
+  completeDay?: number;
 }
 
 export interface City {

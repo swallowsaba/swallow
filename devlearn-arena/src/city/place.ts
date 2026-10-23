@@ -270,6 +270,7 @@ export function buildingName(kind: ZoneKind, level: number): string {
     residential: ['戸建て', '低層集合住宅', '中層住宅', '高層住宅', '超高層住宅'],
     commercial: ['小さな店', '商店街の店', '商業ビル', '大きな商業ビル', '超高層の商業ビル'],
     office: ['小さな事務所', 'オフィスビル', '中層オフィス', '高層オフィス', '超高層オフィス'],
+    industrial: ['小さな作業場', '工場と倉庫', '大きな工場', '大きな工場', '大きな工場'],
   };
   return names[kind][Math.max(0, Math.min(4, level - 1))] as string;
 }

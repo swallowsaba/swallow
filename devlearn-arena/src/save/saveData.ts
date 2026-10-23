@@ -1,9 +1,10 @@
-import type { City, DomainId } from '@/city/types';
+import type { DomainId } from '@/city/types';
 import { DOMAIN_IDS } from '@/content/schema';
 import { LESSONS } from '@/game/lessons';
 import { rankOf } from '@/game/rank';
 import { skillsOf } from '@/game/skill';
 import type { PracticeSession, Progress, SkillState } from '@/game/types';
+import type { World } from '@/sim/types';
 import { SAVE_VERSION, XP_LOG_LIMIT, type SaveData, type Settings } from './schema';
 
 /**
@@ -24,7 +25,8 @@ export interface PlayerMeta {
 export interface SaveParts {
   player: PlayerMeta;
   settings: Settings;
-  city: City;
+  /** 都市と模擬と市政（版 4。docs/data-model.md 12 章） */
+  world: World;
   progress: Progress;
   practiceSessions: Record<string, PracticeSession>;
 }
@@ -37,7 +39,7 @@ export const newPlayer = (id: string, createdAt: string): PlayerMeta => ({ id, n
  * XP の記録は直近 1,000 件だけ残す
  */
 export function toSaveData(parts: SaveParts, savedAt: string, today: string): SaveData {
-  const { progress } = parts;
+  const { progress, world } = parts;
   const details = skillsOf(DOMAIN_IDS, progress, LESSONS, today);
   const skills = Object.fromEntries(DOMAIN_IDS.map((d) => {
     const { domain, value, stage, breakdown } = details[d];
@@ -47,12 +49,19 @@ export function toSaveData(parts: SaveParts, savedAt: string, today: string): Sa
     version: SAVE_VERSION,
     savedAt,
     player: { ...parts.player, xp: progress.xp, engineerRank: rankOf(progress.xp), skills, settings: parts.settings },
-    city: parts.city,
+    city: world.city,
     lessons: progress.lessons,
     practiceSessions: parts.practiceSessions as SaveData['practiceSessions'],
     reviews: progress.reviews,
     missions: progress.missions,
     xpLog: progress.xpLog.slice(-XP_LOG_LIMIT),
+    sim: world.sim,
+    history: world.history,
+    applications: world.applications,
+    politics: world.politics,
+    budget: world.budget,
+    petitions: world.petitions,
+    rewards: world.rewards,
   };
 }
 
@@ -62,7 +71,10 @@ export function fromSaveData(data: SaveData): SaveParts {
   return {
     player: { id, name, createdAt, introSeen },
     settings,
-    city: data.city,
+    world: {
+      city: data.city, sim: data.sim, history: data.history, applications: data.applications, politics: data.politics,
+      budget: data.budget, petitions: data.petitions, rewards: data.rewards,
+    },
     progress: { xp, lessons: data.lessons, reviews: data.reviews, missions: data.missions, xpLog: data.xpLog },
     practiceSessions: data.practiceSessions,
   };

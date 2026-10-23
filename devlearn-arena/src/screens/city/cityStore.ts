@@ -1,20 +1,27 @@
 import { create } from 'zustand';
 import { STAGE_NAMES } from '@/game/stage';
 import { changesBetween, focusOf, type Change, type SkillValues, type Snapshot } from '@/city/changes';
-import { advance } from '@/city/growth';
-import { newCity } from '@/city/newCity';
 import type { OverlayKind } from '@/city/overlay';
 import type { DemolishTarget, Reason } from '@/city/place';
 import type { Selection } from '@/city/render/CityRenderer';
-import { SECONDS_PER_DAY, type BuildRoadKind } from '@/city/rules';
-import { generateTerrain, type Terrain } from '@/city/terrain';
+import type { BuildRoadKind } from '@/city/rules';
+import type { Terrain } from '@/city/terrain';
 import type { City, Facility, FacilityType, ZoneKind } from '@/city/types';
 import { FACILITY_DEFS } from '@/city/facilities';
-import { checkUpgrade, upgradeFacility } from '@/city/upgrade';
+import { checkUpgrade } from '@/city/upgrade';
+import { NAME_PARTS } from '@/content/politics';
+import { applyOp, type Command, type Op } from '@/sim/commands';
+import { workerHost, type SimHost } from '@/sim/host';
+import { SECONDS_PER_DAY, type Speed } from '@/sim/rules';
+import { terrainOf, type StateMessage } from '@/sim/runner';
+import type { World } from '@/sim/types';
+import { newWorld, withCity, worldFromCity } from '@/sim/world';
 
 /**
  * 都市画面の状態（docs/ui-design.md 3・4 章）。
- * 規則は src/city の純粋な関数にあり、ここはそれを呼んで結果を持つだけ。
+ * 規則は src/city と src/sim の純粋な関数にあり、ここはそれを呼んで結果を持つだけ。
+ * 都市の模擬は Worker で動く（docs/architecture.md 9.1）。画面は操作を日付付きの命令にして送り、
+ * 模擬が返した世界の写しを持つ。送ってまだ返事の無い命令は、写しの上にも当てておく（置いた物がすぐ見えるように）。
  */
 
 
@@ -28,6 +35,9 @@ export type Tool =
 
 export type MenuGroup = 'road' | 'zone' | 'facility' | 'park' | 'demolish';
 
+/** 時間を止めている理由（docs/game-design.md 13.1: 都市画面が前に出ていない間・窓が隠れている間・大きな窓の間） */
+export type HoldReason = 'screen' | 'hidden' | 'window';
+
 /** カーソルの横に出す、置けるか・費用・理由 */
 export interface Hint {
   x: number;
@@ -40,9 +50,17 @@ export interface Hint {
 }
 
 export interface CityGameState {
+  /** 描く都市（日付は時計の小数のまま。車と人の動きと建設の段階に使う） */
   city: City;
+  /** 模擬の世界の写し（日付は整数） */
+  world: World;
   terrain: Terrain;
+  /** 利用者が止めた（Space・止めるボタン） */
   paused: boolean;
+  /** 速さ（1 倍・2 倍・3 倍） */
+  speed: Speed;
+  /** 止めている理由（利用者が止めたのとは別） */
+  holds: HoldReason[];
   tool: Tool;
   /** 開いている建設メニューの引き出し */
   menu: MenuGroup | null;
@@ -62,9 +80,18 @@ export interface CityGameState {
   /** 変化のあった場所（カメラを寄せ、光の輪で示す）。seq が変わるたびに寄せる */
   focus: { at: { x: number; y: number }; size: { x: number; y: number }; seq: number } | null;
 
+  /** 都市を差し替える（撮影と確かめの道具・見本の都市）。模擬の状態は保つ */
   setCity: (city: City) => void;
+  /** 世界を丸ごと読み込む（保存データから戻す時） */
+  load: (world: World) => void;
+  /** 操作を命令にして模擬へ送る（写しにもすぐ当てる） */
+  dispatch: (op: Op) => void;
   tick: (dtSeconds: number) => void;
   togglePause: () => void;
+  /** 速さを変え、止めていれば動かす */
+  setSpeed: (speed: Speed) => void;
+  /** 理由ごとに、時間を止める・止めない */
+  hold: (reason: HoldReason, on: boolean) => void;
   setTool: (tool: Tool) => void;
   openMenu: (group: MenuGroup | null) => void;
   rotate: () => void;
@@ -88,96 +115,174 @@ export interface CityGameState {
   upgrade: (facilityId: string, skills: SkillValues, now: number) => boolean;
   select: (selection: Selection | null) => void;
   setOverlay: (overlay: OverlayKind | null) => void;
+  /** 模擬を止める（画面を閉じる時） */
+  stop: () => void;
 }
 
 /** 1 つの知らせを出しておく時間（docs/ui-design.md 3 章: 3 秒で消える） */
 export const NOTICE_MS = 3000;
 
-/** 都市の状態を作る。保存から戻す時は、保存した都市（initial）から始める */
-export function createCityStore(seed?: number, initial?: City) {
-  const city = initial ?? newCity(seed);
-  const terrain = generateTerrain(city.seed);
-  return create<CityGameState>((set, get) => ({
-    city,
-    terrain,
-    paused: false,
-    tool: { kind: 'none' },
-    menu: null,
-    rotation: 0,
-    hint: null,
-    confirm: null,
-    notice: null,
-    selected: null,
-    overlay: null,
-    queue: [],
-    away: null,
-    focus: null,
+export interface CityStoreOptions {
+  /** 保存データから戻す時の世界 */
+  world?: World;
+  /** 模擬を動かす口（既定は Web Worker。作れなければ画面と同じ流れ） */
+  host?: SimHost;
+}
 
-    setCity: (next) => set((s) => ({ city: next, selected: s.selected && stillThere(next, s.selected) ? s.selected : null })),
-    tick: (dt) => {
-      const s = get();
-      if (s.paused || dt <= 0) return;
-      const before = s.city;
-      const after = advance(before, before.day + dt / SECONDS_PER_DAY);
-      set({ city: after });
-      if (after.stage > before.stage) get().notify(`都市が「${STAGE_NAMES[after.stage]}」に発展した。霧が晴れて、作れる物が増えた`, performance.now());
-    },
-    togglePause: () => set((s) => ({ paused: !s.paused })),
-    setTool: (tool) => set({ tool, hint: null }),
-    openMenu: (menu) => set((s) => ({ menu, tool: menu === 'demolish' ? { kind: 'demolish' } : menu === null || menu !== s.menu ? { kind: 'none' } : s.tool, hint: null })),
-    rotate: () => set((s) => ({ rotation: ((s.rotation + 90) % 360) as Facility['rotation'] })),
-    setHint: (hint) => set({ hint }),
-    askDemolish: (confirm) => set({ confirm }),
-    notify: (text, now) => {
-      const s = get();
-      if (s.notice && now < s.notice.until) set({ queue: [...s.queue, text] });
-      else set({ notice: { text, until: now + NOTICE_MS } });
-    },
-    expireNotice: (now) => {
-      const s = get();
-      if (!s.notice || now < s.notice.until) return;
-      const [next, ...rest] = s.queue;
-      set(next === undefined ? { notice: null } : { notice: { text: next, until: now + NOTICE_MS }, queue: rest });
-    },
-    leave: (skills) => {
-      if (get().away) return;
-      set({ away: { city: get().city, skills } });
-    },
-    welcomeBack: (skills, after, now) => {
-      const s = get();
-      if (!s.away) return [];
-      const changes = changesBetween(s.away, { city: s.city, skills });
-      const focus = focusOf(changes);
-      set({
-        away: null,
-        focus: focus ? { at: focus.at, size: focus.size, seq: (s.focus?.seq ?? 0) + 1 } : s.focus,
-        ...(focus?.facilityId ? { selected: { kind: 'facility' as const, id: focus.facilityId } } : {}),
-        notice: null,
-        queue: [],
-      });
-      for (const text of [...changes.slice(0, 2).map((c) => c.text), ...after]) get().notify(text, now);
-      return changes;
-    },
-    upgrade: (facilityId, skills, now) => {
-      const s = get();
-      const check = checkUpgrade(s.city, facilityId, skills);
-      if (!check?.ok) return false;
-      const city = upgradeFacility(s.city, check);
-      const f = city.facilities.find((x) => x.id === facilityId);
-      if (!f) return false;
-      const def = FACILITY_DEFS[f.type];
-      const adds = def.looks?.[check.level - 1];
-      // 自分の操作の結果は、並んでいる知らせを待たせずにすぐ出す（並んでいた知らせは、その後に出す）
-      set({
-        city,
-        focus: { at: { x: f.origin.x + def.w / 2, y: f.origin.y + def.d / 2 }, size: { x: def.w, y: def.d }, seq: (s.focus?.seq ?? 0) + 1 },
-        notice: { text: `${def.name}を Lv${String(check.level)} に上げた${adds ? `。${adds}が加わった` : ''}`, until: now + NOTICE_MS },
-      });
-      return true;
-    },
-    select: (selected) => set({ selected }),
-    setOverlay: (overlay) => set({ overlay }),
-  }));
+/** 都市の状態を作る。保存から戻す時は、保存した世界（options.world）か都市（initial）から始める */
+export function createCityStore(seed?: number, initial?: City, options: CityStoreOptions = {}) {
+  const terrainSeed = options.world?.city.seed ?? initial?.seed ?? seed;
+  const startWorld = options.world
+    ?? (initial ? worldFromCity(initial, terrainOf(initial.seed), NAME_PARTS) : newWorld(terrainOf(terrainSeed ?? 20261002), NAME_PARTS, terrainSeed));
+  const terrain = terrainOf(startWorld.city.seed);
+  const host = options.host ?? workerHost();
+
+  /** 模擬が返した世界（命令を当てる前） */
+  let base: World = startWorld;
+  /** 送って返事の無い命令 */
+  let pending: Command[] = [];
+  let seq = 0;
+  /** 時計（都市の日。小数） */
+  let clock = startWorld.city.day;
+  /** 進めてと送った日・模擬が進めた日 */
+  let requested = Math.floor(clock);
+  let acked = requested;
+
+  const store = create<CityGameState>((set, get) => {
+    /** 写しを作り直す: 模擬が返した世界に、返事の無い命令を当てる */
+    const rebuild = (): void => {
+      let w = base;
+      for (const c of pending) w = applyOp(w, c.op, terrain);
+      const prevStage = get().world.city.stage;
+      set({ world: w, city: { ...w.city, day: Math.max(clock, w.city.day) } });
+      if (w.city.stage > prevStage) get().notify(`都市が「${STAGE_NAMES[w.city.stage]}」に発展した。霧が晴れて、作れる物が増えた`, performance.now());
+    };
+    host.listen((m: StateMessage) => {
+      base = { ...base, ...m.patch };
+      acked = Math.max(acked, m.day);
+      pending = pending.filter((c) => c.seq > m.seq);
+      rebuild();
+    });
+    const loadWorld = (w: World): void => {
+      base = w;
+      pending = [];
+      clock = w.city.day;
+      requested = Math.floor(clock);
+      acked = requested;
+      set({ world: w, city: w.city });
+      host.post({ type: 'load', world: w, seq });
+    };
+    return {
+      city: startWorld.city,
+      world: startWorld,
+      terrain,
+      paused: false,
+      speed: 1,
+      holds: [],
+      tool: { kind: 'none' },
+      menu: null,
+      rotation: 0,
+      hint: null,
+      confirm: null,
+      notice: null,
+      selected: null,
+      overlay: null,
+      queue: [],
+      away: null,
+      focus: null,
+
+      setCity: (next) => {
+        const w = withCity(get().world, next, terrain, NAME_PARTS);
+        loadWorld(w);
+        set((s) => ({ selected: s.selected && stillThere(next, s.selected) ? s.selected : null }));
+      },
+      load: loadWorld,
+      dispatch: (op) => {
+        seq += 1;
+        const cmd: Command = { seq, day: requested, op };
+        pending.push(cmd);
+        rebuild();
+        set((s) => ({ selected: s.selected && stillThere(s.city, s.selected) ? s.selected : null }));
+        host.post({ type: 'cmd', cmd });
+      },
+      tick: (dt) => {
+        const s = get();
+        if (s.paused || s.holds.length > 0 || dt <= 0) return;
+        clock += (dt * s.speed) / SECONDS_PER_DAY;
+        // 模擬が 2 日より遅れたら、追いつくまで時計を待たせる（命令の日がずれないように）
+        if (requested - acked >= 2) clock = Math.min(clock, requested + 0.999);
+        const want = Math.floor(clock);
+        if (want > requested) {
+          requested = want;
+          host.post({ type: 'advance', day: want });
+        }
+        set({ city: { ...get().world.city, day: Math.max(clock, get().world.city.day) } });
+      },
+      togglePause: () => set((s) => ({ paused: !s.paused })),
+      setSpeed: (speed) => set({ speed, paused: false }),
+      hold: (reason, on) => set((s) => {
+        const has = s.holds.includes(reason);
+        if (on === has) return {};
+        return { holds: on ? [...s.holds, reason] : s.holds.filter((r) => r !== reason) };
+      }),
+      setTool: (tool) => set({ tool, hint: null }),
+      openMenu: (menu) => set((s) => ({ menu, tool: menu === 'demolish' ? { kind: 'demolish' } : menu === null || menu !== s.menu ? { kind: 'none' } : s.tool, hint: null })),
+      rotate: () => set((s) => ({ rotation: ((s.rotation + 90) % 360) as Facility['rotation'] })),
+      setHint: (hint) => set({ hint }),
+      askDemolish: (confirm) => set({ confirm }),
+      notify: (text, now) => {
+        const s = get();
+        if (s.notice && now < s.notice.until) set({ queue: [...s.queue, text] });
+        else set({ notice: { text, until: now + NOTICE_MS } });
+      },
+      expireNotice: (now) => {
+        const s = get();
+        if (!s.notice || now < s.notice.until) return;
+        const [next, ...rest] = s.queue;
+        set(next === undefined ? { notice: null } : { notice: { text: next, until: now + NOTICE_MS }, queue: rest });
+      },
+      leave: (skills) => {
+        if (get().away) return;
+        set({ away: { city: get().city, skills } });
+      },
+      welcomeBack: (skills, after, now) => {
+        const s = get();
+        if (!s.away) return [];
+        const changes = changesBetween(s.away, { city: s.city, skills });
+        const focus = focusOf(changes);
+        set({
+          away: null,
+          focus: focus ? { at: focus.at, size: focus.size, seq: (s.focus?.seq ?? 0) + 1 } : s.focus,
+          ...(focus?.facilityId ? { selected: { kind: 'facility' as const, id: focus.facilityId } } : {}),
+          notice: null,
+          queue: [],
+        });
+        for (const text of [...changes.slice(0, 2).map((c) => c.text), ...after]) get().notify(text, now);
+        return changes;
+      },
+      upgrade: (facilityId, skills, now) => {
+        const s = get();
+        const check = checkUpgrade(s.world.city, facilityId, skills);
+        if (!check?.ok) return false;
+        get().dispatch({ kind: 'upgrade', facilityId, skills: { ...skills } });
+        const f = get().city.facilities.find((x) => x.id === facilityId);
+        if (!f) return false;
+        const def = FACILITY_DEFS[f.type];
+        const adds = def.looks?.[check.level - 1];
+        // 自分の操作の結果は、並んでいる知らせを待たせずにすぐ出す（並んでいた知らせは、その後に出す）
+        set({
+          focus: { at: { x: f.origin.x + def.w / 2, y: f.origin.y + def.d / 2 }, size: { x: def.w, y: def.d }, seq: (s.focus?.seq ?? 0) + 1 },
+          notice: { text: `${def.name}を Lv${String(check.level)} に上げた${adds ? `。${adds}が加わった` : ''}`, until: now + NOTICE_MS },
+        });
+        return true;
+      },
+      select: (selected) => set({ selected }),
+      setOverlay: (overlay) => set({ overlay }),
+      stop: () => host.stop(),
+    };
+  });
+  host.post({ type: 'load', world: startWorld, seq: 0 });
+  return store;
 }
 
 function stillThere(city: City, sel: Selection): boolean {

@@ -159,3 +159,58 @@
 .topbar-entry[aria-disabled='true']:active {
   transform: none;
 }
+
+/* 日付と速さ（docs/ui-design.md 3.1）。止める・1 倍・2 倍・3 倍の小さなボタン。今の速さが金 */
+.topbar-clock {
+  gap: 10px;
+}
+.topbar-speeds {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+.topbar-speed {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: 1px solid var(--hud-line);
+  background: var(--transparent);
+  color: var(--hud-text-sub);
+  cursor: pointer;
+  clip-path: polygon(4px 0, 100% 0, calc(100% - 4px) 100%, 0 100%);
+  transition: background 0.12s, color 0.12s;
+}
+.topbar-speed:hover,
+.topbar-speed:focus-visible {
+  background: var(--hud-bg-strong);
+  color: var(--gold-light);
+  outline: none;
+}
+.topbar-speed.is-on {
+  background: linear-gradient(180deg, var(--gold-light), var(--gold));
+  border-color: var(--gold);
+  color: var(--navy);
+}
+
+/* 1600 未満の幅: 数字の見出しを記号にし、名前は指した時の小窓で出す。数字は削らない（docs/ui-design.md 3.1） */
+@media (max-width: 1599px) {
+  .topbar {
+    gap: 12px;
+  }
+  .topbar-city {
+    padding: 0 22px 0 12px;
+  }
+  .topbar-stat {
+    padding: 0 10px;
+    gap: 6px;
+  }
+  .topbar-stat-label {
+    display: none;
+  }
+  .topbar-entry {
+    padding: 0 12px;
+  }
+}

@@ -13,7 +13,7 @@ import { describe, expect, it } from 'vitest';
 const SRC = join(__dirname, '..');
 
 /** 模型の層。まだ無い層は飛ばす */
-const MODEL_LAYERS = ['engines', 'game', 'learning', 'city'] as const;
+const MODEL_LAYERS = ['engines', 'game', 'learning', 'city', 'sim'] as const;
 
 /** 模型の層の中でも、Canvas に描くので外す所 */
 const DRAWING = /[\\/]city[\\/]render[\\/]/;
@@ -60,4 +60,21 @@ describe('模型の層は React・DOM・Canvas に触れない', () => {
       expect(offenders).toEqual([]);
     });
   }
+});
+
+describe('都市の模擬（src/sim）は乱数と時刻を自分で作らない（docs/game-design.md 26 章・docs/testing-strategy.md 10.1）', () => {
+  it('src/sim/ は Math.random と Date を使わない（反対率・支持率を乱数で決めない）', () => {
+    const offenders = sourcesUnder(join(SRC, 'sim'))
+      .filter((file) => /\bMath\.random\b|\bDate\b/.test(stripStringsAndComments(readFileSync(file, 'utf8'))))
+      .map(show);
+    expect(offenders).toEqual([]);
+  });
+
+  it('都市・ゲーム・学習・模擬環境は src/sim を読まない（学習は都市の状態に左右されない。docs/architecture.md 3 章）', () => {
+    const offenders = (['engines', 'game', 'learning', 'city'] as const)
+      .flatMap((layer) => sourcesUnder(join(SRC, layer)))
+      .filter((file) => /from\s+['"](@\/sim|(\.\.\/)+sim)(\/[^'"]*)?['"]/.test(readFileSync(file, 'utf8')))
+      .map(show);
+    expect(offenders).toEqual([]);
+  });
 });

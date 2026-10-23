@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { Facility } from '@/city/types';
+import { directHost, type HostMessage, type SimHost } from '@/sim/host';
+import type { StateMessage } from '@/sim/runner';
 import { createCityStore, NOTICE_MS } from './cityStore';
 
 const academy: Facility = { id: 'f1', type: 'academy', domain: 'found', origin: { x: 45, y: 44 }, rotation: 0, level: 1, state: 'active', builtDay: 0 };
@@ -78,5 +80,100 @@ describe('施設を上げる（docs/game-design.md 2・5 章: スキルの段階
     expect(store.getState().upgrade('f1', { found: 20 }, 0)).toBe(false);
     expect(store.getState().city).toBe(before);
     expect(store.getState().notice).toBeNull();
+  });
+});
+
+describe('都市の時間（docs/game-design.md 13.1）', () => {
+  it('1 倍で 1 日 2 秒。3 倍なら 3 倍の速さで進む。週の終わりに模擬が 1 週分を計算する', () => {
+    const store = createCityStore(1);
+    const start = store.getState().world.city.day;
+    store.getState().tick(2);
+    expect(store.getState().world.city.day).toBe(start + 1);
+    store.getState().setSpeed(3);
+    store.getState().tick(4);
+    expect(store.getState().world.city.day).toBe(start + 7);
+    expect(store.getState().world.sim.week).toBe(1);
+  });
+
+  it('利用者が止めた間・都市画面が前に出ていない間・窓が隠れている間は進まない', () => {
+    const store = createCityStore(1);
+    const day = (): number => store.getState().city.day;
+    const d0 = day();
+    store.getState().togglePause();
+    store.getState().tick(10);
+    expect(day()).toBe(d0);
+    store.getState().togglePause();
+    store.getState().hold('screen', true);
+    store.getState().tick(10);
+    expect(day()).toBe(d0);
+    store.getState().hold('hidden', true);
+    store.getState().hold('screen', false);
+    store.getState().tick(10);
+    expect(day()).toBe(d0);
+    store.getState().hold('hidden', false);
+    store.getState().tick(1);
+    expect(day()).toBeCloseTo(d0 + 0.5, 9);
+  });
+
+  it('速さを選ぶと、止めていても動き出す', () => {
+    const store = createCityStore(1);
+    store.getState().togglePause();
+    store.getState().setSpeed(2);
+    expect(store.getState().paused).toBe(false);
+    expect(store.getState().speed).toBe(2);
+  });
+});
+
+describe('操作は日付付きの命令として模擬へ送る（docs/architecture.md 9.1）', () => {
+  /** 返事を手で配る模擬の口（Worker のように、後から返事が来る） */
+  function lateHost() {
+    const inner = directHost();
+    const sent: HostMessage[] = [];
+    const out: StateMessage[] = [];
+    let listener: ((m: StateMessage) => void) | null = null;
+    inner.listen((m) => out.push(m));
+    const host: SimHost = {
+      inWorker: true,
+      post: (m) => {
+        sent.push(m);
+        inner.post(m);
+      },
+      listen: (fn) => {
+        listener = fn;
+        return () => undefined;
+      },
+      stop: () => undefined,
+    };
+    const deliver = (): void => {
+      for (const m of out.splice(0)) listener?.(m);
+    };
+    return { host, sent, deliver };
+  }
+
+  it('置いた物は返事を待たずに見え、返事が来ても消えない。命令には出した日が付く', () => {
+    const { host, sent, deliver } = lateHost();
+    const store = createCityStore(1, undefined, { host });
+    deliver();
+    store.getState().tick(4);
+    store.getState().dispatch({ kind: 'zone', zone: 'residential', a: { x: 40, y: 48 }, b: { x: 44, y: 48 } });
+    expect(store.getState().city.zones).toHaveLength(1);
+    const cmd = sent.find((m) => m.type === 'cmd');
+    expect(cmd).toMatchObject({ type: 'cmd', cmd: { seq: 1, day: 2, op: { kind: 'zone' } } });
+    // 返事の前に次の日の知らせが来ても（命令の前に進めた日）、置いた物は残る
+    deliver();
+    expect(store.getState().city.zones).toHaveLength(1);
+    expect(store.getState().world.city.funds).toBe(1500 - 5 * 5);
+  });
+
+  it('模擬が 2 日より遅れたら、追いつくまで時計を待たせる', () => {
+    const { host, sent } = lateHost();
+    const store = createCityStore(1, undefined, { host });
+    store.getState().tick(2);
+    store.getState().tick(2);
+    store.getState().tick(2);
+    store.getState().tick(2);
+    const advances = sent.filter((m) => m.type === 'advance').map((m) => (m as { day: number }).day);
+    expect(advances).toEqual([1, 2]);
+    expect(store.getState().city.day).toBeLessThan(3);
   });
 });

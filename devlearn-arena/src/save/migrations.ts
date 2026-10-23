@@ -1,4 +1,8 @@
 import type { ZodType } from 'zod';
+import type { City } from '@/city/types';
+import { NAME_PARTS } from '@/content/politics';
+import { terrainOf } from '@/sim/runner';
+import { worldFromCity } from '@/sim/world';
 import { SAVE_VERSION, saveDataSchema, type SaveData } from './schema';
 
 /**
@@ -16,6 +20,26 @@ export const MIGRATIONS: Readonly<Record<number, Migration>> = {
   2: (old) => {
     const player = old.player as Record<string, unknown>;
     return { ...old, player: { ...player, settings: { ...(player.settings as Record<string, unknown>), minimap: true } } };
+  },
+  /**
+   * 版 3 → 4: 都市の模擬と市政を始める（docs/data-model.md 12 章）。今の都市を壊さず、遊びの途中から市政が始まる形にする。
+   * 住宅の建物ごとに今の都市規模の人数を初めの分布の世帯に分けて入れ、事業者を作り、工事中の施設は完成にする。
+   * 始め方は「ふつう」、政治資本 10、財政 800、税率 10%。学習の記録と開発資金は、そのまま写す
+   */
+  3: (old) => {
+    const city = old.city as City;
+    const world = worldFromCity(city, terrainOf(city.seed), NAME_PARTS, 'normal');
+    return {
+      ...old,
+      city: { ...world.city, funds: city.funds },
+      sim: world.sim,
+      history: world.history,
+      applications: world.applications,
+      politics: world.politics,
+      budget: world.budget,
+      petitions: world.petitions,
+      rewards: world.rewards,
+    };
   },
 };
 

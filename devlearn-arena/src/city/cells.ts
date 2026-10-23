@@ -48,8 +48,19 @@ function classify(t: Terrain): Uint8Array {
 
 /* ---------- 道路のマス ---------- */
 
+const roadCellCache = new WeakMap<Road, Point[]>();
+
 /** 1 本の道路が通るマス（中心から道路の線までが道幅の半分未満）。ロータリーは中心の周りの 3×3 */
 export function roadCellsOf(road: Road): Point[] {
+  // 道路は書き換えずに作り直すので、同じ道路の物は前の結果を使い回す（毎日の成長の計算を軽くする）
+  const hit = roadCellCache.get(road);
+  if (hit) return hit;
+  const cells = roadCellsOfUncached(road);
+  roadCellCache.set(road, cells);
+  return cells;
+}
+
+function roadCellsOfUncached(road: Road): Point[] {
   const out: Point[] = [];
   if (road.kind === 'roundabout') {
     const c = road.path[0];
@@ -163,25 +174,84 @@ export interface Occupancy {
   facilities: Map<string, Facility>;
 }
 
+/*
+ * 都市の道路・区画・建物・施設の配列は、書き換えずに作り直す。同じ配列から作った物は使い回す
+ * （毎日の成長の計算で何度も呼ぶため。返す物を書き換えてはいけない）
+ */
+const roadOcc = new WeakMap<readonly Road[], Pick<Occupancy, 'roads' | 'roadIds'>>();
+const zoneOcc = new WeakMap<readonly Zone[], Map<string, Zone>>();
+const buildingOcc = new WeakMap<readonly Building[], Map<string, Building>>();
+const facilityOcc = new WeakMap<readonly Facility[], Map<string, Facility>>();
+
+/** 使う所だけを作る（道路だけを見る計算で、区画と建物の表を作らない） */
 export function occupancyOf(city: City): Occupancy {
-  const roads = new Set<string>();
-  const roadIds = new Map<string, string[]>();
-  for (const road of city.roads) {
-    for (const c of roadCellsOf(road)) {
-      const k = cellKey(c.x, c.y);
-      roads.add(k);
-      const list = roadIds.get(k);
-      if (list) list.push(road.id);
-      else roadIds.set(k, [road.id]);
+  return {
+    get roads() {
+      return roadsOcc(city.roads).roads;
+    },
+    get roadIds() {
+      return roadsOcc(city.roads).roadIds;
+    },
+    get zones() {
+      return zonesOcc(city.zones);
+    },
+    get buildings() {
+      return buildingsOcc(city.buildings);
+    },
+    get facilities() {
+      return facilitiesOcc(city.facilities);
+    },
+  };
+}
+
+function roadsOcc(list: readonly Road[]): Pick<Occupancy, 'roads' | 'roadIds'> {
+  let r = roadOcc.get(list);
+  if (!r) {
+    const roads = new Set<string>();
+    const roadIds = new Map<string, string[]>();
+    for (const road of list) {
+      for (const c of roadCellsOf(road)) {
+        const k = cellKey(c.x, c.y);
+        roads.add(k);
+        const list = roadIds.get(k);
+        if (list) list.push(road.id);
+        else roadIds.set(k, [road.id]);
+      }
     }
+    r = { roads, roadIds };
+    roadOcc.set(list, r);
   }
-  const zones = new Map<string, Zone>();
-  for (const z of city.zones) for (const c of z.cells) zones.set(cellKey(c.x, c.y), z);
-  const buildings = new Map<string, Building>();
-  for (const b of city.buildings) buildings.set(cellKey(b.cell.x, b.cell.y), b);
-  const facilities = new Map<string, Facility>();
-  for (const f of city.facilities) for (const c of facilityCells(f)) facilities.set(cellKey(c.x, c.y), f);
-  return { roads, roadIds, zones, buildings, facilities };
+  return r;
+}
+
+function zonesOcc(list: readonly Zone[]): Map<string, Zone> {
+  let zones = zoneOcc.get(list);
+  if (!zones) {
+    zones = new Map<string, Zone>();
+    for (const z of list) for (const c of z.cells) zones.set(cellKey(c.x, c.y), z);
+    zoneOcc.set(list, zones);
+  }
+  return zones;
+}
+
+function buildingsOcc(list: readonly Building[]): Map<string, Building> {
+  let buildings = buildingOcc.get(list);
+  if (!buildings) {
+    buildings = new Map<string, Building>();
+    for (const b of list) buildings.set(cellKey(b.cell.x, b.cell.y), b);
+    buildingOcc.set(list, buildings);
+  }
+  return buildings;
+}
+
+function facilitiesOcc(list: readonly Facility[]): Map<string, Facility> {
+  let facilities = facilityOcc.get(list);
+  if (!facilities) {
+    facilities = new Map<string, Facility>();
+    for (const f of list) for (const c of facilityCells(f)) facilities.set(cellKey(c.x, c.y), f);
+    facilityOcc.set(list, facilities);
+  }
+  return facilities;
 }
 
 /** 施設が道路に面しているか（分野の施設は入口が、公園の類はどこかの辺が） */

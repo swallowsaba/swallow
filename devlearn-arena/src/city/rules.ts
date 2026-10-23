@@ -24,6 +24,7 @@ export const ZONE_RULES: Record<ZoneKind, { name: string; costPerCell: number; m
   residential: { name: '住宅', costPerCell: 5, minStage: 1 },
   commercial: { name: '商業', costPerCell: 5, minStage: 2 },
   office: { name: 'オフィス', costPerCell: 8, minStage: 1 },
+  industrial: { name: '工業', costPerCell: 6, minStage: 1 },
 };
 
 /**
@@ -32,8 +33,8 @@ export const ZONE_RULES: Record<ZoneKind, { name: string; costPerCell: number; m
  */
 export const INITIAL_FUNDS = 1500;
 
-/** 都市の 1 日の長さ（秒）。画面の時計と、車と人の動きが使う */
-export const SECONDS_PER_DAY = 4;
+/** 1 倍の速さで、都市の 1 日の長さ（秒。docs/game-design.md 13.1）。画面の時計と、車と人の動きが使う */
+export const SECONDS_PER_DAY = 2;
 
 /** 建設の 3 段階（基礎 → 骨組み → 完成）。1 段 = 1 日（docs/city-design.md 6 章） */
 export const BUILD_DAYS_PER_STAGE = 1;
@@ -48,12 +49,13 @@ export function constructionStage(builtDay: number, day: number): ConstructionSt
 
 /**
  * 区画の建物が持つ人と仕事（レベル 1〜5）。
- * 住宅は住む人（都市規模）、商業とオフィスは仕事の数（雇用）。
+ * 住宅は住む人の上限（戸数 = 人 ÷ 2.3。docs/game-design.md 13.2）、商業・オフィス・工業は仕事の数（雇用）。
  */
 export const CAPACITY: Record<ZoneKind, readonly [number, number, number, number, number]> = {
   residential: [8, 40, 150, 600, 1500],
   commercial: [6, 20, 80, 250, 600],
   office: [12, 40, 160, 500, 1200],
+  industrial: [10, 35, 120, 350, 800],
 };
 
 /** 施設 1 つが生む仕事（レベルあたり） */
@@ -71,11 +73,13 @@ export function levelCap(stage: Stage): number {
  * 需要（docs/game-design.md 7 章）: 住宅は雇用から、オフィスは技術力から、商業は人口から生まれる。
  * 値は「あと何人・何人分の仕事が入れるか」。正なら建つ・育つ。
  */
-export function demandOf(s: { population: number; jobs: number; commercialJobs: number; officeJobs: number; techPower: number }): Record<ZoneKind, number> {
+export function demandOf(s: { population: number; jobs: number; commercialJobs: number; officeJobs: number; industrialJobs: number; techPower: number; roadCells: number; unemployedLowMid: number }): Record<ZoneKind, number> {
   return {
     residential: 30 + s.jobs * 3 - s.population,
     commercial: s.population / 10 - s.commercialJobs,
     office: 20 + s.techPower * 15 - s.officeJobs,
+    // 工業（docs/game-design.md 23 章）: 低と中の帯の失業者の数 + 道路網の大きさ × 0.5 − 工場・倉庫の雇う人の数
+    industrial: s.unemployedLowMid + s.roadCells * 0.5 - s.industrialJobs,
   };
 }
 

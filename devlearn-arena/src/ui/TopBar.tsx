@@ -2,11 +2,16 @@ import { Icon, type IconName } from './icons/Icon';
 import './TopBar.css';
 
 /**
- * 上の帯（docs/ui-design.md 3 章）。高さ 48。
- * 都市名・開発資金・XP・都市規模・発展段階と、画面への入口（学ぶ・ミッション・用語・設定。XP を押すと成長画面）。
+ * 上の帯（docs/ui-design.md 3 章・3.1）。高さ 48。
+ * 都市名・日付と速さ・開発資金・支持率・XP・都市規模・発展段階と、画面への入口（学ぶ・ミッション・用語・設定。XP を押すと成長画面）。
+ * 1600 未満の幅では、数字の見出しを記号にし、名前は指した時の小窓（title）で出す。数字は削らない
  */
 export interface TopBarProps {
   cityName: string;
+  /** 都市の日付（「2 年目 14 週」）と速さ。無ければ出さない */
+  clock?: TopBarClock;
+  /** 支持率（0〜100。住む人がいなければ null） */
+  approval?: number | null;
   funds: number;
   xp: number;
   /** エンジニア段階の名前（docs/game-design.md 9 章） */
@@ -22,6 +27,64 @@ export interface TopBarProps {
 
 export type EntryId = 'learn' | 'graph' | 'mission' | 'glossary' | 'settings' | 'growth';
 
+export interface TopBarClock {
+  year: number;
+  week: number;
+  speed: 1 | 2 | 3;
+  /** 利用者が止めた */
+  paused: boolean;
+  /** 都市画面が前に出ていない・窓が隠れているなどで止まっている（利用者が止めたのではない） */
+  held: boolean;
+  /** 0 は止める・再開（Space と同じ）、1〜3 は速さ */
+  onSpeed: (speed: 0 | 1 | 2 | 3) => void;
+}
+
+const SPEEDS: { speed: 1 | 2 | 3; icon: IconName; label: string; key: string }[] = [
+  { speed: 1, icon: 'speed1', label: '1 倍', key: '1' },
+  { speed: 2, icon: 'speed2', label: '2 倍', key: '2' },
+  { speed: 3, icon: 'speed3', label: '3 倍', key: '3' },
+];
+
+/** 日付と速さ（止める・1 倍・2 倍・3 倍の小さなボタン。今の速さが金） */
+function Clock({ clock }: { clock: TopBarClock }) {
+  return (
+    <div className="topbar-stat topbar-clock" data-testid="topbar-clock" title="都市の日付（1 倍で 1 日 2 秒）">
+      <span className="topbar-stat-icon"><Icon name="calendar" size={18} /></span>
+      <span className="topbar-stat-text">
+        <span className="topbar-stat-label">{clock.held ? '日付・止まっている' : '日付'}</span>
+        <span className="topbar-stat-value num" data-testid="topbar-date">
+          {clock.year}<span className="topbar-stat-unit">年目</span> {clock.week}<span className="topbar-stat-unit">週</span>
+        </span>
+      </span>
+      <span className="topbar-speeds" role="group" aria-label="時間の速さ">
+        <button
+          type="button"
+          className={`topbar-speed${clock.paused ? ' is-on' : ''}`}
+          data-testid="topbar-pause"
+          aria-pressed={clock.paused}
+          title={clock.paused ? '再開する（Space）' : '止める（Space）'}
+          onClick={() => clock.onSpeed(0)}
+        >
+          <Icon name="pause" size={14} />
+        </button>
+        {SPEEDS.map((s) => (
+          <button
+            key={s.speed}
+            type="button"
+            className={`topbar-speed${!clock.paused && clock.speed === s.speed ? ' is-on' : ''}`}
+            data-testid={`topbar-speed-${String(s.speed)}`}
+            aria-pressed={!clock.paused && clock.speed === s.speed}
+            title={`${s.label}（${s.key}）`}
+            onClick={() => clock.onSpeed(s.speed)}
+          >
+            <Icon name={s.icon} size={14} />
+          </button>
+        ))}
+      </span>
+    </div>
+  );
+}
+
 const ENTRIES: { id: Exclude<EntryId, 'growth' | 'graph'>; label: string; icon: IconName; key?: string }[] = [
   { id: 'learn', label: '学ぶ', icon: 'learn', key: 'L' },
   { id: 'mission', label: 'ミッション', icon: 'mission' },
@@ -31,9 +94,9 @@ const ENTRIES: { id: Exclude<EntryId, 'growth' | 'graph'>; label: string; icon: 
 
 const format = (n: number): string => n.toLocaleString('ja-JP');
 
-function Stat({ icon, label, value, unit }: { icon: IconName; label: string; value: string; unit?: string }) {
+function Stat({ icon, label, value, unit, testId }: { icon: IconName; label: string; value: string; unit?: string; testId?: string }) {
   return (
-    <div className="topbar-stat">
+    <div className="topbar-stat" title={label} data-testid={testId}>
       <span className="topbar-stat-icon"><Icon name={icon} size={18} /></span>
       <span className="topbar-stat-text">
         <span className="topbar-stat-label">{label}</span>
@@ -55,7 +118,11 @@ export function TopBar(props: TopBarProps) {
         <span className="topbar-city-name">{props.cityName}</span>
       </a>
       <div className="topbar-stats">
+        {props.clock ? <Clock clock={props.clock} /> : null}
         <Stat icon="funds" label="開発資金" value={format(props.funds)} unit="資金" />
+        {props.approval !== undefined ? (
+          <Stat icon="approval" label="支持率" value={props.approval === null ? '—' : String(Math.round(props.approval))} {...(props.approval === null ? {} : { unit: '%' })} testId="topbar-approval" />
+        ) : null}
         <button
           type="button"
           className={`topbar-stat is-entry${props.current === 'growth' ? ' is-current' : ''}`}

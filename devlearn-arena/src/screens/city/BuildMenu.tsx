@@ -24,7 +24,7 @@ const GROUPS: { id: MenuGroup; label: string; icon: IconName }[] = [
 ];
 
 const ROAD_KINDS: BuildRoadKind[] = ['lane', 'street', 'avenue', 'roundabout'];
-const ZONE_KINDS: ZoneKind[] = ['residential', 'commercial', 'office'];
+const ZONE_KINDS: ZoneKind[] = ['residential', 'commercial', 'office', 'industrial'];
 
 const format = (n: number): string => n.toLocaleString('ja-JP');
 

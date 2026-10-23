@@ -156,6 +156,7 @@ function targetHeight(kind: ZoneKind, level: number): number {
     residential: [0.6, 0.8, 1.6, 3, 5],
     commercial: [0.6, 0.65, 1.4, 2.5, 4],
     office: [0.85, 1.1, 1.6, 3, 5],
+    industrial: [0.6, 0.8, 1.2, 1.4, 1.6],
   };
   return table[kind][level - 1] ?? 1;
 }

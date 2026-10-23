@@ -6,7 +6,7 @@ export type IconName =
   | 'learn' | 'mission' | 'glossary' | 'settings' | 'funds' | 'xp' | 'people' | 'stage' | 'emblem'
   | 'road' | 'zone' | 'facility' | 'park' | 'demolish' | 'rotate' | 'pause' | 'curve' | 'straight' | 'alert'
   | 'graph' | 'list' | 'search' | 'close' | 'start' | 'check' | 'hint' | 'terminal' | 'upgrade' | 'down' | 'database'
-  | 'export' | 'import' | 'restart' | 'save';
+  | 'export' | 'import' | 'restart' | 'save' | 'calendar' | 'approval' | 'speed1' | 'speed2' | 'speed3';
 
 const PATHS: Record<IconName, string> = {
   // 開いた本
@@ -77,6 +77,14 @@ const PATHS: Record<IconName, string> = {
   // 保存（角の欠けた記録の板）
   save: 'M5 3.5h11.5L19 6v14.5H5Z M8 3.5v5h7v-5 M8 20.5v-6h8v6',
   database: 'M5 6c0-1.4 3.1-2.5 7-2.5s7 1.1 7 2.5-3.1 2.5-7 2.5S5 7.4 5 6Z M5 6v12c0 1.4 3.1 2.5 7 2.5s7-1.1 7-2.5V6 M5 12c0 1.4 3.1 2.5 7 2.5s7-1.1 7-2.5',
+  // 暦（綴じ目の付いた板と、週の行）
+  calendar: 'M4 6h16v14H4Z M4 10h16 M8.5 3.5v4 M15.5 3.5v4 M7.5 13.5h2 M11 13.5h2 M14.5 13.5h2 M7.5 16.5h2 M11 16.5h2',
+  // 支持（投じる票と、票を入れる箱）
+  approval: 'M4.5 13h15v7.5h-15Z M8.5 13 12 5.5l5 2.3-2.4 5.2 M9 16.5h6',
+  // 速さ（1 倍・2 倍・3 倍。進む向きの山を重ねる）
+  speed1: 'M9 6l6 6-6 6',
+  speed2: 'M6 6l6 6-6 6 M12 6l6 6-6 6',
+  speed3: 'M4 6l5 6-5 6 M10 6l5 6-5 6 M16 6l5 6-5 6',
 };
 
 export function Icon({ name, size = 20 }: { name: IconName; size?: number }) {

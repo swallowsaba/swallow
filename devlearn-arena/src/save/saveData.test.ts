@@ -6,9 +6,34 @@ import { LESSONS } from '@/game/lessons';
 import { emptyProgress } from '@/game/progress';
 import { applyRecords } from '@/game/records';
 import type { PracticeSession } from '@/game/types';
+import { NAME_PARTS } from '@/content/politics';
+import { terrainOf } from '@/sim/runner';
+import { newWorld } from '@/sim/world';
+import { statsOf } from '@/city/growth';
+import { sampleCity } from '@/city/sample';
+
+const SEED_V3 = 20261002;
 import { MIGRATIONS, readSave, type Migration } from './migrations';
 import { exportFileName, fromSaveData, newPlayer, toSaveData, type SaveParts } from './saveData';
 import { DEFAULT_SETTINGS, SAVE_VERSION, XP_LOG_LIMIT, type SaveData } from './schema';
+
+/** 版 4 で足した、都市の模擬と市政の項目 */
+const WORLD_KEYS = ['sim', 'history', 'applications', 'politics', 'budget', 'petitions', 'rewards'] as const;
+
+/** 版 3 の形（版 4 の項目が無い） */
+function v3Of(data: SaveData): Record<string, unknown> {
+  const out: Record<string, unknown> = { ...data, version: 3 };
+  for (const k of WORLD_KEYS) delete out[k];
+  return out;
+}
+
+/** 都市と、模擬と市政の項目を除いた所（移行で作り直される所を除いて比べる） */
+function learningPart(data: Record<string, unknown>): Record<string, unknown> {
+  const out = { ...data };
+  for (const k of WORLD_KEYS) delete out[k];
+  delete out.city;
+  return out;
+}
 
 /** 遊んだ後の状態: 道路・区画・施設のある都市、修了したレッスンとクイズと実戦、ミッション、途中の実戦 */
 function played(): SaveParts {
@@ -36,7 +61,7 @@ function played(): SaveParts {
     engineState: { sim: { type: 'connect', links: [['a', 'b']], up: [], sent: [] }, log: [{ line: 'connect a b' }], run: { stepIndex: 1, hints: { s1: 2 } } },
     savedAt: '2026-10-02T09:20:00+09:00',
   };
-  return { player: newPlayer('p-1', '2026-10-01T09:00:00+09:00'), settings: { ...DEFAULT_SETTINGS, reduceMotion: true }, city, progress, practiceSessions: { 'net.b.01': session } };
+  return { player: newPlayer('p-1', '2026-10-01T09:00:00+09:00'), settings: { ...DEFAULT_SETTINGS, reduceMotion: true }, world: { ...newWorld(terrainOf(7), NAME_PARTS, 7), city }, progress, practiceSessions: { 'net.b.01': session } };
 }
 
 describe('保存データ（docs/data-model.md 7 章）', () => {
@@ -105,7 +130,7 @@ describe('保存データ（docs/data-model.md 7 章）', () => {
     const current = toSaveData(played(), '2026-10-04T12:00:00+09:00', '2026-10-04');
     const player0 = Object.fromEntries(Object.entries(current.player).filter(([k]) => k !== 'settings' && k !== 'introSeen'));
     const { name, ...city0 } = current.city;
-    const v0 = { ...current, version: 0, player: player0, city: { ...city0, town: name } };
+    const v0 = { ...v3Of(current), version: 0, player: player0, city: { ...city0, town: name } };
     const toV1: Migration = (old) => {
       const { town, ...city } = old.city as Record<string, unknown>;
       return { ...old, player: { ...(old.player as object), settings: DEFAULT_SETTINGS }, city: { ...city, name: town } };
@@ -113,7 +138,8 @@ describe('保存データ（docs/data-model.md 7 章）', () => {
     expect(readSave(JSON.stringify(v0))).toMatchObject({ ok: false, reason: 'too-old' });
     const migrated = readSave(JSON.stringify(v0), { migrations: { ...MIGRATIONS, 0: toV1 } });
     expect(migrated).toMatchObject({ ok: true, migratedFrom: 0 });
-    expect(migrated.ok && migrated.data).toEqual({ ...current, player: { ...current.player, settings: DEFAULT_SETTINGS, introSeen: true } });
+    expect(migrated.ok && learningPart(migrated.data)).toEqual(learningPart({ ...current, player: { ...current.player, settings: DEFAULT_SETTINGS, introSeen: true } }));
+    expect(migrated.ok && migrated.data.city.funds).toBe(current.city.funds);
   });
 
   it('版 1 の保存データは今の版に移る（市長に introSeen を足す。もう遊んだ人なので、初回の操作説明は出さない）', () => {
@@ -121,25 +147,25 @@ describe('保存データ（docs/data-model.md 7 章）', () => {
     const settings2: Partial<typeof current.player.settings> = { ...current.player.settings };
     delete settings2.minimap;
     const player1 = { ...Object.fromEntries(Object.entries(current.player).filter(([k]) => k !== 'introSeen')), settings: settings2 };
-    const v1 = { ...current, version: 1, player: player1 };
+    const v1 = { ...v3Of(current), version: 1, player: player1 };
     const migrated = readSave(JSON.stringify(v1));
     expect(migrated).toMatchObject({ ok: true, migratedFrom: 1 });
-    expect(migrated.ok && migrated.data).toEqual({ ...current, player: { ...current.player, introSeen: true } });
+    expect(migrated.ok && learningPart(migrated.data)).toEqual(learningPart({ ...current, player: { ...current.player, introSeen: true } }));
     // 移行は受け取った物を変えない
     expect(v1.player).not.toHaveProperty('introSeen');
   });
 
   it('版 2 の保存データは版 3 に移る（設定に minimap を足す。ミニマップを出す。docs/decisions.md D-18）', () => {
     const current = toSaveData(played(), '2026-10-04T12:00:00+09:00', '2026-10-04');
-    expect(current.version).toBe(3);
+    expect(current.version).toBe(4);
     // 版 2 で、音を鳴らし文字を大きくしていた人の記録
     const settings2: Partial<typeof current.player.settings> = { ...current.player.settings, sound: true, fontScale: 1.3 as const };
     delete settings2.minimap;
-    const v2 = { ...current, version: 2, player: { ...current.player, settings: settings2 } };
+    const v2 = { ...v3Of(current), version: 2, player: { ...current.player, settings: settings2 } };
     const migrated = readSave(JSON.stringify(v2));
     expect(migrated).toMatchObject({ ok: true, migratedFrom: 2 });
     expect(migrated.ok && migrated.data.player.settings).toEqual({ ...current.player.settings, sound: true, fontScale: 1.3, minimap: true });
-    expect(migrated.ok && migrated.data).toEqual({ ...current, player: { ...current.player, settings: { ...current.player.settings, sound: true, fontScale: 1.3, minimap: true } } });
+    expect(migrated.ok && learningPart(migrated.data)).toEqual(learningPart({ ...current, player: { ...current.player, settings: { ...current.player.settings, sound: true, fontScale: 1.3, minimap: true } } }));
     // 移行は受け取った物を変えない
     expect(v2.player.settings).not.toHaveProperty('minimap');
     // 版 2 のまま minimap の無い設定は、今の版としては読めない（移行を通す）
@@ -148,5 +174,52 @@ describe('保存データ（docs/data-model.md 7 章）', () => {
 
   it('書き出すファイルの名前は devlearn-save-<日付>.json', () => {
     expect(exportFileName('2026-10-08')).toBe('devlearn-save-2026-10-08.json');
+  });
+});
+
+describe('版 3 → 版 4 の移行（docs/data-model.md 12 章・docs/acceptance-criteria.md S29）', () => {
+  /** 版 3 の、住宅とオフィスが育った都市の保存データ */
+  function v3Save(): Record<string, unknown> {
+    const parts = played();
+    const city = sampleCity(SEED_V3);
+    const done = { ...city, day: 40, buildings: city.buildings.map((b) => ({ ...b, builtDay: 0 })), facilities: city.facilities.map((f, i) => ({ ...f, state: i === 0 ? ('constructing' as const) : f.state })) };
+    const data = toSaveData({ ...parts, world: { ...parts.world, city: done } }, '2026-10-04T12:00:00+09:00', '2026-10-04');
+    return { ...v3Of(data), city: { ...done, population: statsOf(done).population } };
+  }
+
+  it('都市規模の差が 1% 以内で、学習の記録と開発資金は変わらない。工事中の施設は完成になる', () => {
+    const old = v3Save();
+    const read = readSave(JSON.stringify(old));
+    expect(read).toMatchObject({ ok: true, migratedFrom: 3 });
+    if (!read.ok) return;
+    const before = (old.city as City).population;
+    expect(before).toBeGreaterThan(0);
+    expect(Math.abs(read.data.city.population - before) / before).toBeLessThanOrEqual(0.01);
+    expect(read.data.city.funds).toBe((old.city as City).funds);
+    expect(learningPart(read.data)).toEqual(learningPart({ ...old, version: 4 }));
+    expect(read.data.city.facilities.every((f) => f.state === 'active')).toBe(true);
+  });
+
+  it('市政は「ふつう」・政治資本 10・財政 800・税率 10% で始まり、申請は空、信頼は 0、需給の倍率は 1', () => {
+    const read = readSave(JSON.stringify(v3Save()));
+    if (!read.ok) throw new Error('読めない');
+    const d = read.data;
+    expect(d.politics.difficulty).toBe('normal');
+    expect(d.politics.capital).toBe(10);
+    expect(d.politics.term.no).toBe(1);
+    expect(d.budget).toMatchObject({ treasury: 800, taxRate: 10 });
+    expect(d.applications).toEqual([]);
+    expect(d.sim.trust.every((v) => v === 0)).toBe(true);
+    expect(d.sim.rentFactor).toBe(1);
+    expect(new Set(d.sim.districtNames).size).toBe(144);
+    // 支持は始めの週の目標の値で埋める（住む人のいる地区は 0〜100）
+    expect(d.sim.support.flat().filter((v) => v >= 0).length).toBeGreaterThan(0);
+  });
+
+  it('版 4 の保存・読み込みで、模擬と市政の状態が全て元に戻る', () => {
+    const read = readSave(JSON.stringify(v3Save()));
+    if (!read.ok) throw new Error('読めない');
+    const again = readSave(JSON.stringify(read.data));
+    expect(again.ok && again.data).toEqual(read.data);
   });
 });

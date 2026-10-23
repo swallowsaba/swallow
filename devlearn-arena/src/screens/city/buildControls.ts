@@ -1,11 +1,10 @@
 import { FACILITY_DEFS, footprintOf, landmarkOf } from '@/city/facilities';
-import {
-  checkFacility, checkRoad, checkZone, demolishTargetAt, placeFacility, placeRoad, placeZone, type PlanCheck,
-} from '@/city/place';
+import { checkFacility, checkRoad, checkZone, demolishTargetAt, type PlanCheck } from '@/city/place';
 import type { CityRenderer } from '@/city/render/CityRenderer';
 import type { RoadPlan } from '@/city/roads';
 import { ROAD_RULES, ZONE_RULES } from '@/city/rules';
 import type { City, Point } from '@/city/types';
+import type { Op } from '@/sim/commands';
 import type { CityStore, Tool } from './cityStore';
 
 /**
@@ -33,8 +32,8 @@ export function attachBuildControls(canvas: HTMLCanvasElement, renderer: CityRen
     return { sx: e.clientX - r.left, sy: e.clientY - r.top };
   };
 
-  /** 今の道具と位置で、置けるかを確かめ、予告と理由を出す。置く時はその判定を返す */
-  const evaluate = (): { apply: (() => City) | null } => {
+  /** 今の道具と位置で、置けるかを確かめ、予告と理由を出す。置ける時は、置く命令を返す（docs/architecture.md 9.1） */
+  const evaluate = (): { apply: Op | null } => {
     const { tool, city, terrain, rotation } = store.getState();
     if (!pointer || tool.kind === 'none') {
       renderer.setPreview(null);
@@ -65,7 +64,7 @@ export function attachBuildControls(canvas: HTMLCanvasElement, renderer: CityRen
       }
       const check = checkRoad(city, terrain, plan);
       show(check, drag?.kind === 'line' && tool.shape === 'curve' ? `${name}: 終点を決めて離す` : drag?.kind === 'bend' ? `${name}: 曲がりを決めてクリック` : name, { cells: check.cells, roads: check.roads, ok: check.ok });
-      return { apply: check.ok ? () => placeRoad(store.getState().city, check) : null };
+      return { apply: check.ok ? { kind: 'road', plan } : null };
     }
 
     if (tool.kind === 'zone') {
@@ -73,7 +72,7 @@ export function attachBuildControls(canvas: HTMLCanvasElement, renderer: CityRen
       const b = drag?.kind === 'rect' ? drag.end : cell;
       const check = checkZone(city, terrain, tool.zone, a, b);
       show(check, `${ZONE_RULES[tool.zone].name}の区画${check.paint.length > 0 ? ` ${String(check.paint.length)} マス` : ''}`);
-      return { apply: check.ok ? () => placeZone(store.getState().city, tool.zone, check) : null };
+      return { apply: check.ok ? { kind: 'zone', zone: tool.zone, a, b } : null };
     }
 
     if (tool.kind === 'facility') {
@@ -83,7 +82,7 @@ export function attachBuildControls(canvas: HTMLCanvasElement, renderer: CityRen
       const name = tool.landmark ? (landmarkOf(tool.landmark)?.name ?? FACILITY_DEFS[tool.type].name) : FACILITY_DEFS[tool.type].name;
       const ghost = { type: tool.type, origin, rotation, ...(tool.landmark ? { landmark: tool.landmark } : {}) };
       show(check, `${name}（R で回す）`, { cells: check.cells, ghost, ok: check.ok });
-      return { apply: check.ok ? () => placeFacility(store.getState().city, tool.type, origin, rotation, check, tool.landmark) : null };
+      return { apply: check.ok ? { kind: 'facility', type: tool.type, origin, rotation, ...(tool.landmark ? { landmark: tool.landmark } : {}) } : null };
     }
 
     // 取り壊し
@@ -192,7 +191,7 @@ export function attachBuildControls(canvas: HTMLCanvasElement, renderer: CityRen
     }
     const { apply } = evaluate();
     if (apply) {
-      store.getState().setCity(apply());
+      store.getState().dispatch(apply);
       // 記念碑は 1 つずつ。置いたら道具を外す
       if (tool.kind === 'facility' && tool.landmark) {
         store.getState().notify(`${landmarkOf(tool.landmark)?.name ?? '記念碑'}を置いた。${landmarkOf(tool.landmark)?.about ?? ''}`, performance.now());

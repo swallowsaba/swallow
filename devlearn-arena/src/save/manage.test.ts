@@ -130,7 +130,10 @@ describe('書き出しと読み込み', () => {
     // 仮の版 0: 市長の名前を mayor と呼んでいた
     const { name, ...rest } = current.player;
     const player0 = Object.fromEntries(Object.entries(rest).filter(([k]) => k !== 'introSeen'));
-    const v0 = JSON.stringify({ ...current, version: 0, player: { ...player0, mayor: name } });
+    // 版 0 は版 4 の項目（都市の模擬と市政）を持たない。移行で、今の都市から作り直す
+    const legacy: Record<string, unknown> = { ...current };
+    for (const k of ['sim', 'history', 'applications', 'politics', 'budget', 'petitions', 'rewards']) delete legacy[k];
+    const v0 = JSON.stringify({ ...legacy, version: 0, player: { ...player0, mayor: name } });
     const toV1: Migration = (old) => {
       const { mayor, ...player } = old.player as Record<string, unknown>;
       return { ...old, player: { ...player, name: mayor } };

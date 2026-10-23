@@ -49,7 +49,7 @@ export default tseslint.config(
   // 模型の層（都市・ゲーム・学習・模擬環境）は React・DOM・Canvas に触れず、実時間と乱数を使わない。
   // 描画（src/city/render）は Canvas に描くので、この規則から外し、下で画面の包みだけを禁じる
   {
-    files: ['src/engines/**/*.{ts,tsx}', 'src/game/**/*.{ts,tsx}', 'src/learning/**/*.{ts,tsx}', 'src/city/**/*.{ts,tsx}'],
+    files: ['src/engines/**/*.{ts,tsx}', 'src/game/**/*.{ts,tsx}', 'src/learning/**/*.{ts,tsx}', 'src/city/**/*.{ts,tsx}', 'src/sim/**/*.{ts,tsx}'],
     ignores: ['src/city/render/**'],
     rules: {
       'no-restricted-imports': ['error', { patterns: [{ group: UI_PACKAGES, message: '模型の層は画面の包みを import しない（docs/architecture.md 3 章）。' }] }],
@@ -62,6 +62,20 @@ export default tseslint.config(
         'error',
         { object: 'Math', property: 'random', message: '模型の層では seed から作る乱数を使うこと。' },
       ],
+    },
+  },
+  // 都市の模擬（src/sim）は、都市とゲームの模型を読んでよい。逆向きと、学習の側から模擬を読むことは作らない
+  // （学習は都市の状態に左右されない。docs/architecture.md 3 章・docs/game-design.md 20 章）
+  {
+    files: ['src/learning/**/*.{ts,tsx}', 'src/engines/**/*.{ts,tsx}', 'src/city/**/*.{ts,tsx}', 'src/game/**/*.{ts,tsx}'],
+    ignores: ['src/city/render/**'],
+    rules: {
+      'no-restricted-imports': ['error', {
+        patterns: [
+          { group: UI_PACKAGES, message: '模型の層は画面の包みを import しない（docs/architecture.md 3 章）。' },
+          { group: ['@/sim', '@/sim/*', '../sim/*', '../../sim/*'], message: '都市・ゲーム・学習・模擬環境は、都市の模擬（src/sim）を読まない（docs/architecture.md 3 章）。' },
+        ],
+      }],
     },
   },
   {

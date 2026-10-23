@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { FACILITY_TYPES } from '@/city/facilities';
 import { DOMAIN_IDS } from '@/content/schema';
+import { applicationSchema, budgetSchema, historySchema, petitionsSchema, politicsSchema, rewardsSchema, simStateSchema } from './worldSchema';
 
 /**
  * 保存データの形（docs/data-model.md 7 章の SaveData）。
@@ -8,8 +9,11 @@ import { DOMAIN_IDS } from '@/content/schema';
  * 版が上がったら SAVE_VERSION を上げ、src/save/migrations.ts に前の版からの移行を足す。
  */
 
-/** 版 2: 市長に、初回の操作説明を見終えたか（introSeen）を足した。版 3: 設定にミニマップ（minimap）を足した */
-export const SAVE_VERSION = 3;
+/**
+ * 版 2: 市長に、初回の操作説明を見終えたか（introSeen）を足した。版 3: 設定にミニマップ（minimap）を足した。
+ * 版 4: 都市の模擬と市政（sim・history・applications・politics・budget・petitions・rewards）と、工業区画・施設の譲歩と工事の終わる日を足した（docs/data-model.md 12 章）
+ */
+export const SAVE_VERSION = 4;
 
 const domainId = z.enum(DOMAIN_IDS);
 const at = z.string().min(1);
@@ -62,7 +66,7 @@ export const citySchema = z.object({
   techPower: z.number().min(0),
   revealed: z.array(rect),
   roads: z.array(z.object({ id: z.string(), kind: z.enum(['lane', 'street', 'avenue', 'bridge', 'roundabout']), path: z.array(point) }).strict()),
-  zones: z.array(z.object({ id: z.string(), kind: z.enum(['residential', 'commercial', 'office']), cells: z.array(point) }).strict()),
+  zones: z.array(z.object({ id: z.string(), kind: z.enum(['residential', 'commercial', 'office', 'industrial']), cells: z.array(point) }).strict()),
   buildings: z.array(z.object({ id: z.string(), zoneId: z.string(), cell: point, variant: z.string(), level: z.number(), builtDay: z.number() }).strict()),
   facilities: z.array(z.object({
     id: z.string(),
@@ -74,6 +78,10 @@ export const citySchema = z.object({
     state: z.enum(['constructing', 'active']),
     builtDay: z.number(),
     landmark: z.string().optional(),
+    /** 譲歩で変わった性質（docs/game-design.md 17.1） */
+    mods: z.record(z.string(), z.number()).optional(),
+    /** 工事が終わる日 */
+    completeDay: z.number().optional(),
   }).strict()),
 }).strict();
 
@@ -130,6 +138,13 @@ export const saveDataSchema = z.object({
     ref: z.string(),
     amount: z.number(),
   }).strict()).max(XP_LOG_LIMIT),
+  sim: simStateSchema,
+  history: historySchema,
+  applications: z.array(applicationSchema),
+  politics: politicsSchema,
+  budget: budgetSchema,
+  petitions: petitionsSchema,
+  rewards: rewardsSchema,
 }).strict();
 
 export type SaveData = z.infer<typeof saveDataSchema>;

@@ -213,6 +213,9 @@
 .build-swatch.is-office {
   background: var(--zone-office);
 }
+.build-swatch.is-industrial {
+  background: var(--zone-industrial);
+}
 
 /* 直線と曲線の切り替え */
 .build-shape {

@@ -17,7 +17,7 @@ function current(): SaveData {
   const session = createSession();
   session.progress.getState().learn([{ kind: 'lesson', lessonId: 'linux.b.01', at: AT, quiz: [{ quizId: 'q1', correct: true }], complete: true }]);
   const p = session.progress.getState();
-  return toSaveData({ player: newPlayer('p-1', AT), settings: DEFAULT_SETTINGS, city: session.city.getState().city, progress: p.progress, practiceSessions: p.practiceSessions }, AT, AT.slice(0, 10));
+  return toSaveData({ player: newPlayer('p-1', AT), settings: DEFAULT_SETTINGS, world: session.city.getState().world, progress: p.progress, practiceSessions: p.practiceSessions }, AT, AT.slice(0, 10));
 }
 
 function controls(replace: SaveControls['replace'] = () => Promise.resolve()) {

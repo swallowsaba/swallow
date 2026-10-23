@@ -2,13 +2,13 @@ import { useCallback, useEffect, useLayoutEffect, useMemo, useRef } from 'react'
 import { overlayOf, stageProgress, type OverlayKind } from '@/city/overlay';
 import { useStore } from 'zustand';
 import { useShallow } from 'zustand/react/shallow';
-import { demolish } from '@/city/place';
 import { displayOf, type Display } from '@/city/render/display';
 import type { Settings } from '@/save/schema';
 import { Intro } from './Intro';
 import { CityRenderer } from '@/city/render/CityRenderer';
 import { RANK_NAMES, rankOf } from '@/game/rank';
 import { STAGE_NAMES } from '@/game/stage';
+import { dateOf } from '@/sim/rules';
 import { TopBar, type EntryId } from '@/ui/TopBar';
 import { finishBoot } from '@/ui/boot';
 import { BuildMenu } from './BuildMenu';
@@ -65,6 +65,8 @@ export function CityScreen({ session, active = true, covered = false, current, d
     tool: s.tool, menu: s.menu, hint: s.hint, confirm: s.confirm, notice: s.notice, paused: s.paused,
     openMenu: s.openMenu, setTool: s.setTool, selected: s.selected, overlay: s.overlay, setOverlay: s.setOverlay, select: s.select,
     techPower: s.city.techPower,
+    day: Math.floor(s.city.day), speed: s.speed, held: s.holds.length > 0, togglePause: s.togglePause, setSpeed: s.setSpeed,
+    approval: s.world.city.population > 0 ? s.world.sim.lastWeek.approval : null,
   })));
   // 受け取ったが、まだ置いていない記念碑（建設メニューの公園の引き出しに並ぶ）
   const facilities = useStore(store, (s) => s.city.facilities);
@@ -86,10 +88,22 @@ export function CityScreen({ session, active = true, covered = false, current, d
       const k = e.key.toLowerCase();
       if (k === 'l') onEntryRef.current?.('learn');
       else if (k === 'g') onEntryRef.current?.('graph');
+      else if (k === '1' || k === '2' || k === '3') store.getState().setSpeed(Number(k) as 1 | 2 | 3);
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, []);
+  }, [store]);
+
+  // 都市画面が前に出ていない間と、ブラウザの窓が隠れている間は、都市の時間を止める（docs/game-design.md 13.1）
+  useEffect(() => {
+    store.getState().hold('screen', !active || covered);
+  }, [store, active, covered]);
+  useEffect(() => {
+    const onVisibility = (): void => store.getState().hold('hidden', document.visibilityState === 'hidden');
+    onVisibility();
+    document.addEventListener('visibilitychange', onVisibility);
+    return () => document.removeEventListener('visibilitychange', onVisibility);
+  }, [store]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -182,7 +196,7 @@ export function CityScreen({ session, active = true, covered = false, current, d
 
   const onYes = useCallback(() => {
     const s = store.getState();
-    if (s.confirm) s.setCity(demolish(s.city, s.confirm));
+    if (s.confirm) s.dispatch({ kind: 'demolish', target: s.confirm });
     s.askDemolish(null);
   }, [store]);
   const onNo = useCallback(() => store.getState().askDemolish(null), [store]);
@@ -194,6 +208,14 @@ export function CityScreen({ session, active = true, covered = false, current, d
       <canvas ref={canvasRef} className="city-canvas" aria-label={`${state.name}の都市ビュー`} />
       <TopBar
         cityName={state.name}
+        clock={{
+          ...dateOf(state.day),
+          speed: state.speed,
+          paused: state.paused,
+          held: state.held,
+          onSpeed: (speed) => (speed === 0 ? state.togglePause() : state.setSpeed(speed)),
+        }}
+        approval={state.approval}
         funds={state.funds}
         xp={xp}
         rankName={RANK_NAMES[rankOf(xp)]}

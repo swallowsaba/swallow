@@ -98,7 +98,7 @@ export interface Autosave {
 
 const snapshotOf = ({ session }: Opened, at: string): SaveData => {
   const p = session.progress.getState();
-  return toSaveData({ player: session.player.getState().player, settings: session.settings.getState().settings, city: session.city.getState().city, progress: p.progress, practiceSessions: p.practiceSessions }, at, at.slice(0, 10));
+  return toSaveData({ player: session.player.getState().player, settings: session.settings.getState().settings, world: session.city.getState().world, progress: p.progress, practiceSessions: p.practiceSessions }, at, at.slice(0, 10));
 };
 
 /** 遊んでいる状態の変化を見張り、保存する */

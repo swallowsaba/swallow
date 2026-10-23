@@ -1,4 +1,6 @@
-import { newCity } from '@/city/newCity';
+import { NAME_PARTS } from '@/content/politics';
+import { terrainOf } from '@/sim/runner';
+import { newWorld } from '@/sim/world';
 import { emptyProgress } from '@/game/progress';
 import { readFailureText, readSave, type ReadOptions } from './migrations';
 import { exportFileName, newPlayer, toSaveData } from './saveData';
@@ -57,4 +59,4 @@ export function checkImport(text: string, options?: ReadOptions): ImportCheck {
 
 /** 最初からやり直す時の保存データ: 新しい都市・空の学習の記録・新しい市長。設定は今のまま残す */
 export const freshSave = ({ id, now, settings }: { id: string; now: string; settings: Settings }): SaveData =>
-  toSaveData({ player: newPlayer(id, now), settings, city: newCity(), progress: emptyProgress(), practiceSessions: {} }, now, now.slice(0, 10));
+  toSaveData({ player: newPlayer(id, now), settings, world: newWorld(terrainOf(20261002), NAME_PARTS), progress: emptyProgress(), practiceSessions: {} }, now, now.slice(0, 10));
