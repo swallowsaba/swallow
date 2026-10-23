@@ -1,7 +1,6 @@
 ﻿devlearn-arena/CLAUDE.md を最初に全部読め。規則が全てに優先する。
-次に devlearn-arena/GAMEPLAY-SPEC.txt を読み、書いてあるとおりに仕様書を書き換えろ。
-この段ではコードを書くな。仕様書だけだ。
-docs/progress/gameplay-spec.md があれば読め。どこまで終わったかの記録だ。記録の続きから進めろ。
+次に devlearn-arena/BUILD-G.txt を読み、書いてあるとおりに G1 から順に実装しろ。
+docs/progress/phase-G*.md を読み、終わっていない最初の Phase から進めろ。
 確認を求めず、止まるな。
 仕様書だけでは決められない事が出たら、docs/decisions.md の未決に「問題 → 影響 → 変更案」を書いてコミットし、DECISIONNEEDED とだけ出力して終われ。
-終わったら ALLDONE とだけ出力して終われ。
+G12 まで全部終わったら ALLDONE とだけ出力して終われ。
