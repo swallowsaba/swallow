@@ -545,13 +545,54 @@ describe('端末の実戦は、コマンドの実行の結果で達成する（d
     expect(isFinished(practice, p.run)).toBe(true);
   });
 
-  it('想定の無い手順では、同じ道具で形を見ても案内を出さない（web.i.02 の jq .）', async () => {
+  it('数を出していなければ、同じ道具で形を見ても案内を出さない（web.i.02 の jq .）', async () => {
     const { practice } = await lesson('web.i.02');
     const p = player(practice);
     const r = p.type('curl -s http://shop.example/inventory | jq .');
     expect(r.done).toEqual([]);
     expect(r.error).toBeNull();
     expect(p.type("curl -s http://shop.example/inventory | jq '.items | length'").done.map((s) => s.id)).toEqual(['shape']);
+  });
+
+  it('web.i.02: 一番外側を length で数えると（3）、手順で想定した「合っていない」の解説を出す（VERIFY-FREE.txt【2】）', async () => {
+    const { practice } = await lesson('web.i.02');
+    const p = player(practice);
+    const r = p.type("curl -s http://shop.example/inventory | jq 'length'");
+    expect(r.stdout.trim()).toBe('3');
+    expect(r.error?.id).toBe('web-jq-count-outer');
+  });
+
+  it('linux.b.05: 判定するファイルに書き出したのに中身が違えば、手順で想定した「合っていない」の解説を出す。ほかのファイルに書いた時は出さない（VERIFY-FREE.txt【2】）', async () => {
+    const { practice } = await lesson('linux.b.05');
+    const p = player(practice);
+    expect(p.type('grep ERROR app.log > errors.txt').error).toBeNull();
+    const r = p.type('grep ERROR app.log | uniq -c > report.txt');
+    expect(r.done).toEqual([]);
+    expect(r.error?.id).toBe('linux-count-unsorted');
+    expect(p.type('grep ERROR app.log | sort | uniq -c > ~/report.txt').done.map((s) => s.id)).toEqual(['report']);
+  });
+
+  it('sec.b.04: 公開鍵を登録する前に ssh で入ると、パスワードで入った（鍵で入っていない）解説を出す。うまくいった命令の標準エラーにも、出力に当てる解説を当てる（VERIFY-FREE.txt【2】）', async () => {
+    const { practice } = await lesson('sec.b.04');
+    const p = player(practice);
+    p.type("ssh-keygen -t ed25519 -C learner@pc -N ''");
+    const r = p.type('ssh deploy@web01');
+    expect(r.code).toBe(0);
+    expect(r.stderr).toContain("deploy@web01's password:");
+    expect(r.done).toEqual([]);
+    expect(r.error?.id).toBe('sec-ssh-password');
+    // ssh-copy-id もパスワードを聞くが、鍵を登録する命令なので当てない
+    expect(p.type('ssh-copy-id deploy@web01').error).toBeNull();
+    expect(p.type('ssh deploy@web01').done.map((s) => s.id)).toEqual(['register']);
+  });
+
+  it('docker.i.02: 置き場所の . を書き落とした docker build には、置き場所が無いと分かる解説を出す（VERIFY-FREE.txt【2】）', async () => {
+    const { practice } = await lesson('docker.i.02');
+    const p = player(practice);
+    p.type('cd shop');
+    const r = p.type('docker build -t shop/web:1.2');
+    expect(r.code).not.toBe(0);
+    expect(r.error?.id).toBe('docker-build-context');
   });
 
   it('sudo を付けて打っても、使ったコマンドとして数える', async () => {
@@ -738,6 +779,24 @@ describe('設定の編集（編。docs/content-spec.md 2.4.2）', () => {
     expect(replayAnswers(wrong, ERROR_GUIDES)).toEqual(['実戦 root: 最後のヒントを保存しても達成条件を満たさない']);
     const noEdit: Practice = { ...practice, setup: { ...(practice.setup as object), edit: undefined } };
     expect(replayAnswers(noEdit, ERROR_GUIDES)).toEqual(['実戦: 設定の編集に、編集するファイル（setup.edit）が無い']);
+  });
+
+  it('cicd.b.01: 保存したのに手順を満たさなければ、手順で想定した「合っていない」の解説を出す（npm test を組み立ての前に置いた。VERIFY-FREE.txt【2】）', async () => {
+    const { practice: p } = await lesson('cicd.b.01');
+    const edit = editOf(p);
+    if (!edit) throw new Error('edit');
+    const save = (text: string, run: PracticeRun) => {
+      const out = saveEdit(initialShellOf(p), edit, text, registry, createClock());
+      const stderr = out.results.filter((x) => failedCommand(x, ERROR_GUIDES)).map((x) => x.stderr).join('');
+      return afterCommand(p, run, { line: text, stderr, stdout: out.results.map((x) => x.stdout).join(''), shell: out.state, saved: true }, ERROR_GUIDES);
+    };
+    const head = 'name: release\non:\n  push:\n    branches: [main]\njobs:\n  release:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@v4\n      - run: npm ci\n';
+    const wrong = save(`${head}      - run: npm test\n      - run: npm run build\n`, startRun());
+    expect(wrong.done).toEqual([]);
+    expect(wrong.error?.id).toBe('cicd-test-before-build');
+    const right = save(`${head}      - run: npm run build\n      - run: npm test\n`, wrong.run);
+    expect(right.done.map((s) => s.id)).toEqual(['ci']);
+    expect(right.error).toBeNull();
   });
 });
 

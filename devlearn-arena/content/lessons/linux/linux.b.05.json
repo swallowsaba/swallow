@@ -178,7 +178,8 @@
           "`grep ERROR app.log | sort | uniq -c > report.txt` と打つ。"
         ],
         "expectedErrors": [
-          "enoent"
+          "enoent",
+          "linux-count-unsorted"
         ]
       }
     ]

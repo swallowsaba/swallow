@@ -1,0 +1,35 @@
+{
+  "mission": "incident",
+  "variants": [
+    {
+      "name": ".service まで書く",
+      "steps": {
+        "stop-old": [
+          "systemctl stop apache2.service"
+        ],
+        "disable-old": [
+          "systemctl disable apache2.service"
+        ],
+        "start-new": [
+          "systemctl start nginx.service"
+        ],
+        "enable-new": [
+          "systemctl enable nginx.service"
+        ]
+      }
+    },
+    {
+      "name": "--now で止めて外す・動かして登録する",
+      "steps": {
+        "stop-old": [
+          "systemctl disable --now apache2"
+        ],
+        "disable-old": [],
+        "start-new": [
+          "systemctl enable --now nginx"
+        ],
+        "enable-new": []
+      }
+    }
+  ]
+}

@@ -123,7 +123,7 @@
         "`--image=` を書き忘れた。",
         "`--image` の綴りが違う（`-image` など）。"
       ],
-      "hint": "`kubectl run 名前 --image=イメージ` の形で、名前の後ろに `--image=` を付ける。",
+      "hint": "`kubectl run 名前 --image=イメージ` や `kubectl create deployment 名前 --image=イメージ` の形で、名前の後ろに `--image=` を付ける。",
       "terms": [
         "image",
         "pod"

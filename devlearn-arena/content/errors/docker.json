@@ -171,6 +171,20 @@
       ]
     },
     {
+      "id": "docker-build-context",
+      "match": "\"docker (buildx )?build\" requires exactly 1 argument",
+      "meaning": "docker build に、作る材料の置き場所（ビルドコンテキスト）が書かれていない。docker build は、最後に置き場所を 1 つだけ受け取る。",
+      "causes": [
+        "行の最後の . を書き落とした（. は「今いる場所を置き場所にする」の意味）。",
+        "置き場所を 2 つ書いた・-t の名前の途中に空白を入れた。"
+      ],
+      "hint": "`docker build -t 名前:タグ .` のように、最後に空白と . を付ける。Dockerfile のある場所に cd してから打つ。",
+      "terms": [
+        "dockerfile",
+        "image"
+      ]
+    },
+    {
       "id": "docker-build-copy",
       "match": "failed to calculate checksum|failed to read dockerfile|failed to resolve source metadata",
       "meaning": "作るのに要る物が見つからなかった。写すファイル（not found）・Dockerfile そのもの・土台の{{term:image}}のどれかが無い。",

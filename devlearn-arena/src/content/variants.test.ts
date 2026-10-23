@@ -3,6 +3,7 @@ import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { ERROR_GUIDES } from '@/content/glossary';
 import { loadAllLessons } from '@/content/lessons';
+import { MISSIONS } from '@/content/missions';
 import { playSqlSteps, playSteps } from '@/learning/practice';
 
 /**
@@ -53,4 +54,76 @@ describe('別解（ヒントを開かず、別の正しい書き方で通す）'
     }
     expect(problems).toEqual([]);
   }, 120_000);
+
+  it('わざと間違えると、その手順でエラーの案内が出て達成にならず、正しく打ち直すと全ての手順が達成になる（VERIFY-FREE.txt【2】）', async () => {
+    const problems: string[] = [];
+    for (const l of lessons) {
+      const f = join(root, 'tools/scenarios/variants', `${l.id}.json`);
+      if (!existsSync(f)) continue;
+      const { variants, wrong } = JSON.parse(readFileSync(f, 'utf8')) as { variants: Variant[]; wrong?: Wrong };
+      const first = variants[0];
+      if (!wrong || !first) {
+        problems.push(`${l.id}: 間違える操作（wrong）が無い`);
+        continue;
+      }
+      const sql = l.practice.mode === 'sql' || l.practice.environment === 'sql';
+      const play = (inputs: (step: { id: string }) => never[]) => (sql ? playSqlSteps(l.practice, ERROR_GUIDES, inputs) : Promise.resolve(playSteps(l.practice, ERROR_GUIDES, inputs)));
+      const at = l.practice.steps.findIndex((s) => s.id === wrong.step);
+      if (at < 0) {
+        problems.push(`${l.id}: 間違える手順 ${wrong.step} が無い`);
+        continue;
+      }
+      // 前の手順は別解の 1 つ目で通し、間違える手順では間違った操作だけをする
+      const before = (step: { id: string }) => {
+        const k = l.practice.steps.findIndex((s) => s.id === step.id);
+        // 答える手順で、打つ物だけを間違える時（commands）は、答えの欄に入れる物の代わりに、答えない印を置く（最後の物は答えとして扱われる）
+        return (k < at ? first.steps[step.id] ?? [] : k === at ? (wrong.commands ? [...wrong.input, NO_ANSWER] : wrong.input) : []) as never[];
+      };
+      const a = await play(before);
+      const shown = a.shown.filter((s) => s.from === wrong.step && (!wrong.commands || s.failed));
+      if (shown.length === 0) problems.push(`${l.id}: ${wrong.why}: エラーの案内が出ない`);
+      if (a.run.stepsDone.includes(wrong.step)) problems.push(`${l.id}: ${wrong.why}: 間違えたのに手順 ${wrong.step} が達成になる`);
+      // 間違えた後、模は置き違えた札を戻し・引いた線を外してから、正しく打ち直す（retry があれば、それを打つ）。
+      // 壊した物を「初めに戻す」で戻す物（reset）は、初めから別解の 1 つ目で通す
+      const undo = wrong.input.flatMap((x): unknown[] => (typeof x === 'string' ? [] : x.op === 'put' ? [{ op: 'take', item: x.item, slot: x.slot }] : x.op === 'connect' ? [{ op: 'cut', a: x.a, b: x.b }] : [])).reverse();
+      const again = (step: { id: string }) => (step.id === wrong.step && !wrong.reset ? [...wrong.input, ...undo, ...(wrong.retry ?? first.steps[step.id] ?? [])] : first.steps[step.id] ?? []) as never[];
+      const b = await play(again);
+      for (const id of b.missed) problems.push(`${l.id}: ${wrong.why}: 打ち直しても手順 ${id} を満たさない`);
+      const later = b.shown.filter((s) => s.from !== wrong.step && !(DESIGNED_FAILURES.has(l.id) && s.step === s.from && (l.practice.steps.find((x) => x.id === s.step)?.expectedErrors ?? []).includes(s.guide)));
+      for (const s of later) problems.push(`${l.id}: ${wrong.why}: 打ち直した後の「${s.line}」で案内（${s.guide}）が出る`);
+    }
+    expect(problems).toEqual([]);
+  }, 120_000);
 });
+
+describe('ミッション 6 本の別解（VERIFY-FREE.txt【4】）', () => {
+  it('どのミッションにも別解が 2 通り以上あり、どの別解でも全ての手順が達成になる（出てよいのは、その手順の想定エラーで、本当に失敗した命令の物だけ）', () => {
+    const problems: string[] = [];
+    for (const m of MISSIONS) {
+      const f = join(root, 'tools/scenarios/variants', `mission-${m.id}.json`);
+      const variants = existsSync(f) ? (JSON.parse(readFileSync(f, 'utf8')) as { variants: Variant[] }).variants : [];
+      if (variants.length < 2) problems.push(`${m.id}: 別解が 2 通り無い`);
+      for (const [k, v] of variants.entries()) {
+        const played = playSteps(m.practice, ERROR_GUIDES, (step) => (v.steps[step.id] ?? []) as never[]);
+        const expected = (step: string): readonly string[] => m.practice.steps.find((s) => s.id === step)?.expectedErrors ?? [];
+        const shown = played.shown.filter((s) => !(s.failed && s.step === s.from && expected(s.step).includes(s.guide))).map((s) => `「${s.line}」で案内（${s.guide}）が出る`);
+        for (const p of [...played.missed.map((id) => `手順 ${id} を満たさない`), ...shown]) problems.push(`${m.id} #${String(k + 1)} ${v.name}: ${p}`);
+      }
+    }
+    expect(problems).toEqual([]);
+  });
+});
+
+const NO_ANSWER = '（答えない）';
+
+interface Wrong {
+  step: string;
+  why: string;
+  /** 間違えた後に打ち直す物（無ければ別解の 1 つ目のその手順） */
+  retry?: unknown[];
+  /** 間違えた操作が壊した物を「初めに戻す」で戻してから、初めから打ち直す */
+  reset?: boolean;
+  /** 答える手順で、打つ物（コマンド・SQL）だけを間違える（答えの欄には入れない） */
+  commands?: boolean;
+  input: (string | { op: string; item?: string; slot?: string; a?: string; b?: string })[];
+}

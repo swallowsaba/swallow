@@ -14,6 +14,17 @@
       "terms": ["ci", "continuous-delivery"]
     },
     {
+      "id": "cicd-test-before-build",
+      "match": "答えが合っていない",
+      "meaning": "保存した流れは、まだ目的の並びになっていない。手順の目的は、組み立て（`npm run build`）の直後に検査（`npm test`）を動かし、配る手順は外した流れ。",
+      "causes": [
+        "`npm test` を `npm run build` より前に置いた。組み立てた物を検査するには、組み立ての後に置く。",
+        "`npm ci`（部品を入れる）や `actions/checkout`（取ってくる）を消した・順を入れ替えた。"
+      ],
+      "hint": "上から 取ってくる → 部品を入れる → 組み立てる → 検査する の順に並べ、保存し直そう。",
+      "terms": ["ci"]
+    },
+    {
       "id": "cicd-missing-script",
       "match": "Missing script: \"[^\"]+\"",
       "output": true,

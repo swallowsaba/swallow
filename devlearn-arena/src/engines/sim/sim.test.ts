@@ -365,6 +365,26 @@ describe('手順ごとの出来上がり（stepSettled・wrongAnswers）', () =>
     expect(stepSettled(run(sim('sim-order', setup), [arrange(['ok'], ['ci'], ['go'])]).state, expr)).toBe(true);
   });
 
+  it('並べるは、後の手順で使う札がまだ並んでいなくても、この手順の式の札が全て並べば出来上がり（順を誤れば、その場で知らせる。VERIFY-FREE.txt【2】）', () => {
+    // 1 つ目の手順は握手の初めの 3 段だけを並べる。後の 2 段（key・talk）は、まだ置き場にある
+    const setup = { items: [{ id: 'hello', label: '挨拶' }, { id: 'cert', label: '証明書', needs: ['hello'] }, { id: 'verify', label: '確かめる', needs: ['cert'] }, { id: 'key', label: '鍵', needs: ['verify'] }, { id: 'talk', label: '話す', needs: ['key'] }] };
+    const wrong = run(sim('sim-order', setup), [arrange(['cert'], ['hello'], ['verify'])]).state;
+    expect(stepSettled(wrong, 'seq hello<cert<verify')).toBe(true);
+    expect(holds(wrong, 'seq hello<cert<verify')).toBe(false);
+    // 式に placed（全て並べる）があれば、全ての札が並ぶまで出来上がりと見ない
+    expect(stepSettled(wrong, 'seq hello<cert<verify && placed')).toBe(false);
+  });
+
+  it('並べるの deps は、並んだ札が先に要る札も全て並ぶまで出来上がりと見ない（下の段から置く途中で知らせない。要る札が並べば、順の誤りを知らせる）', () => {
+    const setup = { items: [{ id: 'code', label: '書く' }, { id: 'test', label: '検査', needs: ['code'], extra: true }, { id: 'shared', label: '一緒の検査', needs: ['code'] }, { id: 'deploy', label: '配る', needs: ['code', 'test|shared'] }] };
+    const expr = 'deps && has deploy';
+    expect(stepSettled(run(sim('sim-order', setup), [arrange(['deploy'])]).state, expr)).toBe(false);
+    expect(stepSettled(run(sim('sim-order', setup), [arrange(['test'], ['deploy'])]).state, expr)).toBe(false);
+    const wrong = run(sim('sim-order', setup), [arrange(['test'], ['code'], ['deploy'])]).state;
+    expect(stepSettled(wrong, expr)).toBe(true);
+    expect(holds(wrong, expr)).toBe(false);
+  });
+
   it('settledAfter: 札を置き場へ戻した時と、条件を 1 つ満たして崩さなかった置き方では、出来上がりと見ない（並べ直しの途中。VERIFY-FREE.txt【1】）', () => {
     // 初めから弱い札（w）が入っている。強い札（s・t）を先に入れてから、弱い札を戻す
     const setup = { slots: [{ id: 'rules', label: '決まり' }], items: [{ id: 's', label: 'S' }, { id: 't', label: 'T' }, { id: 'w', label: 'W', extra: true }], initial: { w: 'rules' } };

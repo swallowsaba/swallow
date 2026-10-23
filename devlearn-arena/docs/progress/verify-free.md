@@ -10,7 +10,7 @@
 | 段 | 状態 |
 |---|---|
 | 【1】ヒントを開かず、別の書き方で通す（`tools/scenarios/verify-free.mjs`） | 終わり。1 回目は 131 本中 58 本が不合格。原因ごとに直し、2 回目は 131 本全て合格（別解 268 通り全て） |
-| 【2】間違えた時の道（`tools/scenarios/verify-wrong.mjs`） | 1 回目を流した（131 本中 7 本が不合格。案内の文の 3 つも直す）。原因ごとに直す |
+| 【2】間違えた時の道（`tools/scenarios/verify-wrong.mjs`） | 1 回目を流した（131 本中 7 本が不合格。案内の文の 3 つも直す）。原因ごとに直した（下の「直したこと」）。公開した所で 2 回目を流す |
 | 【3】1280x720 で確かめる | まだ |
 | 【4】ミッション 6 本を通しで遊ぶ（`tools/scenarios/verify-mission.mjs`） | まだ |
 | 【5】「想定した失敗」の 8 本を、人の目で見直す | まだ |
@@ -444,6 +444,24 @@ VERIFY_URL=https://swallowsaba.github.io/swallow/devlearn-arena/ を付けると
 
 ほかの 128 本の文は、間違いの理由（何と言われたか）・原因候補・次に確かめることが、打った物と見比べて分かる形だった。
 理解の知らせは、選んだ物への一言か「印の付いた所が違う」と、解説のその箇所の文。クイズは選んだ物への一言と「選び直して、もう一度答えよう」。
+
+### 直したこと（【2】1 回目の後）
+
+先に、全 131 本の間違える操作を画面と同じ関数で通す失敗するテスト（`src/content/variants.test.ts` の「わざと間違えると…」）を書き、原因ごとに、その振る舞いのテストを書いてから直した。
+
+- W1 並べるの出来上がりを、手順の式に出てくる札と、並んだ札が先に要る札（`needs`）が全て並んだ時にした（`src/engines/sim/sim.ts` の `stepSettled`。
+  後の手順で使う札は置き場に残っていてよい。式に `placed` があれば全ての札。テスト: `sim.test.ts`）。`docs/content-spec.md` 2.4.1 に書いた。
+  sec.b.06 は「挨拶 → 証明書 → 確かめる」の順を誤ると `sec-handshake-order`、devops.b.01 は `devops-handoff-left` が出る
+- W2 うまくいった命令の結果が違う時の「合っていない」の案内（`docs/content-spec.md` 2.4）を、`ran` の手順のほかに、
+  `fs` の手順で判定するファイルへ書き出した（`>`・`>>`・`tee`）時と、設定の編集（編）で保存した時にも出す（手順の想定エラーに「答えが合っていない」の解説がある時だけ。`src/learning/practice.ts` の `afterCommand`）。
+  解説を 3 つ足した: `linux-count-unsorted`（linux.b.05。sort で並べずに uniq -c）・`web-jq-count-outer`（web.i.02。一番外側を length で数えた）・`cicd-test-before-build`（cicd.b.01。npm test を組み立ての前に置いた）
+- W3 出力に当てる解説（`output: true`）を、うまくいった命令が標準エラーに出した文にも当てる。`sec-ssh-password` を `output: true`・`outputOf: ^\s*ssh\s` にした
+  （パスワードを聞かれて入れた `ssh` で「鍵で入っていない」と出る。鍵を登録する `ssh-copy-id` には当てない）。`docs/content-spec.md` 2.5 に書いた
+- W4 読み直し（`systemctl reload`・`nginx -s reload`）に失敗しても、本物と同じく前の設定のまま動き続ける（`src/engines/kernel/services.ts` の `reloadService`。
+  記録に新しい設定の誤りと Reload failed を残す。テスト: `webConfig.test.ts`）
+- 文: `service-failed` を、動かした時（止まる）と読み直した時（前の設定のまま動く）の両方に合う文にし、nginx -t で行を確かめることを足した。
+  `k8s-no-image` の次に確かめることに `kubectl create deployment 名前 --image=…` を足した。`docker-build-context`（docker build の最後の `.` の書き落とし）を足した
+- 下見で、全 131 本の間違える操作で案内が出て達成にならず、打ち直すと全ての手順が達成になることを確かめた
 
 ### 表（1 回目）
 

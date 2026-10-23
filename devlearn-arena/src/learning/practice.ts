@@ -431,6 +431,8 @@ export function afterCommand(
     db?: SqlDb;
     /** 答える・全て並べるなど、出来上がりを確かめる操作だった（満たさなければ「合っていない」と知らせる） */
     settled?: boolean;
+    /** 設定の編集（編）で保存した（満たさなければ、手順で想定した「合っていない」の解説を出す） */
+    saved?: boolean;
   },
   guides: readonly ErrorGuide[],
 ): CommandOutcome {
@@ -446,9 +448,11 @@ export function afterCommand(
   if (failure !== null) {
     error = findGuide(failure, currentStep(practice, next), guides);
     next = { ...next, errors: [...next.errors, error.id], errorOpen: true };
-  } else if (a.stdout !== undefined && a.stdout.trim() !== '') {
+  } else if (`${a.stdout ?? ''}${a.code === 0 ? a.stderr : ''}`.trim() !== '') {
+    // 出力に当てる解説は、うまくいった命令が標準エラーに出した文にも当てる（パスワードを聞かれて入れた ssh の「password:」など）
+    const said = a.code === 0 ? `${a.stdout ?? ''}\n${a.stderr}` : a.stdout ?? '';
     const step = currentStep(practice, next);
-    const inOutput = (step?.expectedErrors ?? []).map((id) => guides.find((g) => g.id === id)).find((g) => g?.output === true && (g.outputOf === undefined || new RegExp(g.outputOf).test(line)) && guideMatches(g, a.stdout ?? ''));
+    const inOutput = (step?.expectedErrors ?? []).map((id) => guides.find((g) => g.id === id)).find((g) => g?.output === true && (g.outputOf === undefined || new RegExp(g.outputOf).test(line)) && guideMatches(g, said));
     if (inOutput) {
       error = inOutput;
       next = { ...next, errors: [...next.errors, inOutput.id], errorOpen: true };
@@ -470,13 +474,22 @@ export function afterCommand(
     // 答えたのに満たさない: 調べる材料として「合っていない」を出す（ゲームオーバーにしない）
     error = notYet ?? ANSWER_GUIDE;
     next = { ...next, errors: [...next.errors, error.id], errorOpen: true };
-  } else if (error === null && notYet && step?.check.kind === 'ran' && missed(step.check, a.parts ?? [], guides)) {
-    // 決めた道具を使って結果を出したのに、目的の値でない: 手順で想定した「合っていない」の解説だけを出す
-    // （形を見るために同じ道具を打つのは調べる途中なので、想定の無い手順では何も出さない）
+  } else if (error === null && notYet && step && (
+    (step.check.kind === 'ran' && missed(step.check, a.parts ?? [], guides))
+    || (step.check.kind === 'fs' && a.shell !== undefined && wroteTo(line, a.shell.cwd, resolve('/', step.check.path)))
+    || a.saved === true
+  )) {
+    // 決めた道具を使って結果を出したのに目的の値でない・判定するファイルに書き出したのに中身が違う・設定を保存したのに満たさない:
+    // 手順で想定した「合っていない」の解説だけを出す（形を見るために同じ道具を打つのは調べる途中なので、想定の無い手順では何も出さない）
     error = notYet;
     next = { ...next, errors: [...next.errors, notYet.id], errorOpen: true };
   }
   return { run: next, done, error, danger: danger ? { id: danger.id, why: danger.why } : null };
+}
+
+/** 打った行が、そのファイルへ書き出した（> ・ >> ・ tee の先がそのファイル） */
+function wroteTo(line: string, cwd: string, path: string): boolean {
+  return [...line.matchAll(/(?:>>?|\btee(?:\s+-a)?)\s*([^\s;|&<>]+)/g)].some((m) => resolve(cwd, (m[1] ?? '').replace(/^["']|["']$/g, '')) === path);
 }
 
 /** 決めた道具（uses）を全て使い、目的を果たして結果を出した区切りがある（その結果が目的の値でなかった時に使う） */
@@ -715,7 +728,7 @@ export function playSteps(practice: Practice, guides: readonly ErrorGuide[], inp
         shell = out.state;
         const stderr = out.results.filter((x) => failedCommand(x, guides)).map((x) => x.stderr).join('');
         const stdout = out.results.map((x) => x.stdout).join('');
-        took(step, edit.path, afterCommand(practice, run, { line: editedText(shell, edit), stderr, stdout, shell }, guides), stderr !== '');
+        took(step, edit.path, afterCommand(practice, run, { line: editedText(shell, edit), stderr, stdout, shell, saved: true }, guides), stderr !== '');
       }
     }
   } else if (practice.mode === 'terminal') {

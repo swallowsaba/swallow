@@ -35,12 +35,12 @@
     {
       "id": "service-failed",
       "match": "failed",
-      "meaning": "{{term:service}}を動かそうとしたが、すぐに止まってしまった（状態が failed）。",
+      "meaning": "{{term:service}}を動かす（読み直す）のに失敗した。動かした時は、すぐに止まって状態が failed になる。設定を読み直した（reload）時は、新しい設定を読めず、前の設定のまま動き続けている。",
       "causes": [
-        "サービスの設定に誤りがあり、起動の途中で止まった。",
+        "サービスの設定に誤りがあり、起動・読み直しの途中で止まった（; の書き落とし・綴りの誤りなど）。",
         "使おうとした{{term:port}}を、ほかのサービスが既に使っている。"
       ],
-      "hint": "{{term:journalctl}} でそのサービスの{{term:log}}を見て、止まる直前の行を探す。",
+      "hint": "{{term:journalctl}} でそのサービスの{{term:log}}を見て、止まる直前（読み直しなら Reload failed の直前）の行を探す。nginx なら nginx -t で設定のどの行が違うかが出る。直したら、もう一度動かす・読み直す。",
       "terms": [
         "service",
         "port",
@@ -149,6 +149,20 @@
         "探す場所を、1 つのファイルや /var/log の中の一部のディレクトリだけにした。"
       ],
       "hint": "grep -r で /var/log の全体を探し、その結果（エラーの行は混ぜない）を wc -l につなぐと、当てはまる行だけを数えられる。"
+    },
+    {
+      "id": "linux-count-unsorted",
+      "match": "答えが合っていない",
+      "meaning": "report.txt に書き出したが、種類ごとの数になっていない。同じ種類が 2 行に分かれているか、数が足りない。",
+      "causes": [
+        "{{term:sort}} で並べずに {{term:uniq}} -c で数えた。uniq は、隣り合う同じ行だけをまとめる。離れた所にある同じ行は、別に数える。",
+        "grep で拾う語が違う（ERROR 以外の行が混ざった・足りない）。"
+      ],
+      "hint": "cat report.txt で中身を見よう。同じ種類が 2 行あれば、grep と uniq -c の間に sort を入れて、もう一度 > report.txt で書き出す。",
+      "terms": [
+        "sort",
+        "uniq"
+      ]
     },
     {
       "id": "linux-wrong-place",

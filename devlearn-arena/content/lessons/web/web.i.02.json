@@ -180,7 +180,8 @@
         "expectedErrors": [
           "web-jq-object",
           "web-jq-compile",
-          "web-jq-parse"
+          "web-jq-parse",
+          "web-jq-count-outer"
         ]
       },
       {

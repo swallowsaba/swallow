@@ -1,0 +1,55 @@
+{
+  "mission": "git-history",
+  "variants": [
+    {
+      "name": "add と commit を 1 つに・checkout -b・printf",
+      "steps": {
+        "record": [
+          "git commit -am \"平日は 8 時に開館\""
+        ],
+        "branch": [
+          "git checkout -b poster",
+          "printf '秋祭りは 10 月 20 日\\n' > poster.txt",
+          "git add -A",
+          "git commit -m \"秋祭りの掲示\""
+        ],
+        "merge": [
+          "git checkout main",
+          "git merge poster"
+        ],
+        "conflict": [
+          "git merge holiday",
+          "printf '開館は 8 時（平日）・10 時（休日）\\n' > notice.txt",
+          "git add .",
+          "git commit --no-edit"
+        ]
+      }
+    },
+    {
+      "name": "branch で作ってから移る・ヒアドキュメントで直す",
+      "steps": {
+        "record": [
+          "git add .",
+          "git commit -m '平日は 8 時に開館'"
+        ],
+        "branch": [
+          "git branch poster",
+          "git switch poster",
+          "echo '秋祭りは 10 月 20 日' > poster.txt",
+          "git add poster.txt",
+          "git commit -m '秋祭りの掲示'"
+        ],
+        "merge": [
+          "git switch main",
+          "git merge --no-edit poster"
+        ],
+        "conflict": [
+          "git merge holiday",
+          "cat > notice.txt <<'EOF'\n開館は 8 時（平日）・10 時（休日）\nEOF",
+          "git add notice.txt",
+          "git commit -m '開館の時刻をまとめる'"
+        ]
+      }
+    }
+  ]
+}

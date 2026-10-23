@@ -1,0 +1,29 @@
+{
+  "mission": "container-run",
+  "variants": [
+    {
+      "name": "長い名前の旗と = で書く・--mount で付ける",
+      "steps": {
+        "publish": [
+          "docker run --detach --name=board --publish 8080:80 city-board:1.0"
+        ],
+        "volume": [
+          "docker rm --force board",
+          "docker run -d --name board -p 8080:80 --mount type=bind,source=/home/learner/board,target=/usr/share/nginx/html city-board:1.0"
+        ]
+      }
+    },
+    {
+      "name": "container の名前の命令・止めてから消す・~ で書く",
+      "steps": {
+        "publish": [
+          "docker container run -d -p 8080:80 --name board city-board:1.0"
+        ],
+        "volume": [
+          "docker stop board && docker rm board",
+          "docker container run -d --name board -p 8080:80 -v ~/board:/usr/share/nginx/html city-board:1.0"
+        ]
+      }
+    }
+  ]
+}

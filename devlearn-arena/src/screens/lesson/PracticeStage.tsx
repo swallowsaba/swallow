@@ -506,7 +506,7 @@ function EditorPractice({ practice: p, edit, sessionId, saved, onSave, onFinish,
     // エラーとして扱うのは、目的を果たせなかった行の標準エラーだけ（警告や、飛ばしただけの行は除く）
     const stderr = out.results.filter((x) => failedCommand(x, ERROR_GUIDES)).map((x) => x.stderr).join('');
     const stdout = out.results.map((x) => x.stdout).join('');
-    const outcome = afterCommand(p, r.runRef.current, { line: text, stderr, stdout, shell: out.state }, ERROR_GUIDES);
+    const outcome = afterCommand(p, r.runRef.current, { line: text, stderr, stdout, shell: out.state, saved: true }, ERROR_GUIDES);
     const src = outcome.error ? errorSource(out.results, outcome.error) : undefined;
     save(r.took(outcome, src?.said ?? stderr, src?.line ?? edit.path), text, out.results);
   };

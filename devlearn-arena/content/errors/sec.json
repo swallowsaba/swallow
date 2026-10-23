@@ -249,7 +249,9 @@
       "terms": [
         "public-key",
         "secret-key"
-      ]
+      ],
+      "output": true,
+      "outputOf": "^\\s*ssh\\s"
     },
     {
       "id": "sec-ssh-unprotected",

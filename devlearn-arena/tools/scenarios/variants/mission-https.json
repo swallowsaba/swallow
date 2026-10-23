@@ -1,0 +1,36 @@
+{
+  "mission": "https",
+  "variants": [
+    {
+      "name": "場所を移ってから写す・| で区切る置き換え・nginx -s reload",
+      "steps": {
+        "chain": [
+          "cd /etc/nginx/certs",
+          "cat city.crt inter.crt > fullchain.crt"
+        ],
+        "config": [
+          "sed -i 's|certs/city.crt|certs/fullchain.crt|' /etc/nginx/conf.d/city.conf"
+        ],
+        "reload": [
+          "nginx -t",
+          "nginx -s reload"
+        ]
+      }
+    },
+    {
+      "name": "1 枚ずつ足す・確かめてから読み直す",
+      "steps": {
+        "chain": [
+          "cat /etc/nginx/certs/city.crt > /etc/nginx/certs/fullchain.crt",
+          "cat /etc/nginx/certs/inter.crt >> /etc/nginx/certs/fullchain.crt"
+        ],
+        "config": [
+          "sed -i -e 's/city\\.crt/fullchain.crt/' /etc/nginx/conf.d/city.conf"
+        ],
+        "reload": [
+          "nginx -t && systemctl reload nginx"
+        ]
+      }
+    }
+  ]
+}

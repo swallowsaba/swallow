@@ -1,0 +1,34 @@
+{
+  "mission": "k8s-app",
+  "variants": [
+    {
+      "name": "短い名前・= を書かない旗・rollout status で待つ",
+      "steps": {
+        "deploy": [
+          "kubectl create deploy web --image nginx:1.27 --replicas 3"
+        ],
+        "ready": [
+          "kubectl rollout status deployment/web"
+        ],
+        "service": [
+          "kubectl expose deploy/web --port 80"
+        ]
+      }
+    },
+    {
+      "name": "作ってから数を変える・Pod を見て待つ",
+      "steps": {
+        "deploy": [
+          "kubectl create deployment web --image=nginx:1.27",
+          "kubectl scale deployment web --replicas=3"
+        ],
+        "ready": [
+          "kubectl get pods -w"
+        ],
+        "service": [
+          "kubectl expose deployment/web --port=80 --target-port=80"
+        ]
+      }
+    }
+  ]
+}

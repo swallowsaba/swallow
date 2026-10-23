@@ -416,8 +416,14 @@ function placedIn(expr: string): string[] {
  * ほかの型は isSettled と同じ
  */
 export function stepSettled(s: SimState, expr: string | null | undefined): boolean {
-  // 並べるは、式に出てくる札（否定の条件を除く）が全て並ぶまで出来上がりと見ない（下の段から置く途中で知らせない）
-  if (s.type === 'order' && expr) return isSettled(s) && namedInOrder(expr).every((i) => stageOf(s, i) >= 0);
+  // 並べるは、式に出てくる札（否定の条件を除く）と、並んだ札が先に要る札が、全て並ぶまで出来上がりと見ない（下の段から置く途中で知らせない）。
+  // 後の手順で使う札が置き場に残っていてもよい（1 つ目の手順は初めの 3 段だけ、など）
+  if (s.type === 'order' && expr) {
+    const placed = s.setup.items.filter((i) => stageOf(s, i.id) >= 0);
+    const needsThere = placed.every((i) => (i.needs ?? []).every((n) => needChoices(n).some((c) => stageOf(s, c) >= 0)));
+    const all = expr.split('&&').some((c) => c.trim() === 'placed');
+    return needsThere && (!all || isSettled(s)) && namedInOrder(expr).every((i) => stageOf(s, i) >= 0);
+  }
   if (isSettled(s)) return true;
   if (!expr) return false;
   if (s.type === 'read') {

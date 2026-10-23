@@ -1,0 +1,37 @@
+{
+  "mission": "web-server",
+  "variants": [
+    {
+      "name": ".service まで書く・行を選んで直す・reload",
+      "steps": {
+        "start": [
+          "systemctl start nginx.service"
+        ],
+        "port": [
+          "sed -i 's/listen 8080;/listen 80;/' /etc/nginx/conf.d/city.conf"
+        ],
+        "reload": [
+          "systemctl reload nginx"
+        ],
+        "enable": [
+          "systemctl enable nginx.service"
+        ]
+      }
+    },
+    {
+      "name": "--now で動かして登録する・確かめてから動かし直す",
+      "steps": {
+        "start": [
+          "systemctl enable --now nginx"
+        ],
+        "port": [
+          "sed -i -e 's/8080/80/g' /etc/nginx/conf.d/city.conf"
+        ],
+        "reload": [
+          "nginx -t && systemctl restart nginx"
+        ],
+        "enable": []
+      }
+    }
+  ]
+}

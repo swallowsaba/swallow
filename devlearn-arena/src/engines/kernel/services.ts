@@ -193,6 +193,26 @@ export function restartService(table: ServiceTable, raw: string, load?: ConfigLo
   return stopped.ok ? startService(stopped.table, raw, load, read) : stopped;
 }
 
+/**
+ * 設定を読み直す（systemctl reload・nginx -s reload）。読み直しに失敗しても、本物と同じく、前の設定のまま動き続ける
+ * （新しい設定の誤りを記録に残し、Reload failed とする。止まるのは restart の時）
+ */
+export function reloadService(table: ServiceTable, raw: string, load?: ConfigLoader, read?: TextReader): ServiceResult {
+  const r = restartService(table, raw, load, read);
+  const s = find(table, raw);
+  if (r.ok || r.error.kind !== 'failed' || isError(s)) return r;
+  // 試した起動の記録のうち、誤りの行（systemd 以外の行）だけを、読み直しの記録として残す
+  const tried = (r.table.services.get(s.name)?.log ?? []).slice(s.log.length).filter((l) => !/ systemd\[1\]: /.test(l)).map((l) => l.replace(/^\S+ \S+ \S+ \S+ /, ''));
+  const why: LogLine[] = tried.map((l) => ({ from: l.slice(0, l.indexOf(': ')), text: l.slice(l.indexOf(': ') + 2) }));
+  const t = update(table, s, [
+    `Reloading ${s.name}.service - ${s.description}...`,
+    ...why,
+    `${s.name}.service: Control process exited, code=exited, status=1/FAILURE`,
+    `Reload failed for ${s.name}.service - ${s.description}.`,
+  ]);
+  return { ok: false, table: t, error: r.error };
+}
+
 export function setEnabled(table: ServiceTable, raw: string, enabled: boolean): ServiceResult {
   const s = find(table, raw);
   if (isError(s)) return { ok: false, table, error: s };

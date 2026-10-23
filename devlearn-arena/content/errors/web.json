@@ -263,6 +263,21 @@
       ]
     },
     {
+      "id": "web-jq-count-outer",
+      "match": "答えが合っていない",
+      "meaning": "jq で数えたが、出た数は商品の数ではない。数えたのは、別の物の中身の数。",
+      "causes": [
+        "一番外側の { } をそのまま length で数えた。{ } の length は、中の名前（store・updated・items）の数になる。",
+        "items の 1 つの商品の中（名前の数）や、別の名前の物を数えた。"
+      ],
+      "hint": "jq . で形を見て、商品が並ぶ所（.items）へ入ってから、| length で数えよう。",
+      "terms": [
+        "json-object",
+        "json-array",
+        "jq"
+      ]
+    },
+    {
       "id": "web-502",
       "match": "502 Bad Gateway",
       "output": true,

@@ -1,6 +1,6 @@
 import { changedState, type CommandResult, type CommandSpec, type ShellState } from '../registry';
 import {
-  restartService, serviceOf, setEnabled, startService, stopService, unitName, type ConfigLoader, type ServiceResult, type TextReader, type ServiceTable,
+  reloadService, restartService, serviceOf, setEnabled, startService, stopService, unitName, type ConfigLoader, type ServiceResult, type TextReader, type ServiceTable,
 } from '../services';
 import { exists, isDir, readFile, writeFile } from '../vfs';
 import { withZones } from '../dnsZones';
@@ -148,7 +148,7 @@ export const systemctlCommands: CommandSpec[] = [
           // 設定を読み直す。動いていなければ読み直せない（本物と同じ）
           const idle = units.find((u) => serviceOf(shell.services, u)?.active !== 'active');
           if (idle !== undefined && serviceOf(shell.services, idle)) return { stderr: `${unitOf(idle)} is not active, cannot reload.\n`, code: 1 };
-          return run(shell, 'reload', units, (t, u) => restartService(t, u, loaderOf(shell), readerOf(shell)));
+          return run(shell, 'reload', units, (t, u) => reloadService(t, u, loaderOf(shell), readerOf(shell)));
         }
         case 'enable':
         case 'disable': {

@@ -373,7 +373,8 @@
         "expectedErrors": [
           "cicd-order-wrong",
           "cicd-missing-script",
-          "cicd-workflow-invalid"
+          "cicd-workflow-invalid",
+          "cicd-test-before-build"
         ]
       },
       {

@@ -97,6 +97,25 @@ describe('設定ファイルを持つサービス（systemctl と curl）', () =
     expect(run('journalctl -u nginx').out).toContain('directive "listen" is not terminated by ";" in /etc/nginx/conf.d/city.conf:2');
   });
 
+  it('読み直し（reload）は、新しい設定に誤りがあれば失敗するが、前の設定のまま動き続ける。直して読み直せば効く（VERIFY-FREE.txt【2】）', () => {
+    const { run, shell } = server('server {\n  listen 8080;\n}\n');
+    run('systemctl start nginx');
+    run("sed -i 's/8080;/80/' /etc/nginx/conf.d/city.conf");
+    expect(run('systemctl reload nginx').code).toBe(1);
+    expect(serviceOf(shell().services, 'nginx')?.active).toBe('active');
+    expect(run('curl -s http://localhost:8080/').out).toContain('<h1>city</h1>');
+    const journal = run('journalctl -u nginx').out;
+    expect(journal).toContain('directive "listen" is not terminated by ";" in /etc/nginx/conf.d/city.conf:2');
+    expect(journal).toContain('Reload failed for nginx.service');
+    expect(run('systemctl status nginx').out).toContain('Active: active');
+    // nginx -s reload も同じ
+    expect(run('nginx -s reload').code).toBe(1);
+    expect(serviceOf(shell().services, 'nginx')?.active).toBe('active');
+    run("sed -i 's/80$/80;/' /etc/nginx/conf.d/city.conf");
+    expect(run('nginx -s reload').code).toBe(0);
+    expect(checkState({ kind: 'http', url: 'http://localhost/', status: 200 }, { shell: shell() })).toBe(true);
+  });
+
   it('動いている別のサービスと同じポートでは起動できない。そのサービスを止めれば起動できる', () => {
     const { run, shell } = server('server {\n  listen 80;\n}\n');
     run('systemctl start apache2');
