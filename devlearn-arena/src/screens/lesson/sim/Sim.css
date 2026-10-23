@@ -38,6 +38,28 @@
     min-height: 0;
     overflow-y: auto;
   }
+  /* 置くで札が多く、置き場が枠の下に隠れる時は、置き場の中だけを送る。枠は見えたまま、札を枠へ運べる（縦の低い画面） */
+  .sim-layout.has-panels > .sim-main:has(> .sim-assign) {
+    display: flex;
+    flex-direction: column;
+  }
+}
+/* 中の物は .sim-main（それ自身が幅の container）の中なので、上の @container の外に書く。
+   .sim-main の高さに限りがある時（情報と並べた時）だけ、置き場が縮んで中を送る */
+.sim-layout.has-panels > .sim-main > .sim-assign {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-height: 0;
+}
+.sim-layout.has-panels > .sim-main > .sim-assign > * {
+  flex: none;
+}
+.sim-layout.has-panels > .sim-main > .sim-assign > .sim-pool {
+  flex: 1 1 auto;
+  align-content: flex-start;
+  min-height: 140px;
+  overflow-y: auto;
 }
 .sim-how {
   margin: 0 0 10px;
@@ -128,6 +150,11 @@
 /* 短い値（アドレス・番号）は途中で折らない。折るのは日本語の文の欄 */
 .sim-table td.is-whole {
   white-space: nowrap;
+}
+/* 1 列目は行の名前（役割・機械の名前など、短い語）。細い列でも語の途中で折らない（「窓口係」が 1 字ずつの行に割れない） */
+.sim-table th:first-child,
+.sim-table td:first-child {
+  word-break: keep-all;
 }
 .sim-table-no {
   width: 28px;

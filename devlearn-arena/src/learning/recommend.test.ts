@@ -23,6 +23,12 @@ describe('おすすめ（docs/ui-design.md 3 章・docs/learning-design.md 8・1
     expect(r).toHaveLength(3);
   });
 
+  it('「初めてなら、ここから」と言うのは、推奨学習順の最初の 1 つだけ', () => {
+    const r = recommend(emptyProgress(), LESSONS);
+    expect(r.map((x) => x.reason)).toEqual(['order', 'order', 'order']);
+    expect(r.slice(1).map((x) => x.why)).toEqual(['推奨学習順で、まだ学んでいない', '推奨学習順で、まだ学んでいない']);
+  });
+
   it('学習中のレッスンを先に（続きから）、次に修了したレッスンの「次に学ぶとよい」', () => {
     let p = completed(['found.b.04']);
     p = startLesson(p, 'linux.i.01', T(12));

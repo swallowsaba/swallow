@@ -89,7 +89,8 @@ export function recommend(progress: Progress, catalog: readonly LessonMeta[], co
 
   // 4. 推奨学習順
   const first = !Object.values(progress.lessons).some((lp) => lp.status !== 'not-started' || lp.completions > 0);
-  for (const e of ENTRIES) if (!done(e.id)) add(e.id, 'order', first ? '初めてなら、ここから（推奨学習順の最初）' : '推奨学習順で、まだ学んでいない');
+  // 「初めてなら」と言うのは、最初の 1 つだけ
+  for (const e of ENTRIES) if (!done(e.id)) add(e.id, 'order', first && !out.some((r) => r.reason === 'order') ? '初めてなら、ここから（推奨順の最初）' : '推奨学習順で、まだ学んでいない');
   return out;
 }
 

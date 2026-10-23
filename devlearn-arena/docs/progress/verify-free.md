@@ -859,3 +859,19 @@ VERIFY_URL=https://swallowsaba.github.io/swallow/devlearn-arena/ を付けると
 | devops.b.01 | order | ○ | ○ | ○ | ○ | 合格 |
 | devops.b.02 | assign | - | - | ○ | - | 不合格: 台本が進めない: .sim-pool [data-card="古い確認"] と [data-slot="やめる"] を同時に見られない（ドラッグで運べない）・prefers-reduced-motion: 台本が進めない: .sim-pool [data-card="古い確認"] と [data-slot="やめる"] を同時に見られない（ドラッグで運べない）・ゲームの「動きを減らす」: 台本が進めない: .sim-pool [data-card="古い確認"] と [data-slot="やめる"] を同時に見られない（ドラッグで運べない） |
 | devops.b.03 | order | ○ | ○ | ○ | ○ | 合格 |
+
+### 直したこと（【3】1 回目の後）
+
+先に、不合格の画面を台本（`verify-all.mjs`・`verify-drag.mjs`・`verify-city-size.mjs` を 1280×720 で）で再現し、直した後に同じ台本で合格することを確かめた。
+文の決め方の不具合（おすすめの 2 つ目以降も「初めてなら」と言う）は、先に失敗するテストを書いてから直した（`src/learning/recommend.test.ts`）。
+
+- S1 … で省くのをやめ、折り返す
+  - レッスンの題名（`src/screens/lesson/LessonScreen.css`）: 帯に入りきらなければ 2 行に折り返す。幅 1600 未満では字を 22 から 18 にし、帯の高さ（56）に 2 行を収める
+  - おすすめの欄（`src/screens/city/RecommendPanel.css`）: 名前と理由を折り返す。高さの上限（160・900 未満では 120）は変えず、超えた分は見出しを残して一覧だけを巻く。
+    理由の文を「初めてなら、ここから（推奨順の最初）」に縮め、「初めてなら」と言うのは推奨学習順の最初の 1 つだけにした（2 つ目からは「推奨学習順で、まだ学んでいない」。`src/learning/recommend.ts`）
+- S2 情報の表の 1 列目（行の名前）は、語の途中で折らない（`word-break: keep-all`。`src/screens/lesson/sim/Sim.css`）
+- S3 置くの盤を情報と並べた時（右の列の高さに限りがある時）は、枠・合計を見えたままにし、置き場の中だけを巻く（置き場は最低 140 の高さ。`src/screens/lesson/sim/Sim.css`）。
+  札を見える所まで巻いても、枠は動かないので、札と受け口を同時に見ながら運べる
+- 手元で確かめたこと: 不合格の 17 本（`verify-all.mjs`）とドラッグの 7 本（`verify-drag.mjs`）を 1280×720 で流し直し、全て合格。置くの 3 本（sec.b.01・mon.b.01・devops.b.02）は 1920×1080 でも合格。
+  都市の画面は 1280×720・1920×1080 の両方で崩れが無い（常時の UI は 17.3%・10.5%）。題名を 2 行にした画面（cloud.b.03・sec.b.01）と、置き場の中を巻く画面（devops.b.02）を撮って開き、帯の中に 2 行が収まり、枠と札が同時に見えることを見た
+- 検査: `npm run typecheck`・`npm run lint`・`npm run test`（2027 件）・`npm run content:check` が全て通った
