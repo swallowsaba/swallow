@@ -65,9 +65,15 @@ const next = (page) => page.click('[data-testid="lesson-next"]');
 async function clickText(page, selector, label) {
   const seen = await page.evaluate(([sel, want]) => {
     const norm = (s) => s.replace(/\s+/g, '');
+    // 結んだ・並べた番号（.match-no・.order-no）は札の名前に入れない（一度誤って結んだ札も、名前で押し直す）
+    const name = (b) => {
+      const c = b.cloneNode(true);
+      for (const n of c.querySelectorAll('.match-no, .order-no')) n.remove();
+      return norm(c.innerText ?? c.textContent ?? '');
+    };
     const all = [...document.querySelectorAll(sel)];
-    const el = all.find((b) => norm(b.innerText) === norm(want));
-    if (!el) return all.map((b) => norm(b.innerText));
+    const el = all.find((b) => name(b) === norm(want));
+    if (!el) return all.map((b) => name(b));
     el.click();
     return null;
   }, [selector, label]);
@@ -94,6 +100,7 @@ const progressOf = (page) => page.evaluate(() => {
  * レッスン id を、都市の画面から人と同じ道で通す。page は都市の画面を開いた直後（操作説明は閉じた）。
  * opts.opened: レッスンの画面をもう開いた（施設の情報パネルから入った時など）。学習ライブラリから開く所を飛ばす
  * opts.onStage(段階): 解説・理解・クイズ・実戦・結果・まとめ の各段の初めに呼ぶ（途中でページを読み直す時など）
+ * opts.onLook(場面): 解説の各ページと、実戦の操作を終えた所で呼ぶ（画面の崩れを見る時。VERIFY-FREE.txt【3】）
  * opts.inputs(手順): 実戦で、最後のヒントの代わりに行う物（端末・SQL は打つ行、設定の編集は保存する中身、模は操作）。
  *   渡すとヒントを一度も開かず、実戦の XP がヒント無しの満額で入ることも確かめる（VERIFY-FREE.txt【1】）
  * opts.shotName: 画像の名前（既定はレッスンの ID）
@@ -147,6 +154,7 @@ export async function verifyLesson(page, id, opts = {}) {
     await stageStart('解説');
     await page.waitForSelector('[data-testid="stage-explain"]');
     for (let i = 0; i < 12 && (await page.$('[data-testid="stage-explain"]')); i += 1) {
+      await opts.onLook?.(`解説 ${String(i + 1)}`);
       await next(page);
       did('解説の「次へ」');
       await wait(page, 150);
@@ -294,14 +302,32 @@ ${el.innerText}` : '';
         rec.candidates = [...new Set([...(rec.candidates ?? []), ...cands])];
       }
       // わざと間違える（VERIFY-FREE.txt【2】）: 間違った操作 → エラーの案内と原因候補 → そこからヒントを開く → 閉じて正しく打ち直す
-      if (opts.wrong?.practice && step.id === opts.wrong.practice.step) {
-        await doItems(step, opts.wrong.practice.input, true);
-        await wrongPractice(page, step, opts.wrong.practice, p, rec, did);
+      const w = opts.wrong?.practice;
+      if (w && step.id === w.step) {
+        await doItems(step, w.input, true, w.commands === true);
+        // 案内が出ない（不合格の）瞬間の画面を撮る
+        const shoot = async () => {
+          if (rec.shot) return;
+          mkdirSync(shotDir, { recursive: true });
+          rec.shot = shotPath();
+          await page.screenshot({ path: rec.shot });
+        };
+        await wrongPractice(page, step, w, p, rec, did, shoot);
+        if (w.reset) {
+          // 間違えた操作が壊した物を「初めに戻す」で戻し、前の手順から打ち直す
+          await page.click('[data-testid="practice-reset"]');
+          await wait(page, 300);
+          did('「初めに戻す」を押した');
+          for (const before of p.steps.slice(0, i)) await doItems(before, opts.inputs(before), false);
+        } else if (w.retry) {
+          await doItems(step, w.retry, false);
+          continue;
+        }
       }
       await doItems(step, free ? opts.inputs(step) : p.mode === 'simulation' ? step.actions ?? [] : answersOf(step), false);
     }
     // 端末・SQL・設定の編集は打つ行、模は操作を、人と同じく行う。keep なら、出たエラーの案内を閉じない（わざと間違えた時）
-    async function doItems(step, items, keep) {
+    async function doItems(step, items, keep, allCommands = false) {
       if (p.mode === 'simulation') {
         for (const a of items) {
           // 何枚も運ぶ操作は、1 枚放すたびに見る
@@ -317,9 +343,12 @@ ${el.innerText}` : '';
       if (lines.length === 0 && !free) throw fail(`手順 ${step.id} の最後のヒントに、打つ物（\`\`）が無い: ${squash(step.hints[2])}`);
       const answerStep = step.check.kind === 'answer';
       for (const [j, line] of lines.entries()) {
-        if (answerStep && j === lines.length - 1) {
+        if (answerStep && !allCommands && j === lines.length - 1) {
           // 答える手順の最後の物は、答えの欄に打つ
+          // 前に打った答えが欄に残っていれば、消してから打つ（人と同じく、選んで打ち直す）
           await page.click('#practice-answer');
+          await page.keyboard.press('Control+A');
+          await page.keyboard.press('Delete');
           await page.keyboard.type(line, { delay: 5 });
           await page.keyboard.press('Enter');
           did(`手順 ${step.id}: 答えの欄に「${line}」`);
@@ -347,6 +376,7 @@ ${el.innerText}` : '';
         if (!keep) await checkError(squash(line).slice(0, 120), step);
       }
     }
+    await opts.onLook?.('実戦の後');
     const unfinished = await page.evaluate(() => [...document.querySelectorAll('.practice-step')].filter((s) => s.dataset.done !== 'true').map((s) => s.querySelector('.practice-step-text')?.innerText.replace(/\s+/g, ' ').trim()));
     // 想定した失敗（衝突・拒否・届かないことを見せる手順）の案内は、その手順の想定エラーで、その手順の間に出た物だけ。
     // 命令が本当に失敗したかは、同じ関数で最後のヒントを通す内容の検証（npm run content:check）が確かめる
@@ -549,7 +579,7 @@ async function wrongQuiz(page, q, plain, rec, did, fail) {
 }
 
 /** 実戦でわざと間違えた後: エラーの案内と原因候補が出て、そこからヒントを開け、閉じて打ち直せる（模は置き違えた札・線を戻す） */
-async function wrongPractice(page, step, wrong, practice, rec, did) {
+async function wrongPractice(page, step, wrong, practice, rec, did, shoot) {
   await wait(page, 300);
   const seen = await page.evaluate(() => (window.__seenErrors ?? []).splice(0));
   const card = await page.evaluate(() => {
@@ -570,6 +600,7 @@ async function wrongPractice(page, step, wrong, practice, rec, did) {
   rec.wrong.practice = out;
   did(`手順 ${step.id}: わざと間違える（${wrong.why}）`);
   if (done) rec.problems.push(`実戦 ${step.id}: わざと間違えた（${wrong.why}）のに、手順が達成になった`);
+  if (!card || done) await shoot();
   if (!card) rec.problems.push(`実戦 ${step.id}: わざと間違えた（${wrong.why}）のに、エラーの案内が出ない${seen.length ? `（出て消えた: ${seen.map((g) => g.guide).join('・')}）` : ''}`);
   else if (card.causes.length === 0) rec.problems.push(`実戦 ${step.id}: エラーの案内に原因候補が無い（${card.guide}）`);
   // そこからヒントを開ける（案内を出したまま。案内が出なかった時は開かない）

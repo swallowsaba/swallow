@@ -54,13 +54,20 @@
     "input": [
       {
         "op": "answer",
-        "question": "fes",
-        "value": "クラウド・いつも安い"
+        "question": "trial",
+        "value": "クラウド・すぐ借りて返せる"
       },
       {
         "op": "answer",
-        "question": "trial",
+        "question": "fes",
         "value": "クラウド・いつも安い"
+      }
+    ],
+    "retry": [
+      {
+        "op": "answer",
+        "question": "fes",
+        "value": "クラウド・すぐ借りて返せる"
       }
     ]
   }

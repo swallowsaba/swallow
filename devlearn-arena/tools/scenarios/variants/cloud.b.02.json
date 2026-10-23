@@ -62,6 +62,13 @@
         "question": "mail",
         "value": "SaaS・出来上がった物を使うだけ"
       }
+    ],
+    "retry": [
+      {
+        "op": "answer",
+        "question": "reserve",
+        "value": "PaaS・アプリだけ置けばよい"
+      }
     ]
   }
 }

@@ -33,6 +33,7 @@
     "why": "待っている番号を書き落とす",
     "input": [
       "curl https://shop.example/items"
-    ]
+    ],
+    "commands": true
   }
 }

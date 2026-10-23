@@ -43,6 +43,7 @@
     "why": "表の名前を打ち間違える",
     "input": [
       "SELECT * FROM ticket"
-    ]
+    ],
+    "commands": true
   }
 }

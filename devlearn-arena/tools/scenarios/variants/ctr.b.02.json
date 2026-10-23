@@ -72,6 +72,13 @@
         "question": "many",
         "value": "コンテナ・軽く多数"
       }
+    ],
+    "retry": [
+      {
+        "op": "answer",
+        "question": "win",
+        "value": "VM・別のOSが要る"
+      }
     ]
   }
 }

@@ -41,6 +41,7 @@
     "why": "列の名前を打ち間違える",
     "input": [
       "SELECT names FROM members"
-    ]
+    ],
+    "commands": true
   }
 }

@@ -44,8 +44,20 @@
     "input": [
       {
         "op": "answer",
+        "question": "原因",
+        "value": "メモリ"
+      },
+      {
+        "op": "answer",
         "question": "始まり",
         "value": "10:00"
+      }
+    ],
+    "retry": [
+      {
+        "op": "answer",
+        "question": "始まり",
+        "value": "12:00"
       }
     ]
   }

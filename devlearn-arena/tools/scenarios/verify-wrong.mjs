@@ -27,9 +27,11 @@ function rowOf(id, r) {
   const u = r.wrong?.understand;
   const q = r.wrong?.quiz;
   const p = r.wrong?.practice;
-  const said = (w) => (w ? `${w.item}: ${w.did} → 「${w.title}」${w.why.length ? ` ${w.why.map((x) => cut(x, 160)).join(' / ')}` : ''}` : '');
+  // 知らせの文（ほかの文の中に含まれる文は、重ねて書かない）
+  const why = (w) => w.why.filter((x) => !w.why.some((o) => o !== x && o.includes(x)));
+  const said = (w) => (w ? `${w.item}: ${w.did} → 「${w.title}」${w.why.length ? ` ${why(w).map((x) => cut(x, 160)).join(' / ')}` : ''}` : '');
   const card = p?.card
-    ? `${p.why}: \`${cut(p.input.join(' ; '), 80)}\` → [${p.card.guide}] 何と言われたか: ${cut(p.card.meaning, 140)} ／ 考えられる理由: ${p.card.causes.map((c) => cut(c, 90)).join(' / ')} ／ 次に確かめること: ${cut(p.card.next, 140)}${p.hint ? ` ／ ヒント 1: ${cut(p.hint, 120)}` : ''}`
+    ? `${p.why}: \`${cut(p.input.join(' ; '), 80)}\` → [${p.card.guide}] 何と言われたか: ${cut(p.card.meaning, 140)} ／ 考えられる理由: ${p.card.causes.map((c) => cut(c, 90)).join(' / ')} ／ 次に確かめること: ${cut(p.card.next, 140)}${p.hint ? ` ／ ヒント 1: ${cut(p.hint.replace(/^ヒント\s*1\s*/, ''), 120)}` : ''}`
     : p ? `${p.why}: 案内が出ない` : '';
   const result = r.ok ? '合格' : `不合格 [${r.stage}] ${cut(r.saw, 300)}`;
   return `| ${id} | ${cell(result)} | ${cell(said(u))} | ${cell(said(q))} | ${cell(card)} | ${r.ok || !r.shot ? '' : `\`${r.shot}\``} |`;
