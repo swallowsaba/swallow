@@ -65,12 +65,21 @@ export function layoutProblems(page, root = 'body') {
       }).filter((r) => r.right - r.left > 0 && r.bottom - r.top > 0);
     };
     const boxes = texts.map((el) => ({ el, rs: lineBoxes(el) }));
-    // 縦に崩れた文: 2 字以上の語が、1〜2 字ずつの行に割れている（狭い列で 1 字ずつ折り返す）
+    // 縦に崩れた文: 2 字以上の語が、1〜2 字ずつの行に割れている（狭い列で 1 字ずつ折り返す）。
+    // 文の入れ物（自分か、一番近い箱の祖先）の幅が 2.6 字より狭い物だけを数える。
+    // 段落の中の普通の折り返し（行の終わりの「に残」と次の行の「す。」）は、入れ物が広いので数えない
+    const blockOf = (el) => {
+      for (let p = el; p && p !== document.body; p = p.parentElement) if (!/^inline/.test(getComputedStyle(p).display)) return p;
+      return document.body;
+    };
     for (const { el, rs } of boxes) {
       const chars = (el.textContent ?? '').replace(/\s+/g, '').length;
       const em = parseFloat(getComputedStyle(el).fontSize) || 16;
       const rows = [...new Set(rs.map((r) => Math.round(r.top)))].length;
-      if (chars >= 2 && rows >= 2 && rs.every((r) => r.right - r.left < em * 2.2)) out.push(`崩れ: 「${say(el)}」が 1〜2 字ずつの行に割れる（${String(rows)} 行）`);
+      const box = blockOf(el);
+      const bs = getComputedStyle(box);
+      const inner = box.clientWidth - parseFloat(bs.paddingLeft) - parseFloat(bs.paddingRight);
+      if (chars >= 2 && rows >= 2 && inner < em * 2.6 && rs.every((r) => r.right - r.left < em * 2.2)) out.push(`崩れ: 「${say(el)}」が 1〜2 字ずつの行に割れる（${String(rows)} 行）`);
     }
     for (let i = 0; i < boxes.length; i += 1) {
       for (let j = i + 1; j < boxes.length; j += 1) {

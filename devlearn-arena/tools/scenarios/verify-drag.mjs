@@ -15,10 +15,13 @@
 //      つないだ線は、光の粒が流れ続けるか）（-done）
 //   5. 動きを減らす設定（OS の prefers-reduced-motion と、ゲームの「動きを減らす」）で、2 と 4 を繰り返す。
 //      動きが 1 つも始まらず、光の粒が見えず、赤い印と達成（終わりの形）は出るか（-reduced-wrong・-reduced-done）
+// VERIFY_SIZE を付けた時は、開いた所・誤った所・終えた所で、文の重なり・切れ・はみ出しも見る（VERIFY-FREE.txt【3】。tools/scenarios/layoutCheck.mjs）。
+// 持つ物と受け口を同時に見られない（画面の外にある）時は、運ぶ前に止まる（simDrive.mjs の dragTo）。
 // 画像は shots/verify-drag/<ID>-<段>.png、結果は shots/verify-drag/results.json と table.md。
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { pathToFileURL } from 'node:url';
 import { allLessonIds, readLesson, siteRoot } from './verify-lesson.mjs';
+import { layoutProblems } from './layoutCheck.mjs';
 import { perform, wrongAction } from './simDrive.mjs';
 
 const DIR = 'shots/verify-drag';
@@ -175,6 +178,8 @@ export async function verifyDrag(browser, root, id) {
       const path = `${DIR}/${id}${tag}-${name}.png`;
       await page.screenshot({ path });
       rec.shots.push(path);
+      // 小さい画面では、撮った画面の文の崩れを見る（ドラッグの途中は除く）
+      if (tag && name !== 'drag') for (const x of await layoutProblems(page)) problems.push(`${name}: ${x}（${path}）`);
     };
     try {
       await shot('start');
