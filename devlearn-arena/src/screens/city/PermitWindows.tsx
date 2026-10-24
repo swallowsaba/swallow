@@ -3,6 +3,8 @@ import { useStore } from 'zustand';
 import { useShallow } from 'zustand/react/shallow';
 import { Icon } from '@/ui/icons/Icon';
 import { SmallWindow } from '@/ui/SmallWindow';
+import { issuesOf, type SkillValues } from '@/sim/hearing';
+import { handsModel } from './hearingView';
 import type { CityStore } from './cityStore';
 import { dateText, permitDetail, permitRows, siteFocus, type ObjectionRow, type PermitRow, type StageMark } from './permitView';
 import './PermitWindows.css';
@@ -145,10 +147,48 @@ function Objections({ rows, onPick }: { rows: ObjectionRow[]; onPick: (row: Obje
   );
 }
 
-export function PermitDetailWindow({ store, stack, shifted }: { store: CityStore; stack: number; shifted: boolean }) {
+/**
+ * 先回りの譲歩（反対の受付の間だけ。docs/game-design.md 17.1・docs/ui-design.md 10.2 の 4）。
+ * 論点になる理由（受付の終わりに 5% 以上）ごとに、出せる譲歩を並べる。出した論点は、公聴会でその手を使ったことになる
+ */
+function Preempt({ store, id, skills }: { store: CityStore; id: string; skills: SkillValues }) {
+  const world = store.getState().world;
+  const app = world.applications.find((a) => a.id === id);
+  if (app?.stage !== 'objection') return null;
+  const rows = issuesOf(app).flatMap((o) => {
+    const h = handsModel(world, app, o.reasonId, skills);
+    return h ? [{ o, h }] : [];
+  });
+  if (rows.length === 0) return null;
+  return (
+    <section className="permit-section" aria-label="先回りの譲歩" data-testid="permit-preempt">
+      <h3 className="view-heading">先回りの譲歩</h3>
+      <p className="permit-note">公聴会の前に、申請の中身を変えて反対に答えられる。変えた中身は完成した建物にずっと残る</p>
+      <ul className="permit-preempt">
+        {rows.map(({ o, h }) => (
+          <li key={o.reasonId} className="permit-preempt-row">
+            <span className="permit-preempt-title">{h.title}</span>
+            {h.used ? (
+              <span className="permit-preempt-done">譲歩した</span>
+            ) : (
+              h.concessions.map((c) => (
+                <button key={c.id} type="button" className="permit-preempt-button" data-concession={c.id} disabled={!c.ok} onClick={() => store.getState().playHand(id, o.reasonId, { kind: 'concede', concessionId: c.id }, skills)}>
+                  <span>{c.label}</span>
+                  <span className="permit-preempt-note">{c.effects.join('・')}{c.cost > 0 ? `・費用 ${c.cost.toLocaleString('ja-JP')}` : ''}{c.why ? `・${c.why}` : ''}</span>
+                </button>
+              ))
+            )}
+          </li>
+        ))}
+      </ul>
+    </section>
+  );
+}
+
+export function PermitDetailWindow({ store, stack, shifted, skills = {} }: { store: CityStore; stack: number; shifted: boolean; skills?: SkillValues }) {
   const s = useStore(store, useShallow((x) => ({
     id: x.permitId, apps: x.world.applications, day: Math.floor(x.world.city.day), closeWindow: x.closeWindow, openWindow: x.openWindow, focusAt: x.focusAt, withdraw: x.withdraw,
-    setOverlay: x.setOverlay,
+    setOverlay: x.setOverlay, openHearing: x.openHearing,
   })));
   const [confirm, setConfirm] = useState(false);
   // 確かめの段は、窓の下の端にあっても見えるように巻く
@@ -177,6 +217,12 @@ export function PermitDetailWindow({ store, stack, shifted }: { store: CityStore
         <span className="permit-now-stage">{d.stageLabel}</span>
         {d.waiting ? <span>{d.waiting}</span> : null}
       </p>
+      {d.stage === 'hearing' ? (
+        <button type="button" className="permit-hearing" data-testid="permit-open-hearing" onClick={() => s.openHearing(d.id)}>
+          <Icon name="civic" size={16} />
+          公聴会を開く
+        </button>
+      ) : null}
       <Marks marks={d.marks} wide />
       <dl className="permit-facts">
         {d.canWithdraw || d.stage === 'construction' ? (
@@ -211,6 +257,7 @@ export function PermitDetailWindow({ store, stack, shifted }: { store: CityStore
           />
         ) : null}
       </section>
+      <Preempt store={store} id={d.id} skills={skills} />
       {d.gains.length > 0 ? (
         <section className="permit-section" aria-label="通った時の得">
           <h3 className="view-heading">通った時の得</h3>

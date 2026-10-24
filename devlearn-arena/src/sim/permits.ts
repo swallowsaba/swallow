@@ -27,6 +27,8 @@ export const MAX_PENDING = 6;
 export const RETRY_DAYS = 28;
 /** 同意の案件（公聴会を省き、採決なしに可決）になる反対率の上限（%） */
 export const CONSENT_LIMIT = 20;
+/** 公聴会の論点に並ぶ理由の割合の下限（%。docs/game-design.md 17 章） */
+export const ISSUE_MIN_SHARE = 5;
 /** 公聴会を経た申請の仮の決まり（議会の採決は G6。docs/development-plan.md G5）: 反対率がこれ未満なら可決、以上なら否決 */
 export const PROVISIONAL_PASS = 50;
 /** 用途地域の変更が申請になる、人の住む住宅の建物からの距離（マス） */
@@ -277,7 +279,9 @@ export function stepApplications(world: World, day: number, terrain?: Terrain, r
           const rising = risingShare(a, elapsed / STAGE_DAYS.objection);
           if (elapsed >= STAGE_DAYS.objection) {
             const consent = rising.opposition < CONSENT_LIMIT && !a.exception;
-            next = { ...a, ...rising, stage: consent ? 'council' : 'hearing', stageDay: day };
+            // 公聴会に進む時に論点を決める（5% 以上の理由と、先回りの譲歩をした理由）
+            const objections = consent ? rising.objections : rising.objections.map((o) => ({ ...o, issue: o.hand !== undefined || o.share >= ISSUE_MIN_SHARE }));
+            next = { ...a, ...rising, objections, stage: consent ? 'council' : 'hearing', stageDay: day };
           } else if (rising.opposition !== a.opposition) {
             a = { ...a, ...rising };
             changed = true;

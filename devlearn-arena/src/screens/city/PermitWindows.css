@@ -428,3 +428,79 @@
   cursor: pointer;
   clip-path: polygon(8px 0, 100% 0, calc(100% - 8px) 100%, 0 100%);
 }
+
+/* 公聴会を開く（公聴会の段では金のボタン。docs/ui-design.md 10.2） */
+.permit-hearing {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: 100%;
+  margin: 0 0 10px;
+  padding: 8px 12px;
+  border: 1px solid var(--gold);
+  border-radius: 2px 10px 2px 10px;
+  background: var(--gold);
+  color: var(--navy);
+  font-weight: 800;
+  font-size: var(--fs-14);
+  cursor: pointer;
+}
+.permit-hearing:hover,
+.permit-hearing:focus-visible {
+  background: var(--gold-light);
+  outline: none;
+}
+
+/* 先回りの譲歩（論点ごとの行） */
+.permit-note {
+  margin: 0 0 6px;
+  font-size: var(--fs-12);
+  color: var(--hud-text-sub);
+}
+.permit-preempt {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border-top: 1px solid var(--hud-line);
+}
+.permit-preempt-row {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--hud-line);
+}
+.permit-preempt-title {
+  font-weight: 700;
+  font-size: var(--fs-13);
+}
+.permit-preempt-done {
+  font-size: var(--fs-12);
+  color: var(--gold-light);
+}
+.permit-preempt-button {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 5px 8px;
+  border: 1px solid var(--hud-line);
+  border-radius: 2px 8px 2px 8px;
+  background: var(--hud-bg-strong);
+  color: var(--hud-text);
+  font-size: var(--fs-12);
+  text-align: left;
+  cursor: pointer;
+}
+.permit-preempt-button:hover:not(:disabled),
+.permit-preempt-button:focus-visible {
+  border-color: var(--gold);
+  outline: none;
+}
+.permit-preempt-button:disabled {
+  cursor: default;
+  opacity: 0.5;
+}
+.permit-preempt-note {
+  color: var(--hud-text-sub);
+}

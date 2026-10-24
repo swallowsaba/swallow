@@ -1,0 +1,312 @@
+/* 公聴会の窓（docs/ui-design.md 10.3）。大きな窓（幅 720・高さ最大 70%・中央）。計器の窓（docs/visual-design.md 4 章）。
+   札を並べず、線で区切った列にする。後ろに都市が見える */
+.hearing-backdrop {
+  position: absolute;
+  inset: 48px 0 0;
+  z-index: 30;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+
+.hearing {
+  pointer-events: auto;
+  width: 720px;
+  max-width: calc(100vw - 48px);
+  max-height: 70vh;
+  display: flex;
+  flex-direction: column;
+  background: var(--hud-bg-strong);
+  border: 2px solid var(--hud-line);
+  border-radius: 4px 18px 4px 18px;
+  box-shadow: var(--shadow-window);
+  backdrop-filter: blur(6px);
+  animation: hearing-in 0.2s ease-out;
+}
+@keyframes hearing-in {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .hearing {
+    animation: none;
+  }
+}
+:root[data-motion='reduced'] .hearing {
+  animation: none;
+}
+
+.hearing-head {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 10px 10px 10px 16px;
+  border-bottom: 1px solid var(--hud-line);
+}
+.hearing-icon {
+  display: flex;
+  color: var(--gold);
+}
+.hearing-title {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  font-family: var(--font-heading);
+  font-weight: 800;
+  font-size: var(--fs-18);
+  line-height: 1.2;
+}
+.hearing-stat {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+  font-size: var(--fs-12);
+  color: var(--hud-text-sub);
+}
+.hearing-stat b {
+  font-family: var(--font-number);
+  font-size: var(--fs-22);
+  color: var(--hud-text);
+}
+.hearing-unit {
+  font-size: var(--fs-12);
+  color: var(--hud-text-sub);
+}
+.hearing-close {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border: none;
+  background: var(--transparent);
+  color: var(--hud-text-sub);
+  cursor: pointer;
+}
+.hearing-close:hover,
+.hearing-close:focus-visible {
+  color: var(--gold-light);
+}
+
+.hearing-body {
+  display: flex;
+  min-height: 0;
+  flex: 1;
+}
+
+/* 左: 論点の列 */
+.hearing-issues {
+  flex: 0 0 214px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  overflow-y: auto;
+  border-right: 1px solid var(--hud-line);
+}
+.hearing-issue {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  width: 100%;
+  padding: 9px 10px 9px 12px;
+  border: none;
+  border-bottom: 1px solid var(--hud-line);
+  border-left: 3px solid var(--transparent);
+  background: var(--transparent);
+  color: var(--hud-text);
+  text-align: left;
+  cursor: pointer;
+}
+.hearing-issue:hover,
+.hearing-issue:focus-visible {
+  background: var(--hud-bg);
+  outline: none;
+}
+.hearing-issue.is-current {
+  border-left-color: var(--gold);
+  background: var(--hud-bg);
+}
+.hearing-issue-top {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.hearing-issue-title {
+  flex: 1;
+  min-width: 0;
+  font-weight: 700;
+  font-size: var(--fs-13);
+}
+.hearing-issue-top .num {
+  font-family: var(--font-number);
+  font-weight: 700;
+  font-size: var(--fs-14);
+}
+.hearing-issue-bar {
+  width: 44px;
+  height: 5px;
+  background: var(--hud-bg);
+}
+.hearing-issue-bar span {
+  display: block;
+  height: 100%;
+  background: var(--warn);
+}
+.hearing-issue-who {
+  font-size: var(--fs-12);
+  color: var(--hud-text-sub);
+}
+.hearing-issue-done {
+  font-size: var(--fs-12);
+  color: var(--gold-light);
+}
+.hearing-issue.is-done .hearing-issue-title {
+  color: var(--hud-text-sub);
+}
+
+/* 右: 言い分と 3 種類の手 */
+.hearing-main {
+  flex: 1;
+  min-width: 0;
+  overflow-y: auto;
+  padding: 12px 14px 14px;
+}
+.hearing-claim {
+  margin: 0 0 10px;
+  padding: 2px 0 2px 10px;
+  border-left: 2px solid var(--warn);
+  font-size: var(--fs-13);
+  line-height: 1.6;
+}
+.hearing-claim-who {
+  display: block;
+  font-size: var(--fs-12);
+  color: var(--hud-text-sub);
+}
+.hearing-reaction {
+  margin: 0 0 10px;
+  padding: 6px 10px;
+  border-left: 2px solid var(--gold);
+  background: var(--hud-bg);
+  font-size: var(--fs-13);
+  line-height: 1.5;
+}
+.hearing-hands {
+  display: grid;
+  grid-template-columns: 1fr 1fr 0.8fr;
+  gap: 12px;
+}
+.hearing-hand {
+  min-width: 0;
+}
+.hearing-hand-title {
+  margin: 0 0 6px;
+  padding-bottom: 4px;
+  border-bottom: 1px solid var(--hud-line);
+  font-family: var(--font-heading);
+  font-weight: 800;
+  font-size: var(--fs-14);
+  color: var(--gold-light);
+}
+.hearing-options {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.hearing-option {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  width: 100%;
+  padding: 7px 8px;
+  border: 1px solid var(--hud-line);
+  border-radius: 2px 8px 2px 8px;
+  background: var(--hud-bg);
+  color: var(--hud-text);
+  text-align: left;
+  cursor: pointer;
+}
+.hearing-option:hover:not(:disabled),
+.hearing-option:focus-visible {
+  border-color: var(--gold);
+  outline: none;
+}
+.hearing-option:disabled {
+  cursor: default;
+  opacity: 0.5;
+}
+.hearing-option-text {
+  font-size: var(--fs-13);
+  line-height: 1.5;
+}
+.hearing-option-text b {
+  font-family: var(--font-number);
+}
+.hearing-option-note {
+  font-size: var(--fs-12);
+  line-height: 1.4;
+  color: var(--hud-text-sub);
+}
+.hearing-option-note.is-warn {
+  color: var(--warn);
+}
+.hearing-tech {
+  align-self: flex-start;
+  padding: 0 6px;
+  border: 1px solid var(--info);
+  border-radius: 2px;
+  font-size: var(--fs-12);
+  color: var(--info);
+}
+.hearing-empty {
+  margin: 0;
+  font-size: var(--fs-13);
+  color: var(--hud-text-sub);
+}
+.hearing-hidden {
+  margin: 8px 0 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: var(--fs-12);
+  color: var(--hud-text-sub);
+}
+.hearing-hidden li {
+  display: flex;
+  align-items: flex-start;
+  gap: 4px;
+}
+
+.hearing-foot {
+  display: flex;
+  justify-content: flex-end;
+  padding: 10px 14px;
+  border-top: 1px solid var(--hud-line);
+}
+.hearing-end {
+  padding: 8px 18px;
+  border: 1px solid var(--gold);
+  border-radius: 2px 10px 2px 10px;
+  background: var(--gold);
+  color: var(--navy);
+  font-weight: 800;
+  font-size: var(--fs-14);
+  cursor: pointer;
+}
+.hearing-end:hover,
+.hearing-end:focus-visible {
+  background: var(--gold-light);
+  outline: none;
+}

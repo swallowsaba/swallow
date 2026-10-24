@@ -85,6 +85,7 @@ export const applicationSchema = z.object({
     basis: z.object({ value: num, ref: num.optional() }).strict(),
     topLayer: z.number().int().min(0).max(11).optional(),
     layers: z.array(z.number().int().min(0).max(11)).optional(),
+    issue: z.boolean().optional(),
     hand: z.union([
       z.object({ kind: z.literal('concede'), concessionId: z.string(), day: num }).strict(),
       z.object({ kind: z.literal('explain'), explanationId: z.string(), quality: z.enum(['sound', 'partial', 'wrong']), day: num }).strict(),

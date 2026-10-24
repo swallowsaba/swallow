@@ -11,6 +11,8 @@ import { FACILITY_DEFS } from '@/city/facilities';
 import { checkUpgrade } from '@/city/upgrade';
 import { EXPLAIN, NAME_PARTS, POLITICS_RULES } from '@/content/politics';
 import { explainApproval } from '@/sim/explain';
+import type { Hand } from '@/sim/hearing';
+import { reactionText } from './hearingView';
 import { applicationName, daysLeft, daysToComplete, isReviewing } from '@/sim/permits';
 import type { HeatFields, HeatKind } from '@/sim/heat';
 import { applyOp, type Command, type Op } from '@/sim/commands';
@@ -92,6 +94,10 @@ export interface CityGameState {
   queue: QueuedNotice[];
   /** 申請の詳細の窓に出している申請 */
   permitId: string | null;
+  /** 公聴会の窓に出している申請（大きな窓。開いている間、都市の時間は止まる。docs/ui-design.md 10.0・10.3） */
+  hearingId: string | null;
+  /** 最後に出した手の、住民と議員の受け取り方の 1 行 */
+  reaction: { reasonId: string; text: string } | null;
   /** 学習に出た時の都市とスキル（戻った時に変化を比べる） */
   away: Snapshot | null;
   /** 変化のあった場所（カメラを寄せ、光の輪で示す）。seq が変わるたびに寄せる */
@@ -136,6 +142,17 @@ export interface CityGameState {
   openPermit: (id: string) => void;
   /** 申請を取り下げる（着工の前。費用は全て戻る） */
   withdraw: (id: string, now: number) => void;
+  /** 公聴会の窓を開く（公聴会の段の申請。時間を止める） */
+  openHearing: (id: string) => void;
+  /** 公聴会の窓を閉じる（公聴会は終えずに待つ。14 日のうちにまた開ける） */
+  leaveHearing: () => void;
+  /** 公聴会を終える（議会の採決の段へ）。窓を閉じ、知らせる */
+  endHearing: (id: string, now: number) => void;
+  /**
+   * 論点に手を出す（受付の間は先回りの譲歩だけ）。スキルの値は出した時の値を載せる。
+   * 出せたら、住民と議員の受け取り方の 1 行を reaction に置く
+   */
+  playHand: (applicationId: string, reasonId: string, hand: Hand, skills: SkillValues) => boolean;
   /** その場所へカメラを寄せ、光の輪で示す（説明・記事・請願を押した時） */
   focusAt: (at: { x: number; y: number }, size?: { x: number; y: number }) => void;
   setOverlay: (overlay: ViewKind | null) => void;
@@ -185,7 +202,7 @@ export function createCityStore(seed?: number, initial?: City, options: CityStor
     /** 写しを作り直す: 模擬が返した世界に、返事の無い命令を当てる */
     const rebuild = (): void => {
       let w = base;
-      for (const c of pending) w = applyOp(w, c.op, terrain);
+      for (const c of pending) w = applyOp(w, c.op, terrain, POLITICS_RULES);
       const prevStage = get().world.city.stage;
       set({ world: w, city: { ...w.city, day: Math.max(clock, w.city.day) } });
       if (w.city.stage > prevStage) get().notify(`都市が「${STAGE_NAMES[w.city.stage]}」に発展した。霧が晴れて、作れる物が増えた`, performance.now());
@@ -240,6 +257,8 @@ export function createCityStore(seed?: number, initial?: City, options: CityStor
       windows: [],
       queue: [],
       permitId: null,
+      hearingId: null,
+      reaction: null,
       away: null,
       focus: null,
 
@@ -339,6 +358,32 @@ export function createCityStore(seed?: number, initial?: City, options: CityStor
       openPermit: (id) => {
         set({ permitId: id });
         get().openWindow('permit');
+      },
+      openHearing: (id) => {
+        const app = get().world.applications.find((a) => a.id === id);
+        if (app?.stage !== 'hearing') return;
+        set({ hearingId: id, reaction: null });
+        get().hold('window', true);
+      },
+      leaveHearing: () => {
+        set({ hearingId: null, reaction: null });
+        get().hold('window', false);
+      },
+      endHearing: (id, now) => {
+        const app = get().world.applications.find((a) => a.id === id);
+        if (app?.stage !== 'hearing') return;
+        get().dispatch({ kind: 'closeHearing', applicationId: id });
+        get().leaveHearing();
+        get().notify(`${applicationName(app, get().world.city)}の公聴会を終えた。反対率 ${String(Math.round(app.opposition))}% で議会の採決へ`, now, id);
+      },
+      playHand: (applicationId, reasonId, hand, skills) => {
+        const before = get().world.applications.find((a) => a.id === applicationId);
+        if (!before) return false;
+        get().dispatch({ kind: 'hand', applicationId, reasonId, hand, skills: { ...skills } });
+        const after = get().world.applications.find((a) => a.id === applicationId);
+        if (!after || after.objections.find((o) => o.reasonId === reasonId)?.hand === undefined) return false;
+        set({ reaction: { reasonId, text: reactionText(before, after, reasonId) } });
+        return true;
       },
       withdraw: (id, now) => {
         const app = get().world.applications.find((a) => a.id === id);

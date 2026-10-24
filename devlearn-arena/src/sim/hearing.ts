@@ -2,7 +2,7 @@ import type { DomainId } from '@/city/types';
 import { mergeMods } from '@/city/rules';
 import type { Terrain } from '@/city/terrain';
 import { oppositionOf } from './opposition';
-import { STAGE_DAYS } from './permits';
+import { ISSUE_MIN_SHARE, STAGE_DAYS } from './permits';
 import { TRUST_LIMIT } from './rules';
 import type { Application, Concession, Explanation, ObjectionReason, ObjectionState, PoliticsRules, World } from './types';
 
@@ -17,8 +17,6 @@ import type { Application, Concession, Explanation, ObjectionReason, ObjectionSt
  * 手を出すと、反対を同じ理由で計算し直す（新しい理由は立てない。強さが 0 になった理由も、手の記録のために残す）
  */
 
-/** 論点に並ぶ理由の割合の下限（%） */
-export const ISSUE_MIN_SHARE = 5;
 /** 押し切る: 割合 10% ごとに政治資本 2（最小 2・最大 8） */
 export function pushCost(share: number): number {
   return Math.max(2, Math.min(8, 2 * Math.ceil(share / 10)));
@@ -40,10 +38,14 @@ export type Hand =
 
 const reasonOf = (rules: PoliticsRules, id: string): ObjectionReason | undefined => rules.reasons.find((r) => r.id === id);
 
-/** 論点（公聴会に並ぶ理由）: 反対の受付の間は受付の終わりの割合、公聴会では今の割合で 5% 以上 */
+/**
+ * 論点（公聴会に並ぶ理由）: 反対の受付の間は受付の終わりの割合で 5% 以上。公聴会では、公聴会の段に入った時に決めた論点
+ * （手を出して割合が下がっても外さない）。手を出した理由は、いつも論点
+ */
 export function issuesOf(app: Pick<Application, 'stage' | 'objections'>): ObjectionState[] {
-  return app.objections.filter((o) => (app.stage === 'objection' ? o.full : o.share) >= ISSUE_MIN_SHARE || o.hand !== undefined);
+  return app.objections.filter((o) => o.hand !== undefined || (app.stage === 'objection' ? o.full >= ISSUE_MIN_SHARE : o.issue === true || (o.issue === undefined && o.share >= ISSUE_MIN_SHARE)));
 }
+
 
 /** 譲歩の費用（建てた費用に対する割合か、決まった額。負の値は下がる分） */
 export function concessionCost(c: Pick<Concession, 'cost'>, app: Pick<Application, 'reserved'>): number {

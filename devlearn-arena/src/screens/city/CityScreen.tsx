@@ -28,6 +28,7 @@ import { HEAT_INFO, heatImage, heatLegend } from './heatScale';
 import { VIEW_LABELS } from './viewKinds';
 import { ViewWindow } from './ViewWindow';
 import { PermitDetailWindow, PermitListWindow } from './PermitWindows';
+import { HearingWindow } from './HearingWindow';
 import { mayorCount, sitesOf } from './permitView';
 import type { World } from '@/sim/types';
 import type { Session } from '../session';
@@ -64,6 +65,8 @@ export function CityScreen({ session, active = true, covered = false, current, d
   const skills = useSkills(session.progress);
   const skillsRef = useRef<SkillMap>(skills);
   skillsRef.current = skills;
+  /** スキルの値（公聴会の説明と技術の代案の段階を決める） */
+  const skillValues = useMemo(() => Object.fromEntries(Object.entries(skills).map(([d, v]) => [d, v.value])), [skills]);
   // 都市の上に別の画面（成長画面など）が開いている間は、都市のキーボードの操作を止める
   const activeRef = useRef(active);
   activeRef.current = active;
@@ -293,8 +296,9 @@ export function CityScreen({ session, active = true, covered = false, current, d
           {state.windows.map((id, i) => {
             if (id === 'view') return <ViewWindow key={id} store={store} stack={i} shifted={panel !== null} />;
             if (id === 'permits') return <PermitListWindow key={id} store={store} stack={i} shifted={panel !== null} />;
-            return <PermitDetailWindow key={id} store={store} stack={i} shifted={panel !== null} />;
+            return <PermitDetailWindow key={id} store={store} stack={i} shifted={panel !== null} skills={skillValues} />;
           })}
+          <HearingWindow store={store} skills={skillValues} />
           <HeatHover store={store} canvas={canvasRef} renderer={rendererRef} />
           <BuildMenu state={state} landmarks={landmarks} />
           <PlacementHint hint={state.confirm ? null : state.hint} />

@@ -201,6 +201,8 @@ export interface ObjectionState {
   topLayer?: number;
   /** この理由に反対した層（信頼を動かす相手。押し切る・誤った説明。docs/game-design.md 17 章） */
   layers?: number[];
+  /** 公聴会の論点（公聴会の段に入った時に 5% 以上だった理由。手を出して割合が下がっても、論点の列から外さない） */
+  issue?: boolean;
   hand?:
     | { kind: 'concede'; concessionId: string; day: number }
     | { kind: 'explain'; explanationId: string; quality: 'sound' | 'partial' | 'wrong'; day: number }
