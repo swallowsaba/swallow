@@ -1,7 +1,7 @@
 import { FACILITY_DEFS, footprintOf } from '@/city/facilities';
 import { crowdCount, crowdSpots, placardTone } from '@/city/crowd';
 import type { SiteView } from '@/city/render/CityRenderer';
-import { FACILITY_JOBS_PER_LEVEL, ZONE_RULES } from '@/city/rules';
+import { ZONE_RULES } from '@/city/rules';
 import type { Point } from '@/city/types';
 import {
   applicationName, daysLeft, daysToComplete, isOpen, isReviewing, needsMayor, nextCouncilDay, PROGRESS_STAGES, siteCells, STAGE_DAYS, STAGE_LABEL, waitingText,
@@ -9,6 +9,7 @@ import {
 import { REASONS } from '@/content/politics';
 import type { HeatKind } from '@/sim/heat';
 import { layerName } from '@/sim/layers';
+import { gainsOf } from '@/sim/council';
 import { dateOf } from '@/sim/rules';
 import { districtOf } from '@/sim/space';
 import type { Application, ApplicationStage, GroupId, ObjectionReason, ObjectionState, World } from '@/sim/types';
@@ -190,8 +191,10 @@ export interface PermitDetail extends PermitRow {
   exception: boolean;
   /** 反対率の内訳（理由ごと。割合の合計は反対率と一致する） */
   objections: ObjectionRow[];
-  /** 通った時の得（議員が見る値のうち、今分かる物） */
+  /** 通った時の得（議員が見る値。docs/game-design.md 18.1） */
   gains: { label: string; value: string }[];
+  /** 議会の採決の画面（議会の段は見込み、採決した後は結果。同意の案件は出さない） */
+  council: 'outlook' | 'result' | null;
   canWithdraw: boolean;
   /** 取り下げた時に戻る額 */
   refund: number;
@@ -202,12 +205,16 @@ export function permitDetail(world: World, id: string): PermitDetail | null {
   if (!a) return null;
   const day = Math.floor(world.city.day);
   const gains: PermitDetail['gains'] = [];
-  if (a.kind === 'facility' && a.target.type) {
-    gains.push({ label: '雇用', value: `+${String(FACILITY_JOBS_PER_LEVEL)} 人分の仕事` }, { label: '技術力', value: '+1' });
-  } else if (a.kind === 'upgrade') {
-    gains.push({ label: '雇用', value: `+${String(FACILITY_JOBS_PER_LEVEL)} 人分の仕事` }, { label: '技術力', value: '+1' });
-  } else if (a.target.zone) {
-    gains.push({ label: '区画', value: `${ZONE_RULES[a.target.zone.kind].name} ${String(a.target.zone.cells.length)} マス` });
+  if (a.target.zone) gains.push({ label: '区画', value: `${ZONE_RULES[a.target.zone.kind].name} ${String(a.target.zone.cells.length)} マス` });
+  // 議員が見る得（申請が完成した形を入れて数える）。審議中だけ（完成した後は都市に入っている）
+  if (isReviewing(a)) {
+    const g = gainsOf(world, a).raw;
+    const n = (v: number): string => (Math.round(v * 10) / 10).toLocaleString('ja-JP');
+    if (g.jobs > 0) gains.push({ label: '雇用', value: `+${n(g.jobs)} 人分の仕事` });
+    if (g.afford > 0) gains.push({ label: '戸数', value: `+${n(g.afford)} 戸` });
+    if (g.tech > 0) gains.push({ label: '技術力', value: `+${n(g.tech)}` });
+    if (g.finance > 0) gains.push({ label: '税収', value: `週に +${n(g.finance)}` });
+    if (g.environment > 0) gains.push({ label: '緑地', value: `${n(g.environment)} マス` });
   }
   return {
     ...rowOf(a, world, day),
@@ -218,6 +225,7 @@ export function permitDetail(world: World, id: string): PermitDetail | null {
     exception: a.exception,
     objections: objectionRows(a, world),
     gains,
+    council: a.stage === 'council' ? 'outlook' : a.vote && !a.vote.consent ? 'result' : null,
     canWithdraw: isReviewing(a),
     refund: a.reserved,
   };

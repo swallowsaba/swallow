@@ -7,7 +7,8 @@ export type IconName =
   | 'road' | 'zone' | 'facility' | 'park' | 'demolish' | 'rotate' | 'pause' | 'curve' | 'straight' | 'alert'
   | 'graph' | 'list' | 'search' | 'close' | 'start' | 'check' | 'hint' | 'terminal' | 'upgrade' | 'down' | 'database'
   | 'export' | 'import' | 'restart' | 'save' | 'calendar' | 'approval' | 'speed1' | 'speed2' | 'speed3'
-  | 'up' | 'heat' | 'collapse' | 'civic' | 'permit' | 'pin';
+  | 'up' | 'heat' | 'collapse' | 'civic' | 'permit' | 'pin'
+  | 'issue-afford' | 'issue-environment' | 'issue-jobs' | 'issue-finance' | 'issue-safety' | 'issue-traffic' | 'issue-tech' | 'vote';
 
 const PATHS: Record<IconName, string> = {
   // 開いた本
@@ -98,6 +99,22 @@ const PATHS: Record<IconName, string> = {
   permit: 'M4 4.5h16v10H4Z M7 21v-6.5 M17 21v-6.5 M7.5 8h9 M7.5 11h5.5',
   // 場所の印（地図の針）
   pin: 'M12 21s6.5-6.2 6.5-11a6.5 6.5 0 0 0-13 0c0 4.8 6.5 11 6.5 11Z M12 12.2a2.2 2.2 0 1 0 0-4.4 2.2 2.2 0 0 0 0 4.4Z',
+  // 議会の論点（docs/game-design.md 18.1）: 手頃さ（戸口のある家と鍵穴）
+  'issue-afford': 'M4 11.5 12 4.5l8 7 M6.5 9.5V20h11V9.5 M12 13.5a1.6 1.6 0 1 0 0 .1 M12 15v2.5',
+  // 環境（葉と葉脈）
+  'issue-environment': 'M5.5 19.5C5 11 10.5 5.5 19.5 4.5c-.5 9-6 14.5-14 15Z M5.5 19.5 14 10.5',
+  // 雇用（取っ手のある鞄）
+  'issue-jobs': 'M3.5 8.5h17V19h-17Z M9 8.5V6h6v2.5 M3.5 13h17 M11 13v2h2v-2',
+  // 財政（天秤）
+  'issue-finance': 'M12 4v15.5 M7.5 19.5h9 M5 7.5h14 M5 7.5 2.5 13.5h5Z M19 7.5l-2.5 6h5Z',
+  // 安全（盾と十字）
+  'issue-safety': 'M12 3 19 6v5.5c0 4.3-3 7.8-7 9.2-4-1.4-7-4.9-7-9.2V6Z M12 8.5v6.5 M8.8 11.8h6.4',
+  // 交通（路線バスの前）
+  'issue-traffic': 'M6.5 3.5h11a2 2 0 0 1 2 2V17h-15V5.5a2 2 0 0 1 2-2Z M4.5 11.5h15 M7.5 20.5V17 M16.5 20.5V17 M8 14.3h.01 M16 14.3h.01',
+  // 技術と教育（足の出た半導体の板）
+  'issue-tech': 'M8 8h8v8H8Z M10 4.5V8 M14 4.5V8 M10 16v3.5 M14 16v3.5 M4.5 10H8 M4.5 14H8 M16 10h3.5 M16 14h3.5 M10.5 10.5h3v3h-3Z',
+  // 採決（投票箱と札）
+  vote: 'M4.5 12.5h15V20h-15Z M8 12.5 9.5 5h5l1.5 7.5 M10.5 8.5h3 M4.5 16h15',
 };
 
 export function Icon({ name, size = 20 }: { name: IconName; size?: number }) {

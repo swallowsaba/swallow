@@ -72,6 +72,7 @@ export function PermitListWindow({ store, stack, shifted }: { store: CityStore; 
         <span className="permit-row-mid">
           <Marks marks={r.marks} />
           <span className="permit-row-stage">{r.stageLabel}</span>
+          {r.stage === 'appeal' ? <span className="permit-row-appeal" data-testid={`permit-row-appeal-${r.id}`}><Icon name="alert" size={12} />申し立て</span> : null}
           <Opposition value={r.opposition} />
         </span>
         <span className="permit-row-wait">{r.waiting}</span>
@@ -188,7 +189,7 @@ function Preempt({ store, id, skills }: { store: CityStore; id: string; skills: 
 export function PermitDetailWindow({ store, stack, shifted, skills = {} }: { store: CityStore; stack: number; shifted: boolean; skills?: SkillValues }) {
   const s = useStore(store, useShallow((x) => ({
     id: x.permitId, apps: x.world.applications, day: Math.floor(x.world.city.day), closeWindow: x.closeWindow, openWindow: x.openWindow, focusAt: x.focusAt, withdraw: x.withdraw,
-    setOverlay: x.setOverlay, openHearing: x.openHearing,
+    setOverlay: x.setOverlay, openHearing: x.openHearing, openCouncil: x.openCouncil, openAppeal: x.openAppeal,
   })));
   const [confirm, setConfirm] = useState(false);
   // 確かめの段は、窓の下の端にあっても見えるように巻く
@@ -221,6 +222,18 @@ export function PermitDetailWindow({ store, stack, shifted, skills = {} }: { sto
         <button type="button" className="permit-hearing" data-testid="permit-open-hearing" onClick={() => s.openHearing(d.id)}>
           <Icon name="civic" size={16} />
           公聴会を開く
+        </button>
+      ) : null}
+      {d.council ? (
+        <button type="button" className="permit-council" data-testid="permit-open-council" onClick={() => s.openCouncil(d.id)}>
+          <Icon name="vote" size={16} />
+          {d.council === 'outlook' ? '議会の見込みを見る（議員を説得できる）' : '採決の結果を見る'}
+        </button>
+      ) : null}
+      {d.stage === 'appeal' ? (
+        <button type="button" className="permit-appeal" data-testid="permit-open-appeal" onClick={() => s.openAppeal(d.id)}>
+          <Icon name="alert" size={16} />
+          異議申し立てに答える
         </button>
       ) : null}
       <Marks marks={d.marks} wide />

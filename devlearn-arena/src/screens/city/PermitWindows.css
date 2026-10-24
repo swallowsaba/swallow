@@ -504,3 +504,102 @@
 .permit-preempt-note {
   color: var(--hud-text-sub);
 }
+
+/* 異議申し立ての小さな窓（docs/ui-design.md 10.5）。申し立ては赤の線 */
+.appeal-now {
+  border-left-color: var(--bad);
+}
+.appeal-now .permit-now-stage {
+  color: var(--hud-text);
+}
+.appeal-reasons {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: var(--fs-13);
+}
+.appeal-reasons li {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  padding: 3px 0;
+  border-bottom: 1px solid var(--hud-line);
+}
+.appeal-reasons b {
+  flex: 1;
+}
+.appeal-reasons .num {
+  font-family: var(--font-number);
+}
+.appeal-how {
+  font-size: var(--fs-12);
+  color: var(--hud-text-sub);
+}
+.appeal-note {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin: 6px 0;
+  font-size: var(--fs-12);
+  line-height: 1.5;
+  color: var(--hud-text-sub);
+}
+.appeal-note b {
+  font-family: var(--font-number);
+  color: var(--hud-text);
+}
+.appeal-issue {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 6px 0;
+}
+.appeal-issue-title {
+  margin: 0;
+  font-size: var(--fs-13);
+  font-weight: 800;
+}
+
+/* 申請の詳細の、議会の採決と申し立てへの入口 */
+.permit-council,
+.permit-appeal {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: 100%;
+  margin: 0 0 8px;
+  padding: 7px 12px;
+  border: 1px solid var(--hud-line);
+  border-radius: 2px 10px 2px 10px;
+  background: var(--hud-bg-strong);
+  color: var(--hud-text);
+  font-weight: 800;
+  font-size: var(--fs-14);
+  cursor: pointer;
+}
+.permit-council:hover,
+.permit-council:focus-visible {
+  border-color: var(--gold);
+  outline: none;
+}
+.permit-appeal {
+  border-color: var(--bad);
+}
+.permit-appeal:hover,
+.permit-appeal:focus-visible {
+  background: var(--hud-bg);
+  outline: none;
+}
+/* 一覧の行の、申し立ての赤い印 */
+.permit-row-appeal {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: var(--fs-12);
+  color: var(--hud-text);
+}
+.permit-row-appeal svg {
+  flex: none;
+  color: var(--bad);
+}

@@ -92,7 +92,7 @@ describe('申請 1 件の詳細（10.2）', () => {
     const funds = store.getState().world.city.funds;
     const d = permitDetail(store.getState().world, 'a1');
     // 審査は 15 日目まで → 反対の受付は 29 日目まで → 次の議会（42 日目）→ 工事 28 日 = 70 日目。今は 10 日目
-    expect(d).toMatchObject({ toComplete: 60, reserved: 400, wallet: '開発資金', canWithdraw: true, gains: [{ label: '雇用', value: '+15 人分の仕事' }, { label: '技術力', value: '+1' }] });
+    expect(d).toMatchObject({ toComplete: 60, reserved: 400, wallet: '開発資金', canWithdraw: true, gains: [{ label: '雇用', value: '+15 人分の仕事' }, { label: '技術力', value: '+1' }, { label: '税収', value: '週に +0.8' }] });
     store.getState().openPermit('a1');
     const host = mount(<PermitDetailWindow store={store} stack={0} shifted={false} />);
     expect(host.querySelector('[data-testid="permit-now"]')?.textContent).toContain('用途地域の審査');

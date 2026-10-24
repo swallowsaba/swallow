@@ -23,11 +23,13 @@ import { OverlayToggle, type OverlayLegend } from './OverlayToggle';
 import { RecommendPanel } from './RecommendPanel';
 import { unplacedLandmarks } from '@/learning/missions';
 import type { DomainId } from '@/city/types';
-import type { CityStore, ViewKind } from './cityStore';
+import type { CityGameState, CityStore, ViewKind } from './cityStore';
 import { HEAT_INFO, heatImage, heatLegend } from './heatScale';
 import { VIEW_LABELS } from './viewKinds';
 import { ViewWindow } from './ViewWindow';
 import { PermitDetailWindow, PermitListWindow } from './PermitWindows';
+import { AppealWindow } from './AppealWindow';
+import { CouncilWindow } from './CouncilWindow';
 import { HearingWindow } from './HearingWindow';
 import { mayorCount, sitesOf } from './permitView';
 import type { World } from '@/sim/types';
@@ -226,6 +228,14 @@ export function CityScreen({ session, active = true, covered = false, current, d
     s.askDemolish(null);
   }, [store]);
   const onNo = useCallback(() => store.getState().askDemolish(null), [store]);
+  // 市政の知らせを押すと、その知らせの窓を開く（採決の結果・異議申し立て・申請の詳細）
+  const openNotice = useCallback((n: CityGameState['notice']) => {
+    const s = store.getState();
+    if (!n?.permitId) return;
+    if (n.window === 'council') s.openCouncil(n.permitId);
+    else if (n.window === 'appeal') s.openAppeal(n.permitId);
+    else s.openPermit(n.permitId);
+  }, [store]);
   // ミニマップは、描画器ができた後に、その今の姿を読む
   const minimapSource = useCallback(() => rendererRef.current, []);
 
@@ -274,7 +284,7 @@ export function CityScreen({ session, active = true, covered = false, current, d
             paused={state.paused}
             shifted={panel !== null}
             windows={state.windows.length}
-            {...(state.notice?.permitId ? { onOpen: () => state.openPermit(state.notice?.permitId ?? '') } : {})}
+            {...(state.notice?.permitId ? { onOpen: () => openNotice(state.notice) } : {})}
           />
           {onLesson ? <RecommendPanel progress={session.progress} onLesson={onLesson} {...(onMission ? { onMission } : {})} /> : null}
           <InfoPanel
@@ -297,9 +307,11 @@ export function CityScreen({ session, active = true, covered = false, current, d
           {state.windows.map((id, i) => {
             if (id === 'view') return <ViewWindow key={id} store={store} stack={i} shifted={panel !== null} />;
             if (id === 'permits') return <PermitListWindow key={id} store={store} stack={i} shifted={panel !== null} />;
+            if (id === 'appeal') return <AppealWindow key={id} store={store} stack={i} shifted={panel !== null} skills={skillValues} />;
             return <PermitDetailWindow key={id} store={store} stack={i} shifted={panel !== null} skills={skillValues} />;
           })}
           <HearingWindow store={store} skills={skillValues} />
+          <CouncilWindow store={store} />
           <HeatHover store={store} canvas={canvasRef} renderer={rendererRef} />
           <BuildMenu state={state} landmarks={landmarks} />
           <PlacementHint hint={state.confirm ? null : state.hint} />

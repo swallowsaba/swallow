@@ -121,6 +121,7 @@ export function attachBuildControls(canvas: HTMLCanvasElement, renderer: CityRen
     const s = store.getState();
     // 一番上の窓から閉じる（大きな窓 → 確認 → 道具 → 小さな窓 → 選択 → 建設メニュー）
     if (s.hearingId) s.leaveHearing();
+    else if (s.councilId) s.leaveCouncil();
     else if (s.confirm) s.askDemolish(null);
     else if (s.tool.kind !== 'none') s.setTool({ kind: 'none' });
     else if (s.windows.length > 0) s.closeWindow(s.windows[s.windows.length - 1] as SmallWindowId);

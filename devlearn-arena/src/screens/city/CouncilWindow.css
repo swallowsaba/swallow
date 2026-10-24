@@ -1,0 +1,279 @@
+/* 議会の採決の画面（docs/ui-design.md 10.4）。大きな窓（幅 720・高さ最大 70%・中央）。計器の窓（docs/visual-design.md 4 章）。
+   7 人を札にせず、議場の席のように横一列に並べ、席の間を細い線で区切る。後ろに都市が見える */
+.council-backdrop {
+  position: absolute;
+  inset: 48px 0 0;
+  z-index: 30;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+
+.council {
+  pointer-events: auto;
+  width: 720px;
+  max-width: calc(100vw - 48px);
+  max-height: 70vh;
+  display: flex;
+  flex-direction: column;
+  background: var(--hud-bg-strong);
+  border: 2px solid var(--hud-line);
+  border-radius: 4px 18px 4px 18px;
+  box-shadow: var(--shadow-window);
+  backdrop-filter: blur(6px);
+  animation: council-in 0.2s ease-out;
+}
+@keyframes council-in {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .council {
+    animation: none;
+  }
+}
+:root[data-motion='reduced'] .council {
+  animation: none;
+}
+
+.council-head {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 10px 10px 10px 16px;
+  border-bottom: 1px solid var(--hud-line);
+}
+.council-icon {
+  display: flex;
+  color: var(--gold);
+}
+.council-title {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  font-family: var(--font-heading);
+  font-weight: 800;
+  font-size: var(--fs-18);
+  line-height: 1.2;
+}
+.council-stat {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+  font-size: var(--fs-12);
+  color: var(--hud-text-sub);
+}
+.council-stat b {
+  font-family: var(--font-number);
+  font-size: var(--fs-22);
+  color: var(--hud-text);
+}
+.council-unit {
+  font-size: var(--fs-12);
+}
+.council-verdict {
+  padding: 2px 10px;
+  border: 1px solid var(--hud-line);
+  border-radius: 2px 8px 2px 8px;
+  font-weight: 800;
+  font-size: var(--fs-14);
+  color: var(--hud-text-sub);
+}
+.council-verdict.is-pass {
+  border-color: var(--gold);
+  color: var(--gold);
+}
+.council-verdict.is-fail {
+  border-color: var(--bad);
+  color: var(--hud-text);
+}
+.council-close {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border: none;
+  background: var(--transparent);
+  color: var(--hud-text-sub);
+  cursor: pointer;
+}
+.council-close:hover,
+.council-close:focus-visible {
+  color: var(--gold-light);
+}
+
+/* 席の列 */
+.council-seats {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  min-height: 0;
+  overflow-y: auto;
+}
+.council-seat {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  border-right: 1px solid var(--hud-line);
+}
+.council-seat:last-child {
+  border-right: none;
+}
+.council-seat-button {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  width: 100%;
+  padding: 12px 4px 8px;
+  border: none;
+  border-bottom: 3px solid var(--transparent);
+  background: var(--transparent);
+  color: var(--hud-text);
+  cursor: pointer;
+}
+.council-seat-button:hover,
+.council-seat-button:focus-visible {
+  background: var(--hud-bg);
+  outline: none;
+}
+.council-seat.is-picked .council-seat-button {
+  border-bottom-color: var(--gold);
+}
+/* 人の影: 待っている間は薄く、賛否が出たら賛成は明るく、反対は沈む（色だけに頼らず、下に「賛成」「反対」の字） */
+.council-figure {
+  color: var(--hud-text-sub);
+  opacity: 0.45;
+  transition: opacity 0.25s, color 0.25s;
+}
+.council-seat.is-yes .council-figure {
+  color: var(--hud-text);
+  opacity: 1;
+}
+.council-seat.is-no .council-figure {
+  color: var(--hud-text-sub);
+  opacity: 0.75;
+}
+:root[data-motion='reduced'] .council-figure {
+  transition: none;
+}
+.council-name {
+  font-weight: 800;
+  font-size: var(--fs-13);
+  white-space: nowrap;
+}
+.council-issue {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  font-size: var(--fs-12);
+  color: var(--hud-text-sub);
+  white-space: nowrap;
+}
+.council-issue svg {
+  flex: none;
+}
+.council-vote {
+  margin-top: 2px;
+  font-weight: 800;
+  font-size: var(--fs-13);
+  color: var(--hud-text-sub);
+}
+.council-seat.is-yes .council-vote {
+  color: var(--ok);
+}
+/* 赤は文字に使わない（4.5:1 に届かない）。反対の字は本文の色で、赤い下線を印にする */
+.council-seat.is-no .council-vote {
+  color: var(--hud-text);
+  box-shadow: inset 0 -2px 0 var(--bad);
+}
+.council-line {
+  margin: 0;
+  padding: 0 8px 12px;
+  font-size: var(--fs-12);
+  line-height: 1.55;
+  color: var(--hud-text);
+}
+.council-persuaded {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  padding: 0 5px;
+  border: 1px solid var(--gold);
+  border-radius: 2px;
+  font-size: var(--fs-12);
+  color: var(--gold);
+}
+
+.council-foot {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 10px 14px;
+  border-top: 1px solid var(--hud-line);
+}
+.council-profile {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  font-size: var(--fs-12);
+  line-height: 1.5;
+  color: var(--hud-text-sub);
+}
+.council-profile b {
+  margin-right: 8px;
+  color: var(--hud-text);
+}
+.council-persuade {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+}
+.council-days {
+  font-size: var(--fs-12);
+  color: var(--hud-text-sub);
+}
+.council-days b {
+  font-family: var(--font-number);
+  color: var(--hud-text);
+}
+.council-persuade-note {
+  font-size: var(--fs-12);
+  color: var(--gold);
+}
+.council-persuade-button {
+  padding: 7px 14px;
+  border: 1px solid var(--gold);
+  border-radius: 2px 10px 2px 10px;
+  background: var(--gold);
+  color: var(--navy);
+  font-weight: 800;
+  font-size: var(--fs-13);
+  cursor: pointer;
+}
+.council-persuade-button b {
+  font-family: var(--font-number);
+}
+.council-persuade-button:hover:not(:disabled),
+.council-persuade-button:focus-visible {
+  background: var(--gold-light);
+  outline: none;
+}
+.council-persuade-button:disabled {
+  border-color: var(--hud-line);
+  background: var(--transparent);
+  color: var(--hud-text-sub);
+  cursor: default;
+}

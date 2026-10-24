@@ -13,6 +13,7 @@ import { EXPLAIN, NAME_PARTS, POLITICS_RULES } from '@/content/politics';
 import { explainApproval } from '@/sim/explain';
 import type { Hand } from '@/sim/hearing';
 import { reactionLesson, reactionText } from './hearingView';
+import { groupName } from './permitView';
 import { applicationName, daysLeft, daysToComplete, isReviewing } from '@/sim/permits';
 import type { HeatFields, HeatKind } from '@/sim/heat';
 import { applyOp, type Command, type Op } from '@/sim/commands';
@@ -44,7 +45,10 @@ export type MenuGroup = 'road' | 'zone' | 'facility' | 'park' | 'demolish';
 export type ViewKind = OverlayKind | HeatKind;
 
 /** 都市の上に重ねる小さな窓（docs/ui-design.md 10.0）。表示切替・許認可の一覧・申請 1 件の詳細 */
-export type SmallWindowId = 'view' | 'permits' | 'permit';
+export type SmallWindowId = 'view' | 'permits' | 'permit' | 'appeal';
+
+/** 知らせを押した時に開く窓（既定は申請の詳細） */
+export type NoticeWindow = 'permit' | 'council' | 'appeal';
 /** 同時に開ける小さな窓の数 */
 export const MAX_SMALL_WINDOWS = 3;
 
@@ -81,7 +85,7 @@ export interface CityGameState {
   hint: Hint | null;
   confirm: DemolishTarget | null;
   /** 上の帯の下に出す 1 行の知らせ。市政の知らせは、押すとその申請の詳細を開く（docs/ui-design.md 3 章） */
-  notice: { text: string; until: number; permitId?: string } | null;
+  notice: { text: string; until: number; permitId?: string; window?: NoticeWindow } | null;
   /** 選んでいる建物（情報パネルを出す） */
   selected: Selection | null;
   /** 表示の切り替え */
@@ -96,6 +100,10 @@ export interface CityGameState {
   permitId: string | null;
   /** 公聴会の窓に出している申請（大きな窓。開いている間、都市の時間は止まる。docs/ui-design.md 10.0・10.3） */
   hearingId: string | null;
+  /** 議会の採決の画面に出している申請（大きな窓。docs/ui-design.md 10.4） */
+  councilId: string | null;
+  /** 異議申し立ての小さな窓に出している申請（docs/ui-design.md 10.5） */
+  appealId: string | null;
   /** 最後に出した手の、住民と議員の受け取り方の 1 行 */
   reaction: { reasonId: string; text: string; lesson: string | null } | null;
   /** 学習に出た時の都市とスキル（戻った時に変化を比べる） */
@@ -121,7 +129,7 @@ export interface CityGameState {
   setHint: (hint: Hint | null) => void;
   askDemolish: (target: DemolishTarget | null) => void;
   /** 知らせを出す。出ている知らせがあれば、その後に出す。permitId を付けると、押すとその申請の詳細を開く */
-  notify: (text: string, now: number, permitId?: string) => void;
+  notify: (text: string, now: number, permitId?: string, window?: NoticeWindow) => void;
   /** 時刻 now に、出ている知らせが消える時なら、次の知らせを出す */
   expireNotice: (now: number) => void;
   /** 学習に出る（都市とスキルを覚えておく） */
@@ -153,6 +161,17 @@ export interface CityGameState {
    * 出せたら、住民と議員の受け取り方の 1 行を reaction に置く
    */
   playHand: (applicationId: string, reasonId: string, hand: Hand, skills: SkillValues) => boolean;
+  /** 議会の採決の画面を開く（議会の段なら見込み、採決の後なら結果。時間を止める）。大きな窓は 1 つまで */
+  openCouncil: (id: string) => void;
+  leaveCouncil: () => void;
+  /** 議員を説得する（採決の前。政治資本 3。1 件の申請で 1 人まで） */
+  persuade: (applicationId: string, memberId: string) => boolean;
+  /** 異議申し立ての小さな窓を開く */
+  openAppeal: (id: string) => void;
+  /** 申し立てに、追加の譲歩で答える。取り下げられたら知らせる */
+  appealConcede: (applicationId: string, reasonId: string, concessionId: string, skills: SkillValues, now: number) => boolean;
+  /** 政治資本 4 で申し立てを抑える */
+  appealSuppress: (applicationId: string, now: number) => boolean;
   /** その場所へカメラを寄せ、光の輪で示す（説明・記事・請願を押した時） */
   focusAt: (at: { x: number; y: number }, size?: { x: number; y: number }) => void;
   setOverlay: (overlay: ViewKind | null) => void;
@@ -165,7 +184,7 @@ export interface CityGameState {
 }
 
 /** 待っている知らせ（市政の知らせは、押すと開く申請を持つ） */
-export type QueuedNotice = string | { text: string; permitId: string };
+export type QueuedNotice = string | { text: string; permitId: string; window?: NoticeWindow };
 
 /** 1 つの知らせを出しておく時間（docs/ui-design.md 3 章: 3 秒で消える） */
 export const NOTICE_MS = 3000;
@@ -217,7 +236,7 @@ export function createCityStore(seed?: number, initial?: City, options: CityStor
       if (m.heat) set({ heat: m.heat });
       // 申請の段階が進んだら知らせる（押すと申請の詳細。docs/ui-design.md 3 章）
       if (base.applications !== prevApps) {
-        for (const text of stageNotices(prevApps, base)) get().notify(text.text, performance.now(), text.permitId);
+        for (const n of stageNotices(prevApps, base)) get().notify(n.text, performance.now(), n.permitId, n.window);
       }
       // 支持率が 4 週で 3 以上動いたら、説明の 1 行目を知らせにも出す（docs/ui-design.md 11.3）
       const last = base.history.breakdown.at(-1);
@@ -258,6 +277,8 @@ export function createCityStore(seed?: number, initial?: City, options: CityStor
       queue: [],
       permitId: null,
       hearingId: null,
+      councilId: null,
+      appealId: null,
       reaction: null,
       away: null,
       focus: null,
@@ -301,10 +322,11 @@ export function createCityStore(seed?: number, initial?: City, options: CityStor
       rotate: () => set((s) => ({ rotation: ((s.rotation + 90) % 360) as Facility['rotation'] })),
       setHint: (hint) => set({ hint }),
       askDemolish: (confirm) => set({ confirm }),
-      notify: (text, now, permitId) => {
+      notify: (text, now, permitId, window) => {
         const s = get();
-        if (s.notice && now < s.notice.until) set({ queue: [...s.queue, permitId ? { text, permitId } : text] });
-        else set({ notice: { text, until: now + NOTICE_MS, ...(permitId ? { permitId } : {}) } });
+        const link = permitId ? { permitId, ...(window ? { window } : {}) } : {};
+        if (s.notice && now < s.notice.until) set({ queue: [...s.queue, permitId ? { text, permitId, ...(window ? { window } : {}) } : text] });
+        else set({ notice: { text, until: now + NOTICE_MS, ...link } });
       },
       expireNotice: (now) => {
         const s = get();
@@ -362,7 +384,7 @@ export function createCityStore(seed?: number, initial?: City, options: CityStor
       openHearing: (id) => {
         const app = get().world.applications.find((a) => a.id === id);
         if (app?.stage !== 'hearing') return;
-        set({ hearingId: id, reaction: null });
+        set({ hearingId: id, councilId: null, reaction: null });
         get().hold('window', true);
       },
       leaveHearing: () => {
@@ -384,6 +406,39 @@ export function createCityStore(seed?: number, initial?: City, options: CityStor
         if (!after || after.objections.find((o) => o.reasonId === reasonId)?.hand === undefined) return false;
         set({ reaction: { reasonId, text: reactionText(before, after, reasonId), lesson: reactionLesson(after, reasonId) } });
         return true;
+      },
+      openCouncil: (id) => {
+        const app = get().world.applications.find((a) => a.id === id);
+        if (!app || !(app.stage === 'council' || (app.vote && !app.vote.consent))) return;
+        set({ councilId: id, hearingId: null, reaction: null });
+        get().hold('window', true);
+      },
+      leaveCouncil: () => {
+        set({ councilId: null });
+        get().hold('window', false);
+      },
+      persuade: (applicationId, memberId) => {
+        const before = get().world.applications.find((a) => a.id === applicationId);
+        if (!before || before.persuaded) return false;
+        get().dispatch({ kind: 'persuade', applicationId, memberId });
+        return get().world.applications.find((a) => a.id === applicationId)?.persuaded === memberId;
+      },
+      openAppeal: (id) => {
+        set({ appealId: id });
+        get().openWindow('appeal');
+      },
+      appealConcede: (applicationId, reasonId, concessionId, skills, now) => {
+        get().dispatch({ kind: 'appealConcede', applicationId, reasonId, concessionId, skills: { ...skills } });
+        const after = get().world.applications.find((a) => a.id === applicationId);
+        const done = after?.objections.find((o) => o.reasonId === reasonId)?.hand?.kind === 'concede';
+        if (done && after.appeal?.resolved === 'conceded') get().notify(`追加の譲歩で、反対率が ${String(Math.round(after.opposition))}% に下がった。申し立ては取り下げられる`, now, applicationId);
+        return done;
+      },
+      appealSuppress: (applicationId, now) => {
+        get().dispatch({ kind: 'appealSuppress', applicationId });
+        const ok = get().world.applications.find((a) => a.id === applicationId)?.appeal?.resolved === 'capital';
+        if (ok) get().notify('政治資本を使って申し立てを抑えた。申し立てた人たちの市政への信頼が下がった', now, applicationId);
+        return ok;
       },
       withdraw: (id, now) => {
         const app = get().world.applications.find((a) => a.id === id);
@@ -417,21 +472,36 @@ function stillThere(world: World, sel: Selection): boolean {
  * 申請の段階が進んだ時の知らせ（公聴会の段に入った・可決して着工した・完成した・否決された）。
  * 用途地域の審査と反対の受付に入った事は、看板で見えるので知らせない
  */
-export function stageNotices(before: readonly Application[], after: World): { text: string; permitId: string }[] {
+export function stageNotices(before: readonly Application[], after: World): { text: string; permitId: string; window?: NoticeWindow }[] {
   const was = new Map(before.map((a) => [a.id, a.stage]));
-  const out: { text: string; permitId: string }[] = [];
+  const out: { text: string; permitId: string; window?: NoticeWindow }[] = [];
   const day = Math.floor(after.city.day);
   for (const a of after.applications) {
     const prev = was.get(a.id);
     if (prev === undefined || prev === a.stage) continue;
     const name = applicationName(a, after.city);
+    const voted = a.vote && !a.vote.consent ? a.vote : null;
+    const count = voted ? `（賛成 ${String(voted.members.filter((m) => m.yes).length)}・反対 ${String(voted.members.filter((m) => !m.yes).length)}）` : '';
     if (a.stage === 'hearing') out.push({ text: `${name}の申請が公聴会の段に入った。14 日のうちに開ける`, permitId: a.id });
+    else if (a.stage === 'appeal') out.push({ text: `${name}の申請を議会が可決した${count}が、${appealGroupName(a, after)}が異議を申し立てた。28 日、着工が止まる`, permitId: a.id, window: 'appeal' });
+    else if (a.stage === 'construction' && prev === 'appeal') {
+      const how = a.appeal?.resolved === 'conceded' ? '申し立ては取り下げられた' : a.appeal?.resolved === 'capital' ? '申し立てを抑えた' : '28 日が過ぎ、申し立ては退けられた';
+      out.push({ text: `${how}。${name}を着工した（完成まで ${String(daysLeft(a, day))} 日）`, permitId: a.id });
+    } else if (a.stage === 'construction' && voted) out.push({ text: `${name}の申請を議会が可決した${count}。着工した（完成まで ${String(daysLeft(a, day))} 日）`, permitId: a.id, window: 'council' });
     else if (a.stage === 'construction') out.push({ text: `${name}の申請が可決された。着工した（完成まで ${String(daysLeft(a, day))} 日）`, permitId: a.id });
     else if (a.stage === 'done' && a.kind === 'rezone') out.push({ text: `${name}の申請が可決された。区画を塗った`, permitId: a.id });
     else if (a.stage === 'done') out.push({ text: `${name}が完成した`, permitId: a.id });
+    else if (a.stage === 'rejected' && voted) out.push({ text: `${name}の申請を議会が否決した${count}。取り分けた費用は戻った`, permitId: a.id, window: 'council' });
     else if (a.stage === 'rejected') out.push({ text: `${name}の申請が否決された。取り分けた費用は戻った`, permitId: a.id });
   }
   return out;
+}
+
+/** 申し立てた集団の呼び名（「灯町の住民」「環境の会」） */
+function appealGroupName(a: Application, world: World): string {
+  let top: Application['objections'][number] | undefined;
+  for (const o of a.objections) if (o.group === a.appeal?.group && (!top || o.share > top.share)) top = o;
+  return top ? groupName(top, world) : '反対した人たち';
 }
 
 export type CityStore = ReturnType<typeof createCityStore>;
