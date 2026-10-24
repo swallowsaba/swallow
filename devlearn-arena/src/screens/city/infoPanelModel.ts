@@ -15,6 +15,8 @@ import type { Progress } from '@/game/types';
 import { lessonsForDomains, type LessonStatus } from '@/learning/library';
 import { skillBecause } from '../skills';
 import { domain as domainColors } from '@/ui/tokens';
+import { isOpen, STAGE_LABEL, waitingText } from '@/sim/permits';
+import type { Application } from '@/sim/types';
 import { missionCountForFacility, missionsForFacility, missionStatus, type MissionStatus } from '@/learning/missions';
 
 /**
@@ -50,9 +52,11 @@ export interface FacilityPanelModel {
   missions: { id: string; title: string; status: MissionStatus }[];
   /** 施設の分野を含むミッションの全部の数（Lv が上がると、この数まで並ぶ） */
   missionTotal: number;
-  /** 次のレベル（docs/game-design.md 5 章）。ok なら「上げる」を押せる。blocked は上げられない理由 */
-  upgrade: { level: number; title: string; adds: string; cost: number; needs: string; ok: boolean; blocked: string[] } | null;
+  /** 次のレベル（docs/game-design.md 5 章）。ok なら「上げる」を押せる。blocked は上げられない理由。pending はアップグレードの申請が進んでいる時の 1 行 */
+  upgrade: { level: number; title: string; adds: string; cost: number; needs: string; ok: boolean; blocked: string[]; pending?: string } | null;
   effect: string | null;
+  /** 申請中・工事中なら、その申請（「申請の詳細を見る」。docs/ui-design.md 5 章） */
+  permitId?: string;
 }
 
 export interface BuildingPanelModel {
@@ -72,17 +76,21 @@ export type PanelModel = FacilityPanelModel | BuildingPanelModel;
 /** 分野ごとのスキル（src/game/skill.ts）。無い分野は 0 として扱う */
 export type Skills = Partial<Record<DomainId, SkillDetail>>;
 
-export function panelModel(city: City, sel: Selection, skills: Skills = {}, progress: Progress = emptyProgress()): PanelModel | null {
+export function panelModel(city: City, sel: Selection, skills: Skills = {}, progress: Progress = emptyProgress(), applications: readonly Application[] = []): PanelModel | null {
+  if (sel.kind === 'application') return applicationModel(city, sel.id, skills, progress, applications);
   if (sel.kind === 'facility') {
     const f = city.facilities.find((x) => x.id === sel.id);
     if (!f) return null;
     const def = FACILITY_DEFS[f.type];
     const cond = facilityCondition(f, city);
+    const day = Math.floor(city.day);
+    const left = f.completeDay !== undefined ? Math.max(0, f.completeDay - day) : null;
     const condition = cond.kind === 'active'
       ? { text: '稼働中', tone: 'ok' as const }
       : cond.kind === 'constructing'
-        ? { text: `建設中（${cond.stage === 'foundation' ? '基礎' : '骨組み'}）`, tone: 'warn' as const }
+        ? { text: `建設中（${cond.stage === 'foundation' ? '基礎' : '骨組み'}）${left !== null ? `・完成まで ${String(left)} 日` : ''}`, tone: 'warn' as const }
         : { text: '止まっている: 道路に面していない', tone: 'bad' as const };
+    const permit = applications.find((a) => isOpen(a) && a.target.facilityId === f.id);
     if (def.group !== 'facility') {
       return {
         kind: 'facility', id: f.id, name: def.name, typeLabel: '公園の類', level: f.level, levelNote: '', condition,
@@ -101,6 +109,7 @@ export function panelModel(city: City, sel: Selection, skills: Skills = {}, prog
     const main = domains[0];
     const next = nextLevelOf(f);
     const check = checkUpgrade(city, f.id, Object.fromEntries(domains.map((d) => [d.id, d.value])));
+    const upgrading = permit?.kind === 'upgrade' ? permit : undefined;
     const looks = def.looks ?? [];
     const adds = next ? looks[Math.min(next.level - 1, looks.length - 1)] ?? '' : '';
     const needs = next && check
@@ -127,10 +136,12 @@ export function panelModel(city: City, sel: Selection, skills: Skills = {}, prog
         adds: next.level - 1 < looks.length ? `${adds}が加わる` : '建物が大きく・細かくなる',
         cost: next.cost,
         needs,
-        ok: check?.ok ?? false,
-        blocked: check?.reasons.map((r) => r.text) ?? [],
+        ok: (check?.ok ?? false) && !upgrading,
+        blocked: upgrading ? [] : check?.reasons.map((r) => r.text) ?? [],
+        ...(upgrading ? { pending: `Lv${String(upgrading.target.toLevel ?? next.level)} へのアップグレードを申請中: ${waitingText(upgrading, day)}` } : {}),
       } : null,
       effect: null,
+      ...(permit ? { permitId: permit.id } : {}),
     };
   }
   const b = city.buildings.find((x) => x.id === sel.id);
@@ -155,5 +166,42 @@ export function panelModel(city: City, sel: Selection, skills: Skills = {}, prog
         : { text: `建設中（${stage === 'foundation' ? '基礎' : '骨組み'}）`, tone: 'warn' },
     people: zone.kind === 'residential' ? `住む人 ${String(amount)} 人` : `仕事 ${String(amount)} 人分`,
     growth: `近くの公園と施設: ${String(amenity)}`,
+  };
+}
+
+/**
+ * 申請中の施設（まだ都市に無い）の情報パネル。名前と申請の段階と、その分野の「ここで学ぶ」とミッション。
+ * 申請中でも学習は始められる（docs/ui-design.md 5 章・docs/game-design.md 20 章）
+ */
+function applicationModel(city: City, id: string, skills: Skills, progress: Progress, applications: readonly Application[]): FacilityPanelModel | null {
+  const app = applications.find((a) => a.id === id);
+  const type = app?.target.type;
+  if (!app || !type) return null;
+  const def = FACILITY_DEFS[type];
+  const day = Math.floor(city.day);
+  const domains = domainsOfFacility(type).map((d): DomainRow => {
+    const skill = skills[d.id];
+    const value = skill?.value ?? 0;
+    return {
+      id: d.id, name: d.name, color: domainColors[d.id], value, stageName: SKILL_STAGE_NAMES[skillStageOf(value)],
+      because: skill ? skillBecause(skill) : 'まだ学習の記録が無い（修了したレッスン 0 本）',
+    };
+  });
+  return {
+    kind: 'facility',
+    id: app.id,
+    name: def.name,
+    typeLabel: `${domains.map((d) => d.name).join('・')}の施設（申請中）`,
+    level: 1,
+    levelNote: '審議を経て着工し、完成すると動き出す',
+    condition: { text: `申請中: ${STAGE_LABEL[app.stage]}・${waitingText(app, day)}`, tone: 'warn' },
+    domains,
+    lessons: lessonsForDomains(domains.map((d) => d.id), progress).map((l) => ({ id: l.id, title: l.title, level: LEVEL_NAMES[l.level], status: l.status })),
+    libraryDomain: domains[0]?.id ?? null,
+    missions: missionsForFacility(type, 1).map((m) => ({ id: m.id, title: m.title, status: missionStatus(progress, m.id) })),
+    missionTotal: missionCountForFacility(type),
+    upgrade: null,
+    effect: null,
+    permitId: app.id,
   };
 }

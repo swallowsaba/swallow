@@ -8,7 +8,7 @@ import { broadleafTree, conifer, streetLamp } from './generate/shapes';
 import type { Rotation } from './projection';
 import { seedOf } from './random';
 import { resample } from './roadGeometry';
-import { constructionStage, type ConstructionStage } from './rules';
+import { constructionStage, facilityBuildStage, type ConstructionStage } from './rules';
 import { distanceToPolyline, type Terrain } from './terrain';
 import type { City, FacilityType, ZoneKind } from './types';
 
@@ -32,8 +32,8 @@ export interface SceneObject {
   facing: Rotation;
   /** 施設の絵。記念碑は landmark（どの記念碑か）で絵が決まる */
   source: { kind: 'model'; key: string; model: () => Model } | { kind: 'facility'; type: FacilityType; level: number; landmark?: string };
-  /** 選べる物（施設と区画の建物）。木や街灯には無い */
-  select?: { kind: 'facility' | 'building'; id: string };
+  /** 選べる物（施設と区画の建物と、申請中の敷地）。木や街灯には無い */
+  select?: { kind: 'facility' | 'building' | 'application'; id: string };
 }
 
 export { frontOf, roadCells } from './cells';
@@ -64,7 +64,7 @@ export function buildScene(cityState: City, terrain: Terrain): SceneObject[] {
   for (const f of cityState.facilities) {
     const size = footprintOf(f.type, f.rotation);
     for (let x = 0; x < size.w; x += 1) for (let y = 0; y < size.d; y += 1) taken.add(key(f.origin.x + x, f.origin.y + y));
-    const stage = f.state === 'active' ? 'done' : constructionStage(f.builtDay, cityState.day);
+    const stage = facilityBuildStage(f, cityState.day);
     const box = { id: f.id, x: f.origin.x, y: f.origin.y, w: size.w, d: size.d, z: 0, height: facilityHeight(f.type), facing: (f.rotation / 90) as Rotation, select: { kind: 'facility' as const, id: f.id } };
     if (stage === 'done') {
       out.push({ ...box, source: { kind: 'facility', type: f.type, level: f.level, ...(f.landmark ? { landmark: f.landmark } : {}) } });

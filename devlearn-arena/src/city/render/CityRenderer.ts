@@ -5,11 +5,12 @@ import type { Overlay, OverlayKind } from '../overlay';
 import { boxOutline, pickAt } from '../pick';
 import { createCamera, pan, rotateCamera, screenToWorld, zoomAt, type Camera, type Viewport } from '../camera';
 import type { CellMark } from '../place';
-import { constructionStage, SECONDS_PER_DAY } from '../rules';
+import { constructionStage, facilityBuildStage, SECONDS_PER_DAY } from '../rules';
 import { agentPose, agentsOf, roadNetwork, type Agent, type Network } from '../traffic';
 import { compareBoxes, depthOrder, type DepthBox } from '../depth';
 import { project, rotate, type Rotation } from '../projection';
 import { roadShapes, type RoadShape } from '../roadGeometry';
+import { permitSiteModel } from '../generate/construction';
 import { buildScene, type SceneObject } from '../scene';
 import { MAP_SIZE, generateTerrain, type Terrain } from '../terrain';
 import type { City, Facility, FacilityType, Point, Road } from '../types';
@@ -35,10 +36,31 @@ export interface Preview {
   ok: boolean;
 }
 
-/** 選んでいる物（施設か区画の建物） */
+/** 選んでいる物（施設か区画の建物か、申請中の敷地） */
 export interface Selection {
-  kind: 'facility' | 'building';
+  kind: 'facility' | 'building' | 'application';
   id: string;
+}
+
+/**
+ * 申請の敷地（docs/city-design.md 9.1）。施設の申請は囲いと看板、用途地域の変更は破線の縁と看板、
+ * アップグレードと工事中は看板だけ（工事の姿は施設が描く）。看板の文字は名札と同じく、重ならないように置く
+ */
+export interface SiteView {
+  /** 申請の ID */
+  id: string;
+  kind: 'facility' | 'rezone' | 'upgrade';
+  /** 敷地（回す前。施設は origin と大きさ、用途地域の変更は塗るマス） */
+  origin: Point;
+  w: number;
+  d: number;
+  rotation: 0 | 90 | 180 | 270;
+  cells: Point[];
+  /** 看板の 1 行目（名前）と 2 行目（段階と残りの日数） */
+  title: string;
+  line: string;
+  /** 工事中（囲いは描かない） */
+  building: boolean;
 }
 
 export interface RenderStats {
@@ -70,6 +92,11 @@ export class CityRenderer {
   private cityState: City;
   private signature = '';
   private objects: SceneObject[];
+  /** 都市から作った物（建物・施設・木・街灯）と、申請の敷地の囲い */
+  private cityObjects: SceneObject[];
+  private sites: SiteView[] = [];
+  private siteObjects: SceneObject[] = [];
+  private sitesKey = '';
   private preview: (Preview & { shapes: RoadShape[] }) | null = null;
   private sprites: SpriteCache;
   private chunks = new Map<string, HTMLCanvasElement>();
@@ -113,7 +140,8 @@ export class CityRenderer {
     this.cityState = cityState;
     this.ground = prepareGround(this.terrain, roadShapes(cityState.roads));
     this.ground.zones = cityState.zones;
-    this.objects = buildScene(cityState, this.terrain);
+    this.cityObjects = buildScene(cityState, this.terrain);
+    this.objects = this.cityObjects;
     this.signature = sceneSignature(cityState);
     this.net = roadNetwork(cityState.roads);
     this.agents = agentsOf(cityState, this.net);
@@ -199,11 +227,34 @@ export class CityRenderer {
     const signature = sceneSignature(next);
     if (signature !== this.signature) {
       this.signature = signature;
-      this.objects = buildScene(next, this.terrain);
+      this.cityObjects = buildScene(next, this.terrain);
+      this.objects = [...this.cityObjects, ...this.siteObjects];
       this.order = null;
     }
     this.dirty = true;
   }
+
+  /** 申請の敷地を描く（変わった時だけ作り直す） */
+  setSites(sites: SiteView[]): void {
+    const key = JSON.stringify(sites);
+    if (key === this.sitesKey) return;
+    this.sitesKey = key;
+    this.sites = sites;
+    this.siteObjects = sites.filter((s) => s.kind === 'facility' && !s.building).map((s): SceneObject => {
+      const turned = s.rotation === 90 || s.rotation === 270;
+      return {
+        id: `site-${s.id}`, x: s.origin.x, y: s.origin.y, w: turned ? s.d : s.w, d: turned ? s.w : s.d, z: 0, height: 0.25, facing: (s.rotation / 90) as Rotation,
+        source: { kind: 'model', key: `site:${String(s.w)}x${String(s.d)}`, model: () => permitSiteModel(s.w, s.d) },
+        select: { kind: 'application', id: s.id },
+      };
+    });
+    this.objects = [...this.cityObjects, ...this.siteObjects];
+    this.order = null;
+    this.dirty = true;
+  }
+
+  /** 最後に置いた看板（撮影と確かめの道具が読む） */
+  lastSigns: { id: string; x: number; y: number; width: number; height: number }[] = [];
 
   setPreview(preview: Preview | null): void {
     this.preview = preview ? { ...preview, shapes: preview.roads ? roadShapes(preview.roads) : [] } : null;
@@ -508,6 +559,7 @@ export class CityRenderer {
     let drawn = 0;
     const order = this.sortedObjects();
     this.drawHeat(o);
+    this.drawSiteOutlines(o);
     this.drawSelectionBase(o);
     this.drawHighlight(o);
     // ヒートマップを重ねている間は、建物を薄くして色を見せる（docs/ui-design.md 11.1）
@@ -749,11 +801,35 @@ export class CityRenderer {
       });
       info.set(obj.select.id, { name: def.name, level: lv, color: def.domain ? domainColors[def.domain] : accent.gold });
     });
+    // 申請の看板（名札と同じく、互いにも名札とも重ならないように置く。docs/city-design.md 9.1）
+    const signFont = `700 12px ${fontFamily.body}`;
+    const signs = new Map<string, SiteView>();
+    for (const site of this.sites) {
+      const cx = site.cells.reduce((a, c) => a + c.x + 0.5, 0) / Math.max(1, site.cells.length);
+      const cy = site.cells.reduce((a, c) => a + c.y + 0.5, 0) / Math.max(1, site.cells.length);
+      const [lx, ly] = toLayer(this.space(), { x: cx, y: cy }, site.kind === 'upgrade' || site.building ? 1.2 : 0.3);
+      const ax = o.x + lx;
+      const ay = o.y + ly;
+      if (ax < -200 || ax > width + 200 || ay < -100 || ay > height + 100) continue;
+      ctx.font = nameFont;
+      const tw = ctx.measureText(site.title).width;
+      ctx.font = signFont;
+      const lw = ctx.measureText(site.line).width;
+      const id = `sign-${site.id}`;
+      requests.push({ id, ax, ay, width: Math.ceil(Math.max(tw, lw) + 22), height: 38, priority: 60 + (this.selection?.id === site.id ? 100 : 0) });
+      signs.set(id, site);
+    }
     const placed = layoutLabels(requests, obstacles, { width, height, top: 56, bottom: 96, left: 8, right: this.labelInsets.right });
+    this.lastSigns = placed.filter((p) => signs.has(p.id)).map((p) => ({ id: p.id, x: p.x, y: p.y, width: p.width, height: p.height }));
     this.stats.labels = placed.length;
     this.stats.labelsWanted = requests.length;
     this.lastLabels = placed.map((p) => ({ id: p.id, x: p.x, y: p.y, width: p.width, height: p.height }));
     for (const p of placed) {
+      const site = signs.get(p.id);
+      if (site) {
+        this.drawSign(p, site, nameFont, signFont);
+        continue;
+      }
       const meta = info.get(p.id);
       if (!meta) continue;
       const selected = this.selection?.id === p.id;
@@ -793,6 +869,65 @@ export class CityRenderer {
       ctx.fillStyle = selected ? rgbaOf(hud.bg, 1) : accent.goldLight;
       ctx.fillText(meta.level, p.x + p.width - cut - 6 - ctx.measureText(meta.level).width, p.y + p.height / 2 + 1);
     }
+  }
+
+  /** 申請の看板（白い板に黒の字。1 行目に名前、2 行目に段階と残りの日数） */
+  private drawSign(p: { x: number; y: number; width: number; height: number; ax: number; ay: number; leader: boolean }, site: SiteView, nameFont: string, signFont: string): void {
+    const ctx = this.ctx;
+    const selected = this.selection?.id === site.id;
+    if (p.leader) {
+      ctx.strokeStyle = cityColors.lineWhite;
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.moveTo(p.x + p.width / 2, p.y + p.height);
+      ctx.lineTo(p.ax, p.ay);
+      ctx.stroke();
+    }
+    ctx.fillStyle = selected ? accent.goldLight : cityColors.lineWhite;
+    ctx.fillRect(p.x, p.y, p.width, p.height);
+    ctx.strokeStyle = rgbaOf(hud.bg, 1);
+    ctx.lineWidth = 1.5;
+    ctx.strokeRect(p.x + 0.75, p.y + 0.75, p.width - 1.5, p.height - 1.5);
+    // 上の縁の帯（看板の地の色。審議中は灰、工事中は警告の黄）
+    ctx.fillStyle = site.building ? state.warn : cityColors.curb;
+    ctx.fillRect(p.x + 1.5, p.y + 1.5, p.width - 3, 3);
+    ctx.textBaseline = 'middle';
+    ctx.fillStyle = rgbaOf(hud.bg, 1);
+    ctx.font = nameFont;
+    ctx.fillText(site.title, p.x + 10, p.y + 14);
+    ctx.font = signFont;
+    ctx.fillText(site.line, p.x + 10, p.y + 28);
+  }
+
+  /** 用途地域の変更の申請: 塗るマスを破線の縁で示す（docs/city-design.md 9.1） */
+  private drawSiteOutlines(o: { x: number; y: number }): void {
+    const rezones = this.sites.filter((s) => s.kind === 'rezone');
+    if (rezones.length === 0) return;
+    const ctx = this.ctx;
+    const s = this.space();
+    ctx.save();
+    ctx.setLineDash([6, 5]);
+    ctx.lineWidth = Math.max(1.5, 2 * this.camera.zoom);
+    ctx.strokeStyle = cityColors.lineWhite;
+    for (const site of rezones) {
+      const inSite = new Set(site.cells.map((c) => `${String(c.x)},${String(c.y)}`));
+      ctx.beginPath();
+      for (const c of site.cells) {
+        // 外側の辺だけを引く
+        const edges: [number, number, number, number, number, number][] = [
+          [0, -1, c.x, c.y, c.x + 1, c.y], [1, 0, c.x + 1, c.y, c.x + 1, c.y + 1], [0, 1, c.x + 1, c.y + 1, c.x, c.y + 1], [-1, 0, c.x, c.y + 1, c.x, c.y],
+        ];
+        for (const [dx, dy, x0, y0, x1, y1] of edges) {
+          if (inSite.has(`${String(c.x + dx)},${String(c.y + dy)}`)) continue;
+          const [ax, ay] = toLayer(s, { x: x0, y: y0 });
+          const [bx, by] = toLayer(s, { x: x1, y: y1 });
+          ctx.moveTo(o.x + ax, o.y + ay);
+          ctx.lineTo(o.x + bx, o.y + by);
+        }
+      }
+      ctx.stroke();
+    }
+    ctx.restore();
   }
 
   /** 配置の予告（マスの枠・道路の形・施設の姿） */
@@ -872,7 +1007,7 @@ export class CityRenderer {
 export function sceneSignature(c: City): string {
   const parts: string[] = [c.roads.map((r) => r.id).join(',')];
   for (const b of c.buildings) parts.push(`${b.id}:${String(b.level)}:${constructionStage(b.builtDay, c.day)}`);
-  for (const f of c.facilities) parts.push(`${f.id}:${String(f.level)}:${f.state === 'active' ? 'done' : constructionStage(f.builtDay, c.day)}`);
+  for (const f of c.facilities) parts.push(`${f.id}:${String(f.level)}:${facilityBuildStage(f, c.day)}`);
   return parts.join('|');
 }
 

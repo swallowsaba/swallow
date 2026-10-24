@@ -11,13 +11,13 @@ import { FACILITY_DEFS } from '@/city/facilities';
 import { checkUpgrade } from '@/city/upgrade';
 import { EXPLAIN, NAME_PARTS } from '@/content/politics';
 import { explainApproval } from '@/sim/explain';
-import { daysToComplete } from '@/sim/permits';
+import { applicationName, daysLeft, daysToComplete, isReviewing } from '@/sim/permits';
 import type { HeatFields, HeatKind } from '@/sim/heat';
 import { applyOp, type Command, type Op } from '@/sim/commands';
 import { workerHost, type SimHost } from '@/sim/host';
 import { SECONDS_PER_DAY, type Speed } from '@/sim/rules';
 import { terrainOf, type StateMessage } from '@/sim/runner';
-import type { World } from '@/sim/types';
+import type { Application, World } from '@/sim/types';
 import { newWorld, withCity, worldFromCity } from '@/sim/world';
 
 /**
@@ -41,8 +41,8 @@ export type MenuGroup = 'road' | 'zone' | 'facility' | 'park' | 'demolish';
 /** 表示切替で重ねる物（今ある 4 つと、模擬のヒートマップ。docs/ui-design.md 11.1） */
 export type ViewKind = OverlayKind | HeatKind;
 
-/** 都市の上に重ねる小さな窓（docs/ui-design.md 10.0）。表示切替の窓は G2、市政の窓は G3 から */
-export type SmallWindowId = 'view';
+/** 都市の上に重ねる小さな窓（docs/ui-design.md 10.0）。表示切替・許認可の一覧・申請 1 件の詳細 */
+export type SmallWindowId = 'view' | 'permits' | 'permit';
 /** 同時に開ける小さな窓の数 */
 export const MAX_SMALL_WINDOWS = 3;
 
@@ -78,8 +78,8 @@ export interface CityGameState {
   rotation: Facility['rotation'];
   hint: Hint | null;
   confirm: DemolishTarget | null;
-  /** 上の帯の下に出す 1 行の知らせ */
-  notice: { text: string; until: number } | null;
+  /** 上の帯の下に出す 1 行の知らせ。市政の知らせは、押すとその申請の詳細を開く（docs/ui-design.md 3 章） */
+  notice: { text: string; until: number; permitId?: string } | null;
   /** 選んでいる建物（情報パネルを出す） */
   selected: Selection | null;
   /** 表示の切り替え */
@@ -89,7 +89,9 @@ export interface CityGameState {
   /** 開いている小さな窓（前に開いた順。最後が一番上） */
   windows: SmallWindowId[];
   /** 出番を待つ知らせ（今の知らせが消えたら順に出す） */
-  queue: string[];
+  queue: QueuedNotice[];
+  /** 申請の詳細の窓に出している申請 */
+  permitId: string | null;
   /** 学習に出た時の都市とスキル（戻った時に変化を比べる） */
   away: Snapshot | null;
   /** 変化のあった場所（カメラを寄せ、光の輪で示す）。seq が変わるたびに寄せる */
@@ -112,8 +114,8 @@ export interface CityGameState {
   rotate: () => void;
   setHint: (hint: Hint | null) => void;
   askDemolish: (target: DemolishTarget | null) => void;
-  /** 知らせを出す。出ている知らせがあれば、その後に出す */
-  notify: (text: string, now: number) => void;
+  /** 知らせを出す。出ている知らせがあれば、その後に出す。permitId を付けると、押すとその申請の詳細を開く */
+  notify: (text: string, now: number, permitId?: string) => void;
   /** 時刻 now に、出ている知らせが消える時なら、次の知らせを出す */
   expireNotice: (now: number) => void;
   /** 学習に出る（都市とスキルを覚えておく） */
@@ -128,7 +130,12 @@ export interface CityGameState {
    * 出したら、その場所を光の輪で示し、何が加わるかと完成までの見込みの日数を知らせる。出せなければ何もしない
    */
   upgrade: (facilityId: string, skills: SkillValues, now: number) => boolean;
+  /** 選ぶ。申請中の敷地を選ぶと、申請の詳細の窓も開く（docs/city-design.md 9.1） */
   select: (selection: Selection | null) => void;
+  /** 申請の詳細の窓を開く */
+  openPermit: (id: string) => void;
+  /** 申請を取り下げる（着工の前。費用は全て戻る） */
+  withdraw: (id: string, now: number) => void;
   /** その場所へカメラを寄せ、光の輪で示す（説明・記事・請願を押した時） */
   focusAt: (at: { x: number; y: number }, size?: { x: number; y: number }) => void;
   setOverlay: (overlay: ViewKind | null) => void;
@@ -139,6 +146,9 @@ export interface CityGameState {
   /** 模擬を止める（画面を閉じる時） */
   stop: () => void;
 }
+
+/** 待っている知らせ（市政の知らせは、押すと開く申請を持つ） */
+export type QueuedNotice = string | { text: string; permitId: string };
 
 /** 1 つの知らせを出しておく時間（docs/ui-design.md 3 章: 3 秒で消える） */
 export const NOTICE_MS = 3000;
@@ -182,11 +192,16 @@ export function createCityStore(seed?: number, initial?: City, options: CityStor
     };
     host.listen((m: StateMessage) => {
       const before = base.history.breakdown.at(-1)?.week;
+      const prevApps = base.applications;
       base = { ...base, ...m.patch };
       acked = Math.max(acked, m.day);
       pending = pending.filter((c) => c.seq > m.seq);
       rebuild();
       if (m.heat) set({ heat: m.heat });
+      // 申請の段階が進んだら知らせる（押すと申請の詳細。docs/ui-design.md 3 章）
+      if (base.applications !== prevApps) {
+        for (const text of stageNotices(prevApps, base)) get().notify(text.text, performance.now(), text.permitId);
+      }
       // 支持率が 4 週で 3 以上動いたら、説明の 1 行目を知らせにも出す（docs/ui-design.md 11.3）
       const last = base.history.breakdown.at(-1);
       if (last && last.week !== before && last.week - toldWeek >= 4) {
@@ -224,13 +239,14 @@ export function createCityStore(seed?: number, initial?: City, options: CityStor
       heat: null,
       windows: [],
       queue: [],
+      permitId: null,
       away: null,
       focus: null,
 
       setCity: (next) => {
         const w = withCity(get().world, next, terrain, NAME_PARTS);
         loadWorld(w);
-        set((s) => ({ selected: s.selected && stillThere(next, s.selected) ? s.selected : null }));
+        set((s) => ({ selected: s.selected && stillThere(s.world, s.selected) ? s.selected : null }));
       },
       load: loadWorld,
       dispatch: (op) => {
@@ -238,7 +254,7 @@ export function createCityStore(seed?: number, initial?: City, options: CityStor
         const cmd: Command = { seq, day: requested, op };
         pending.push(cmd);
         rebuild();
-        set((s) => ({ selected: s.selected && stillThere(s.city, s.selected) ? s.selected : null }));
+        set((s) => ({ selected: s.selected && stillThere(s.world, s.selected) ? s.selected : null }));
         host.post({ type: 'cmd', cmd });
       },
       tick: (dt) => {
@@ -266,16 +282,17 @@ export function createCityStore(seed?: number, initial?: City, options: CityStor
       rotate: () => set((s) => ({ rotation: ((s.rotation + 90) % 360) as Facility['rotation'] })),
       setHint: (hint) => set({ hint }),
       askDemolish: (confirm) => set({ confirm }),
-      notify: (text, now) => {
+      notify: (text, now, permitId) => {
         const s = get();
-        if (s.notice && now < s.notice.until) set({ queue: [...s.queue, text] });
-        else set({ notice: { text, until: now + NOTICE_MS } });
+        if (s.notice && now < s.notice.until) set({ queue: [...s.queue, permitId ? { text, permitId } : text] });
+        else set({ notice: { text, until: now + NOTICE_MS, ...(permitId ? { permitId } : {}) } });
       },
       expireNotice: (now) => {
         const s = get();
         if (!s.notice || now < s.notice.until) return;
         const [next, ...rest] = s.queue;
-        set(next === undefined ? { notice: null } : { notice: { text: next, until: now + NOTICE_MS }, queue: rest });
+        if (next === undefined) set({ notice: null });
+        else set({ notice: typeof next === 'string' ? { text: next, until: now + NOTICE_MS } : { ...next, until: now + NOTICE_MS }, queue: rest });
       },
       leave: (skills) => {
         if (get().away) return;
@@ -315,7 +332,22 @@ export function createCityStore(seed?: number, initial?: City, options: CityStor
         });
         return true;
       },
-      select: (selected) => set({ selected }),
+      select: (selected) => {
+        set({ selected });
+        if (selected?.kind === 'application') get().openPermit(selected.id);
+      },
+      openPermit: (id) => {
+        set({ permitId: id });
+        get().openWindow('permit');
+      },
+      withdraw: (id, now) => {
+        const app = get().world.applications.find((a) => a.id === id);
+        if (!app || !isReviewing(app)) return;
+        const name = applicationName(app, get().world.city);
+        get().dispatch({ kind: 'withdraw', applicationId: id });
+        set((s) => ({ selected: s.selected?.id === id ? null : s.selected }));
+        get().notify(`${name}の申請を取り下げた。取り分けた ${app.reserved.toLocaleString('ja-JP')} 資金が戻った`, now);
+      },
       focusAt: (at, size = { x: 1, y: 1 }) => set((s) => ({ focus: { at, size, seq: (s.focus?.seq ?? 0) + 1 } })),
       setOverlay: (overlay) => set({ overlay }),
       openWindow: (id) => set((s) => {
@@ -331,8 +363,30 @@ export function createCityStore(seed?: number, initial?: City, options: CityStor
   return store;
 }
 
-function stillThere(city: City, sel: Selection): boolean {
-  return sel.kind === 'facility' ? city.facilities.some((f) => f.id === sel.id) : city.buildings.some((b) => b.id === sel.id);
+function stillThere(world: World, sel: Selection): boolean {
+  if (sel.kind === 'application') return world.applications.some((a) => a.id === sel.id && isReviewing(a));
+  return sel.kind === 'facility' ? world.city.facilities.some((f) => f.id === sel.id) : world.city.buildings.some((b) => b.id === sel.id);
+}
+
+/**
+ * 申請の段階が進んだ時の知らせ（公聴会の段に入った・可決して着工した・完成した・否決された）。
+ * 用途地域の審査と反対の受付に入った事は、看板で見えるので知らせない
+ */
+export function stageNotices(before: readonly Application[], after: World): { text: string; permitId: string }[] {
+  const was = new Map(before.map((a) => [a.id, a.stage]));
+  const out: { text: string; permitId: string }[] = [];
+  const day = Math.floor(after.city.day);
+  for (const a of after.applications) {
+    const prev = was.get(a.id);
+    if (prev === undefined || prev === a.stage) continue;
+    const name = applicationName(a, after.city);
+    if (a.stage === 'hearing') out.push({ text: `${name}の申請が公聴会の段に入った。14 日のうちに開ける`, permitId: a.id });
+    else if (a.stage === 'construction') out.push({ text: `${name}の申請が可決された。着工した（完成まで ${String(daysLeft(a, day))} 日）`, permitId: a.id });
+    else if (a.stage === 'done' && a.kind === 'rezone') out.push({ text: `${name}の申請が可決された。区画を塗った`, permitId: a.id });
+    else if (a.stage === 'done') out.push({ text: `${name}が完成した`, permitId: a.id });
+    else if (a.stage === 'rejected') out.push({ text: `${name}の申請が否決された。取り分けた費用は戻った`, permitId: a.id });
+  }
+  return out;
 }
 
 export type CityStore = ReturnType<typeof createCityStore>;

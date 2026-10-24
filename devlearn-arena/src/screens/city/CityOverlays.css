@@ -141,3 +141,17 @@
 .city-notice.is-paused {
   border-left-color: var(--info);
 }
+/* 市政の知らせ（押すとその窓を開く） */
+.city-notice.is-link {
+  border: none;
+  border-left: 3px solid var(--gold);
+  color: var(--hud-text);
+  font-family: var(--font-body);
+  text-align: left;
+  cursor: pointer;
+  pointer-events: auto;
+}
+.city-notice.is-link:hover,
+.city-notice.is-link:focus-visible {
+  color: var(--gold-light);
+}

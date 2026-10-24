@@ -1,3 +1,4 @@
+import { useEffect, useRef, useState } from 'react';
 import { Icon, type IconName } from './icons/Icon';
 import './TopBar.css';
 
@@ -27,6 +28,92 @@ export interface TopBarProps {
   onEntry?: (id: EntryId) => void;
   /** 今開いている画面（docs/ui-design.md 2.1: 今どの画面かを上の帯に常に表示する） */
   current?: EntryId | undefined;
+  /** 市政の入口と、その引き出し（docs/ui-design.md 3.1）。無ければ出さない */
+  civic?: TopBarCivic;
+}
+
+/** 市政の引き出しの項目（許認可・受信箱・予算・新聞・褒賞） */
+export type CivicId = 'permits' | 'inbox' | 'budget' | 'news' | 'rewards';
+
+export interface TopBarCivic {
+  /** 入口の数の印（公聴会を待つ申請＋届いた請願） */
+  badge: number;
+  /** 項目ごとの数の印。開けない項目は disabled */
+  items: { id: CivicId; badge: number; disabled?: boolean }[];
+  onItem: (id: CivicId) => void;
+}
+
+const CIVIC: Record<CivicId, { label: string; icon: IconName; key: string }> = {
+  permits: { label: '許認可', icon: 'permit', key: 'P' },
+  inbox: { label: '受信箱', icon: 'list', key: 'I' },
+  budget: { label: '予算', icon: 'funds', key: 'F' },
+  news: { label: '市内新聞', icon: 'glossary', key: 'N' },
+  rewards: { label: '褒賞', icon: 'stage', key: '' },
+};
+
+/** 市政の入口（数の印付き）と、押すと下に開く引き出し */
+function Civic({ civic }: { civic: TopBarCivic }) {
+  const [open, setOpen] = useState(false);
+  const root = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!open) return;
+    const onDown = (e: PointerEvent): void => {
+      if (root.current && !root.current.contains(e.target as Node)) setOpen(false);
+    };
+    const onKey = (e: KeyboardEvent): void => {
+      if (e.key === 'Escape') setOpen(false);
+    };
+    window.addEventListener('pointerdown', onDown);
+    window.addEventListener('keydown', onKey);
+    return () => {
+      window.removeEventListener('pointerdown', onDown);
+      window.removeEventListener('keydown', onKey);
+    };
+  }, [open]);
+  return (
+    <div className="topbar-civic" ref={root}>
+      <button
+        type="button"
+        className={`topbar-entry${open ? ' is-current' : ''}`}
+        data-testid="topbar-civic"
+        aria-expanded={open}
+        aria-haspopup="menu"
+        title={civic.badge > 0 ? `市政（市長の手を待つ物 ${String(civic.badge)} 件）` : '市政'}
+        onClick={() => setOpen(!open)}
+      >
+        <Icon name="civic" size={18} />
+        <span>市政</span>
+        {civic.badge > 0 ? <span className="topbar-badge num" data-testid="topbar-civic-badge">{civic.badge}</span> : null}
+      </button>
+      {open ? (
+        <div className="topbar-drawer" role="menu" data-testid="civic-drawer" data-label-block>
+          {civic.items.map((item) => {
+            const c = CIVIC[item.id];
+            return (
+              <button
+                key={item.id}
+                type="button"
+                role="menuitem"
+                className="topbar-drawer-item"
+                data-testid={`civic-${item.id}`}
+                aria-disabled={item.disabled === true}
+                title={item.disabled ? `${c.label}（この窓は後の段階で作る）` : c.key ? `${c.label}（${c.key}）` : c.label}
+                onClick={() => {
+                  if (item.disabled) return;
+                  setOpen(false);
+                  civic.onItem(item.id);
+                }}
+              >
+                <Icon name={c.icon} size={16} />
+                <span>{c.label}</span>
+                {item.badge > 0 ? <span className="topbar-badge num">{item.badge}</span> : null}
+              </button>
+            );
+          })}
+        </div>
+      ) : null}
+    </div>
+  );
 }
 
 export type EntryId = 'learn' | 'graph' | 'mission' | 'glossary' | 'settings' | 'growth';
@@ -174,6 +261,7 @@ export function TopBar(props: TopBarProps) {
         <Stat icon="stage" label="発展段階" value={props.stageName} />
       </div>
       <nav className="topbar-entries" aria-label="画面への入口">
+        {props.civic ? <Civic civic={props.civic} /> : null}
         {ENTRIES.map((e) => (
           <button
             key={e.id}

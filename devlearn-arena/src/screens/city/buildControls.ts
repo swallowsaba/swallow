@@ -1,10 +1,11 @@
 import { FACILITY_DEFS, footprintOf, landmarkOf } from '@/city/facilities';
-import { checkFacility, checkRoad, checkZone, demolishTargetAt, type PlanCheck } from '@/city/place';
+import { checkFacility, checkRoad, checkZone, demolishTargetAt, reasonOf, type PlanCheck } from '@/city/place';
 import type { CityRenderer } from '@/city/render/CityRenderer';
 import type { RoadPlan } from '@/city/roads';
 import { ROAD_RULES, ZONE_RULES } from '@/city/rules';
 import type { City, Point } from '@/city/types';
-import type { Op } from '@/sim/commands';
+import { permitPreview, type Op } from '@/sim/commands';
+import { PERMIT_REASON } from '@/sim/permits';
 import type { CityStore, SmallWindowId, Tool } from './cityStore';
 
 /**
@@ -30,6 +31,18 @@ export function attachBuildControls(canvas: HTMLCanvasElement, renderer: CityRen
   const local = (e: { clientX: number; clientY: number }): { sx: number; sy: number } => {
     const r = canvas.getBoundingClientRect();
     return { sx: e.clientX - r.left, sy: e.clientY - r.top };
+  };
+
+  /**
+   * 置く物の判定を通った物が申請になるなら、そう添える。申請を出せない（6 件まで・申請中の敷地・否決の後の 28 日）なら、理由を足して置けなくする
+   * （docs/game-design.md 15.1・15.2）
+   */
+  const withPermit = <T extends PlanCheck>(check: T, op: Op): { check: T; note: string } => {
+    if (!check.ok) return { check, note: '' };
+    const s = store.getState();
+    const p = permitPreview(s.world, op, s.terrain);
+    if (p.problems.length > 0) return { check: { ...check, ok: false, reasons: [...check.reasons, ...p.problems.map((x) => reasonOf(PERMIT_REASON[x]))], cells: check.cells.map((c) => ({ ...c, ok: false })) }, note: '' };
+    return { check, note: p.application ? '・申請になる' : '' };
   };
 
   /** 今の道具と位置で、置けるかを確かめ、予告と理由を出す。置ける時は、置く命令を返す（docs/architecture.md 9.1） */
@@ -70,19 +83,21 @@ export function attachBuildControls(canvas: HTMLCanvasElement, renderer: CityRen
     if (tool.kind === 'zone') {
       const a = drag?.kind === 'rect' ? drag.start : cell;
       const b = drag?.kind === 'rect' ? drag.end : cell;
-      const check = checkZone(city, terrain, tool.zone, a, b);
-      show(check, `${ZONE_RULES[tool.zone].name}の区画${check.paint.length > 0 ? ` ${String(check.paint.length)} マス` : ''}`);
-      return { apply: check.ok ? { kind: 'zone', zone: tool.zone, a, b } : null };
+      const op: Op = { kind: 'zone', zone: tool.zone, a, b };
+      const check = withPermit(checkZone(city, terrain, tool.zone, a, b), op);
+      show(check.check, `${ZONE_RULES[tool.zone].name}の区画${check.check.paint.length > 0 ? ` ${String(check.check.paint.length)} マス` : ''}${check.note}`);
+      return { apply: check.check.ok ? op : null };
     }
 
     if (tool.kind === 'facility') {
       const size = footprintOf(tool.type, rotation);
       const origin = { x: cell.x - Math.floor((size.w - 1) / 2), y: cell.y - Math.floor((size.d - 1) / 2) };
-      const check = checkFacility(city, terrain, tool.type, origin, rotation);
+      const op: Op = { kind: 'facility', type: tool.type, origin, rotation, ...(tool.landmark ? { landmark: tool.landmark } : {}) };
+      const { check, note } = withPermit(checkFacility(city, terrain, tool.type, origin, rotation), op);
       const name = tool.landmark ? (landmarkOf(tool.landmark)?.name ?? FACILITY_DEFS[tool.type].name) : FACILITY_DEFS[tool.type].name;
       const ghost = { type: tool.type, origin, rotation, ...(tool.landmark ? { landmark: tool.landmark } : {}) };
-      show(check, `${name}（R で回す）`, { cells: check.cells, ghost, ok: check.ok });
-      return { apply: check.ok ? { kind: 'facility', type: tool.type, origin, rotation, ...(tool.landmark ? { landmark: tool.landmark } : {}) } : null };
+      show(check, `${name}（R で回す）${note}`, { cells: check.cells, ghost, ok: check.ok });
+      return { apply: check.ok ? op : null };
     }
 
     // 取り壊し

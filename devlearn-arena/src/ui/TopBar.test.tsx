@@ -70,3 +70,38 @@ describe('上の帯の日付と速さ・支持率（docs/ui-design.md 3.1・docs
     expect(onApproval).toHaveBeenCalledTimes(1);
   });
 });
+
+describe('市政の入口と数の印・引き出し（docs/ui-design.md 3.1）', () => {
+  function mountCivic(badge: number, onItem = vi.fn()) {
+    const host = document.createElement('div');
+    document.body.append(host);
+    const root = createRoot(host);
+    roots.push(root);
+    const civic = {
+      badge,
+      items: [
+        { id: 'permits' as const, badge },
+        { id: 'inbox' as const, badge: 0, disabled: true },
+      ],
+      onItem,
+    };
+    act(() => root.render(<TopBar cityName="みなと市" funds={1500} xp={0} rankName="見習い" population={120} stageName="村" civic={civic} />));
+    return { host, onItem };
+  }
+
+  it('公聴会を待つ申請があると、入口に数の印が付く。無ければ付かない', () => {
+    expect(mountCivic(2).host.querySelector('[data-testid="topbar-civic-badge"]')?.textContent).toBe('2');
+    expect(mountCivic(0).host.querySelector('[data-testid="topbar-civic-badge"]')).toBeNull();
+  });
+
+  it('押すと引き出しが開き、許認可を選ぶとその窓を開く。開けない項目は押しても何もしない', () => {
+    const { host, onItem } = mountCivic(1);
+    expect(host.querySelector('[data-testid="civic-drawer"]')).toBeNull();
+    act(() => (host.querySelector('[data-testid="topbar-civic"]') as HTMLButtonElement).click());
+    act(() => (host.querySelector('[data-testid="civic-inbox"]') as HTMLButtonElement).click());
+    expect(onItem).not.toHaveBeenCalled();
+    act(() => (host.querySelector('[data-testid="civic-permits"]') as HTMLButtonElement).click());
+    expect(onItem).toHaveBeenCalledWith('permits');
+    expect(host.querySelector('[data-testid="civic-drawer"]')).toBeNull();
+  });
+});

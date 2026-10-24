@@ -4,7 +4,7 @@ import type { Terrain } from '@/city/terrain';
 import type { Facility, FacilityType, Point, ZoneKind } from '@/city/types';
 import { cellKey, facilityCells, roadCellsOf } from '@/city/cells';
 import { checkUpgrade, type SkillValueMap } from '@/city/upgrade';
-import { file, needsApplication, occupiedSites, permitProblems, rezoneOf, withdraw } from './permits';
+import { file, needsApplication, occupiedSites, permitProblems, rezoneOf, withdraw, type PermitProblem } from './permits';
 import type { Application, World } from './types';
 
 /**
@@ -90,5 +90,35 @@ export function applyOp(world: World, op: Op, terrain: Terrain): World {
       return withdraw(world, op.applicationId, day);
     case 'funds':
       return { ...world, city: { ...city, funds: city.funds + op.amount } };
+  }
+}
+
+/**
+ * 置く命令が申請になるか、申請を出せない理由（配置の小窓に出す。applyOp と同じ判定）。
+ * 置く物の判定（道路に面する・重ならない・霧・資金）は呼ぶ側が先に済ませる
+ */
+export function permitPreview(world: World, op: Op, terrain: Terrain): { application: boolean; problems: PermitProblem[] } {
+  const day = Math.floor(world.city.day);
+  const sites = occupiedSites(world);
+  switch (op.kind) {
+    case 'facility': {
+      const cells = facilityCells({ type: op.type, origin: op.origin, rotation: op.rotation });
+      if (!needsApplication(op.type)) return { application: false, problems: cells.some((c) => sites.has(cellKey(c.x, c.y))) ? ['site'] : [] };
+      return { application: true, problems: permitProblems(world, { kind: 'facility', target: { type: op.type, origin: op.origin, rotation: op.rotation } }, day) };
+    }
+    case 'zone': {
+      const check = checkZone(world.city, terrain, op.zone, op.a, op.b);
+      const paint = check.paint.filter((c) => !sites.has(cellKey(c.x, c.y)));
+      if (paint.length === 0) return { application: false, problems: check.paint.length > 0 ? ['site'] : [] };
+      const rezone = rezoneOf(world, op.zone, paint);
+      if (!rezone.needed) return { application: false, problems: [] };
+      return { application: true, problems: permitProblems(world, { kind: 'rezone', target: { zone: { kind: op.zone, cells: paint } } }, day) };
+    }
+    case 'upgrade': {
+      const level = checkUpgrade(world.city, op.facilityId, op.skills)?.level ?? 2;
+      return { application: true, problems: permitProblems(world, { kind: 'upgrade', target: { facilityId: op.facilityId, toLevel: level as 2 | 3 | 4 | 5 } }, day) };
+    }
+    default:
+      return { application: false, problems: [] };
   }
 }

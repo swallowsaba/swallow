@@ -1,0 +1,349 @@
+/* 許認可の一覧と申請の詳細（docs/ui-design.md 10.1・10.2）。札を並べず、線で区切った行にする */
+
+.permit-summary {
+  margin: 0 0 6px;
+  font-size: var(--fs-13);
+  color: var(--hud-text-sub);
+}
+.permit-summary b {
+  font-family: var(--font-number);
+  font-size: var(--fs-16);
+  color: var(--hud-text);
+}
+.permit-empty {
+  margin: 0;
+  font-size: var(--fs-13);
+  color: var(--hud-text-sub);
+}
+
+.permit-rows {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.permit-row {
+  display: flex;
+  align-items: stretch;
+  border-bottom: 1px solid var(--hud-line);
+}
+.permit-row.is-mayor {
+  border-left: 3px solid var(--gold);
+}
+.permit-row-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 7px 6px;
+  border: none;
+  background: var(--transparent);
+  color: var(--hud-text);
+  text-align: left;
+  cursor: pointer;
+}
+.permit-row-main:hover,
+.permit-row-main:focus-visible {
+  background: var(--hud-bg-strong);
+  outline: none;
+}
+.permit-row-main:hover .permit-row-name,
+.permit-row-main:focus-visible .permit-row-name {
+  color: var(--gold-light);
+}
+.permit-row-top {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+.permit-row-name {
+  font-weight: 700;
+  font-size: var(--fs-14);
+}
+.permit-row-place {
+  font-size: var(--fs-12);
+  color: var(--hud-text-sub);
+}
+.permit-row-mid {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.permit-row-stage {
+  flex: 1;
+  font-size: var(--fs-12);
+  color: var(--hud-text-sub);
+}
+.permit-row-wait {
+  font-size: var(--fs-12);
+  color: var(--hud-text);
+}
+.permit-row.is-mayor .permit-row-wait {
+  color: var(--gold-light);
+}
+.permit-row-pin {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  border: none;
+  background: var(--transparent);
+  color: var(--hud-text-sub);
+  cursor: pointer;
+}
+.permit-row-pin:hover,
+.permit-row-pin:focus-visible {
+  color: var(--gold-light);
+}
+
+/* 8 段の小さな進みの印（済んだ段は白、今の段は金、省いた段は線だけ） */
+.permit-marks {
+  display: flex;
+  gap: 3px;
+}
+.permit-mark {
+  width: 12px;
+  height: 6px;
+  background: var(--hud-bg-strong);
+  border: 1px solid var(--hud-line);
+  transform: skewX(-20deg);
+}
+.permit-mark.is-done {
+  background: var(--hud-text-sub);
+}
+.permit-mark.is-now {
+  background: var(--gold);
+  border-color: var(--gold-light);
+}
+.permit-mark.is-skipped {
+  background: var(--transparent);
+}
+
+/* 反対率（数と短い棒） */
+.permit-opp {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: var(--fs-13);
+}
+.permit-opp .num {
+  font-family: var(--font-number);
+  font-weight: 700;
+}
+.permit-opp-bar {
+  width: 36px;
+  height: 5px;
+  background: var(--hud-bg-strong);
+}
+.permit-opp-bar span {
+  display: block;
+  height: 100%;
+  background: var(--ok);
+}
+.permit-opp.is-warn .permit-opp-bar span {
+  background: var(--warn);
+}
+.permit-opp.is-bad .permit-opp-bar span {
+  background: var(--bad);
+}
+.permit-unit {
+  font-size: var(--fs-12);
+  color: var(--hud-text-sub);
+}
+
+.permit-finished {
+  margin-top: 10px;
+}
+.permit-finished-head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 0;
+  border: none;
+  background: var(--transparent);
+  color: var(--hud-text-sub);
+  font-size: var(--fs-13);
+  cursor: pointer;
+}
+.permit-finished-head:hover,
+.permit-finished-head:focus-visible {
+  color: var(--gold-light);
+}
+.permit-rows.is-finished .permit-row-main {
+  color: var(--hud-text-sub);
+}
+
+/* 詳細 */
+.permit-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.permit-place {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0;
+  border: none;
+  background: var(--transparent);
+  color: var(--hud-text);
+  font-size: var(--fs-13);
+  font-weight: 700;
+  cursor: pointer;
+}
+.permit-place:hover,
+.permit-place:focus-visible {
+  color: var(--gold-light);
+}
+.permit-filed {
+  font-size: var(--fs-12);
+  color: var(--hud-text-sub);
+}
+.permit-now {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: 8px 0;
+  padding: 6px 10px;
+  border-left: 3px solid var(--gold);
+  background: var(--hud-bg-strong);
+  font-size: var(--fs-13);
+}
+.permit-now-stage {
+  font-family: var(--font-heading);
+  font-weight: 800;
+  font-size: var(--fs-16);
+  color: var(--gold-light);
+}
+
+/* 8 段の進み（日付付き）: 縦の線でつないだ段の並び */
+.permit-stages {
+  margin: 0 0 8px;
+  padding: 0;
+  list-style: none;
+}
+.permit-stage {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 22px;
+  padding-left: 4px;
+  font-size: var(--fs-12);
+  color: var(--hud-text-sub);
+}
+.permit-stage + .permit-stage::before {
+  content: '';
+  position: absolute;
+  left: 8px;
+  top: -8px;
+  height: 10px;
+  border-left: 1px solid var(--hud-line);
+}
+.permit-stage-dot {
+  width: 9px;
+  height: 9px;
+  border: 1px solid var(--hud-line);
+  background: var(--hud-bg-strong);
+  transform: rotate(45deg);
+}
+.permit-stage.is-done .permit-stage-dot {
+  background: var(--hud-text-sub);
+}
+.permit-stage.is-now {
+  color: var(--hud-text);
+  font-weight: 700;
+}
+.permit-stage.is-now .permit-stage-dot {
+  background: var(--gold);
+  border-color: var(--gold-light);
+}
+.permit-stage.is-skipped .permit-stage-name {
+  text-decoration: line-through;
+}
+.permit-stage-name {
+  flex: 1;
+}
+.permit-stage-day {
+  font-family: var(--font-number);
+}
+
+.permit-facts {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  column-gap: 12px;
+  row-gap: 3px;
+  margin: 0;
+  font-size: var(--fs-13);
+}
+.permit-facts dt {
+  color: var(--hud-text-sub);
+}
+.permit-facts dd {
+  margin: 0;
+}
+.permit-facts .num {
+  font-family: var(--font-number);
+  font-weight: 700;
+}
+.permit-fact {
+  display: contents;
+}
+
+.permit-section {
+  margin-top: 12px;
+}
+.permit-opp-big {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+}
+.permit-opp-big .num {
+  font-family: var(--font-number);
+  font-weight: 700;
+  font-size: var(--fs-36);
+  line-height: 1;
+}
+.permit-opp-note {
+  margin-left: 8px;
+  font-size: var(--fs-12);
+  color: var(--hud-text-sub);
+}
+
+.permit-withdraw {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 14px;
+  padding: 0;
+  border: none;
+  background: var(--transparent);
+  color: var(--hud-text-sub);
+  font-size: var(--fs-13);
+  cursor: pointer;
+}
+.permit-withdraw:hover,
+.permit-withdraw:focus-visible {
+  color: var(--gold-light);
+}
+.permit-confirm {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-top: 14px;
+  font-size: var(--fs-13);
+}
+.permit-confirm span {
+  flex-basis: 100%;
+}
+.permit-confirm button {
+  height: 32px;
+  padding: 0 18px;
+  border: none;
+  font-weight: 700;
+  font-size: var(--fs-13);
+  cursor: pointer;
+  clip-path: polygon(8px 0, 100% 0, calc(100% - 8px) 100%, 0 100%);
+}

@@ -7,7 +7,7 @@ export type IconName =
   | 'road' | 'zone' | 'facility' | 'park' | 'demolish' | 'rotate' | 'pause' | 'curve' | 'straight' | 'alert'
   | 'graph' | 'list' | 'search' | 'close' | 'start' | 'check' | 'hint' | 'terminal' | 'upgrade' | 'down' | 'database'
   | 'export' | 'import' | 'restart' | 'save' | 'calendar' | 'approval' | 'speed1' | 'speed2' | 'speed3'
-  | 'up' | 'heat' | 'collapse';
+  | 'up' | 'heat' | 'collapse' | 'civic' | 'permit' | 'pin';
 
 const PATHS: Record<IconName, string> = {
   // 開いた本
@@ -92,6 +92,12 @@ const PATHS: Record<IconName, string> = {
   heat: 'M12 3.5 21 8l-9 4.5L3 8Z M3 12l9 4.5 9-4.5 M3 16l9 4.5 9-4.5',
   // 窓を畳む（横の線）
   collapse: 'M6 12h12',
+  // 市政（三角の破風と 4 本の柱の議事堂）
+  civic: 'M3 9.5 12 4l9 5.5Z M4 20.5h16 M5.5 18.5h13 M6.5 11.5v7 M10 11.5v7 M14 11.5v7 M17.5 11.5v7',
+  // 許認可（2 本の脚の看板と、板の上の行）
+  permit: 'M4 4.5h16v10H4Z M7 21v-6.5 M17 21v-6.5 M7.5 8h9 M7.5 11h5.5',
+  // 場所の印（地図の針）
+  pin: 'M12 21s6.5-6.2 6.5-11a6.5 6.5 0 0 0-13 0c0 4.8 6.5 11 6.5 11Z M12 12.2a2.2 2.2 0 1 0 0-4.4 2.2 2.2 0 0 0 0 4.4Z',
 };
 
 export function Icon({ name, size = 20 }: { name: IconName; size?: number }) {

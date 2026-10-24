@@ -75,7 +75,13 @@ export function DemolishConfirm({ target, onYes, onNo }: { target: DemolishTarge
 }
 
 /** 上の帯の下、右寄せの 1 行の知らせ（docs/ui-design.md 3 章）と、一時停止の印 */
-export function CityNotice({ text, paused, shifted }: { text: string | null; paused: boolean; shifted: boolean }) {
+export function CityNotice({ text, paused, shifted, onOpen }: {
+  text: string | null;
+  paused: boolean;
+  shifted: boolean;
+  /** 市政の知らせは、押すとその窓を開く（docs/ui-design.md 3 章） */
+  onOpen?: () => void;
+}) {
   return (
     <div className={`city-notices${shifted ? ' is-shifted' : ''}`}>
       {paused ? (
@@ -84,8 +90,12 @@ export function CityNotice({ text, paused, shifted }: { text: string | null; pau
           一時停止中（Space で再開）
         </div>
       ) : null}
-      {text ? (
-        <div className="city-notice" role="status" data-label-block>
+      {text && onOpen ? (
+        <button type="button" className="city-notice is-link" role="status" data-label-block data-testid="city-notice" onClick={onOpen} title="押すと申請の詳細を開く">
+          {text}
+        </button>
+      ) : text ? (
+        <div className="city-notice" role="status" data-label-block data-testid="city-notice">
           {text}
         </div>
       ) : null}

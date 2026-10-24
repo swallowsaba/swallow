@@ -1,6 +1,6 @@
 import { cellKey, facilityCells, occupancyOf } from '@/city/cells';
 import { FACILITY_DEFS, footprintOf } from '@/city/facilities';
-import { nextId } from '@/city/place';
+import { nextId, type ReasonCode } from '@/city/place';
 import { ZONE_RULES } from '@/city/rules';
 import type { City, Facility, FacilityType, Point, Zone, ZoneKind } from '@/city/types';
 import type { Application, ApplicationStage, World } from './types';
@@ -34,6 +34,20 @@ export const KEEP_FINISHED_DAYS = 208 * 7;
 export const REVIEW_STAGES: readonly ApplicationStage[] = ['filed', 'zoning', 'objection', 'hearing', 'council', 'appeal'];
 /** 許認可の一覧の 8 段（申請・用途地域の審査・反対の受付・公聴会・議会の採決・異議申し立て・着工・完成） */
 export const PROGRESS_STAGES: readonly ApplicationStage[] = ['filed', 'zoning', 'objection', 'hearing', 'council', 'appeal', 'construction', 'done'];
+
+/** 段階の名前（許認可の一覧・看板・詳細） */
+export const STAGE_LABEL: Record<ApplicationStage, string> = {
+  filed: '申請',
+  zoning: '用途地域の審査',
+  objection: '反対の受付',
+  hearing: '公聴会',
+  council: '議会の採決',
+  appeal: '異議申し立て',
+  construction: '工事',
+  done: '完成',
+  rejected: '否決',
+  withdrawn: '取り下げ',
+};
 
 export const isReviewing = (a: Pick<Application, 'stage'>): boolean => REVIEW_STAGES.includes(a.stage);
 export const isOpen = (a: Pick<Application, 'stage'>): boolean => isReviewing(a) || a.stage === 'construction';
@@ -86,11 +100,8 @@ export function applicationName(app: Pick<Application, 'kind' | 'target'>, city:
 
 /** 申請を出せない理由（置く物の判定とは別。docs/city-design.md 8 章の「審議中の申請が多すぎる」など） */
 export type PermitProblem = 'too-many' | 'site' | 'rejected-recently';
-export const PERMIT_TEXT: Record<PermitProblem, string> = {
-  'too-many': '審議中の申請が多すぎる（6 件まで）',
-  site: '申請中の敷地と重なる',
-  'rejected-recently': '否決から 28 日たつまで、同じ場所に同じ物は出せない',
-};
+/** 理由の文は配置の理由と同じ所（src/city/place.ts）に置く */
+export const PERMIT_REASON = { 'too-many': 'permit-many', site: 'permit-site', 'rejected-recently': 'permit-retry' } as const satisfies Record<PermitProblem, ReasonCode>;
 
 /** 審議中・工事中の敷地のマス（他の物を置けない） */
 export function occupiedSites(world: Pick<World, 'applications' | 'city'>): Set<string> {
@@ -306,6 +317,35 @@ export function daysLeft(app: Application, day: number): number {
       return Math.max(0, buildDaysOf(app) - elapsed);
     default:
       return 0;
+  }
+}
+
+/** 市長の手が要る申請か（公聴会・異議申し立て。許認可の一覧で先に並べ、上の帯の数の印に数える） */
+export const needsMayor = (a: Pick<Application, 'stage'>): boolean => a.stage === 'hearing' || a.stage === 'appeal';
+
+/** 待っている事の 1 行（docs/ui-design.md 10.1:「公聴会を開ける」「議会の日まで 3 日」） */
+export function waitingText(app: Application, day: number): string {
+  const left = daysLeft(app, day);
+  switch (app.stage) {
+    case 'filed':
+    case 'zoning':
+      return `用途地域の審査 あと ${String(left)} 日`;
+    case 'objection':
+      return `反対の受付 あと ${String(left)} 日`;
+    case 'hearing':
+      return `公聴会を開ける（あと ${String(left)} 日で市長抜きで開かれる）`;
+    case 'council':
+      return `議会の日まで ${String(left)} 日`;
+    case 'appeal':
+      return `異議申し立て あと ${String(left)} 日`;
+    case 'construction':
+      return `工事中 完成まで ${String(left)} 日`;
+    case 'done':
+      return '完成した';
+    case 'rejected':
+      return '否決された';
+    case 'withdrawn':
+      return '取り下げた';
   }
 }
 

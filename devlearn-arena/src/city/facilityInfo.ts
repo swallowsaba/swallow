@@ -3,7 +3,7 @@ import type { Stage } from '@/game/stage';
 import domainsData from '../../content/domains.json';
 import { cellKey, facilityFacesRoad, occupancyOf } from './cells';
 import { FACILITY_DEFS, isLargeFacility } from './facilities';
-import { constructionStage, PARK_RADIUS, upgradeCost, type ConstructionStage } from './rules';
+import { facilityBuildStage, PARK_RADIUS, upgradeCost, type ConstructionStage } from './rules';
 import type { City, DomainId, Facility, FacilityType } from './types';
 
 /**
@@ -18,7 +18,7 @@ export type FacilityCondition =
 
 export function facilityCondition(f: Facility, city: City): FacilityCondition {
   if (f.state === 'constructing') {
-    const stage = constructionStage(f.builtDay, city.day);
+    const stage = facilityBuildStage(f, city.day);
     return { kind: 'constructing', stage: stage === 'done' ? 'frame' : stage };
   }
   const roads = occupancyOf(city).roads;

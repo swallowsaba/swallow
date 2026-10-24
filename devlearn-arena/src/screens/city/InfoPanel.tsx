@@ -11,9 +11,11 @@ import './InfoPanel.css';
 
 const format = (n: number): string => n.toLocaleString('ja-JP');
 
-export function InfoPanel({ model, onClose, onLesson, onLibrary, onUpgrade, onMission }: {
+export function InfoPanel({ model, onClose, onLesson, onLibrary, onUpgrade, onMission, onPermit }: {
   model: PanelModel | null;
   onClose: () => void;
+  /** 申請の詳細の窓を開く（申請中・工事中の施設） */
+  onPermit?: (applicationId: string) => void;
   /** 施設を次のレベルに上げる（資金で買う） */
   onUpgrade?: (facilityId: string) => void;
   /** 「ここで学ぶ」のレッスンを始める（どのレッスンもここから始められる） */
@@ -50,6 +52,12 @@ export function InfoPanel({ model, onClose, onLesson, onLibrary, onUpgrade, onMi
         <span className="info-state-dot" />
         {model.condition.text}
       </div>
+      {model.kind === 'facility' && model.permitId && onPermit ? (
+        <button type="button" className="info-action" data-testid="info-permit" onClick={() => onPermit(model.permitId ?? '')}>
+          <Icon name="permit" size={16} />
+          申請の詳細を見る
+        </button>
+      ) : null}
 
       {model.kind === 'building' ? (
         <section className="info-section">
@@ -139,10 +147,12 @@ export function InfoPanel({ model, onClose, onLesson, onLibrary, onUpgrade, onMi
                 </span>
               </div>
               {/* 条件そのものは名前の下（Lv の次までの条件）に書いてある。ここは、まだ満たしていない物だけを並べる */}
-              {model.upgrade.ok ? (
+              {model.upgrade.pending ? (
+                <p className="info-line is-sub" data-testid="info-upgrade-pending">{model.upgrade.pending}</p>
+              ) : model.upgrade.ok ? (
                 <button type="button" className="info-action is-primary" data-testid="info-upgrade" onClick={() => onUpgrade?.(model.id)}>
                   <Icon name="upgrade" size={16} />
-                  {model.upgrade.title} に上げる
+                  {model.upgrade.title} へのアップグレードを申請する
                 </button>
               ) : (
                 <ul className="info-blocked" data-testid="info-upgrade-blocked">

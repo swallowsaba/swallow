@@ -27,6 +27,9 @@ import type { CityStore, ViewKind } from './cityStore';
 import { HEAT_INFO, heatImage, heatLegend } from './heatScale';
 import { VIEW_LABELS } from './viewKinds';
 import { ViewWindow } from './ViewWindow';
+import { PermitDetailWindow, PermitListWindow } from './PermitWindows';
+import { mayorCount, sitesOf } from './permitView';
+import type { World } from '@/sim/types';
 import type { Session } from '../session';
 import { useSkills, type SkillMap } from '../skills';
 import { attachControls } from './controls';
@@ -74,6 +77,7 @@ export function CityScreen({ session, active = true, covered = false, current, d
     approval: s.world.city.population > 0 ? s.world.sim.lastWeek.approval : null,
     approvalDelta: approvalDeltaOf(s.world.history.breakdown),
     windows: s.windows, toggleWindow: s.toggleWindow, openWindow: s.openWindow, heat: s.heat,
+    mayor: mayorCount(s.world), openPermit: s.openPermit,
   })));
   // 受け取ったが、まだ置いていない記念碑（建設メニューの公園の引き出しに並ぶ）
   const facilities = useStore(store, (s) => s.city.facilities);
@@ -82,7 +86,7 @@ export function CityScreen({ session, active = true, covered = false, current, d
   const panelKey = useStore(store, (s) => (s.selected ? panelKeyOf(s) : ''));
   const panel = useMemo(() => {
     const s = store.getState();
-    return s.selected ? panelModel(s.city, s.selected, skills, progress) : null;
+    return s.selected ? panelModel(s.city, s.selected, skills, progress, s.world.applications) : null;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [panelKey, store, skills, progress]);
   // L で学習ライブラリ、G で知識グラフ（都市画面が前にある時だけ）
@@ -96,6 +100,7 @@ export function CityScreen({ session, active = true, covered = false, current, d
       if (k === 'l') onEntryRef.current?.('learn');
       else if (k === 'g') onEntryRef.current?.('graph');
       else if (k === 'v') store.getState().toggleWindow('view');
+      else if (k === 'p') store.getState().toggleWindow('permits');
       else if (k === '1' || k === '2' || k === '3') store.getState().setSpeed(Number(k) as 1 | 2 | 3);
     };
     window.addEventListener('keydown', onKey);
@@ -136,8 +141,14 @@ export function CityScreen({ session, active = true, covered = false, current, d
     // 都市・選択・表示切替を描画に渡す。表示切替は、都市の形が変わった時だけ計算し直す
     let overlayKey = '';
     let focusSeq = store.getState().focus?.seq ?? 0;
+    let sitesWorld: World | null = null;
     const sync = (s: ReturnType<CityStore['getState']>): void => {
       renderer.setCity(s.city);
+      // 申請の囲いと看板（模擬の世界が変わった時だけ作り直す。docs/city-design.md 9.1）
+      if (s.world !== sitesWorld) {
+        sitesWorld = s.world;
+        renderer.setSites(sitesOf(s.world));
+      }
       // 学習から戻った時の変化の場所へカメラを寄せ、光の輪で示す
       if (s.focus && s.focus.seq !== focusSeq) {
         focusSeq = s.focus.seq;
@@ -237,12 +248,30 @@ export function CityScreen({ session, active = true, covered = false, current, d
         stageName={STAGE_NAMES[state.stage]}
         disabled={disabled}
         current={current}
+        civic={{
+          badge: state.mayor,
+          items: [
+            { id: 'permits', badge: state.mayor },
+            { id: 'inbox', badge: 0, disabled: true },
+            { id: 'budget', badge: 0, disabled: true },
+            { id: 'news', badge: 0, disabled: true },
+            { id: 'rewards', badge: 0, disabled: true },
+          ],
+          onItem: (id) => {
+            if (id === 'permits') state.openWindow('permits');
+          },
+        }}
         {...(onEntry ? { onEntry } : {})}
       />
       {/* 都市の上に別の画面が開いている間は、上の帯だけを残し、都市の操作の部品は隠す */}
       {active ? (
         <>
-          <CityNotice text={state.notice?.text ?? null} paused={state.paused} shifted={panel !== null} />
+          <CityNotice
+            text={state.notice?.text ?? null}
+            paused={state.paused}
+            shifted={panel !== null}
+            {...(state.notice?.permitId ? { onOpen: () => state.openPermit(state.notice?.permitId ?? '') } : {})}
+          />
           {onLesson ? <RecommendPanel progress={session.progress} onLesson={onLesson} {...(onMission ? { onMission } : {})} /> : null}
           <InfoPanel
             model={panel}
@@ -251,6 +280,7 @@ export function CityScreen({ session, active = true, covered = false, current, d
               const values = Object.fromEntries(Object.entries(skillsRef.current).map(([d, v]) => [d, v.value]));
               store.getState().upgrade(id, values, performance.now());
             }}
+            onPermit={(id) => state.openPermit(id)}
             {...(onLesson ? { onLesson } : {})} {...(onLibrary ? { onLibrary } : {})} {...(onMission ? { onMission } : {})} />
           <Minimap store={store} source={minimapSource} />
           <OverlayToggle
@@ -260,7 +290,11 @@ export function CityScreen({ session, active = true, covered = false, current, d
             open={state.windows.includes('view')}
             onOpen={() => state.toggleWindow('view')}
           />
-          {state.windows.map((id, i) => (id === 'view' ? <ViewWindow key={id} store={store} stack={i} shifted={panel !== null} /> : null))}
+          {state.windows.map((id, i) => {
+            if (id === 'view') return <ViewWindow key={id} store={store} stack={i} shifted={panel !== null} />;
+            if (id === 'permits') return <PermitListWindow key={id} store={store} stack={i} shifted={panel !== null} />;
+            return <PermitDetailWindow key={id} store={store} stack={i} shifted={panel !== null} onLearn={(appId) => learnFrom(store, appId)} />;
+          })}
           <HeatHover store={store} canvas={canvasRef} renderer={rendererRef} />
           <BuildMenu state={state} landmarks={landmarks} />
           <PlacementHint hint={state.confirm ? null : state.hint} />
@@ -272,11 +306,23 @@ export function CityScreen({ session, active = true, covered = false, current, d
   );
 }
 
+/** 申請の詳細から「この施設の分野を学ぶ」: その施設の情報パネル（ここで学ぶ）を開く */
+function learnFrom(store: CityStore, appId: string): void {
+  const s = store.getState();
+  const app = s.world.applications.find((a) => a.id === appId);
+  if (!app) return;
+  const facilityId = app.target.facilityId;
+  if (facilityId && s.city.facilities.some((f) => f.id === facilityId)) s.select({ kind: 'facility', id: facilityId });
+  else s.select({ kind: 'application', id: appId });
+}
+
 function panelKeyOf(s: ReturnType<CityStore['getState']>): string {
   const sel = s.selected;
   if (!sel) return '';
   const c = s.city;
-  const target = sel.kind === 'facility' ? c.facilities.find((f) => f.id === sel.id) : c.buildings.find((b) => b.id === sel.id);
+  const target = sel.kind === 'facility'
+    ? [c.facilities.find((f) => f.id === sel.id), s.world.applications.filter((a) => a.target.facilityId === sel.id).map((a) => a.stage)]
+    : sel.kind === 'application' ? s.world.applications.find((a) => a.id === sel.id) : c.buildings.find((b) => b.id === sel.id);
   // 状態（建設の段階・道路・周りの施設）と、アップグレードの条件（資金・発展段階）が変わったら作り直す
   return `${sel.id}|${JSON.stringify(target)}|${String(Math.floor(c.day))}|${String(c.roads.length)}|${String(c.facilities.length)}|${String(c.buildings.length)}|${String(c.funds)}|${String(c.stage)}`;
 }

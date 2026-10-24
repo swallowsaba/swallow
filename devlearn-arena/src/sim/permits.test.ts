@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { checkFacility } from '@/city/place';
 import type { Facility, FacilityType, Point } from '@/city/types';
 import type { Terrain } from '@/city/terrain';
-import { applyOp, type Op } from './commands';
+import { applyOp, permitPreview, type Op } from './commands';
 import {
   buildDaysOf, daysLeft, daysToComplete, MAX_PENDING, nextCouncilDay, occupiedSites, permitProblems, rezoneOf, STAGE_DAYS,
 } from './permits';
@@ -276,5 +276,22 @@ describe('施設のアップグレードを申請にする（15.1）', () => {
       { day: council + 21, stage: 'done' },
     ]);
     expect(end.city.facilities[0]).toMatchObject({ level: 2, state: 'active' });
+  });
+});
+
+describe('配置の小窓に出す、申請になるか・出せない理由', () => {
+  it('IT 施設は「申請になる」。7 件目は「審議中の申請が多すぎる」。公園の類は申請にならない', () => {
+    const { world, terrain } = rich();
+    const s = spot(world, terrain, 'server');
+    const op: Op = { kind: 'facility', type: 'server', origin: s.origin, rotation: s.rotation };
+    expect(permitPreview(world, op, terrain)).toEqual({ application: true, problems: [] });
+    let w = world;
+    for (let i = 0; i < MAX_PENDING; i += 1) w = place(w, terrain, 'server');
+    const s7 = spot(w, terrain, 'server');
+    expect(permitPreview(w, { kind: 'facility', type: 'server', origin: s7.origin, rotation: s7.rotation }, terrain)).toEqual({ application: true, problems: ['too-many'] });
+    expect(permitPreview(w, { kind: 'facility', type: 'park', origin: s7.origin, rotation: 0 }, terrain)).toEqual({ application: false, problems: [] });
+    // 申請中の敷地に公園は置けない
+    const first = w.applications[0]?.target.origin as Point;
+    expect(permitPreview(w, { kind: 'facility', type: 'park', origin: first, rotation: 0 }, terrain).problems).toEqual(['site']);
   });
 });

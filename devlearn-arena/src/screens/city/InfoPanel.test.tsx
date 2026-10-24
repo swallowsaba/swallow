@@ -210,7 +210,7 @@ describe('情報パネルのアップグレード（docs/game-design.md 5 章・
     expect(host.querySelector('[data-testid="info-upgrade-blocked"]')?.textContent).toContain('Linux / CLIのスキルが「初級」以上になると上げられる（今は「未修得」）');
   });
 
-  it('条件を満たせば「Lv2 に上げる」が出て、押すとその施設を上げる操作を呼ぶ', () => {
+  it('条件を満たせば「Lv2 へのアップグレードを申請する」が出て、押すとその施設を上げる操作を呼ぶ', () => {
     const f = city.facilities.find((x) => x.type === 'server');
     const m = panelModel(city, { kind: 'facility', id: f?.id ?? '' }, { linux: skill(35) });
     expect(m?.kind === 'facility' ? m.upgrade : null).toMatchObject({ ok: true, level: 2, cost: 400, blocked: [] });
@@ -221,7 +221,7 @@ describe('情報パネルのアップグレード（docs/game-design.md 5 章・
       createRoot(host).render(<InfoPanel model={m} onClose={() => {}} onUpgrade={onUpgrade} />);
     });
     const button = host.querySelector<HTMLButtonElement>('[data-testid="info-upgrade"]');
-    expect(button?.textContent).toContain('Lv2 に上げる');
+    expect(button?.textContent).toContain('Lv2 へのアップグレードを申請する');
     act(() => button?.click());
     expect(onUpgrade).toHaveBeenCalledWith(f?.id);
   });

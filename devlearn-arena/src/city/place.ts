@@ -16,7 +16,9 @@ import type { City, Facility, FacilityType, Point, Road, Zone, ZoneKind } from '
 
 export type ReasonCode =
   | 'fog' | 'sea' | 'hill' | 'overlap' | 'road-overlap' | 'no-road' | 'entrance' | 'funds' | 'stage'
-  | 'bridge-stage' | 'bridge-long' | 'short';
+  | 'bridge-stage' | 'bridge-long' | 'short'
+  /** 申請を出せない（docs/game-design.md 15.2） */
+  | 'permit-many' | 'permit-site' | 'permit-retry';
 
 export interface Reason {
   code: ReasonCode;
@@ -35,7 +37,15 @@ const TEXT: Record<Exclude<ReasonCode, 'stage'>, string> = {
   'bridge-stage': '橋は「町」になると架けられる',
   'bridge-long': '川に沿っていて橋を架けられない',
   short: '短すぎる（2 マス以上）',
+  'permit-many': '審議中の申請が多すぎる（6 件まで）',
+  'permit-site': '申請中・工事中の敷地と重なる',
+  'permit-retry': '否決から 28 日たつまで、同じ場所に同じ物は出せない',
 };
+
+/** 理由の文（配置の判定の外から理由を足す時） */
+export function reasonOf(code: Exclude<ReasonCode, 'stage'>): Reason {
+  return reason(code);
+}
 
 function reason(code: Exclude<ReasonCode, 'stage'>): Reason {
   return { code, text: TEXT[code] };

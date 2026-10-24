@@ -141,3 +141,52 @@ export function frameModel(w: number, d: number, height: number, seed: number): 
   const ground: Poly[] = [pad(0.04, 0.04, w - 0.04, d - 0.04, DIRT), pad(w * 0.38, d - 0.2, w * 0.62, d, mix(DIRT, city.paving, 0.5))];
   return { w, d, ground, parts, shadowHeight: h * 0.6 };
 }
+
+/**
+ * 申請中の敷地（docs/city-design.md 9.1: 申請・用途地域の審査）。敷地の縁に低い囲い（白と灰の板を交互に）と、
+ * 道路側（+y）の入口の脇に看板の板。敷地の地面は今のまま（地面の面を持たない）。看板の文字は名札と同じく画面で描く
+ */
+export function permitSiteModel(w: number, d: number): Model {
+  const parts: Part[] = [];
+  const z = 0.09;
+  const inset = 0.05;
+  const white = city.lineWhite;
+  const grey = mix(city.curb, city.lineWhite, 0.35);
+  const sides: [number, number, number, number][] = [
+    [inset, inset, w - inset, inset],
+    [w - inset, inset, w - inset, d - inset],
+    [inset, inset, inset, d - inset],
+    [inset, d - inset, w * 0.4, d - inset],
+    [w * 0.6, d - inset, w - inset, d - inset],
+  ];
+  for (const [x0, y0, x1, y1] of sides) {
+    const len = Math.hypot(x1 - x0, y1 - y0);
+    const n = Math.max(1, Math.round(len / 0.2));
+    for (let i = 0; i < n; i += 1) {
+      const t0 = i / n;
+      const t1 = (i + 1) / n;
+      // 板 1 枚（白と灰を交互に）
+      parts.push(box({
+        x0: Math.min(x0 + (x1 - x0) * t0, x0 + (x1 - x0) * t1) - (x0 === x1 ? 0.012 : 0),
+        y0: Math.min(y0 + (y1 - y0) * t0, y0 + (y1 - y0) * t1) - (y0 === y1 ? 0.012 : 0),
+        x1: Math.max(x0 + (x1 - x0) * t0, x0 + (x1 - x0) * t1) + (x0 === x1 ? 0.012 : 0),
+        y1: Math.max(y0 + (y1 - y0) * t0, y0 + (y1 - y0) * t1) + (y0 === y1 ? 0.012 : 0),
+        z0: 0.012, z1: z, wall: i % 2 === 0 ? white : grey,
+      }));
+    }
+    for (let i = 0; i <= n; i += 1) {
+      const t = i / n;
+      parts.push(rod([x0 + (x1 - x0) * t, y0 + (y1 - y0) * t, 0], [x0 + (x1 - x0) * t, y0 + (y1 - y0) * t, z + 0.015], 0.014, shade(city.curb, 0.75)));
+    }
+  }
+  // 看板（入口の右脇。2 本の脚と白い板）
+  const sx = w * 0.62 + 0.05;
+  const sy = d - inset + 0.03;
+  parts.push(rod([sx, sy, 0], [sx, sy, 0.2], 0.012, shade(city.curb, 0.7)));
+  parts.push(rod([sx + 0.24, sy, 0], [sx + 0.24, sy, 0.2], 0.012, shade(city.curb, 0.7)));
+  parts.push(box({ x0: sx - 0.02, y0: sy - 0.01, x1: sx + 0.26, y1: sy + 0.01, z0: 0.1, z1: 0.24, wall: white, top: grey }));
+  // 杭と、測量の小旗（審査の印）
+  parts.push(rod([w * 0.5, d * 0.5, 0], [w * 0.5, d * 0.5, 0.12], 0.01, shade(city.curb, 0.7)));
+  parts.push(box({ x0: w * 0.5, y0: d * 0.5 - 0.004, x1: w * 0.5 + 0.06, y1: d * 0.5 + 0.004, z0: 0.08, z1: 0.12, wall: state.warn }));
+  return { w, d, ground: [], parts, shadowHeight: 0.1 };
+}
