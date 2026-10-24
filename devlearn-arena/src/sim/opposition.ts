@@ -10,7 +10,7 @@ import { siteCells } from './permits';
 import { ROAD_CAPACITY } from './rules';
 import { districtOf, indexOf, inMap, NEIGHBORS, ROAD_KINDS } from './space';
 import type { Application, Difficulty, GroupId, IssueId, ObjectionReason, ObjectionState, PoliticsRules, World } from './types';
-import { weekStep, type WeekView } from './week';
+import { previewOf, type PreviewView } from './week';
 
 /**
  * 反対（docs/game-design.md 16 章）。申請ごとに、反対の集団と理由と反対率を、模擬の値から計算する。**乱数で決めない。**
@@ -146,8 +146,8 @@ interface Ctx {
   site: Point[];
   /** 半径の中の住まい（世帯のいる住宅の建物） */
   homesIn: (radius: number) => { building: Building; households: number[] }[];
-  before: () => WeekView;
-  after: () => WeekView;
+  before: () => PreviewView;
+  after: () => PreviewView;
 }
 
 const clamp01 = (v: number): number => (Number.isFinite(v) ? Math.max(0, Math.min(1, v)) : 1);
@@ -288,13 +288,13 @@ export function oppositionOf(world: World, terrain: Terrain, app: Application, r
     .filter((b) => kindOf.get(b.zoneId) === 'residential')
     .map((b) => ({ building: b, households: world.sim.households[b.id] ?? [], d: distanceToSite(b.cell, site) }))
     .filter((h) => h.households.some((v) => v > 0));
-  let beforeView: WeekView | null = null;
-  let afterView: WeekView | null = null;
+  let beforeView: PreviewView | null = null;
+  let afterView: PreviewView | null = null;
   const ctx: Ctx = {
     world, terrain, app, rules, site,
     homesIn: (r) => homes.filter((h) => h.d <= r),
-    before: () => (beforeView ??= weekStep(world, terrain, true).view),
-    after: () => (afterView ??= weekStep({ ...world, city: completedCity(city, app) }, terrain, true).view),
+    before: () => (beforeView ??= previewOf(world, terrain)),
+    after: () => (afterView ??= previewOf({ ...world, city: completedCity(city, app) }, terrain)),
   };
   const strengths = reasons.map((r) => ({ reason: r, ...strengthOf(r, ctx) })).filter((s) => s.strength > 0);
   if (strengths.length === 0) return { objections: [], opposition: 0 };

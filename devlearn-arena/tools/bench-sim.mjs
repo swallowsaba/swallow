@@ -7,8 +7,10 @@ import { stepDay } from '../src/sim/world.ts';
 import { weekStep } from '../src/sim/week.ts';
 import { spaceOf } from '../src/sim/space.ts';
 import { networkOf, resetNetworkCache } from '../src/sim/network.ts';
+import { oppositionOf } from '../src/sim/opposition.ts';
+import { POLITICS_RULES } from '../src/content/politics.ts';
 
-const LIMITS = { dayMs: 0.5, weekMs: 60 };
+const LIMITS = { dayMs: 0.5, weekMs: 60, assessMs: 30 };
 
 const t0 = performance.now();
 const { world, terrain } = gridCity(true);
@@ -56,6 +58,21 @@ const maxDay = Math.max(...days);
 console.log(`1 日（週の終わりでない日）: 平均 ${meanDay.toFixed(3)}ms・最大 ${maxDay.toFixed(3)}ms（目安 ${LIMITS.dayMs}ms 以下）`);
 console.log(`1 週（毎週の計算）: 平均 ${meanWeek.toFixed(1)}ms・最大 ${maxWeek.toFixed(1)}ms・道路が変わった週 ${roadWeek.toFixed(1)}ms（目安 30〜${LIMITS.weekMs}ms）`);
 console.log(`支持率 ${w.sim.lastWeek.approval.toFixed(1)}%・失業率 ${(w.sim.lastWeek.unemployment * 100).toFixed(1)}%・仕事 ${w.sim.lastWeek.jobs.toLocaleString('ja-JP')}`);
-const ok = meanDay <= LIMITS.dayMs && maxWeek <= LIMITS.weekMs;
+
+// 申請の見込み（反対の受付に入った日。完成した形を仮に入れた 1 週分。docs/architecture.md 9.3）
+// 道路の真ん中の 1 マスにデータセンターを仮に置き、データの理由（騒音・電力・雇用・冷却水）を全て計算する
+const dcApp = (x, y) => ({
+  id: 'bench', kind: 'facility', target: { type: 'datacenter', origin: { x, y }, rotation: 180 }, stage: 'objection', stageDay: 0, filedDay: 0,
+  wallet: 'funds', reserved: 650, exception: false, objections: [], opposition: 0, mods: {},
+});
+const assess = [];
+for (let i = 0; i < 6; i += 1) {
+  const s = performance.now();
+  oppositionOf(w, terrain, dcApp(40 + i * 3, 40), POLITICS_RULES);
+  assess.push(performance.now() - s);
+}
+const maxAssess = Math.max(...assess.slice(1));
+console.log(`申請の見込み（反対の計算 1 件）: 最大 ${maxAssess.toFixed(1)}ms（目安 ${LIMITS.assessMs}ms 以下）`);
+const ok = meanDay <= LIMITS.dayMs && maxWeek <= LIMITS.weekMs && maxAssess <= LIMITS.assessMs;
 console.log(ok ? '結果: 目安以内' : '結果: 目安を超えた');
 process.exitCode = ok ? 0 : 1;

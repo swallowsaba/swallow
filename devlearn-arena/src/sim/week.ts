@@ -95,12 +95,10 @@ function partsOf(parts: Record<string, number[][]>, d: number): number[][] {
 }
 
 /** 1 週分を計算する。init は版 4 への移行と新しい都市の始め（支持を目標の値で埋め、引っ越し・成長をしない） */
-export function weekStep(world: World, terrain: Terrain, init = false): { world: World; view: WeekView } {
-  const { sim, budget } = world;
-  let city: City = world.city;
-  const week = init ? sim.week : sim.week + 1;
+/** 週の計算の前半（1〜4: 事業者と雇い手 → 働く人と仕事 → 雇用と通勤 → 騒音・公園・地価） */
+function firstHalf(world: World, terrain: Terrain, week: number) {
+  const { sim, city } = world;
   const space = spaceOf(city, terrain);
-  const taxRate = budget.taxRate;
 
   // 1. 事業者と雇い手
   const synced = employersOf(space, sim.businesses, sim.vacant, week);
@@ -123,10 +121,32 @@ export function weekStep(world: World, terrain: Terrain, init = false): { world:
   // 3. 雇用と通勤
   const net = networkOf(space);
   const commute = commuteOf(space, net, workers, jobs);
-  const anyJobs = jobs.some((j) => j > 0);
 
   // 4. 騒音・公園・地価
   const field = landFieldOf(space, commute.minutes);
+  return { space, synced, employers, households, workers, jobs, net, commute, field };
+}
+
+/** 申請の見込み（docs/game-design.md 16.2）に使う、週の計算の途中の値（騒音・通勤の混み具合・家賃）。世界は変えない */
+export type PreviewView = Pick<WeekView, 'space' | 'commute' | 'field' | 'rent'>;
+
+export function previewOf(world: World, terrain: Terrain): PreviewView {
+  const { space, commute, field } = firstHalf(world, terrain, world.sim.week);
+  const rent = new Map<string, { rent: number; burden: number[] }>();
+  for (const zb of space.residential) {
+    const r = rentOf(field.land[zb.cell] as number, zb.building.level, world.sim.rentFactor);
+    rent.set(zb.building.id, { rent: r, burden: LAYERS.map((l) => r / incomeYenOf(l)) });
+  }
+  return { space, commute, field, rent };
+}
+
+export function weekStep(world: World, terrain: Terrain, init = false): { world: World; view: WeekView } {
+  const { sim, budget } = world;
+  let city: City = world.city;
+  const week = init ? sim.week : sim.week + 1;
+  const taxRate = budget.taxRate;
+  const { space, synced, employers, households, workers, jobs, net, commute, field } = firstHalf(world, terrain, week);
+  const anyJobs = jobs.some((j) => j > 0);
 
   // 5〜6. 家賃と負担、要因の点（建物 × 層）
   const rent = new Map<string, { rent: number; burden: number[] }>();
