@@ -27,6 +27,8 @@ export const MAX_PENDING = 6;
 export const RETRY_DAYS = 28;
 /** 同意の案件（公聴会を省き、採決なしに可決）になる反対率の上限（%） */
 export const CONSENT_LIMIT = 20;
+/** 公聴会を経た申請の仮の決まり（議会の採決は G6。docs/development-plan.md G5）: 反対率がこれ未満なら可決、以上なら否決 */
+export const PROVISIONAL_PASS = 50;
 /** 用途地域の変更が申請になる、人の住む住宅の建物からの距離（マス） */
 export const REZONE_NEAR = 3;
 /** 終わった申請を残す日数（1 任期。許認可の一覧の「終わった申請」） */
@@ -249,6 +251,8 @@ function startConstruction(city: City, app: Application, day: number): { city: C
 export function stepApplications(world: World, day: number, terrain?: Terrain, rules: PoliticsRules = NO_RULES): World {
   let city = world.city;
   let changed = false;
+  /** 財政の財布の出し入れ（公共サービスなど。G9 で使う） */
+  let treasuryBack = 0;
   // 反対は、反対の受付に入った日の都市で計算する（16 章。その日の前の段階が全て進んだ後の都市ではなく、前の日の終わりの都市）
   const assess = (a: Application): Application => {
     if (!terrain) return a;
@@ -281,14 +285,31 @@ export function stepApplications(world: World, day: number, terrain?: Terrain, r
           break;
         }
         case 'hearing':
-          // 公聴会の手は G5 で作る。それまでは、反対率が 20% 以上の申請は公聴会の段で待ち、取り下げだけができる（docs/development-plan.md G4）
-          if (onHold(a)) break;
+          // 開かずに 14 日が過ぎると、市長抜きで開かれ、答えなかったことになる（15.2）
           if (elapsed >= STAGE_DAYS.hearing) next = { ...a, stage: 'council', stageDay: day, hearing: a.hearing ?? { heldDay: day, attended: false } };
           break;
         case 'council':
           if (day >= nextCouncilDay(a.stageDay)) {
-            const voted: Application = { ...a, vote: { day, consent: a.opposition < CONSENT_LIMIT && !a.exception, members: [], passed: true } };
-            const started = startConstruction(city, voted, day);
+            // 同意の案件は採決なしに可決。公聴会を経た申請は、G6 の採決までの仮の決まりで決める
+            const consent = !a.hearing && a.opposition < CONSENT_LIMIT && !a.exception;
+            const passed = consent || a.opposition < PROVISIONAL_PASS;
+            const voted: Application = { ...a, vote: { day, consent, members: [], passed } };
+            if (!passed) {
+              // 否決: 申請は終わり、費用は全て戻る（譲歩の費用はまだ取り分けていない）
+              if (a.wallet === 'funds') city = { ...city, funds: city.funds + a.reserved };
+              else treasuryBack += a.reserved;
+              next = { ...voted, stage: 'rejected', stageDay: day };
+              break;
+            }
+            // 可決: 譲歩の費用を取り分けに足す（17.1）
+            const extra = a.pendingCost ?? 0;
+            let paid: Application = voted;
+            if (extra !== 0) {
+              if (a.wallet === 'funds') city = { ...city, funds: city.funds - extra };
+              else treasuryBack -= extra;
+              paid = { ...voted, reserved: a.reserved + extra, pendingCost: 0 };
+            }
+            const started = startConstruction(city, paid, day);
             city = started.city;
             next = started.app;
           }
@@ -318,7 +339,8 @@ export function stepApplications(world: World, day: number, terrain?: Terrain, r
   // 終わった申請は 1 任期分だけ残す
   const kept = apps.filter((a) => isOpen(a) || day - a.stageDay <= KEEP_FINISHED_DAYS);
   if (!changed && kept.length === apps.length) return world;
-  return { ...world, city, applications: kept };
+  const budget = treasuryBack !== 0 ? { ...world.budget, treasury: world.budget.treasury + treasuryBack } : world.budget;
+  return { ...world, city, budget, applications: kept };
 }
 
 /** 段階の残りの日数（議会は次の議会の日まで。公聴会は最大の日数まで） */
@@ -347,10 +369,6 @@ export function daysLeft(app: Application, day: number): number {
 /** 市長の手が要る申請か（公聴会・異議申し立て。許認可の一覧で先に並べ、上の帯の数の印に数える） */
 export const needsMayor = (a: Pick<Application, 'stage'>): boolean => a.stage === 'hearing' || a.stage === 'appeal';
 
-/**
- * 公聴会の段で待っている申請（反対率が 20% 以上。公聴会の手を作るまでは、ここで待ち、取り下げだけができる。docs/development-plan.md G4）
- */
-export const onHold = (a: Pick<Application, 'stage' | 'opposition'>): boolean => a.stage === 'hearing' && a.opposition >= CONSENT_LIMIT;
 
 /**
  * 待っている事の 1 行。段階の名前の後に添える（docs/ui-design.md 10.1:「公聴会を開ける」「議会の日まで 3 日」）。
@@ -360,7 +378,6 @@ export function waitingText(app: Application, day: number): string {
   const left = daysLeft(app, day);
   switch (app.stage) {
     case 'hearing':
-      if (onHold(app)) return '公聴会を待っている。取り下げはできる';
       return `開ける。あと ${String(left)} 日で市長抜きで開かれる`;
     case 'council':
       return `議会の日まで ${String(left)} 日`;

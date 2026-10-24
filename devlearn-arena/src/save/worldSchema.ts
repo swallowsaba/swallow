@@ -84,6 +84,7 @@ export const applicationSchema = z.object({
     full: num,
     basis: z.object({ value: num, ref: num.optional() }).strict(),
     topLayer: z.number().int().min(0).max(11).optional(),
+    layers: z.array(z.number().int().min(0).max(11)).optional(),
     hand: z.union([
       z.object({ kind: z.literal('concede'), concessionId: z.string(), day: num }).strict(),
       z.object({ kind: z.literal('explain'), explanationId: z.string(), quality: z.enum(['sound', 'partial', 'wrong']), day: num }).strict(),
@@ -100,6 +101,7 @@ export const applicationSchema = z.object({
   }).strict().optional(),
   appeal: z.object({ day: num, group: groupId, resolved: z.enum(['conceded', 'capital', 'expired']).optional() }).strict().optional(),
   mods: z.record(z.string(), num),
+  pendingCost: num.optional(),
 }).strict();
 
 const snapshot = z.object({ population: num, jobs: num, treasury: num, approval: num, lessonsDone: num }).strict();

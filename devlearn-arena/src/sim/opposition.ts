@@ -52,6 +52,25 @@ export function cityGroupHas(group: GroupId, layer: number): boolean {
   return false;
 }
 
+/** 説明の効き（docs/game-design.md 17.2）: 確かは誤解の分を段階に応じて下げる（段階 1: 40% … 1 段ごとに +15%、段階 5 で 100%） */
+export const explainCut = (stage: number): number => Math.min(1, 0.4 + 0.15 * (stage - 1));
+/** 一部の説明が下げる割合（誤解の分の 15%） */
+export const PARTIAL_CUT = 0.15;
+/** 誤った説明で懸念が増える割合 */
+export const WRONG_RAISE = 0.1;
+
+/**
+ * 理由の懸念に掛ける倍率（説明の手。17.2）。下げられるのは誤解から来る割合の分だけ（騒音そのものは説明では消えない）。
+ * 説明の手が無ければ 1
+ */
+export function concernFactor(reason: Pick<ObjectionReason, 'misconception' | 'explanations'>, hand: ObjectionState['hand']): number {
+  if (hand?.kind !== 'explain') return 1;
+  if (hand.quality === 'wrong') return 1 + WRONG_RAISE;
+  if (hand.quality === 'partial') return 1 - reason.misconception * PARTIAL_CUT;
+  const stage = reason.explanations.find((e) => e.id === hand.explanationId)?.stage ?? 1;
+  return 1 - reason.misconception * explainCut(stage);
+}
+
 /** 申請の種類の鍵（理由の targets と比べる）: 'datacenter'・'upgrade:datacenter'・'rezone:industrial' */
 export function targetOf(app: Pick<Application, 'kind' | 'target'>, city: Pick<City, 'facilities'>): string {
   if (app.kind === 'rezone') return `rezone:${app.target.zone?.kind ?? ''}`;
@@ -297,7 +316,9 @@ export function oppositionOf(world: World, terrain: Terrain, app: Application, r
     before: () => (beforeView ??= previewOf(world, terrain)),
     after: () => (afterView ??= previewOf({ ...world, city: completedCity(city, app) }, terrain)),
   };
-  const strengths = reasons.map((r) => ({ reason: r, ...strengthOf(r, ctx) })).filter((s) => s.strength > 0);
+  // 説明の手は、理由の懸念の重みを変える（強さは変えない）
+  const handOf = (id: string): ObjectionState['hand'] => app.objections.find((o) => o.reasonId === id)?.hand;
+  const strengths = reasons.map((r) => ({ reason: r, factor: concernFactor(r, handOf(r.id)), ...strengthOf(r, ctx) })).filter((s) => s.strength > 0);
   if (strengths.length === 0) return { objections: [], opposition: 0 };
 
   // 人数（影響の範囲）と懸念。理由ごとの寄与（人数 × 懸念 × 比）を、地区と層ごとにも数える
@@ -317,7 +338,7 @@ export function oppositionOf(world: World, terrain: Terrain, app: Application, r
         if (!applies) return 0;
         if (r.group === 'neighbors') inLocal = true;
         else inCity = true;
-        return s.strength * layerWeight(l, r.issue);
+        return s.strength * layerWeight(l, r.issue) * s.factor;
       });
       const w = inLocal ? 1 : inCity ? CITY_GROUP_WEIGHT : 0;
       if (w === 0) continue;
@@ -347,7 +368,7 @@ export function oppositionOf(world: World, terrain: Terrain, app: Application, r
       for (let band = 0; band < 3; band += 1) {
         const n = biz.workers[band] ?? 0;
         if (n <= 0) continue;
-        const parts = merchants.map(({ s }) => (d <= (s.reason.radius ?? 0) ? s.strength * bandWeight(band, s.reason.issue) : 0));
+        const parts = merchants.map(({ s }) => (d <= (s.reason.radius ?? 0) ? s.strength * bandWeight(band, s.reason.issue) * s.factor : 0));
         const sum = parts.reduce((a, v) => a + v, 0);
         if (sum <= 0) continue;
         people += n;
@@ -378,6 +399,7 @@ export function oppositionOf(world: World, terrain: Terrain, app: Application, r
     let topLayer: number | undefined;
     let top = 0;
     c.byLayer.forEach((v, l) => { if (v > top) { top = v; topLayer = l; } });
+    const layers = c.byLayer.flatMap((v, l) => (v > 0 ? [l] : []));
     return [{
       reasonId: s.reason.id,
       group: s.reason.group,
@@ -387,6 +409,7 @@ export function oppositionOf(world: World, terrain: Terrain, app: Application, r
       full,
       basis: s.basis,
       ...(topLayer !== undefined ? { topLayer } : {}),
+      layers,
     }];
   });
   return { objections, opposition: objections.reduce((a, o) => a + o.full, 0) };

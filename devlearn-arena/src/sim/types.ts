@@ -199,6 +199,8 @@ export interface ObjectionState {
   basis: { value: number; ref?: number };
   /** この理由の反対で一番多い層（層の番号） */
   topLayer?: number;
+  /** この理由に反対した層（信頼を動かす相手。押し切る・誤った説明。docs/game-design.md 17 章） */
+  layers?: number[];
   hand?:
     | { kind: 'concede'; concessionId: string; day: number }
     | { kind: 'explain'; explanationId: string; quality: 'sound' | 'partial' | 'wrong'; day: number }
@@ -235,6 +237,8 @@ export interface Application {
   vote?: VoteRecord;
   appeal?: { day: number; group: GroupId; resolved?: 'conceded' | 'capital' | 'expired' };
   mods: Record<string, number>;
+  /** 譲歩の費用（可決した時に取り分けに足す。負の値は規模を小さくして下がる分。docs/game-design.md 17.1） */
+  pendingCost?: number;
 }
 
 /* ---------- 11 章 市政 ---------- */

@@ -66,7 +66,7 @@ export const citySchema = z.object({
   techPower: z.number().min(0),
   revealed: z.array(rect),
   roads: z.array(z.object({ id: z.string(), kind: z.enum(['lane', 'street', 'avenue', 'bridge', 'roundabout']), path: z.array(point) }).strict()),
-  zones: z.array(z.object({ id: z.string(), kind: z.enum(['residential', 'commercial', 'office', 'industrial']), cells: z.array(point) }).strict()),
+  zones: z.array(z.object({ id: z.string(), kind: z.enum(['residential', 'commercial', 'office', 'industrial']), cells: z.array(point), mods: z.record(z.string(), z.number()).optional() }).strict()),
   buildings: z.array(z.object({ id: z.string(), zoneId: z.string(), cell: point, variant: z.string(), level: z.number(), builtDay: z.number() }).strict()),
   facilities: z.array(z.object({
     id: z.string(),

@@ -4,7 +4,7 @@ import type { SiteView } from '@/city/render/CityRenderer';
 import { FACILITY_JOBS_PER_LEVEL, ZONE_RULES } from '@/city/rules';
 import type { Point } from '@/city/types';
 import {
-  applicationName, daysLeft, daysToComplete, isOpen, isReviewing, needsMayor, nextCouncilDay, onHold, PROGRESS_STAGES, siteCells, STAGE_DAYS, STAGE_LABEL, waitingText,
+  applicationName, daysLeft, daysToComplete, isOpen, isReviewing, needsMayor, nextCouncilDay, PROGRESS_STAGES, siteCells, STAGE_DAYS, STAGE_LABEL, waitingText,
 } from '@/sim/permits';
 import { REASONS } from '@/content/politics';
 import type { HeatKind } from '@/sim/heat';
@@ -53,7 +53,6 @@ export function signLine(app: Application, day: number): string {
       return `審議中・用途地域の審査 あと ${String(left)} 日`;
     case 'objection':
     case 'hearing':
-      if (onHold(app)) return `${STAGE_LABEL[app.stage]}を待つ・反対 ${String(Math.round(app.opposition))}%`;
       return `${STAGE_LABEL[app.stage]} あと ${String(left)} 日・反対 ${String(Math.round(app.opposition))}%`;
     case 'council':
       return `議会の採決 ${dateText(nextCouncilDay(app.stageDay))}`;

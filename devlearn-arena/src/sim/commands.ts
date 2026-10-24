@@ -5,6 +5,7 @@ import type { Facility, FacilityType, Point, ZoneKind } from '@/city/types';
 import { cellKey, facilityCells, roadCellsOf } from '@/city/cells';
 import { checkUpgrade, type SkillValueMap } from '@/city/upgrade';
 import { file, needsApplication, occupiedSites, permitProblems, rezoneOf, withdraw, type PermitProblem } from './permits';
+import { closeHearing, playHand, type Hand } from './hearing';
 import { NO_RULES, type Application, type PoliticsRules, type World } from './types';
 
 /**
@@ -22,7 +23,11 @@ export type Op =
   /** 学習とミッションで得た開発資金（docs/game-design.md 2 章） */
   | { kind: 'funds'; amount: number }
   /** 申請を取り下げる（着工の前。費用は全て戻る。docs/game-design.md 15.2） */
-  | { kind: 'withdraw'; applicationId: string };
+  | { kind: 'withdraw'; applicationId: string }
+  /** 公聴会の論点に手を出す（受付の間は先回りの譲歩だけ。docs/game-design.md 17 章）。スキルの値は出した時の値を載せる */
+  | { kind: 'hand'; applicationId: string; reasonId: string; hand: Hand; skills: SkillValueMap }
+  /** 公聴会を終える（議会の採決の段へ） */
+  | { kind: 'closeHearing'; applicationId: string };
 
 export interface Command {
   /** 出した順の番号（画面が付ける。模擬が当てた所までを返す） */
@@ -88,6 +93,10 @@ export function applyOp(world: World, op: Op, terrain: Terrain, rules: PoliticsR
     }
     case 'withdraw':
       return withdraw(world, op.applicationId, day);
+    case 'hand':
+      return playHand(world, terrain, rules, op.applicationId, op.reasonId, op.hand, op.skills, day).world;
+    case 'closeHearing':
+      return closeHearing(world, op.applicationId, day);
     case 'funds':
       return { ...world, city: { ...city, funds: city.funds + op.amount } };
   }

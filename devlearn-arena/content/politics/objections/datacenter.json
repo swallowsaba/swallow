@@ -14,7 +14,12 @@
         { "id": "dc-noise-night", "label": "夜間（22 時〜6 時）は重い集計処理を止め、送風機を低速で回す", "mods": { "nightNoise": 0, "tech": 0.8 } },
         { "id": "dc-noise-wall", "label": "屋外の送風機を建物の中へ移し、防音の壁で囲う", "mods": { "noise": 0.5 }, "cost": { "ratio": 0.2 } }
       ],
-      "explanations": [],
+      "explanations": [
+        { "id": "dc-noise-batch", "domain": "db", "stage": 2, "quality": "sound", "text": "夜に音が大きくなるのは、夜中にまとめて流す集計の処理で機械が熱を出し、送風機が速く回るからです。重い集計を昼に分ければ、夜の音の山は低くなります。", "why": "音の出どころと、なぜ減らせるのかが分かり、寝室に届く音を心配していた人が少し落ち着いた。" },
+        { "id": "dc-noise-measure", "domain": "db", "stage": 3, "quality": "sound", "text": "敷地の境で夜の音を毎晩測り、決めた値を超えた夜は、急がない集計を翌朝に回す決まりにします。測った値は毎月知らせます。", "why": "音を数字で約束し、超えた時の手順まで示したので、議員も評価した。" },
+        { "id": "dc-noise-indoor", "domain": "db", "stage": 1, "quality": "partial", "text": "サーバは窓の無い建物の奥に置き、扉も二重にします。", "why": "建物の中の機械の音は防げるが、屋外で回る送風機の音には答えていない。", "lesson": "found.b.02" },
+        { "id": "dc-noise-disk", "domain": "db", "stage": 1, "quality": "wrong", "text": "データを入れる装置には回る部品が無い物を使うので、建物から音は出ません。", "why": "夜の音の出どころは記憶装置ではなく、熱を逃がす送風機だ。的外れな答えで、かえって不信が増した。", "lesson": "found.b.02" }
+      ],
       "lessons": ["db.a.01", "db.b.01"]
     },
     {
@@ -31,7 +36,12 @@
         { "id": "dc-power-trim", "label": "使っていないサーバの電源を落とし、古いデータを圧縮して台数を減らす", "mods": { "power": 0.6, "tech": 0.85 } },
         { "id": "dc-power-small", "label": "最初は半分の区画だけを使い、残りは電気が足りてから入れる", "mods": { "power": 0.5, "tech": 0.7, "jobs": 0.8 }, "cost": { "ratio": -0.2 } }
       ],
-      "explanations": [],
+      "explanations": [
+        { "id": "dc-power-virt", "domain": "cloud", "stage": 2, "quality": "sound", "text": "使っていない時間の多いサーバを、{{term:virtualization}}で少ない台数にまとめて動かします。台数が減れば、使う電気も冷やす電気も減ります。", "why": "台数を減らせる理由が具体的で、電気が足りなくなる心配が和らいだ。" },
+        { "id": "dc-power-cap", "domain": "db", "stage": 3, "quality": "sound", "text": "使う電力の上限を決め、島の電気の余りが少ない日は、急がない集計と複製を止めて上限を下げます。毎週の使用量を公開します。", "why": "上限と止める決まりを数字で示したので、議員も評価した。" },
+        { "id": "dc-power-backup", "domain": "db", "stage": 1, "quality": "partial", "text": "停電しても止まらないよう、自前の予備の電源を持ちます。", "why": "データセンターは止まらなくなるが、島の電気の余裕が減るという心配には答えていない。", "lesson": "db.a.02" },
+        { "id": "dc-power-cloud", "domain": "cloud", "stage": 1, "quality": "wrong", "text": "クラウドに置くデータなので、この島の電気はほとんど使いません。", "why": "クラウドの中身は、まさにこの建物の中のサーバだ。電気を使うのはここだと指摘され、かえって不信を招いた。", "lesson": "cloud.b.01" }
+      ],
       "lessons": ["db.b.01", "cloud.b.03"]
     },
     {
@@ -47,7 +57,11 @@
       "concessions": [
         { "id": "dc-jobs-local", "label": "保守と運用の窓口を市内に置き、地元から人を雇って育てる", "mods": { "jobs": 1.6 }, "cost": { "ratio": 0.15 } }
       ],
-      "explanations": [],
+      "explanations": [
+        { "id": "dc-jobs-around", "domain": "db", "stage": 2, "quality": "sound", "text": "建物の中で働く人は少なくても、ここに置くデータを使う会社が近くに集まります。データベースの管理や機器の保守の仕事も、市内の会社に出せます。", "why": "建物の外に生まれる仕事の道筋が分かり、議員も耳を傾けた。" },
+        { "id": "dc-jobs-number", "domain": "db", "stage": 3, "quality": "sound", "text": "運用・保守・警備で何人を雇い、そのうち何人を市内から採るかを数で約束し、毎年知らせます。", "why": "人数の約束と知らせ方が示され、雇用を重く見る議員が評価した。" },
+        { "id": "dc-jobs-auto", "domain": "db", "stage": 1, "quality": "wrong", "text": "データベースは自動で動くので、人はいりません。", "why": "止まった時に直すのも、壊れた機器を替えるのも人だ。人がいらないと言い切ったことで、雇用の心配がかえって強まった。", "lesson": "db.a.02" }
+      ],
       "lessons": ["db.b.01", "db.a.02"]
     },
     {
@@ -62,7 +76,12 @@
       "concessions": [
         { "id": "dc-water-closed", "label": "冷却水を閉じた配管で回し、補給には屋根にためた雨水を使う", "mods": { "coolingWater": 0.3 }, "cost": { "ratio": 0.2 } }
       ],
-      "explanations": [],
+      "explanations": [
+        { "id": "dc-water-loop", "domain": "cloud", "stage": 2, "quality": "sound", "text": "冷やす水は配管の中を回り続けます。使い切るのは蒸発する分だけで、川の水を流し捨てることはありません。", "why": "水を使い捨てると思っていた人の心配が和らいだ。" },
+        { "id": "dc-water-measure", "domain": "cloud", "stage": 3, "quality": "sound", "text": "冷却に使う水の量を毎月測って公開し、渇水の時期は外の空気で冷やす割合を増やして、補給を止めます。", "why": "量を数字で示し、渇水の時に止める決まりまで約束したので、議員も評価した。" },
+        { "id": "dc-water-tap", "domain": "cloud", "stage": 1, "quality": "partial", "text": "水は川から直接は取らず、市の水道から買います。", "why": "川から取らないことは分かったが、どれだけ使うのかという心配には答えていない。", "lesson": "cloud.b.03" },
+        { "id": "dc-water-cloud", "domain": "cloud", "stage": 1, "quality": "wrong", "text": "クラウドなので、建物で水は使いません。", "why": "クラウドの裏側にも建物と冷却がある。かえって不信を招いた。", "lesson": "cloud.b.01" }
+      ],
       "lessons": ["cloud.b.03", "db.b.01"]
     }
   ]

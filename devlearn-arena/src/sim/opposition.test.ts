@@ -183,7 +183,7 @@ describe('反対の受付（15.2）', () => {
     return w;
   }
 
-  it('用途地域の審査の後に理由が立ち、反対率が 0 から計算の値まで日ごとに直線で上がる。20% 以上は公聴会の段で待ち、取り下げはできる', () => {
+  it('用途地域の審査の後に理由が立ち、反対率が 0 から計算の値まで日ごとに直線で上がる。20% 以上は公聴会の段へ進み、取り下げはできる', () => {
     let w = place(GROWN.world, { kind: 'facility', type: 'datacenter', ...NEAR });
     const id = (w.applications.at(-1) as Application).id;
     const app = (): Application => w.applications.find((a) => a.id === id) as Application;
@@ -198,9 +198,6 @@ describe('反対の受付（15.2）', () => {
     w = days(w, 7);
     expect(app()).toMatchObject({ stage: 'hearing' });
     expect(app().opposition).toBeCloseTo(full, 6);
-    // 公聴会の手は G5。それまでは公聴会の段で待つ
-    w = days(w, 40);
-    expect(app().stage).toBe('hearing');
     const funds = w.city.funds;
     w = place(w, { kind: 'withdraw', applicationId: id });
     expect(app().stage).toBe('withdrawn');

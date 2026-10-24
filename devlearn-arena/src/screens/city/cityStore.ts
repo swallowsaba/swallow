@@ -11,7 +11,7 @@ import { FACILITY_DEFS } from '@/city/facilities';
 import { checkUpgrade } from '@/city/upgrade';
 import { EXPLAIN, NAME_PARTS, POLITICS_RULES } from '@/content/politics';
 import { explainApproval } from '@/sim/explain';
-import { applicationName, daysLeft, daysToComplete, isReviewing, onHold } from '@/sim/permits';
+import { applicationName, daysLeft, daysToComplete, isReviewing } from '@/sim/permits';
 import type { HeatFields, HeatKind } from '@/sim/heat';
 import { applyOp, type Command, type Op } from '@/sim/commands';
 import { workerHost, type SimHost } from '@/sim/host';
@@ -380,8 +380,7 @@ export function stageNotices(before: readonly Application[], after: World): { te
     const prev = was.get(a.id);
     if (prev === undefined || prev === a.stage) continue;
     const name = applicationName(a, after.city);
-    if (a.stage === 'hearing' && onHold(a)) out.push({ text: `${name}の申請は反対が ${String(Math.round(a.opposition))}% 立ち、公聴会の段に入った`, permitId: a.id });
-    else if (a.stage === 'hearing') out.push({ text: `${name}の申請が公聴会の段に入った。14 日のうちに開ける`, permitId: a.id });
+    if (a.stage === 'hearing') out.push({ text: `${name}の申請が公聴会の段に入った。14 日のうちに開ける`, permitId: a.id });
     else if (a.stage === 'construction') out.push({ text: `${name}の申請が可決された。着工した（完成まで ${String(daysLeft(a, day))} 日）`, permitId: a.id });
     else if (a.stage === 'done' && a.kind === 'rezone') out.push({ text: `${name}の申請が可決された。区画を塗った`, permitId: a.id });
     else if (a.stage === 'done') out.push({ text: `${name}が完成した`, permitId: a.id });

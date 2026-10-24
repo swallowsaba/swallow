@@ -229,12 +229,12 @@ describe('反対（G4。docs/ui-design.md 10.2 の 2・3、docs/city-design.md 9
     expect(store.getState().overlay).toBe('noise');
   });
 
-  it('反対率が 20% 以上の申請は、公聴会の段で待つ（看板・一覧・知らせ）。取り下げはできる', () => {
+  it('反対率が 20% 以上の申請は公聴会の段へ（看板・一覧・知らせ）。取り下げはできる', () => {
     const world = storeWith([dc()]).getState().world;
-    expect(permitRows(world).open[0]?.waiting).toBe('公聴会を待っている。取り下げはできる');
-    expect(sitesOf(world)[0]?.line).toBe('公聴会を待つ・反対 32%');
+    expect(permitRows(world).open[0]?.waiting).toBe('開ける。あと 13 日で市長抜きで開かれる');
+    expect(sitesOf(world)[0]?.line).toBe('公聴会 あと 13 日・反対 32%');
     expect(permitDetail(world, 'a1')?.canWithdraw).toBe(true);
-    expect(stageNotices([dc({ stage: 'objection' })], world)).toEqual([{ text: 'データセンターの申請は反対が 32% 立ち、公聴会の段に入った', permitId: 'a1' }]);
+    expect(stageNotices([dc({ stage: 'objection' })], world)).toEqual([{ text: 'データセンターの申請が公聴会の段に入った。14 日のうちに開ける', permitId: 'a1' }]);
   });
 
   it('囲いの前に反対する人の影（反対率に応じて 0〜6 人・札の色）。議会を待つ間と工事中には立たない', () => {
