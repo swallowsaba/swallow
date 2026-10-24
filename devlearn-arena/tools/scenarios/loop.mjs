@@ -7,16 +7,17 @@
 //
 // 新しい記録（空の保存）で、利用者の操作だけで次を通す。途中で 1 回、ページを読み直す。
 //   G1 都市を表示（起動直後が都市の画面）
-//   G2 都市を操作（キーで移動・拡大・回転、ホイールで拡大、右ドラッグで移動）→ 区画を塗り、市立 IT 学院を置く
+//   G2 都市を操作（キーで移動・拡大・回転、ホイールで拡大、右ドラッグで移動）→ 区画を塗り、市立 IT 学院を置く（申請になる）
+//      → 申請中の敷地を押すと、情報パネルに「ここで学ぶ」と申請の詳細の窓 → 時間を進めて審議と工事を終える（docs/game-design.md 15 章）
 //   G3 施設を押して選ぶ → 情報パネルの「ここで学ぶ」の 1 本目 → レッスンが開く
 //   G4 解説 → 理解 → クイズ →（ページを読み直す: 実戦の段から続き、クイズで得た XP と記録が消えない）→ 実戦 → 結果 → まとめ
 //   G5 XP とスキルが docs/game-design.md 3・4 章の式どおりに増える
-//   G6 都市へ戻ると、変化の知らせが出て、その施設が選ばれ、カメラが寄る → 学習で得た資金で施設を Lv2 に上げる
+//   G6 都市へ戻ると、変化の知らせが出て、その施設が選ばれ、カメラが寄る → 学習で得た資金で施設を Lv2 に上げる申請を出し、完成を待つ
 // 7 段の操作は tools/scenarios/verify-lesson.mjs と同じ（正解はレッスンの中身から読む。実戦は最後のヒントに書かれた操作だけ）。
-// 時間だけは都市の時計を早回しする（建設が終わるのを待つ。tools/scenarios/town.mjs の days）。
+// 時間だけは都市の時計を早回しする（審議と工事が終わるのを待つ。tools/scenarios/town.mjs の days・untilBuilt）。
 import { readFileSync } from 'node:fs';
 import { pathToFileURL } from 'node:url';
-import { at, days, drag, facility, pick } from './town.mjs';
+import { at, drag, facility, pick, untilBuilt } from './town.mjs';
 import { readLesson, siteRoot, verifyLesson } from './verify-lesson.mjs';
 
 const wait = (page, ms = 300) => page.waitForTimeout(ms);
@@ -112,10 +113,31 @@ export async function runLoop(page, shot = async () => {}) {
     await facility(page, 'academy', [41, 45]);
     await page.keyboard.press('Escape');
     await page.keyboard.press('Escape');
-    await days(page, 4);
+    // 置くと申請になる。敷地を押すと、情報パネルに段階と「ここで学ぶ」、申請の詳細の窓が開く（申請中の施設からも学べる）
+    const filed = await page.evaluate(() => window.__cityStore.getState().world.applications.map((a) => ({ id: a.id, stage: a.stage, type: a.target.type, origin: a.target.origin })));
+    const site = filed.find((a) => a.type === 'academy');
+    let pending = { panel: null, lessons: 0, window: false };
+    if (site?.origin) {
+      await page.evaluate(() => window.__city.focusOn(42.5, 44.5));
+      await wait(page, 400);
+      const p = await at(page, site.origin.x + 1, site.origin.y + 1);
+      await page.mouse.click(p.sx, p.sy);
+      await page.waitForSelector('[data-testid="permit-window"]', { timeout: 5000 }).catch(() => {});
+      pending = {
+        panel: await text(page, '[data-testid="info-state"]'),
+        lessons: await page.locator('[data-testid="info-lessons"] button').count(),
+        window: Boolean(await page.$('[data-testid="permit-window"]')),
+      };
+      await shot('loop-g2-permit');
+      await page.keyboard.press('Escape');
+      await page.keyboard.press('Escape');
+    }
+    check('G2 施設を置くと申請になり、申請中の敷地からも学べる', site?.stage === 'zoning' && pending.lessons > 0 && pending.window,
+      `申請 ${site ? `${site.type}・${site.stage}` : 'なし'}・情報パネル「${pending.panel ?? 'なし'}」・ここで学ぶ ${String(pending.lessons)} 本・申請の詳細の窓 ${pending.window ? 'あり' : 'なし'}`);
+    const done = await untilBuilt(page, 'academy');
     const built = await cityOf(page);
     const academy = built.facilities.find((f) => f.type === 'academy');
-    if (!academy) throw new Error('市立 IT 学院を置けなかった');
+    if (!academy || !done) throw new Error('市立 IT 学院の審議と工事が終わらなかった');
     await page.evaluate(() => window.__city.focusOn(46, 47));
     await wait(page, 500);
     await shot('loop-g2-town');
@@ -191,14 +213,19 @@ export async function runLoop(page, shot = async () => {}) {
 
     // 都市が発展: 学習で得た資金で、選ばれた施設を Lv2 に上げる
     const fundsBefore = back.funds;
+    let applied = null;
     if (await page.$('[data-testid="info-upgrade"]')) {
       await page.click('[data-testid="info-upgrade"]');
       await wait(page, 800);
+      applied = await text(page, '.city-notice');
+      // アップグレードも申請になる。反対の受付 → 議会 → 工事 21 日の後に Lv が上がる
+      await untilBuilt(page, 'academy', 2);
+      await wait(page, 500);
     }
     const up = await cityOf(page);
     const lv = up.facilities.find((f) => f.id === academy.id)?.level ?? 0;
     await shot('loop-g6-upgraded');
-    check('G6 学習で得た資金で施設が発展する', lv === 2 && up.funds < fundsBefore, `市立 IT 学院 Lv${String(lv)}・資金 ${String(fundsBefore)} → ${String(up.funds)}・知らせ「${await text(page, '.city-notice') ?? 'なし'}」・上げられない理由「${await text(page, '[data-testid="info-upgrade-blocked"]') ?? 'なし'}」`);
+    check('G6 学習で得た資金で施設が発展する', lv === 2 && up.funds < fundsBefore, `市立 IT 学院 Lv${String(lv)}・資金 ${String(fundsBefore)} → ${String(up.funds)}・申請の知らせ「${applied ?? 'なし'}」・上げられない理由「${await text(page, '[data-testid="info-upgrade-blocked"]') ?? 'なし'}」`);
   } catch (e) {
     check('台本', false, `進めない: ${String(e.message ?? e).split('\n')[0]}`);
     await shot('loop-stuck').catch(() => {});

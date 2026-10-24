@@ -63,6 +63,29 @@ export async function days(page, n) {
   await page.waitForTimeout(200);
 }
 
+/**
+ * 施設が申請 → 審議 → 工事を経て完成する（その Lv になる）まで、都市の時計を 7 日ずつ進める（docs/game-design.md 15 章）。
+ * 完成すれば true。maxDays を過ぎても完成しなければ false
+ */
+export async function untilBuilt(page, type, level = 1, maxDays = 160) {
+  const done = () => page.evaluate(([t, lv]) => window.__cityStore.getState().world.city.facilities.some((f) => f.type === t && f.state === 'active' && f.level >= lv), [type, level]);
+  for (let d = 0; d <= maxDays; d += 7) {
+    if (await done()) return true;
+    await days(page, 7);
+  }
+  return done();
+}
+
+/** 審議中・工事中の申請が全て終わるまで、都市の時計を 7 日ずつ進める */
+export async function untilSettled(page, maxDays = 200) {
+  const open = () => page.evaluate(() => window.__cityStore.getState().world.applications.filter((a) => !['done', 'rejected', 'withdrawn'].includes(a.stage)).length);
+  for (let d = 0; d <= maxDays; d += 7) {
+    if ((await open()) === 0) return true;
+    await days(page, 7);
+  }
+  return (await open()) === 0;
+}
+
 async function state(page) {
   return page.evaluate(() => {
     const c = window.__cityStore.getState().city;
@@ -118,6 +141,8 @@ export async function buildTown(page, shot = async () => {}) {
   console.log('置いた後', JSON.stringify(await state(page)));
   await days(page, 1.4);
   await shot('p2-placed');
+  // IT 施設は申請になる（docs/game-design.md 15 章）。審議と工事が終わるまで時間を進める
+  await untilSettled(page);
 
   // 町になるまで時間を進める
   for (let i = 0; i < 12; i += 1) {

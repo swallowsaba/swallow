@@ -31,6 +31,27 @@ const cityState = (page: Page) =>
     return { funds: s.city.funds, facilities: s.city.facilities.map((f) => `${f.type}:${String(f.level)}`), selected: s.selected };
   });
 
+/**
+ * 施設がその Lv で動き出すまで、都市の時計を 7 日ずつ進める（申請 → 審議 → 工事。docs/game-design.md 15 章）。
+ * 模擬は Worker で動くので、進めた日まで追いつくのを待つ
+ */
+async function untilBuilt(page: Page, type: string, level: number): Promise<void> {
+  type Store = { getState: () => { speed: number; paused: boolean; togglePause: () => void; tick: (s: number) => void; city: { day: number }; world: { city: { day: number; facilities: { type: string; level: number; state: string }[] } } } };
+  for (let i = 0; i < 30; i += 1) {
+    const done = await page.evaluate(([t, lv]) => (window as unknown as { __cityStore: Store }).__cityStore.getState().world.city.facilities.some((f) => f.type === t && f.level >= Number(lv) && f.state === 'active'), [type, level] as const);
+    if (done) return;
+    const target = await page.evaluate(() => {
+      const s = (window as unknown as { __cityStore: Store }).__cityStore.getState();
+      if (s.paused) s.togglePause();
+      const to = Math.floor(s.city.day + 7);
+      s.tick((7 * 2) / s.speed);
+      return to;
+    });
+    await page.waitForFunction((t) => (window as unknown as { __cityStore: Store }).__cityStore.getState().world.city.day >= t, target);
+  }
+  throw new Error(`${type} が Lv${String(level)} で完成しない`);
+}
+
 async function dragCells(page: Page, from: [number, number], to: [number, number]): Promise<void> {
   const a = await at(page, ...from);
   const b = await at(page, ...to);
@@ -82,9 +103,19 @@ test('都市を作り、施設から学び、7 段を通して都市へ戻ると
   await page.mouse.click(spot.sx, spot.sy);
   await page.keyboard.press('Escape');
   await page.keyboard.press('Escape');
+  // 置くと申請になる（docs/game-design.md 15 章）。まだ都市には無く、敷地に囲いと看板が立つ
+  await expect.poll(async () => (await cityState(page)).facilities).toEqual([]);
+  // 申請中の敷地を押すと、情報パネルに段階と「ここで学ぶ」、申請の詳細の窓が開く（申請中の施設からも学べる）
+  const site = await at(page, 41, 45);
+  await page.mouse.click(site.sx, site.sy);
+  await expect(page.getByTestId('permit-window')).toContainText('用途地域の審査');
+  await expect(page.getByTestId('info-state')).toContainText('申請中');
+  await expect(page.getByTestId('info-lessons').locator('button')).toHaveCount(3);
+  await page.keyboard.press('Escape');
+  await page.keyboard.press('Escape');
+  // 審議と工事（基礎 → 骨組み → 完成）が終わるまで、都市の時計を進める
+  await untilBuilt(page, 'academy', 1);
   await expect.poll(async () => (await cityState(page)).facilities).toEqual(['academy:1']);
-  // 建設（基礎 → 骨組み → 完成）が終わるまで、都市の時計を進める
-  await page.evaluate(() => (window as unknown as { __cityStore: { getState: () => { tick: (s: number) => void } } }).__cityStore.getState().tick(16));
 
   // G3: 施設を選ぶと情報パネル。まだ上げられない（スキルが足りない）
   await page.keyboard.press('Tab');
@@ -179,7 +210,10 @@ test('都市を作り、施設から学び、7 段を通して都市へ戻ると
   await page.waitForTimeout(500);
   const drawnBefore = await drawn();
   await page.getByTestId('info-upgrade').click();
-  await expect(page.locator('.city-notice')).toContainText('市立 IT 学院を Lv2 に上げた');
+  // アップグレードも申請になる。費用を取り分け、反対の受付 → 議会 → 工事の後に Lv が上がる
+  await expect(page.locator('.city-notice')).toContainText('市立 IT 学院の Lv2 へのアップグレードを申請した');
+  await expect(page.getByTestId('info-upgrade-pending')).toContainText('申請中');
+  await untilBuilt(page, 'academy', 2);
   await expect(panel.locator('.info-level-value')).toHaveText('2');
   const after = await cityState(page);
   expect(after.facilities).toEqual(['academy:2']);
