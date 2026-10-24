@@ -113,7 +113,7 @@ interface City {
   facilities: Facility[];        // 学習者が置いた施設・公園・記念碑
 }
 interface Road { id: string; kind: 'lane' | 'street' | 'avenue' | 'bridge' | 'roundabout'; path: Point[] }
-interface Zone { id: string; kind: 'residential' | 'commercial' | 'office' | 'industrial'; cells: Point[] }
+interface Zone { id: string; kind: 'residential' | 'commercial' | 'office' | 'industrial'; cells: Point[]; mods?: Record<string, number> }  // mods: 用途地域の変更の申請の譲歩（height・units・jobs・noise）
 interface Building { id: string; zoneId: string; cell: Point; variant: string; level: number; builtDay: number }
 interface Facility {
   id: string;
@@ -273,6 +273,7 @@ interface Application {
   vote?: VoteRecord;
   appeal?: { day: number; group: GroupId; resolved?: 'conceded' | 'capital' | 'expired' };
   mods: Record<string, number>;          // 譲歩で変わった性質（'height': −1, 'nightNoise': 0, 'coolingWater': 0.3 など）。完成した建物に写す
+  pendingCost?: number;                  // 譲歩の費用（可決した時に reserved に足す。負の値は規模を小さくして下がる分）
 }
 interface ObjectionState {
   reasonId: string;                      // content/politics/objections の理由
@@ -283,6 +284,7 @@ interface ObjectionState {
   full: number;                          // 反対の受付が終わった時の割合（%）。受付の間は share がここへ日ごとに直線で上がる
   basis: { value: number; ref?: number };  // 強さの元になった模擬の値と、比べた値（申請の詳細に出す。docs/ui-design.md 10.2 の 3）
   topLayer?: number;                     // この理由の反対で一番多い層（0〜11。申請の詳細の「多い層」）
+  layers?: number[];                     // この理由に反対した層（押し切る・誤った説明で信頼を動かす相手）
   hand?:
     | { kind: 'concede'; concessionId: string; day: number }
     | { kind: 'explain'; explanationId: string; quality: 'sound' | 'partial' | 'wrong'; day: number }
