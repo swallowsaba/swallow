@@ -11,6 +11,7 @@ import { compareBoxes, depthOrder, type DepthBox } from '../depth';
 import { project, rotate, type Rotation } from '../projection';
 import { roadShapes, type RoadShape } from '../roadGeometry';
 import { permitSiteModel } from '../generate/construction';
+import { CROWD_MIN_ZOOM, type PlacardTone } from '../crowd';
 import { buildScene, type SceneObject } from '../scene';
 import { MAP_SIZE, generateTerrain, type Terrain } from '../terrain';
 import type { City, Facility, FacilityType, Point, Road } from '../types';
@@ -61,6 +62,8 @@ export interface SiteView {
   line: string;
   /** 工事中（囲いは描かない） */
   building: boolean;
+  /** 反対する人の影の立つ所（世界の座標）と札の色（反対の受付・公聴会・異議申し立ての間。src/city/crowd.ts） */
+  crowd?: { spots: Point[]; tone: PlacardTone };
 }
 
 export interface RenderStats {
@@ -255,6 +258,8 @@ export class CityRenderer {
 
   /** 最後に置いた看板（撮影と確かめの道具が読む） */
   lastSigns: { id: string; x: number; y: number; width: number; height: number }[] = [];
+  /** 最後に描いた人の影の集まり（申請ごとの外接の箱。撮影と確かめの道具が読む） */
+  lastCrowds: { id: string; x: number; y: number; width: number; height: number; people: number }[] = [];
 
   setPreview(preview: Preview | null): void {
     this.preview = preview ? { ...preview, shapes: preview.roads ? roadShapes(preview.roads) : [] } : null;
@@ -819,6 +824,23 @@ export class CityRenderer {
       requests.push({ id, ax, ay, width: Math.ceil(Math.max(tw, lw) + 22), height: 38, priority: 60 + (this.selection?.id === site.id ? 100 : 0) });
       signs.set(id, site);
     }
+    // 反対する人の影（看板と名札は、人の影にも重ならないように置く。遠くでは人の影を間引く。docs/city-design.md 9.1）
+    const crowds: { id: string; feet: { x: number; y: number }[]; tone: PlacardTone; box: ScreenRect }[] = [];
+    if (zoom >= CROWD_MIN_ZOOM) {
+      for (const site of this.sites) {
+        if (!site.crowd) continue;
+        const feet = site.crowd.spots.map((p) => {
+          const [lx, ly] = toLayer(this.space(), p);
+          return { x: o.x + lx, y: o.y + ly };
+        });
+        const box = crowdBox(feet, zoom);
+        if (box.x1 < 0 || box.x0 > width || box.y1 < 0 || box.y0 > height) continue;
+        crowds.push({ id: site.id, feet, tone: site.crowd.tone, box });
+        obstacles.push(box);
+      }
+    }
+    this.lastCrowds = crowds.map((c) => ({ id: c.id, x: c.box.x0, y: c.box.y0, width: c.box.x1 - c.box.x0, height: c.box.y1 - c.box.y0, people: c.feet.length }));
+    for (const c of crowds) this.drawCrowd(c.feet, c.tone, zoom);
     const placed = layoutLabels(requests, obstacles, { width, height, top: 56, bottom: 96, left: 8, right: this.labelInsets.right });
     this.lastSigns = placed.filter((p) => signs.has(p.id)).map((p) => ({ id: p.id, x: p.x, y: p.y, width: p.width, height: p.height }));
     this.stats.labels = placed.length;
@@ -869,6 +891,66 @@ export class CityRenderer {
       ctx.fillStyle = selected ? rgbaOf(hud.bg, 1) : accent.goldLight;
       ctx.fillText(meta.level, p.x + p.width - cut - 6 - ctx.measureText(meta.level).width, p.y + p.height / 2 + 1);
     }
+  }
+
+  /**
+   * 反対する人の影（顔を描かない暗い影。片手で札を掲げる）。札の色は反対率で変わる（src/city/crowd.ts）。
+   * 足もとの点の奥から順に描く（手前の人が奥の人に重なる）
+   */
+  private drawCrowd(feet: readonly { x: number; y: number }[], tone: PlacardTone, zoom: number): void {
+    const ctx = this.ctx;
+    const shadow = rgbaOf(hud.bg, 0.92);
+    const board = tone === 'bad' ? state.bad : tone === 'warn' ? state.warn : cityColors.lineWhite;
+    const order = feet.map((p, i) => ({ p, i })).sort((a, b) => a.p.y - b.p.y || a.i - b.i);
+    ctx.save();
+    for (const { p, i } of order) {
+      const s = zoom * CROWD_SCALE * (1 + (((i * 37) % 5) - 2) * 0.04);
+      const side = i % 2 === 0 ? 1 : -1;
+      const { x, y } = p;
+      // 足もとの影
+      ctx.fillStyle = rgbaOf(hud.bg, 0.3);
+      ctx.beginPath();
+      ctx.ellipse(x, y, 3.4 * s, 1.5 * s, 0, 0, Math.PI * 2);
+      ctx.fill();
+      // 札の柄（掲げる手から上へ）
+      ctx.strokeStyle = shadow;
+      ctx.lineWidth = Math.max(1, 1.1 * s);
+      ctx.beginPath();
+      ctx.moveTo(x + side * 2.1 * s, y - 8.4 * s);
+      ctx.lineTo(x + side * 3.2 * s, y - 15.2 * s);
+      ctx.stroke();
+      // 体（脚の間を少し空けた形）と頭。顔は描かない
+      ctx.fillStyle = shadow;
+      ctx.beginPath();
+      ctx.moveTo(x - 1.7 * s, y);
+      ctx.lineTo(x - 0.3 * s, y);
+      ctx.lineTo(x, y - 3.2 * s);
+      ctx.lineTo(x + 0.3 * s, y);
+      ctx.lineTo(x + 1.7 * s, y);
+      ctx.lineTo(x + 2.2 * s, y - 5 * s);
+      ctx.quadraticCurveTo(x + 2.6 * s, y - 9.2 * s, x, y - 9.2 * s);
+      ctx.quadraticCurveTo(x - 2.6 * s, y - 9.2 * s, x - 2.2 * s, y - 5 * s);
+      ctx.closePath();
+      ctx.fill();
+      ctx.beginPath();
+      ctx.arc(x, y - 11 * s, 1.75 * s, 0, Math.PI * 2);
+      ctx.fill();
+      // 札（板と縁。字は描かず、短い線で書いた跡だけ）
+      const bx = x + side * 3.2 * s - 3.6 * s;
+      const by = y - 19.4 * s;
+      ctx.fillStyle = board;
+      ctx.fillRect(bx, by, 7.2 * s, 4.6 * s);
+      ctx.strokeStyle = shadow;
+      ctx.lineWidth = Math.max(0.8, 0.7 * s);
+      ctx.strokeRect(bx, by, 7.2 * s, 4.6 * s);
+      ctx.beginPath();
+      ctx.moveTo(bx + 1.4 * s, by + 1.7 * s);
+      ctx.lineTo(bx + 5.8 * s, by + 1.7 * s);
+      ctx.moveTo(bx + 1.4 * s, by + 3.1 * s);
+      ctx.lineTo(bx + 4.4 * s, by + 3.1 * s);
+      ctx.stroke();
+    }
+    ctx.restore();
   }
 
   /** 申請の看板（白い板に黒の字。1 行目に名前、2 行目に段階と残りの日数） */
@@ -1028,4 +1110,23 @@ function overlayColor(kind: OverlayKind, v: number): string {
     case 'stage':
       return accent.gold;
   }
+}
+
+/** 人の影の大きさ（拡大率 1 で 1 画素あたり。体と札で高さ約 20 画素） */
+const CROWD_SCALE = 1;
+
+/** 人の影の集まりの外接の箱（足もとの点から、札の上の端まで） */
+function crowdBox(feet: readonly { x: number; y: number }[], zoom: number): ScreenRect {
+  const s = zoom * CROWD_SCALE * 1.08;
+  let x0 = Infinity;
+  let y0 = Infinity;
+  let x1 = -Infinity;
+  let y1 = -Infinity;
+  for (const p of feet) {
+    x0 = Math.min(x0, p.x - 7.2 * s);
+    x1 = Math.max(x1, p.x + 7.2 * s);
+    y0 = Math.min(y0, p.y - 19.8 * s);
+    y1 = Math.max(y1, p.y + 1.8 * s);
+  }
+  return { x0: x0 - 2, y0: y0 - 2, x1: x1 + 2, y1: y1 + 2 };
 }

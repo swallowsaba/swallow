@@ -4,7 +4,7 @@ import { useShallow } from 'zustand/react/shallow';
 import { Icon } from '@/ui/icons/Icon';
 import { SmallWindow } from '@/ui/SmallWindow';
 import type { CityStore } from './cityStore';
-import { dateText, permitDetail, permitRows, siteFocus, type PermitRow, type StageMark } from './permitView';
+import { dateText, permitDetail, permitRows, siteFocus, type ObjectionRow, type PermitRow, type StageMark } from './permitView';
 import './PermitWindows.css';
 
 /**
@@ -102,9 +102,53 @@ export function PermitListWindow({ store, stack, shifted }: { store: CityStore; 
   );
 }
 
+/**
+ * 反対率の内訳（理由ごとの割合の棒・反対する集団・多い層）。理由を押すと、強さの元になった模擬の値と、
+ * その値のヒートマップ（ある物だけ）を出し、敷地へ寄る（docs/ui-design.md 10.2 の 2・3）
+ */
+function Objections({ rows, onPick }: { rows: ObjectionRow[]; onPick: (row: ObjectionRow) => void }) {
+  const [open, setOpen] = useState<string | null>(null);
+  return (
+    <ul className="permit-reasons" data-testid="permit-reasons">
+      {rows.map((r) => (
+        <li key={r.reasonId} className={`permit-reason${open === r.reasonId ? ' is-open' : ''}`} data-reason={r.reasonId}>
+          <button
+            type="button"
+            className="permit-reason-main"
+            aria-expanded={open === r.reasonId}
+            onClick={() => {
+              const next = open === r.reasonId ? null : r.reasonId;
+              setOpen(next);
+              if (next) onPick(r);
+            }}
+          >
+            <span className="permit-reason-top">
+              <span className="permit-reason-title">{r.title}</span>
+              <span className="permit-reason-bar" aria-hidden="true"><span style={{ width: `${String(Math.min(100, r.share))}%` }} /></span>
+              <span className="num">{r.share}</span>
+              <span className="permit-unit">%</span>
+            </span>
+            <span className="permit-reason-who">
+              {r.group}
+              {r.layer ? <span className="permit-reason-layer">多いのは{r.layer}</span> : null}
+            </span>
+          </button>
+          {open === r.reasonId ? (
+            <p className="permit-reason-basis" data-testid="permit-reason-basis">
+              {r.basis}
+              {r.heat ? <span className="permit-reason-heat">都市の上に、その値の地図を重ねた</span> : null}
+            </p>
+          ) : null}
+        </li>
+      ))}
+    </ul>
+  );
+}
+
 export function PermitDetailWindow({ store, stack, shifted }: { store: CityStore; stack: number; shifted: boolean }) {
   const s = useStore(store, useShallow((x) => ({
     id: x.permitId, apps: x.world.applications, day: Math.floor(x.world.city.day), closeWindow: x.closeWindow, openWindow: x.openWindow, focusAt: x.focusAt, withdraw: x.withdraw,
+    setOverlay: x.setOverlay,
   })));
   const [confirm, setConfirm] = useState(false);
   // 確かめの段は、窓の下の端にあっても見えるように巻く
@@ -155,8 +199,17 @@ export function PermitDetailWindow({ store, stack, shifted }: { store: CityStore
         <div className="permit-opp-big">
           <span className="num" data-testid="permit-opposition">{d.opposition}</span>
           <span className="permit-unit">%</span>
-          <span className="permit-opp-note">{d.stage === 'zoning' || d.stage === 'filed' ? '反対の受付で、近くの住民と事業者の声が立つ' : d.opposition === 0 ? '反対の声は立っていない' : ''}</span>
+          <span className="permit-opp-note">{d.stage === 'zoning' || d.stage === 'filed' ? '反対の受付で、近くの住民と事業者の声が立つ' : d.objections.length === 0 ? '反対の声は立っていない' : d.stage === 'objection' ? '受付の間、日ごとに上がる' : ''}</span>
         </div>
+        {d.objections.length > 0 ? (
+          <Objections
+            rows={d.objections}
+            onPick={(r) => {
+              if (r.heat) s.setOverlay(r.heat);
+              goSite();
+            }}
+          />
+        ) : null}
       </section>
       {d.gains.length > 0 ? (
         <section className="permit-section" aria-label="通った時の得">

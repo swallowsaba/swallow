@@ -279,7 +279,7 @@ export function stepApplications(world: World, day: number, terrain?: Terrain, r
         }
         case 'hearing':
           // 公聴会の手は G5 で作る。それまでは、反対率が 20% 以上の申請は公聴会の段で待ち、取り下げだけができる（docs/development-plan.md G4）
-          if (a.opposition >= CONSENT_LIMIT) break;
+          if (onHold(a)) break;
           if (elapsed >= STAGE_DAYS.hearing) next = { ...a, stage: 'council', stageDay: day, hearing: a.hearing ?? { heldDay: day, attended: false } };
           break;
         case 'council':
@@ -343,6 +343,11 @@ export function daysLeft(app: Application, day: number): number {
 export const needsMayor = (a: Pick<Application, 'stage'>): boolean => a.stage === 'hearing' || a.stage === 'appeal';
 
 /**
+ * 公聴会の段で待っている申請（反対率が 20% 以上。公聴会の手を作るまでは、ここで待ち、取り下げだけができる。docs/development-plan.md G4）
+ */
+export const onHold = (a: Pick<Application, 'stage' | 'opposition'>): boolean => a.stage === 'hearing' && a.opposition >= CONSENT_LIMIT;
+
+/**
  * 待っている事の 1 行。段階の名前の後に添える（docs/ui-design.md 10.1:「公聴会を開ける」「議会の日まで 3 日」）。
  * 例「反対の受付 あと 6 日」「公聴会 開ける。あと 9 日で市長抜きで開かれる」
  */
@@ -350,6 +355,7 @@ export function waitingText(app: Application, day: number): string {
   const left = daysLeft(app, day);
   switch (app.stage) {
     case 'hearing':
+      if (onHold(app)) return '公聴会を待っている。取り下げはできる';
       return `開ける。あと ${String(left)} 日で市長抜きで開かれる`;
     case 'council':
       return `議会の日まで ${String(left)} 日`;

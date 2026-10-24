@@ -186,3 +186,72 @@ describe('段階が進んだ時の知らせ（docs/ui-design.md 3 章）', () =>
     expect(s.notice).toMatchObject({ text: 'サーバ施設の申請が可決された。着工した（完成まで 28 日）', permitId: 'a1' });
   });
 });
+
+describe('反対（G4。docs/ui-design.md 10.2 の 2・3、docs/city-design.md 9.1）', () => {
+  const objections: Application['objections'] = [
+    { reasonId: 'dc-night-noise', group: 'neighbors', district: 0, strength: 0.08, share: 3.4, full: 3.4, basis: { value: 2.3, ref: 3 }, topLayer: 1 },
+    { reasonId: 'dc-power', group: 'neighbors', district: 0, strength: 0.42, share: 10.3, full: 10.3, basis: { value: 3, ref: 7.07 }, topLayer: 4 },
+    { reasonId: 'dc-jobs', group: 'neighbors', district: 0, strength: 0.81, share: 12.6, full: 12.6, basis: { value: 2.5, ref: 13.5 }, topLayer: 0 },
+    { reasonId: 'dc-cooling-water', group: 'environment', strength: 0.15, share: 5.9, full: 5.9, basis: { value: 0.15 }, topLayer: 10 },
+  ];
+  const dc = (patch: Partial<Application> = {}): Application => app({
+    id: 'a1', stage: 'hearing', stageDay: 9, target: { type: 'datacenter', origin: { x: 46, y: 36 }, rotation: 0 }, reserved: 650,
+    objections, opposition: 32.2, ...patch,
+  });
+
+  it('内訳: 理由ごとの割合（整数）の合計が、大きな数字の反対率と一致する。集団は地区の名前で呼び、多い層を添える', () => {
+    const world = storeWith([dc()]).getState().world;
+    const d = permitDetail(world, 'a1');
+    expect(d?.opposition).toBe(32);
+    expect(d?.objections.map((r) => [r.title, r.share])).toEqual([['雇用が少ない', 13], ['電力の逼迫', 10], ['冷却水の使用', 6], ['夜間の騒音', 3]]);
+    expect(d?.objections.reduce((a, r) => a + r.share, 0)).toBe(32);
+    const district = world.sim.districtNames[0] ?? '';
+    expect(d?.objections[0]).toMatchObject({ group: `${district}の住民`, layer: '低い収入の若者', heat: 'jobs' });
+    expect(d?.objections.find((r) => r.title === '冷却水の使用')).toMatchObject({ group: '環境の会', layer: '中くらいの収入の高齢' });
+    expect(d?.objections.find((r) => r.title === '夜間の騒音')?.basis).toBe('半径 3 の住まいで、夜の騒音が 2.3 増える見込み（30 増えると、懸念が一番強くなる）');
+    expect(d?.objections.find((r) => r.title === '電力の逼迫')?.basis).toBe('使う電力 3 MW に対し、今の電力の余りは 7.07 MW');
+  });
+
+  it('理由を押すと、強さの元の値の 1 文が出て、その値のヒートマップを重ね、敷地へ寄る', () => {
+    const store = storeWith([dc()]);
+    store.getState().openPermit('a1');
+    const host = mount(<PermitDetailWindow store={store} stack={0} shifted={false} />);
+    const reasons = host.querySelector('[data-testid="permit-reasons"]');
+    expect(reasons?.querySelectorAll('.permit-reason')).toHaveLength(4);
+    const noise = reasons?.querySelector('[data-reason="dc-night-noise"] .permit-reason-main') as HTMLButtonElement;
+    act(() => noise.click());
+    expect(host.querySelector('[data-testid="permit-reason-basis"]')?.textContent).toContain('夜の騒音が 2.3 増える見込み');
+    expect(store.getState().overlay).toBe('noise');
+    expect(store.getState().focus?.at).toEqual({ x: 47.5, y: 37 });
+    // ヒートマップの無い理由（電力）は、重ねた地図を変えない
+    act(() => (reasons?.querySelector('[data-reason="dc-power"] .permit-reason-main') as HTMLButtonElement).click());
+    expect(host.querySelector('[data-testid="permit-reason-basis"]')?.textContent).toBe('使う電力 3 MW に対し、今の電力の余りは 7.07 MW');
+    expect(store.getState().overlay).toBe('noise');
+  });
+
+  it('反対率が 20% 以上の申請は、公聴会の段で待つ（看板・一覧・知らせ）。取り下げはできる', () => {
+    const world = storeWith([dc()]).getState().world;
+    expect(permitRows(world).open[0]?.waiting).toBe('公聴会を待っている。取り下げはできる');
+    expect(sitesOf(world)[0]?.line).toBe('公聴会を待つ・反対 32%');
+    expect(permitDetail(world, 'a1')?.canWithdraw).toBe(true);
+    expect(stageNotices([dc({ stage: 'objection' })], world)).toEqual([{ text: 'データセンターの申請は反対が 32% 立ち、公聴会の段に入った', permitId: 'a1' }]);
+  });
+
+  it('囲いの前に反対する人の影（反対率に応じて 0〜6 人・札の色）。議会を待つ間と工事中には立たない', () => {
+    const world = storeWith([
+      dc(),
+      dc({ id: 'a2', stage: 'objection', opposition: 9, target: { type: 'server', origin: { x: 40, y: 44 }, rotation: 0 } }),
+      dc({ id: 'a3', stage: 'council', opposition: 12, target: { type: 'server', origin: { x: 30, y: 44 }, rotation: 0 } }),
+      dc({ id: 'a4', stage: 'objection', opposition: 0, objections: [], target: { type: 'web', origin: { x: 34, y: 44 }, rotation: 0 } }),
+    ]).getState().world;
+    const crowd = Object.fromEntries(sitesOf(world).map((s) => [s.id, s.crowd]));
+    expect(crowd.a1).toMatchObject({ tone: 'warn' });
+    expect(crowd.a1?.spots).toHaveLength(2);
+    // 入口（向き 0 は南）の縁の外に立つ
+    expect(crowd.a1?.spots.every((p) => p.y === 38.3)).toBe(true);
+    expect(crowd.a2).toMatchObject({ tone: 'calm' });
+    expect(crowd.a2?.spots).toHaveLength(1);
+    expect(crowd.a3).toBeUndefined();
+    expect(crowd.a4).toBeUndefined();
+  });
+});
