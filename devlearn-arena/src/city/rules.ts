@@ -40,6 +40,17 @@ export const SECONDS_PER_DAY = 2;
 export const BUILD_DAYS_PER_STAGE = 1;
 export type ConstructionStage = 'foundation' | 'frame' | 'done';
 
+/**
+ * 施設の見た目の段階。申請を通った施設は、工事の日数を 3 つに等分して 基礎 → 骨組み → 完成（docs/game-design.md 15.2）。
+ * 完成の見た目になっても、完成の日（completeDay）までは動かない（雇用・技術力に数えない）
+ */
+export function facilityBuildStage(f: { state: 'constructing' | 'active'; builtDay: number; completeDay?: number }, day: number): ConstructionStage {
+  if (f.state === 'active') return 'done';
+  if (f.completeDay === undefined) return constructionStage(f.builtDay, day);
+  const t = (day - f.builtDay) / Math.max(1, f.completeDay - f.builtDay);
+  return t < 1 / 3 ? 'foundation' : t < 2 / 3 ? 'frame' : 'done';
+}
+
 export function constructionStage(builtDay: number, day: number): ConstructionStage {
   const t = day - builtDay;
   if (t < BUILD_DAYS_PER_STAGE) return 'foundation';

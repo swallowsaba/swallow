@@ -170,11 +170,10 @@ function smallest<T extends { order: number }>(items: readonly T[], k: number): 
 
 /** 1 日分の成長 */
 export function growDay(city: City, day: number, options: GrowOptions = {}): City {
-  // 施設の建設が終わる
-  const finishing = city.facilities.some((f) => f.state === 'constructing' && day - f.builtDay >= BUILD_DAYS_PER_STAGE * 2);
-  const facilities = finishing
-    ? city.facilities.map((f) => (f.state === 'constructing' && day - f.builtDay >= BUILD_DAYS_PER_STAGE * 2 ? { ...f, state: 'active' as const } : f))
-    : city.facilities;
+  // 施設の建設が終わる（申請を通った施設は完成の日に。公園の類と記念碑は 2 日で）
+  const done = (f: City['facilities'][number]): boolean => f.state === 'constructing' && (f.completeDay !== undefined ? day >= f.completeDay : day - f.builtDay >= BUILD_DAYS_PER_STAGE * 2);
+  const finishing = city.facilities.some(done);
+  const facilities = finishing ? city.facilities.map((f) => (done(f) ? { ...f, state: 'active' as const } : f)) : city.facilities;
   let next: City = { ...city, day, facilities };
   const stats = statsOf(next, options.unemployedLowMid ?? 0);
   // 発展段階は下がらない。上がれば霧が晴れる

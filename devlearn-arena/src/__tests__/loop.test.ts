@@ -61,12 +61,15 @@ describe('ゲームループ（docs/acceptance-criteria.md 1 章）: 学習 → 
     expect(s.selected).toEqual({ kind: 'facility', id: upgradable[0]?.kind === 'upgradable' ? upgradable[0].facilityId : '' });
     expect(s.focus?.seq).toBe(1);
 
-    // 資金で上げる。サーバ施設（400）を上げると技術力（施設の Lv の合計）が 2 → 3。
+    // 資金で上げる（申請になり、審議と工事の後に上がる。docs/game-design.md 15 章）。サーバ施設（400）を上げると技術力（施設の Lv の合計）が 2 → 3。
     // 残りの資金では市立 IT 学院（600）に届かず、足りない額を理由に出す（もっと学ぶと上げられる）
     const funds = s.city.funds;
     const server = s.city.facilities.find((f) => f.type === 'server');
     const academy = s.city.facilities.find((f) => f.type === 'academy');
     expect(session.city.getState().upgrade(server?.id ?? '', after, 0)).toBe(true);
+    expect(session.city.getState().city.facilities.find((f) => f.type === 'server')?.level).toBe(1);
+    // 時間を進めて完成させる（1 倍で 1 日 2 秒）
+    for (let i = 0; i < 60; i += 1) session.city.getState().tick(2);
     const upgraded = session.city.getState().city;
     expect(upgraded.facilities.find((f) => f.type === 'server')?.level).toBe(2);
     expect(upgraded.funds).toBe(funds - 400);

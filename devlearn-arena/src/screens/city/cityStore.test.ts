@@ -53,16 +53,23 @@ describe('学習から都市へ戻る（docs/game-design.md 7 章・docs/ui-desi
 });
 
 describe('施設を上げる（docs/game-design.md 2・5 章: スキルの段階と資金で買う）', () => {
-  it('条件を満たせば、Lv が上がって資金が減り、その場所を光の輪で示して知らせる', () => {
+  it('条件を満たせば、アップグレードの申請を出して費用を取り分け、その場所を光の輪で示して知らせる。完成すると Lv が上がる（docs/game-design.md 15 章）', () => {
     const store = storeWithAcademy();
     const funds = store.getState().city.funds;
     expect(store.getState().upgrade('f1', { found: 37 }, 500)).toBe(true);
     const s = store.getState();
-    expect(s.city.facilities[0]?.level).toBe(2);
+    expect(s.world.applications.at(-1)).toMatchObject({ kind: 'upgrade', stage: 'objection', target: { facilityId: 'f1', toLevel: 2 } });
+    // 申請の間は今の Lv のまま
+    expect(s.city.facilities[0]?.level).toBe(1);
     // 市立 IT 学院の建てた費用 600 × 2 ÷ 2
     expect(s.city.funds).toBe(funds - 600);
     expect(s.focus).toMatchObject({ at: { x: 46.5, y: 45.5 }, size: { x: 3, y: 3 }, seq: 1 });
-    expect(s.notice?.text).toBe('市立 IT 学院を Lv2 に上げた。図書館棟が加わった');
+    // 反対の受付 14 日 → 次の議会 → 工事 21 日
+    expect(s.notice?.text).toBe('市立 IT 学院の Lv2 へのアップグレードを申請した（完成まで約 49 日。図書館棟が加わる）');
+    // 時間を進めると完成する（1 倍で 1 日 2 秒）
+    for (let i = 0; i < 60; i += 1) store.getState().tick(2);
+    expect(store.getState().city.facilities[0]?.level).toBe(2);
+    expect(store.getState().world.applications.at(-1)?.stage).toBe('done');
   });
 
   it('戻った時の知らせが並んでいても、上げた知らせはすぐ出す（自分の操作の結果を待たせない）', () => {
@@ -70,7 +77,7 @@ describe('施設を上げる（docs/game-design.md 2・5 章: スキルの段階
     store.getState().leave({ found: 0 });
     store.getState().welcomeBack({ found: 37 }, ['学習で開発資金が +110 増えた', '次は「端末とシェル」がおすすめ'], 1000);
     store.getState().upgrade('f1', { found: 37 }, 1500);
-    expect(store.getState().notice).toEqual({ text: '市立 IT 学院を Lv2 に上げた。図書館棟が加わった', until: 1500 + NOTICE_MS });
+    expect(store.getState().notice).toEqual({ text: '市立 IT 学院の Lv2 へのアップグレードを申請した（完成まで約 49 日。図書館棟が加わる）', until: 1500 + NOTICE_MS });
     expect(store.getState().queue).toEqual(['学習で開発資金が +110 増えた', '次は「端末とシェル」がおすすめ']);
   });
 

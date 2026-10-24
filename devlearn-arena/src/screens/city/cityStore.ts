@@ -11,6 +11,7 @@ import { FACILITY_DEFS } from '@/city/facilities';
 import { checkUpgrade } from '@/city/upgrade';
 import { EXPLAIN, NAME_PARTS } from '@/content/politics';
 import { explainApproval } from '@/sim/explain';
+import { daysToComplete } from '@/sim/permits';
 import type { HeatFields, HeatKind } from '@/sim/heat';
 import { applyOp, type Command, type Op } from '@/sim/commands';
 import { workerHost, type SimHost } from '@/sim/host';
@@ -123,8 +124,8 @@ export interface CityGameState {
    */
   welcomeBack: (skills: SkillValues, after: readonly string[], now: number) => Change[];
   /**
-   * 施設を次のレベルに上げる（資金で買う。docs/game-design.md 2・5 章）。
-   * 上げたら、その場所を光の輪で示し、何が加わったかを知らせる。上げられなければ何もしない
+   * 施設を次のレベルに上げる申請を出す（資金で買う。docs/game-design.md 2・5・15 章）。
+   * 出したら、その場所を光の輪で示し、何が加わるかと完成までの見込みの日数を知らせる。出せなければ何もしない
    */
   upgrade: (facilityId: string, skills: SkillValues, now: number) => boolean;
   select: (selection: Selection | null) => void;
@@ -299,15 +300,18 @@ export function createCityStore(seed?: number, initial?: City, options: CityStor
         const s = get();
         const check = checkUpgrade(s.world.city, facilityId, skills);
         if (!check?.ok) return false;
+        const before = get().world.applications.length;
         get().dispatch({ kind: 'upgrade', facilityId, skills: { ...skills } });
+        const app = get().world.applications[before];
         const f = get().city.facilities.find((x) => x.id === facilityId);
-        if (!f) return false;
+        if (!f || !app) return false;
         const def = FACILITY_DEFS[f.type];
         const adds = def.looks?.[check.level - 1];
+        const days = daysToComplete(app, Math.floor(get().world.city.day));
         // 自分の操作の結果は、並んでいる知らせを待たせずにすぐ出す（並んでいた知らせは、その後に出す）
         set({
           focus: { at: { x: f.origin.x + def.w / 2, y: f.origin.y + def.d / 2 }, size: { x: def.w, y: def.d }, seq: (s.focus?.seq ?? 0) + 1 },
-          notice: { text: `${def.name}を Lv${String(check.level)} に上げた${adds ? `。${adds}が加わった` : ''}`, until: now + NOTICE_MS },
+          notice: { text: `${def.name}の Lv${String(check.level)} へのアップグレードを申請した（完成まで約 ${String(days)} 日${adds ? `。${adds}が加わる` : ''}）`, until: now + NOTICE_MS },
         });
         return true;
       },
