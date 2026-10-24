@@ -1,6 +1,6 @@
 import { CAPACITY, levelCap } from '@/city/rules';
 import type { Terrain } from '@/city/terrain';
-import type { Building, City } from '@/city/types';
+import type { Building, City, Point } from '@/city/types';
 import { employersOf, salesOf, settleBusinesses, type Employer } from './businesses';
 import { commuteOf, type Commute } from './commute';
 import { landFieldOf, landTermsAt, noiseTermsAt, parkAt, type LandField, type Source } from './land';
@@ -94,8 +94,6 @@ function partsOf(parts: Record<string, number[][]>, d: number): number[][] {
   return rows;
 }
 
-const causeKey = (factor: number, s: Source): string => `${String(factor)}|${s.kind}|${s.id}`;
-
 /** 1 週分を計算する。init は版 4 への移行と新しい都市の始め（支持を目標の値で埋め、引っ越し・成長をしない） */
 export function weekStep(world: World, terrain: Terrain, init = false): { world: World; view: WeekView } {
   const { sim, budget } = world;
@@ -144,17 +142,19 @@ export function weekStep(world: World, terrain: Terrain, init = false): { world:
     const green = parkAt(field, b.cell.x, b.cell.y).value * GREEN_POINTS;
     const minutes = commute.minutes[zb.district] as number;
     const commuteP = !anyJobs ? 0 : Number.isFinite(minutes) ? commutePoints(minutes) : (COMMUTE_POINTS[COMMUTE_POINTS.length - 1] as readonly [number, number])[1];
+    // 毎週、建物 × 層の数だけ作るので、行は 1 つの配列の中で重みを掛ける（作る物を減らす）
     const rows = LAYERS.map((l) => {
-      const raw = emptyRow();
-      raw[AFFORD] = affordPoints(burden[l] as number);
-      raw[JOBS] = jobsPoints(commute.unemployment[zb.district * 3 + incomeOf(l)] as number);
-      raw[COMMUTE] = commuteP;
-      raw[NOISE] = noise;
-      raw[GREEN] = green;
-      raw[TAX] = tax;
-      raw[TRUST] = sim.trust[l] as number;
+      const row = emptyRow();
+      row[AFFORD] = affordPoints(burden[l] as number);
+      row[JOBS] = jobsPoints(commute.unemployment[zb.district * 3 + incomeOf(l)] as number);
+      row[COMMUTE] = commuteP;
+      row[NOISE] = noise;
+      row[GREEN] = green;
+      row[TAX] = tax;
+      row[TRUST] = sim.trust[l] as number;
       const w = WEIGHTS[l] as readonly number[];
-      return clampTarget(raw.map((v, f) => v * (w[f] as number)));
+      for (let f = 0; f < FACTOR_COUNT; f += 1) row[f] = (row[f] as number) * (w[f] as number);
+      return clampTarget(row);
     });
     points.set(b.id, rows);
   }
@@ -235,13 +235,19 @@ export function weekStep(world: World, terrain: Terrain, init = false): { world:
   }
 
   // 原因（要因ごとの点を、建物・道路・区画・決定に分ける）
-  const causes = new Map<string, Cause>();
+  // 要因 → 原因の種類 → ID の順に引く（建物ごとに鍵の文字列を作らない）
+  const causes = Array.from({ length: FACTOR_COUNT }, () => new Map<string, Map<string, Cause>>());
   const addCause = (factor: number, source: Source, value: number): void => {
     if (value === 0) return;
-    const key = causeKey(factor, source);
-    const cur = causes.get(key);
+    const byKind = causes[factor] as Map<string, Map<string, Cause>>;
+    let byId = byKind.get(source.kind);
+    if (!byId) {
+      byId = new Map();
+      byKind.set(source.kind, byId);
+    }
+    const cur = byId.get(source.id);
     if (cur) cur.points += value;
-    else causes.set(key, { factor: FACTORS[factor] as FactorId, source: { kind: source.kind, id: source.id, at: source.at }, points: value });
+    else byId.set(source.id, { factor: FACTORS[factor] as FactorId, source: { kind: source.kind, id: source.id, at: source.at }, points: value });
   };
   // 需給の倍率の変化は、その週に雇用の増えた多い雇い手 3 つに、増えた量の比で分ける（13.8）
   const employedNow = new Map<string, number>();
@@ -256,6 +262,12 @@ export function weekStep(world: World, terrain: Terrain, init = false): { world:
     ? growth.map((g) => ({ source: employerSource(g.e), share: g.gain / growthSum }))
     : [{ source: { kind: 'demand', id: 'rent', at: { x: 0, y: 0 } }, share: 1 }];
   if (totalAdults > 0) {
+    const whole: { factor: number; kind: Source['kind']; id: string; points: number; at?: Point }[] = [
+      { factor: JOBS, kind: 'demand', id: 'jobs', points: 0 },
+      { factor: COMMUTE, kind: 'demand', id: 'commute', points: 0 },
+      { factor: TAX, kind: 'decision', id: 'tax', points: 0 },
+      { factor: TRUST, kind: 'decision', id: 'trust', points: 0 },
+    ];
     for (const zb of space.residential) {
       const hh = households[zb.building.id] as number[];
       const rows = points.get(zb.building.id) as number[][];
@@ -285,14 +297,18 @@ export function weekStep(world: World, terrain: Terrain, init = false): { world:
         const p = space.parks[park.park];
         if (p) addCause(GREEN, { kind: 'facility', id: p.facility.id, at: p.center }, sum[GREEN] as number);
       }
-      addCause(JOBS, { kind: 'demand', id: 'jobs', at }, sum[JOBS] as number);
-      addCause(COMMUTE, { kind: 'demand', id: 'commute', at }, sum[COMMUTE] as number);
-      addCause(TAX, { kind: 'decision', id: 'tax', at }, sum[TAX] as number);
-      addCause(TRUST, { kind: 'decision', id: 'trust', at }, sum[TRUST] as number);
+      // 仕事・通勤・税・信頼の原因は都市に 1 つずつ。建物ごとに鍵を作らず、足してから 1 度だけ入れる（場所は最初に足した建物）
+      for (const s of whole) {
+        const v = sum[s.factor] as number;
+        if (v === 0) continue;
+        s.points += v;
+        s.at ??= at;
+      }
     }
+    for (const s of whole) if (s.at) addCause(s.factor, { kind: s.kind, id: s.id, at: s.at }, s.points);
   }
   // 原因の場所は、同じ原因の中で点の大きい所（同じ原因を 1 つにまとめた時、最初に足した場所が残る）
-  const topCauses = [...causes.values()]
+  const topCauses = causes.flatMap((byKind) => [...byKind.values()].flatMap((byId) => [...byId.values()]))
     .map((c) => ({ ...c, points: Math.round(c.points * 1e6) / 1e6 }))
     .filter((c) => c.points !== 0)
     .sort((a, b) => Math.abs(b.points) - Math.abs(a.points) || (causeKeySort(a) < causeKeySort(b) ? -1 : 1))
