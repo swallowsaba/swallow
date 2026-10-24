@@ -73,14 +73,19 @@ export function HearingWindow({ store, skills }: { store: CityStore; skills: Ski
           {current && hands ? (
             <div className="hearing-main" data-testid="hearing-hands">
               <p className="hearing-claim"><span className="hearing-claim-who">{current.group}</span>{current.claim}</p>
-              {s.reaction?.reasonId === current.reasonId ? <p className="hearing-reaction" data-testid="hearing-reaction">{s.reaction.text}</p> : null}
+              {s.reaction?.reasonId === current.reasonId ? (
+                <p className="hearing-reaction" data-testid="hearing-reaction">
+                  {s.reaction.text}
+                  {s.reaction.lesson ? <span className="hearing-reaction-lesson" data-testid="hearing-reaction-lesson"><Icon name="learn" size={12} />学べるレッスン: {s.reaction.lesson}</span> : null}
+                </p>
+              ) : null}
               <div className={`hearing-hands${hands.used ? ' is-used' : ''}`}>
                 <section className="hearing-hand" aria-label="譲歩する">
                   <h3 className="hearing-hand-title">譲歩する</h3>
                   <ul className="hearing-options">
                     {hands.concessions.map((c) => (
                       <li key={c.id}>
-                        <button type="button" className="hearing-option" data-concession={c.id} disabled={hands.used || !c.ok} onClick={() => play({ kind: 'concede', concessionId: c.id })}>
+                        <button type="button" className={`hearing-option${hands.chosen === c.id ? ' is-chosen' : ''}`} data-concession={c.id} aria-pressed={hands.chosen === c.id} disabled={hands.used || !c.ok} onClick={() => play({ kind: 'concede', concessionId: c.id })}>
                           {c.tech ? <span className="hearing-tech">{c.tech}</span> : null}
                           <span className="hearing-option-text">{c.label}</span>
                           <span className="hearing-option-note">{c.effects.join('・')}</span>
@@ -100,7 +105,7 @@ export function HearingWindow({ store, skills }: { store: CityStore; skills: Ski
                     <ul className="hearing-options">
                       {hands.explanations.map((e) => (
                         <li key={e.id}>
-                          <button type="button" className="hearing-option" data-explanation={e.id} disabled={hands.used} onClick={() => play({ kind: 'explain', explanationId: e.id })}>
+                          <button type="button" className={`hearing-option${hands.chosen === e.id ? ' is-chosen' : ''}`} data-explanation={e.id} aria-pressed={hands.chosen === e.id} disabled={hands.used} onClick={() => play({ kind: 'explain', explanationId: e.id })}>
                             <span className="hearing-option-text"><Rich text={e.text} /></span>
                           </button>
                         </li>
@@ -117,7 +122,7 @@ export function HearingWindow({ store, skills }: { store: CityStore; skills: Ski
                 </section>
                 <section className="hearing-hand" aria-label="押し切る">
                   <h3 className="hearing-hand-title">押し切る</h3>
-                  <button type="button" className="hearing-option" data-testid="hearing-push" disabled={hands.used || !hands.push.ok} onClick={() => play({ kind: 'push' })}>
+                  <button type="button" className={`hearing-option${hands.chosen === 'push' ? ' is-chosen' : ''}`} data-testid="hearing-push" aria-pressed={hands.chosen === 'push'} disabled={hands.used || !hands.push.ok} onClick={() => play({ kind: 'push' })}>
                     <span className="hearing-option-text">政治資本 <b className="num">{hands.push.cost}</b> を使う</span>
                     <span className="hearing-option-note">反対率は下がらない。議員はこの論点を軽く見る</span>
                     <span className="hearing-option-note">{hands.push.groups}の市政への信頼が下がる</span>

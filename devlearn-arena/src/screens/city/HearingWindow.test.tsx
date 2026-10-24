@@ -80,6 +80,9 @@ describe('公聴会の窓（10.3）', () => {
     act(() => (host.querySelector('[data-explanation="dc-jobs-number"]') as HTMLButtonElement).click());
     expect(host.querySelector('[data-testid="hearing-reaction"]')?.textContent).toBe('人数の約束と知らせ方が示され、雇用を重く見る議員が評価した。');
     expect(host.querySelector('.hearing-issue[data-reason="dc-jobs"] .hearing-issue-done')?.textContent).toBe('説明した');
+    // 出した手が分かる（ほかの候補は押せなくなる）
+    expect(host.querySelector('[data-explanation="dc-jobs-number"]')?.getAttribute('aria-pressed')).toBe('true');
+    expect(host.querySelector('[data-explanation="dc-jobs-around"]')?.getAttribute('aria-pressed')).toBe('false');
     expect((host.querySelector('[data-testid="hearing-push"]') as HTMLButtonElement).disabled).toBe(true);
     // 押し切ると政治資本が減る
     act(() => (host.querySelector('.hearing-issue[data-reason="dc-power"]') as HTMLButtonElement).click());
@@ -89,6 +92,21 @@ describe('公聴会の窓（10.3）', () => {
     act(() => (host.querySelector('[data-testid="hearing-push"]') as HTMLButtonElement).click());
     expect(store.getState().world.politics.capital).toBe(capital - cost);
     expect(host.querySelector('[data-testid="hearing-capital"]')?.textContent).toBe(String(capital - cost));
+  });
+
+  it('誤った説明の後は、なぜ誤りかと、学べるレッスンを示す（17.2）。確かな説明にはレッスンを添えない', () => {
+    const store = storeWith(dc());
+    store.getState().openHearing('a1');
+    const host = mount(<HearingWindow store={store} skills={{ cloud: 10 }} />);
+    act(() => (host.querySelector('.hearing-issue[data-reason="dc-power"]') as HTMLButtonElement).click());
+    act(() => (host.querySelector('[data-explanation="dc-power-cloud"]') as HTMLButtonElement).click());
+    expect(host.querySelector('[data-testid="hearing-reaction"]')?.textContent).toContain('電気を使うのはここだと指摘され');
+    expect(host.querySelector('[data-testid="hearing-reaction-lesson"]')?.textContent).toBe('学べるレッスン: 仮想化とクラウド（初級）');
+    const other = storeWith(dc());
+    other.getState().openHearing('a1');
+    const ok = mount(<HearingWindow store={other} skills={{ db: 50 }} />);
+    act(() => (ok.querySelector('[data-explanation="dc-jobs-number"]') as HTMLButtonElement).click());
+    expect(ok.querySelector('[data-testid="hearing-reaction-lesson"]')).toBeNull();
   });
 
   it('「公聴会を終える」で議会の採決の段へ進み、窓が閉じ、時間が動く', () => {

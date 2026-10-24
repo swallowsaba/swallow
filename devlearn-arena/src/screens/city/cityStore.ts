@@ -12,7 +12,7 @@ import { checkUpgrade } from '@/city/upgrade';
 import { EXPLAIN, NAME_PARTS, POLITICS_RULES } from '@/content/politics';
 import { explainApproval } from '@/sim/explain';
 import type { Hand } from '@/sim/hearing';
-import { reactionText } from './hearingView';
+import { reactionLesson, reactionText } from './hearingView';
 import { applicationName, daysLeft, daysToComplete, isReviewing } from '@/sim/permits';
 import type { HeatFields, HeatKind } from '@/sim/heat';
 import { applyOp, type Command, type Op } from '@/sim/commands';
@@ -97,7 +97,7 @@ export interface CityGameState {
   /** 公聴会の窓に出している申請（大きな窓。開いている間、都市の時間は止まる。docs/ui-design.md 10.0・10.3） */
   hearingId: string | null;
   /** 最後に出した手の、住民と議員の受け取り方の 1 行 */
-  reaction: { reasonId: string; text: string } | null;
+  reaction: { reasonId: string; text: string; lesson: string | null } | null;
   /** 学習に出た時の都市とスキル（戻った時に変化を比べる） */
   away: Snapshot | null;
   /** 変化のあった場所（カメラを寄せ、光の輪で示す）。seq が変わるたびに寄せる */
@@ -382,7 +382,7 @@ export function createCityStore(seed?: number, initial?: City, options: CityStor
         get().dispatch({ kind: 'hand', applicationId, reasonId, hand, skills: { ...skills } });
         const after = get().world.applications.find((a) => a.id === applicationId);
         if (!after || after.objections.find((o) => o.reasonId === reasonId)?.hand === undefined) return false;
-        set({ reaction: { reasonId, text: reactionText(before, after, reasonId) } });
+        set({ reaction: { reasonId, text: reactionText(before, after, reasonId), lesson: reactionLesson(after, reasonId) } });
         return true;
       },
       withdraw: (id, now) => {

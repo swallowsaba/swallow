@@ -198,6 +198,14 @@
   font-size: var(--fs-13);
   line-height: 1.5;
 }
+.hearing-reaction-lesson {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 4px;
+  font-size: var(--fs-12);
+  color: var(--hud-text-sub);
+}
 .hearing-hands {
   display: grid;
   grid-template-columns: 1fr 1fr 0.8fr;
@@ -221,29 +229,38 @@
   list-style: none;
   display: flex;
   flex-direction: column;
-  gap: 6px;
 }
+/* 候補は札にせず、細い線で区切った行。指すと左の線が金になる */
 .hearing-option {
   display: flex;
   flex-direction: column;
   gap: 3px;
   width: 100%;
-  padding: 7px 8px;
-  border: 1px solid var(--hud-line);
-  border-radius: 2px 8px 2px 8px;
-  background: var(--hud-bg);
+  padding: 7px 8px 7px 10px;
+  border: 0;
+  border-left: 2px solid var(--hud-line);
+  border-bottom: 1px solid var(--hud-line);
+  border-radius: 0;
+  background: transparent;
   color: var(--hud-text);
   text-align: left;
   cursor: pointer;
 }
 .hearing-option:hover:not(:disabled),
 .hearing-option:focus-visible {
-  border-color: var(--gold);
+  border-left-color: var(--gold);
+  background: var(--hud-bg);
   outline: none;
 }
 .hearing-option:disabled {
   cursor: default;
   opacity: 0.5;
+}
+/* 出した手は、押せなくなっても薄くせず、左の線を金にする */
+.hearing-option.is-chosen:disabled {
+  opacity: 1;
+  border-left-color: var(--gold);
+  background: var(--hud-bg);
 }
 .hearing-option-text {
   font-size: var(--fs-13);
@@ -287,6 +304,11 @@
   display: flex;
   align-items: flex-start;
   gap: 4px;
+}
+.hearing-hidden svg,
+.hearing-reaction-lesson svg {
+  flex: none;
+  margin-top: 2px;
 }
 
 .hearing-foot {

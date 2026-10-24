@@ -1,6 +1,7 @@
 import { DOMAINS } from '@/city/facilityInfo';
 import type { DomainId } from '@/city/types';
 import { POLITICS_RULES, REASONS } from '@/content/politics';
+import { DIFFICULTY_NAMES, lessonMeta } from '@/game/lessons';
 import { SKILL_STAGE_NAMES, type SkillStage } from '@/game/skill';
 import { handOptions, issuesOf, type HandOptions, type SkillValues } from '@/sim/hearing';
 import { applicationName } from '@/sim/permits';
@@ -98,6 +99,8 @@ export interface HandsModel {
   push: { cost: number; ok: boolean; groups: string };
   /** 出した手（出した後は手を出せない） */
   used: boolean;
+  /** 出した手の候補（譲歩・説明の ID か 'push'） */
+  chosen: string | null;
 }
 
 export function handsModel(world: World, app: Application, reasonId: string, skills: SkillValues): HandsModel | null {
@@ -122,6 +125,7 @@ export function handsModel(world: World, app: Application, reasonId: string, ski
     hidden: opt.hidden.map((h) => `${domainName(h.domain)} ${SKILL_STAGE_NAMES[h.stage as SkillStage]}で出せる説明が ${String(h.count)} つある`),
     push: { cost: opt.push.cost, ok: opt.push.ok, groups: groupName(o, world) },
     used: o.hand !== undefined,
+    chosen: o.hand ? (o.hand.kind === 'concede' ? o.hand.concessionId : o.hand.kind === 'explain' ? o.hand.explanationId : 'push') : null,
   };
 }
 
@@ -136,6 +140,18 @@ export function reactionText(before: Application, after: Application, reasonId: 
   if (h.kind === 'explain') return r.explanations.find((e) => e.id === h.explanationId)?.why ?? '';
   if (h.kind === 'concede') return `${r.title}の反対が ${pct(o0.share)} → ${pct(o1.share)}。反対率は ${pct(before.opposition)} → ${pct(after.opposition)}`;
   return `${r.title}を押し切った。反対率は変わらないが、議員はこの論点を軽く見る。反対した人たちの市政への信頼が下がった`;
+}
+
+/**
+ * 説明の後に示す、学べるレッスン（17.2「誤りなら、なぜ誤りかと、学べるレッスンを示す」）。
+ * データの `lesson` を持つ説明（誤りと一部）だけ。確かな説明には添えない
+ */
+export function reactionLesson(after: Application, reasonId: string): string | null {
+  const h = after.objections.find((x) => x.reasonId === reasonId)?.hand;
+  if (h?.kind !== 'explain') return null;
+  const id = REASONS.find((x) => x.id === reasonId)?.explanations.find((e) => e.id === h.explanationId)?.lesson;
+  const meta = id ? lessonMeta(id) : null;
+  return meta ? `${meta.title}（${DIFFICULTY_NAMES[meta.difficulty]}）` : null;
 }
 
 /** 窓の題（「データセンター（東町）の公聴会」） */
