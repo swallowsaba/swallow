@@ -273,6 +273,7 @@ export function CityScreen({ session, active = true, covered = false, current, d
             text={state.notice?.text ?? null}
             paused={state.paused}
             shifted={panel !== null}
+            windows={state.windows.length}
             {...(state.notice?.permitId ? { onOpen: () => state.openPermit(state.notice?.permitId ?? '') } : {})}
           />
           {onLesson ? <RecommendPanel progress={session.progress} onLesson={onLesson} {...(onMission ? { onMission } : {})} /> : null}

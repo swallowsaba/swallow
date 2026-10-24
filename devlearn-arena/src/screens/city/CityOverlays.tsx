@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
 import type { DemolishTarget } from '@/city/place';
 import { Icon } from '@/ui/icons/Icon';
+import { SMALL_WINDOW_WIDTH, smallWindowRight } from '@/ui/smallWindowPlace';
 import type { Hint } from './cityStore';
 import './CityOverlays.css';
 
@@ -75,15 +76,17 @@ export function DemolishConfirm({ target, onYes, onNo }: { target: DemolishTarge
 }
 
 /** 上の帯の下、右寄せの 1 行の知らせ（docs/ui-design.md 3 章）と、一時停止の印 */
-export function CityNotice({ text, paused, shifted, onOpen }: {
+export function CityNotice({ text, paused, shifted, windows, onOpen }: {
   text: string | null;
   paused: boolean;
   shifted: boolean;
+  /** 開いている小さな窓の数（窓の後ろに隠れないよう、一番左の窓のさらに左に出す） */
+  windows: number;
   /** 市政の知らせは、押すとその窓を開く（docs/ui-design.md 3 章） */
   onOpen?: () => void;
 }) {
   return (
-    <div className={`city-notices${shifted ? ' is-shifted' : ''}`}>
+    <div className="city-notices" style={{ right: windows > 0 ? smallWindowRight(windows - 1, shifted) + SMALL_WINDOW_WIDTH + 14 : smallWindowRight(0, shifted) }}>
       {paused ? (
         <div className="city-notice is-paused" data-testid="paused" data-label-block>
           <Icon name="pause" size={16} />

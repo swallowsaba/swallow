@@ -1,5 +1,6 @@
 import { useRef, useState, type ReactNode } from 'react';
 import { Icon, type IconName } from './icons/Icon';
+import { smallWindowRight } from './smallWindowPlace';
 import './SmallWindow.css';
 
 /**
@@ -25,7 +26,7 @@ export function SmallWindow({
   const [collapsed, setCollapsed] = useState(false);
   const [offset, setOffset] = useState({ x: 0, y: 0 });
   const drag = useRef<{ x: number; y: number; ox: number; oy: number } | null>(null);
-  const right = 14 + (shifted ? 360 + 14 : 0) + stack * 28;
+  const right = smallWindowRight(stack, shifted);
   const top = 62 + stack * 28;
   return (
     <section
