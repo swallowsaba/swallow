@@ -11,6 +11,7 @@ import type { BusinessState } from './types';
 /**
  * 事業者（docs/game-design.md 13.3）。区画の建物（商業・オフィス・工業）と施設が、事業者を持つ。
  * 売上が費用を 4 週続けて上回り、働く人が集まっていれば、高さの段が上がる。8 週続けて下回ると撤退し、建物は空きになる
+ * （同じ業種の組で 1 週に 1 つ。赤字の割合の大きい物から）
  */
 
 /** 雇い手（区画の建物の事業者・施設の職員） */
@@ -146,6 +147,8 @@ export function settleBusinesses(employers: readonly Employer[], businesses: Rec
   const nextVacant = { ...vacant };
   const grow: string[] = [];
   const closed: string[] = [];
+  /** 撤退の候補（業種の組 → 赤字の割合の大きい順に 1 つ） */
+  const leaving = new Map<string, { id: string; ratio: number }>();
   for (const e of employers) {
     const cur = next[e.id];
     if (!cur || !e.place) continue;
@@ -156,10 +159,10 @@ export function settleBusinesses(employers: readonly Employer[], businesses: Rec
     const slots = slotsOf(e);
     const filled = slots > 0 ? workers.reduce((s, w) => s + w, 0) / slots : 0;
     if (profitWeeks <= -CLOSE_WEEKS) {
-      delete next[e.id];
-      nextVacant[e.id] = week;
-      closed.push(e.id);
-      continue;
+      const group = e.kind === 'it' ? 'office' : e.kind;
+      const ratio = c > 0 ? r / c : 1;
+      const best = leaving.get(group);
+      if (!best || ratio < best.ratio || (ratio === best.ratio && e.id < best.id)) leaving.set(group, { id: e.id, ratio });
     }
     if (profitWeeks >= GROW_WEEKS && filled >= GROW_FILL && e.place.building.level < levelCap) {
       grow.push(e.id);
@@ -167,6 +170,13 @@ export function settleBusinesses(employers: readonly Employer[], businesses: Rec
       continue;
     }
     next[e.id] = { kind: cur.kind, workers, profitWeeks };
+  }
+  // 撤退は、同じ業種の組（店・事務所と IT 企業・工場と倉庫）で 1 週に 1 つ。
+  // 売上は同じ組の中で分け合うので、1 つ抜けると残りの売上が増える。一斉に抜けて雇用が消え、また一斉に入る、を繰り返さないため
+  for (const { id } of [...leaving.values()].sort((a, b) => (a.id < b.id ? -1 : 1))) {
+    delete next[id];
+    nextVacant[id] = week;
+    closed.push(id);
   }
   return { businesses: next, vacant: nextVacant, grow, closed };
 }

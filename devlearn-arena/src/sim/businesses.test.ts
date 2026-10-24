@@ -68,6 +68,30 @@ describe('事業者の成長と撤退（docs/game-design.md 13.3）', () => {
     expect(vacant['b-o']).toBe(8);
   });
 
+  it('同じ業種で 8 週続けて赤字の事業者が並んでも、撤退は 1 週に 1 つ（赤字の割合の大きい物から）。客と売上が残りに移るのを待つ', () => {
+    const two: Employer[] = [office(), { ...office(), id: 'b-p', place: place('b-p', 2) }];
+    const losing: BusinessState = { kind: 'office', workers: [0, 0, 0], profitWeeks: -7 };
+    const sales: Sales = { revenue: new Map([['b-o', 12], ['b-p', 8]]), cost: new Map([['b-o', 20], ['b-p', 20]]) };
+    const r = settleBusinesses(two, { 'b-o': losing, 'b-p': losing }, {}, sales, fillOf(1), 1, 5);
+    expect(r.closed).toEqual(['b-p']);
+    expect(r.businesses['b-o']?.profitWeeks).toBe(-8);
+    // 次の週も赤字なら、残りも撤退する
+    const r2 = settleBusinesses([office()], r.businesses, r.vacant, sales, fillOf(1), 2, 5);
+    expect(r2.closed).toEqual(['b-o']);
+  });
+
+  it('見本の町を 1 年流しても、事業者が一斉に撤退して失業率が跳ねない', () => {
+    const { world, terrain } = town();
+    let w = world;
+    let worst = 0;
+    for (let i = 0; i < 52; i += 1) {
+      const r = weekStep(w, terrain);
+      w = r.world;
+      if (i >= 4) worst = Math.max(worst, r.view.unemployment);
+    }
+    expect(worst).toBeLessThan(0.35);
+  });
+
   it('赤字の途中で 1 週でも黒字になると、数え直す', () => {
     const { log } = weeks(8, 10, 20, 1, { kind: 'office', workers: [0, 0, 0], profitWeeks: 1 });
     // 黒字 1 週の後なので、赤字の 8 週目で撤退する（7 週目までは残る）
