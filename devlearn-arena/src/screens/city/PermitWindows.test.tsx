@@ -54,8 +54,8 @@ describe('許認可の一覧（10.1）', () => {
     ]).getState().world;
     const rows = permitRows(world);
     expect(rows.open.map((r) => r.id)).toEqual(['a3', 'a2', 'a1']);
-    expect(rows.open[0]).toMatchObject({ mayor: true, waiting: '公聴会を開ける（あと 13 日で市長抜きで開かれる）' });
-    expect(rows.open[1]?.waiting).toBe('用途地域の審査 あと 5 日');
+    expect(rows.open[0]).toMatchObject({ mayor: true, waiting: '開ける。あと 13 日で市長抜きで開かれる' });
+    expect(rows.open[1]?.waiting).toBe('あと 5 日');
     expect(rows.finished.map((r) => r.id)).toEqual(['a4']);
     expect(mayorCount(world)).toBe(1);
   });
@@ -66,7 +66,7 @@ describe('許認可の一覧（10.1）', () => {
     const host = mount(<PermitListWindow store={store} stack={0} shifted={false} />);
     const row = host.querySelector('[data-testid="permit-row-a1"]');
     expect(row?.textContent).toContain('サーバ施設');
-    expect(row?.textContent).toContain('反対の受付 あと 9 日');
+    expect(row?.textContent).toContain('反対の受付あと 9 日');
     act(() => (row?.querySelector('.permit-row-pin') as HTMLButtonElement).click());
     expect(store.getState().focus).toMatchObject({ at: { x: 52, y: 49 }, size: { x: 2, y: 2 } });
     act(() => (row?.querySelector('.permit-row-main') as HTMLButtonElement).click());
@@ -139,7 +139,7 @@ describe('申請中の施設からも学べる（docs/ui-design.md 5 章・docs/
     expect(s.windows).toContain('permit');
     expect(s.permitId).toBe('a1');
     const m = panelModel(s.city, { kind: 'application', id: 'a1' }, {}, emptyProgress(), s.world.applications);
-    expect(m).toMatchObject({ kind: 'facility', name: 'サーバ施設', permitId: 'a1', condition: { text: '申請中: 反対の受付・反対の受付 あと 9 日', tone: 'warn' } });
+    expect(m).toMatchObject({ kind: 'facility', name: 'サーバ施設', permitId: 'a1', condition: { text: '申請中: 反対の受付 あと 9 日', tone: 'warn' } });
     expect(m?.kind === 'facility' ? m.lessons.length : 0).toBe(3);
   });
 

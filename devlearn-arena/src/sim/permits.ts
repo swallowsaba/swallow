@@ -323,29 +323,25 @@ export function daysLeft(app: Application, day: number): number {
 /** 市長の手が要る申請か（公聴会・異議申し立て。許認可の一覧で先に並べ、上の帯の数の印に数える） */
 export const needsMayor = (a: Pick<Application, 'stage'>): boolean => a.stage === 'hearing' || a.stage === 'appeal';
 
-/** 待っている事の 1 行（docs/ui-design.md 10.1:「公聴会を開ける」「議会の日まで 3 日」） */
+/**
+ * 待っている事の 1 行。段階の名前の後に添える（docs/ui-design.md 10.1:「公聴会を開ける」「議会の日まで 3 日」）。
+ * 例「反対の受付 あと 6 日」「公聴会 開ける。あと 9 日で市長抜きで開かれる」
+ */
 export function waitingText(app: Application, day: number): string {
   const left = daysLeft(app, day);
   switch (app.stage) {
-    case 'filed':
-    case 'zoning':
-      return `用途地域の審査 あと ${String(left)} 日`;
-    case 'objection':
-      return `反対の受付 あと ${String(left)} 日`;
     case 'hearing':
-      return `公聴会を開ける（あと ${String(left)} 日で市長抜きで開かれる）`;
+      return `開ける。あと ${String(left)} 日で市長抜きで開かれる`;
     case 'council':
       return `議会の日まで ${String(left)} 日`;
-    case 'appeal':
-      return `異議申し立て あと ${String(left)} 日`;
     case 'construction':
-      return `工事中 完成まで ${String(left)} 日`;
+      return `完成まで ${String(left)} 日`;
     case 'done':
-      return '完成した';
     case 'rejected':
-      return '否決された';
     case 'withdrawn':
-      return '取り下げた';
+      return '';
+    default:
+      return `あと ${String(left)} 日`;
   }
 }
 

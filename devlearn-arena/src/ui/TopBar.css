@@ -96,6 +96,7 @@
   font-weight: 700;
   line-height: 1;
   color: var(--hud-text);
+  white-space: nowrap;
 }
 .topbar-stat-unit {
   margin-left: 4px;
@@ -212,6 +213,28 @@
   }
   .topbar-entry {
     padding: 0 12px;
+  }
+}
+
+/* 1400 未満の幅（1280×720 など）: 市政の入口を足した分、区切りの余白を詰める。数字と入口の名前は削らない */
+@media (max-width: 1399px) {
+  .topbar {
+    gap: 6px;
+  }
+  .topbar-city {
+    padding: 0 20px 0 10px;
+  }
+  .topbar-stats {
+    gap: 2px;
+  }
+  .topbar-stat {
+    padding: 0 7px;
+  }
+  .topbar-entries {
+    gap: 2px;
+  }
+  .topbar-entry {
+    padding: 0 9px;
   }
 }
 

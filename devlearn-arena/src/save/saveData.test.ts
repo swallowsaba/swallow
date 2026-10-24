@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { z, type ZodType } from 'zod';
 import { newCity } from '@/city/newCity';
-import type { City } from '@/city/types';
+import type { City, Facility } from '@/city/types';
 import { LESSONS } from '@/game/lessons';
 import { emptyProgress } from '@/game/progress';
 import { applyRecords } from '@/game/records';
@@ -214,6 +214,27 @@ describe('版 3 → 版 4 の移行（docs/data-model.md 12 章・docs/acceptanc
     expect(new Set(d.sim.districtNames).size).toBe(144);
     // 支持は始めの週の目標の値で埋める（住む人のいる地区は 0〜100）
     expect(d.sim.support.flat().filter((v) => v >= 0).length).toBeGreaterThan(0);
+  });
+
+  it('審議中・工事中の申請（docs/data-model.md 10 章）と、工事の終わる日を持つ施設が、保存・読み込みで元に戻る', () => {
+    const parts = played();
+    const world = parts.world;
+    const facility: Facility = { id: 'f3', type: 'datacenter', domain: 'cloud', origin: { x: 20, y: 5 }, rotation: 0, level: 1, state: 'constructing', builtDay: 28, completeDay: 63 };
+    const withApps: SaveParts = {
+      ...parts,
+      world: {
+        ...world,
+        city: { ...world.city, facilities: [...world.city.facilities, facility] },
+        applications: [
+          { id: 'a1', kind: 'facility', target: { type: 'web', origin: { x: 12, y: 5 }, rotation: 90 }, stage: 'objection', stageDay: 8, filedDay: 1, wallet: 'funds', reserved: 450, exception: true, objections: [], opposition: 0, mods: {} },
+          { id: 'a2', kind: 'facility', target: { type: 'datacenter', origin: { x: 20, y: 5 }, rotation: 0, facilityId: 'f3' }, stage: 'construction', stageDay: 28, filedDay: 0, wallet: 'funds', reserved: 650, exception: false, objections: [], opposition: 0, mods: {}, vote: { day: 28, consent: true, members: [], passed: true } },
+          { id: 'a3', kind: 'rezone', target: { zone: { kind: 'industrial', cells: [{ x: 3, y: 4 }], from: 'residential' } }, stage: 'withdrawn', stageDay: 9, filedDay: 2, wallet: 'funds', reserved: 30, exception: true, objections: [], opposition: 0, mods: {}, hearing: { heldDay: 9, attended: false } },
+          { id: 'a4', kind: 'upgrade', target: { facilityId: 'f1', toLevel: 3 }, stage: 'council', stageDay: 12, filedDay: 0, wallet: 'funds', reserved: 600, exception: false, objections: [], opposition: 0, mods: {} },
+        ],
+      },
+    };
+    const read = readSave(JSON.stringify(toSaveData(withApps, '2026-10-04T12:00:00+09:00', '2026-10-04')));
+    expect(read.ok && fromSaveData(read.data)).toEqual(withApps);
   });
 
   it('版 4 の保存・読み込みで、模擬と市政の状態が全て元に戻る', () => {

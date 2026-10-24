@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useStore } from 'zustand';
 import { useShallow } from 'zustand/react/shallow';
 import { Icon } from '@/ui/icons/Icon';
@@ -69,10 +69,9 @@ export function PermitListWindow({ store, stack, shifted }: { store: CityStore; 
         </span>
         <span className="permit-row-mid">
           <Marks marks={r.marks} />
-          <span className="permit-row-stage">{r.stageLabel}</span>
+          <span className="permit-row-stage">{r.stageLabel}<span className="permit-row-wait">{r.waiting}</span></span>
           <Opposition value={r.opposition} />
         </span>
-        <span className="permit-row-wait">{r.waiting}</span>
       </button>
       <button type="button" className="permit-row-pin" onClick={() => goSite(r.id)} title="敷地へ寄る" aria-label={`${r.name}の敷地へ寄る`}>
         <Icon name="pin" size={16} />
@@ -113,6 +112,11 @@ export function PermitDetailWindow({ store, stack, shifted, onLearn }: {
     id: x.permitId, apps: x.world.applications, day: Math.floor(x.world.city.day), closeWindow: x.closeWindow, openWindow: x.openWindow, focusAt: x.focusAt, withdraw: x.withdraw,
   })));
   const [confirm, setConfirm] = useState(false);
+  // 確かめの段は、窓の下の端にあっても見えるように巻く
+  const confirmRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (confirm) confirmRef.current?.scrollIntoView?.({ block: 'nearest' });
+  }, [confirm]);
   const world = store.getState().world;
   const d = s.id ? permitDetail(world, s.id) : null;
   if (!d) return null;
@@ -132,7 +136,7 @@ export function PermitDetailWindow({ store, stack, shifted, onLearn }: {
       </div>
       <p className="permit-now" data-testid="permit-now">
         <span className="permit-now-stage">{d.stageLabel}</span>
-        <span>{d.waiting}</span>
+        {d.waiting ? <span>{d.waiting}</span> : null}
       </p>
       <Marks marks={d.marks} wide />
       <dl className="permit-facts">
@@ -180,7 +184,7 @@ export function PermitDetailWindow({ store, stack, shifted, onLearn }: {
       ) : null}
       {d.canWithdraw ? (
         confirm ? (
-          <div className="permit-confirm" role="group" aria-label="取り下げの確認">
+          <div className="permit-confirm" role="group" aria-label="取り下げの確認" ref={confirmRef}>
             <span>取り下げると、取り分けた <b className="num">{format(d.refund)}</b> 資金が全て戻る</span>
             <button type="button" className="confirm-yes" data-testid="permit-withdraw-yes" onClick={() => { s.withdraw(d.id, performance.now()); setConfirm(false); }}>取り下げる</button>
             <button type="button" className="confirm-no" onClick={() => setConfirm(false)}>やめる</button>
