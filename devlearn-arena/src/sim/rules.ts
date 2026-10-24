@@ -105,6 +105,8 @@ export const NIGHT_FACILITIES = ['datacenter', 'cluster', 'cloud'] as const;
 
 /** 公園の類の行き届く距離（道路で。24.2） */
 export const PARK_REACH: Record<string, number> = { park: 6, plaza: 5, fountain: 3, treerow: 2 };
+/** 敷地の中の緑地（譲歩の green。0〜1）が届く距離（道路で。噴水と同じ）。行き届きは green を掛ける */
+export const GREEN_REACH = 3;
 
 /* ---------- 通勤（13.6） ---------- */
 

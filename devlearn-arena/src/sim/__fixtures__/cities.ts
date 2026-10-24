@@ -5,9 +5,9 @@ import { revealedFor } from '@/city/rules';
 import { sampleCity } from '@/city/sample';
 import type { Terrain } from '@/city/terrain';
 import type { Building, City, Facility, FacilityType, Road, Zone, ZoneKind } from '@/city/types';
-import { NAME_PARTS } from '@/content/politics';
+import { NAME_PARTS, POLITICS_RULES } from '@/content/politics';
 import type { Command, Op } from '../commands';
-import { terrainOf } from '../runner';
+import { SimRunner, terrainOf } from '../runner';
 import type { World } from '../types';
 import { newWorld, worldFromCity } from '../world';
 
@@ -39,6 +39,26 @@ export function village(): { world: World; terrain: Terrain; commands: Command[]
     cmd(9, 45, { kind: 'facility', type: 'park', origin: { x: 44, y: 49 }, rotation: 0 }),
   ];
   return { world, terrain, commands };
+}
+
+/**
+ * 命令の列を日付どおりに当てながら 90 日進めた村（住宅に人が住み、店と工場が動いている。資金 20,000）。
+ * 市政のデータ（反対の理由）を入れて動かす。反対・公聴会のテストが使う
+ */
+export function grownVillage(days = 90): { world: World; terrain: Terrain } {
+  const { world, terrain, commands } = village();
+  const runner = new SimRunner(world);
+  runner.load(world, 0, POLITICS_RULES);
+  let i = 0;
+  for (let d = 0; d <= days; d += 1) {
+    while (i < commands.length && (commands[i] as Command).day <= d) {
+      runner.apply(commands[i] as Command);
+      i += 1;
+    }
+    if (d < days) runner.advance(d + 1);
+  }
+  const w = runner.current;
+  return { world: { ...w, city: { ...w.city, funds: 20000 } }, terrain };
 }
 
 /** 町: 見本の街（src/city/sample.ts。住宅・商業・オフィスと施設 3 つ） */

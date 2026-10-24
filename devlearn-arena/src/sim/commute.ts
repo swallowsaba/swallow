@@ -31,8 +31,9 @@ export interface Commute {
 
 /**
  * workers・jobs: [地区 × 3 + 帯] の働く人と仕事の数
+ * trafficWeight: [地区] 行き先の地区の、道路に出る流れの倍率（譲歩の traffic。駐車場を増やす・送迎の車を出す。無ければ 1）
  */
-export function commuteOf(space: Space, net: Network, workers: Float64Array, jobs: Float64Array): Commute {
+export function commuteOf(space: Space, net: Network, workers: Float64Array, jobs: Float64Array, trafficWeight?: Float64Array): Commute {
   const n = DISTRICT_COUNT;
   const needWork = Float64Array.from(workers);
   const openJobs = Float64Array.from(jobs);
@@ -66,7 +67,10 @@ export function commuteOf(space: Space, net: Network, workers: Float64Array, job
     }
     return hit;
   };
-  for (const f of flows) for (const c of pathFor(f.from, f.to)) traffic[c] = (traffic[c] as number) + f.people;
+  for (const f of flows) {
+    const people = f.people * (trafficWeight ? (trafficWeight[f.to] as number) : 1);
+    for (const c of pathFor(f.from, f.to)) traffic[c] = (traffic[c] as number) + people;
+  }
   // 混み具合を入れた時間（同じ地区の中は、混んでいない時の時間のまま）
   const congested = (from: number, to: number): number => {
     if (from === to) return net.minutes[from * n + to] as number;

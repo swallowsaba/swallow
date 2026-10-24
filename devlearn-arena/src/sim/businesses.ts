@@ -1,4 +1,4 @@
-import { CAPACITY, FACILITY_JOBS_PER_LEVEL } from '@/city/rules';
+import { facilityJobs, zoneCapacity } from '@/city/rules';
 import type { ZoneKind } from '@/city/types';
 import { reach } from './network';
 import {
@@ -60,11 +60,11 @@ export function employersOf(space: Space, businesses: Record<string, BusinessSta
     const kind = businessKindOf(place.kind as Exclude<ZoneKind, 'residential'>, place, space.facilities);
     const cur = businesses[id];
     next[id] = cur ? (cur.kind === kind ? cur : { ...cur, kind }) : { kind, workers: [0, 0, 0], profitWeeks: 0 };
-    const total = CAPACITY[place.kind][place.building.level - 1] ?? 0;
+    const total = zoneCapacity(place.kind, place.building.level, space.zoneMods.get(place.zoneId));
     employers.push({ id, kind, district: place.district, slots: split(total, JOB_BANDS[kind]), place });
   }
   for (const af of space.facilities) {
-    employers.push({ id: af.facility.id, kind: 'staff', district: af.district, slots: split(af.facility.level * FACILITY_JOBS_PER_LEVEL, JOB_BANDS.staff), facility: af });
+    employers.push({ id: af.facility.id, kind: 'staff', district: af.district, slots: split(facilityJobs(af.facility), JOB_BANDS.staff), facility: af });
   }
   return { employers, businesses: next, vacant: nextVacant };
 }

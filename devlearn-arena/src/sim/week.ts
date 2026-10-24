@@ -1,4 +1,4 @@
-import { CAPACITY, levelCap } from '@/city/rules';
+import { levelCap, zoneCapacity } from '@/city/rules';
 import type { Terrain } from '@/city/terrain';
 import type { Building, City, Point } from '@/city/types';
 import { employersOf, salesOf, settleBusinesses, type Employer } from './businesses';
@@ -33,7 +33,7 @@ const TAX = F('tax');
 const TRUST = F('trust');
 
 /** 住宅の戸数（CAPACITY ÷ 2.3） */
-export const unitsOf = (b: Pick<Building, 'level'>): number => (CAPACITY.residential[b.level - 1] ?? 0) / PEOPLE_PER_UNIT;
+export const unitsOf = (b: Pick<Building, 'level'>, mods?: Record<string, number>): number => zoneCapacity('residential', b.level, mods) / PEOPLE_PER_UNIT;
 
 /** 1 戸の家賃（円・月）= 地価 × 600 円 × 建物の型（戸建て 1.3・集合 1.0）× 需給の倍率（13.5） */
 export function rentOf(landValue: number, level: number, rentFactor: number): number {
@@ -120,7 +120,20 @@ function firstHalf(world: World, terrain: Terrain, week: number) {
 
   // 3. 雇用と通勤
   const net = networkOf(space);
-  const commute = commuteOf(space, net, workers, jobs);
+  // 譲歩の traffic（施設と、用途地域の変更で塗った区画）: 行き先の地区の流れを、雇う人の数で重みを付けた倍率にする
+  const trafficOf = (e: Employer): number => (e.facility ? (e.facility.facility.mods?.traffic ?? 1) : e.place ? (space.zoneMods.get(e.place.zoneId)?.traffic ?? 1) : 1);
+  let trafficWeight: Float64Array | undefined;
+  if (employers.some((e) => trafficOf(e) !== 1)) {
+    const weighted = new Float64Array(DISTRICT_COUNT);
+    const sum = new Float64Array(DISTRICT_COUNT);
+    for (const e of employers) {
+      const n = e.slots[0] + e.slots[1] + e.slots[2];
+      weighted[e.district] = (weighted[e.district] as number) + n * trafficOf(e);
+      sum[e.district] = (sum[e.district] as number) + n;
+    }
+    trafficWeight = weighted.map((v, d) => ((sum[d] as number) > 0 ? v / (sum[d] as number) : 1));
+  }
+  const commute = commuteOf(space, net, workers, jobs, trafficWeight);
 
   // 4. 騒音・公園・地価
   const field = landFieldOf(space, commute.minutes);
@@ -410,7 +423,7 @@ export function weekStep(world: World, terrain: Terrain, init = false): { world:
     for (const { zb } of order) {
       if (incoming <= 1e-9) break;
       const hh = households[zb.building.id] as number[];
-      const room = unitsOf(zb.building) - hh.reduce((s, v) => s + v, 0);
+      const room = unitsOf(zb.building, space.zoneMods.get(zb.zoneId)) - hh.reduce((s, v) => s + v, 0);
       if (room <= 1e-9) continue;
       const burden = (rent.get(zb.building.id) as { burden: number[] }).burden;
       const can = LAYERS.filter((l) => (burden[l] as number) <= BURDEN_LIVABLE && (quota[l] as number) > 1e-9);
@@ -426,7 +439,7 @@ export function weekStep(world: World, terrain: Terrain, init = false): { world:
     }
   }
   for (const zb of space.residential) {
-    units += unitsOf(zb.building);
+    units += unitsOf(zb.building, space.zoneMods.get(zb.zoneId));
     occupied += (households[zb.building.id] as number[]).reduce((s, v) => s + v, 0);
   }
   for (const [id, hh] of Object.entries(households)) households[id] = hh.map((v) => Math.round(v * 1e6) / 1e6);

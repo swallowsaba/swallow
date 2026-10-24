@@ -4,8 +4,8 @@ import { FACILITY_DEFS } from './facilities';
 import { nextId } from './place';
 import { hash01 } from './random';
 import {
-  BUILD_DAYS_PER_STAGE, CAPACITY, constructionStage, demandOf, FACILITY_JOBS_PER_LEVEL, FACILITY_RADIUS, isRevealed, levelCap,
-  NEW_PER_DAY, PARK_RADIUS, revealedFor, UPGRADES_PER_DAY,
+  BUILD_DAYS_PER_STAGE, CAPACITY, constructionStage, demandOf, facilityJobs as facilityJobsOf, FACILITY_RADIUS, facilityTech, isRevealed, levelCap,
+  NEW_PER_DAY, PARK_RADIUS, revealedFor, UPGRADES_PER_DAY, zoneCapacity, zoneLevelCap,
 } from './rules';
 import type { Building, City, Facility, ZoneKind } from './types';
 
@@ -72,16 +72,17 @@ function facilityWorks(f: Facility, roads: Set<string>): boolean {
 /** 都市規模・雇用・技術力。建ち終わり、道路に面した物だけを数える */
 export function statsOf(city: City, unemployedLowMid = 0): CityStats {
   const occ = occupancyOf(city);
-  const zoneKind = new Map(city.zones.map((z) => [z.id, z.kind]));
+  const zoneById = new Map(city.zones.map((z) => [z.id, z]));
   let population = 0;
   let commercialJobs = 0;
   let officeJobs = 0;
   let industrialJobs = 0;
   const pending: Record<ZoneKind, number> = { residential: 0, commercial: 0, office: 0, industrial: 0 };
   for (const b of city.buildings) {
-    const kind = zoneKind.get(b.zoneId);
+    const zone = zoneById.get(b.zoneId);
+    const kind = zone?.kind;
     if (!kind || !facesRoad(b.cell, occ.roads)) continue;
-    const amount = CAPACITY[kind][b.level - 1] ?? 0;
+    const amount = zoneCapacity(kind, b.level, zone.mods);
     if (!isDone(b.builtDay, city.day)) {
       pending[kind] += amount;
       continue;
@@ -95,8 +96,8 @@ export function statsOf(city: City, unemployedLowMid = 0): CityStats {
   let facilityJobs = 0;
   for (const f of city.facilities) {
     if (FACILITY_DEFS[f.type].group !== 'facility' || !facilityWorks(f, occ.roads)) continue;
-    techPower += f.level;
-    facilityJobs += f.level * FACILITY_JOBS_PER_LEVEL;
+    techPower += facilityTech(f);
+    facilityJobs += facilityJobsOf(f);
   }
   return {
     population, pending, jobs: commercialJobs + officeJobs + industrialJobs + facilityJobs, commercialJobs, officeJobs, industrialJobs, techPower,
@@ -215,7 +216,8 @@ export function growDay(city: City, day: number, options: GrowOptions = {}): Cit
     if (room <= 0 || (options.upgradeKinds && !options.upgradeKinds.includes(kind))) continue;
     const candidates: { index: number; order: number }[] = [];
     buildings.forEach((b, index) => {
-      if (zoneById.get(b.zoneId)?.kind !== kind || b.level >= cap || !isDone(b.builtDay, day)) return;
+      const zone = zoneById.get(b.zoneId);
+      if (zone?.kind !== kind || b.level >= zoneLevelCap(cap, zone.mods) || !isDone(b.builtDay, day)) return;
       if (!facesRoad(b.cell, occ.roads)) return;
       const amenity = amenityAt(next, b.cell.x, b.cell.y, occ.roads);
       if (amenity < b.level) return;
@@ -225,7 +227,8 @@ export function growDay(city: City, day: number, options: GrowOptions = {}): Cit
     for (const c of smallest(candidates, UPGRADES_PER_DAY)) {
       if (room <= 0 || upgraded >= UPGRADES_PER_DAY) break;
       const b = buildings[c.index] as Building;
-      const gain = (CAPACITY[kind][b.level] ?? 0) - (CAPACITY[kind][b.level - 1] ?? 0);
+      const mods = zoneById.get(b.zoneId)?.mods;
+      const gain = zoneCapacity(kind, b.level + 1, mods) - zoneCapacity(kind, b.level, mods);
       buildings[c.index] = { ...b, level: b.level + 1, builtDay: day };
       room -= gain;
       upgraded += 1;
@@ -236,7 +239,7 @@ export function growDay(city: City, day: number, options: GrowOptions = {}): Cit
     // 都市規模は模擬の住民の合計のまま。技術力だけを数え直す（施設の Lv の合計）
     const roads = occupancyOf(next).roads;
     let techPower = 0;
-    for (const f of next.facilities) if (FACILITY_DEFS[f.type].group === 'facility' && facilityWorks(f, roads)) techPower += f.level;
+    for (const f of next.facilities) if (FACILITY_DEFS[f.type].group === 'facility' && facilityWorks(f, roads)) techPower += facilityTech(f);
     return { ...next, population: city.population, techPower };
   }
   const after = statsOf(next);

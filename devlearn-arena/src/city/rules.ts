@@ -73,6 +73,38 @@ export const CAPACITY: Record<ZoneKind, readonly [number, number, number, number
 export const FACILITY_JOBS_PER_LEVEL = 15;
 
 /**
+ * 譲歩で変わった性質を入れた、区画の建物の大きさ（住む人・雇う人。docs/game-design.md 17.1）。
+ * 住宅は戸数の倍率（units）、ほかは雇う人数の倍率（jobs）を掛ける
+ */
+export function zoneCapacity(kind: ZoneKind, level: number, mods?: Record<string, number>): number {
+  const base = CAPACITY[kind][level - 1] ?? 0;
+  return base * (kind === 'residential' ? (mods?.units ?? 1) : (mods?.jobs ?? 1));
+}
+
+/** 区画の高さの上限（譲歩の height を足す。1 段より低くしない） */
+export function zoneLevelCap(cap: number, mods?: Record<string, number>): number {
+  return Math.max(1, cap + Math.min(0, mods?.height ?? 0));
+}
+
+/**
+ * 譲歩の性質を重ねる（アップグレードの譲歩を、施設が前から持つ性質に足す）。
+ * 倍率の性質は掛け合わせ、height（足す段）と green（0〜1）は足す
+ */
+export function mergeMods(base: Record<string, number> | undefined, add: Record<string, number>): Record<string, number> {
+  const out: Record<string, number> = { ...(base ?? {}) };
+  for (const [k, v] of Object.entries(add)) {
+    if (k === 'height') out[k] = (out[k] ?? 0) + v;
+    else if (k === 'green') out[k] = Math.min(1, (out[k] ?? 0) + v);
+    else out[k] = (out[k] ?? 1) * v;
+  }
+  return out;
+}
+
+/** 施設の技術力（Lv × 譲歩の tech）と雇う人（Lv × 15 × 譲歩の jobs） */
+export const facilityTech = (f: { level: number; mods?: Record<string, number> }): number => f.level * (f.mods?.tech ?? 1);
+export const facilityJobs = (f: { level: number; mods?: Record<string, number> }): number => f.level * FACILITY_JOBS_PER_LEVEL * (f.mods?.jobs ?? 1);
+
+/**
  * 発展段階ごとの、区画の建物の上限のレベル（docs/game-design.md 6 章・docs/city-design.md 3 章）。
  * 村と町は低層（住宅は戸建て → 低層集合住宅）、地方都市で中層、中核都市で高層、技術都市で超高層。
  */

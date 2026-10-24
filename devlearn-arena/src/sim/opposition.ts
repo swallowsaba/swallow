@@ -1,7 +1,7 @@
 import { cellKey } from '@/city/cells';
 import { FACILITY_DEFS } from '@/city/facilities';
 import { nextId } from '@/city/place';
-import { CAPACITY, FACILITY_JOBS_PER_LEVEL, levelCap } from '@/city/rules';
+import { CAPACITY, FACILITY_JOBS_PER_LEVEL, levelCap, mergeMods } from '@/city/rules';
 import type { Terrain } from '@/city/terrain';
 import type { Building, City, Facility, FacilityType, Point, Zone } from '@/city/types';
 import { ageOf, factorIndex, incomeOf, LAYERS, sizeOf, WEIGHTS, type FactorId } from './layers';
@@ -70,7 +70,7 @@ const mod = (app: Pick<Application, 'mods'>, k: string, d = 1): number => app.mo
 /** 申請が完成した形を入れた都市（模擬は純粋なので、写しの上で計算する） */
 export function completedCity(city: City, app: Application): City {
   if (app.kind === 'upgrade') {
-    return { ...city, facilities: city.facilities.map((f): Facility => (f.id === app.target.facilityId ? { ...f, level: (app.target.toLevel ?? Math.min(5, f.level + 1)) as Facility['level'], state: 'active', mods: { ...(f.mods ?? {}), ...app.mods } } : f)) };
+    return { ...city, facilities: city.facilities.map((f): Facility => (f.id === app.target.facilityId ? { ...f, level: (app.target.toLevel ?? Math.min(5, f.level + 1)) as Facility['level'], state: 'active', mods: mergeMods(f.mods, app.mods) } : f)) };
   }
   if (app.kind === 'rezone' && app.target.zone) {
     const z = app.target.zone;
@@ -81,7 +81,7 @@ export function completedCity(city: City, app: Application): City {
       if (cells.length > 0) zones.push(cells.length === old.cells.length ? old : { ...old, cells });
     }
     const zoneId = nextId('z', city.zones.map((x) => x.id));
-    zones.push({ id: zoneId, kind: z.kind, cells: z.cells.map((c) => ({ ...c })) });
+    zones.push({ id: zoneId, kind: z.kind, cells: z.cells.map((c) => ({ ...c })), ...(Object.keys(app.mods).length > 0 ? { mods: { ...app.mods } } : {}) });
     const day = Math.floor(city.day);
     const buildings: Building[] = [
       ...city.buildings.filter((b) => !painted.has(cellKey(b.cell.x, b.cell.y))),

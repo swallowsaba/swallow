@@ -25,6 +25,8 @@ export interface Zone {
   id: string;
   kind: ZoneKind;
   cells: Point[];
+  /** 譲歩で変わった性質（用途地域の変更の申請の mods を写す。height・units・jobs・noise。docs/game-design.md 17.1） */
+  mods?: Record<string, number>;
 }
 
 export interface Building {

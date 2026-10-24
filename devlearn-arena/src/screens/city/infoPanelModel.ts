@@ -4,7 +4,7 @@ import { domainsOfFacility, facilityCondition, nextLevelOf, parkReach } from '@/
 import { amenityAt } from '@/city/growth';
 import { buildingName } from '@/city/place';
 import type { Selection } from '@/city/render/CityRenderer';
-import { CAPACITY, constructionStage, PARK_RADIUS, ZONE_RULES } from '@/city/rules';
+import { constructionStage, PARK_RADIUS, zoneCapacity, ZONE_RULES } from '@/city/rules';
 import { checkUpgrade } from '@/city/upgrade';
 import type { City, DomainId } from '@/city/types';
 import { LEVEL_NAMES } from '@/content/catalog';
@@ -150,7 +150,7 @@ export function panelModel(city: City, sel: Selection, skills: Skills = {}, prog
   const occ = occupancyOf(city);
   const stage = constructionStage(b.builtDay, city.day);
   const faces = frontOf(b.cell, occ.roads) !== null;
-  const amount = CAPACITY[zone.kind][b.level - 1] ?? 0;
+  const amount = zoneCapacity(zone.kind, b.level, zone.mods);
   const amenity = amenityAt(city, b.cell.x, b.cell.y, occ.roads);
   return {
     kind: 'building',

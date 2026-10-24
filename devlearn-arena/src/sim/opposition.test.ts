@@ -1,15 +1,14 @@
 import { describe, expect, it } from 'vitest';
 import type { FacilityType } from '@/city/types';
 import { POLITICS_RULES, REASONS } from '@/content/politics';
-import type { Command, Op } from './commands';
+import type { Op } from './commands';
 import { applyOp } from './commands';
 import { layerOf } from './layers';
 import { facilitySteps, NOISE_SPAN, oppositionOf, ORGANIZATION, RENT_SPAN, SUNLIGHT_SPAN } from './opposition';
 import { CONSENT_LIMIT, STAGE_DAYS } from './permits';
-import { SimRunner } from './runner';
 import type { Application, Difficulty, Measure, ObjectionReason, World } from './types';
 import { stepDay } from './world';
-import { village } from './__fixtures__/cities';
+import { grownVillage } from './__fixtures__/cities';
 
 /**
  * 反対（docs/game-design.md 16 章・docs/testing-strategy.md 10.2「反対」）。
@@ -17,22 +16,7 @@ import { village } from './__fixtures__/cities';
  */
 
 /** 命令の列を日付どおりに当てながら進めた村（90 日。住宅に人が住み、店と工場が動いている） */
-function grown(): { world: World; terrain: ReturnType<typeof village>['terrain'] } {
-  const { world, terrain, commands } = village();
-  const runner = new SimRunner(world);
-  runner.load(world, 0, POLITICS_RULES);
-  let i = 0;
-  for (let d = 0; d <= 90; d += 1) {
-    while (i < commands.length && (commands[i] as Command).day <= d) {
-      runner.apply(commands[i] as Command);
-      i += 1;
-    }
-    if (d < 90) runner.advance(d + 1);
-  }
-  const w = runner.current;
-  return { world: { ...w, city: { ...w.city, funds: 20000 } }, terrain };
-}
-const GROWN = grown();
+const GROWN = grownVillage();
 
 /** 住宅のそば（北の細い道の端。住宅の列 x = 47 の隣）と、住宅から離れた所（工業の東） */
 const NEAR = { origin: { x: 46, y: 36 }, rotation: 0 } as const;

@@ -67,6 +67,8 @@ export interface Space {
   workplaces: ZoneBuilding[];
   facilities: ActiveFacility[];
   parks: ActiveFacility[];
+  /** 区画の ID → 譲歩で変わった性質（用途地域の変更の申請で塗った区画だけ） */
+  zoneMods: Map<string, Record<string, number>>;
   /** 建物の ID → 区画の建物 */
   byBuilding: Map<string, ZoneBuilding>;
 }
@@ -154,9 +156,12 @@ export function spaceOf(city: City, terrain: Terrain): Space {
     const first = fronts[0];
     const af: ActiveFacility = { facility: f, center, district: first !== undefined ? districtOfIndex(first) : districtOf(Math.floor(center.x), Math.floor(center.y)), fronts };
     if (def.group === 'facility') facilities.push(af);
-    else if (def.group === 'park') parks.push(af);
+    // 敷地の中に緑地を持つ施設（譲歩の green）は、公園の類と同じく行き届きを足す
+    if (def.group === 'park' || (def.group === 'facility' && (f.mods?.green ?? 0) > 0)) parks.push(af);
   }
-  return { city, terrain, occ, roadKind, roadId, roadCells, residential, workplaces, facilities, parks, byBuilding };
+  const zoneMods = new Map<string, Record<string, number>>();
+  for (const z of city.zones) if (z.mods) zoneMods.set(z.id, z.mods);
+  return { city, terrain, occ, roadKind, roadId, roadCells, residential, workplaces, facilities, parks, zoneMods, byBuilding };
 }
 
 /* ---------- 地形から決まる物（地形ごとに 1 回） ---------- */

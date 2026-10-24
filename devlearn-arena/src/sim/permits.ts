@@ -1,7 +1,7 @@
 import { cellKey, facilityCells, occupancyOf } from '@/city/cells';
 import { FACILITY_DEFS, footprintOf } from '@/city/facilities';
 import { nextId, type ReasonCode } from '@/city/place';
-import { ZONE_RULES } from '@/city/rules';
+import { mergeMods, ZONE_RULES } from '@/city/rules';
 import type { City, Facility, FacilityType, Point, Zone, ZoneKind } from '@/city/types';
 import type { Terrain } from '@/city/terrain';
 import { oppositionOf, risingShare } from './opposition';
@@ -210,7 +210,10 @@ function startConstruction(city: City, app: Application, day: number): { city: C
       const cells = z.cells.filter((c) => !painted.has(cellKey(c.x, c.y)));
       if (cells.length > 0) zones.push(cells.length === z.cells.length ? z : { ...z, cells });
     }
-    zones.push({ id: nextId('z', city.zones.map((z) => z.id)), kind: app.target.zone.kind, cells: app.target.zone.cells.map((c) => ({ ...c })) });
+    zones.push({
+      id: nextId('z', city.zones.map((z) => z.id)), kind: app.target.zone.kind, cells: app.target.zone.cells.map((c) => ({ ...c })),
+      ...(Object.keys(app.mods).length > 0 ? { mods: { ...app.mods } } : {}),
+    });
     const buildings = city.buildings.filter((b) => !painted.has(cellKey(b.cell.x, b.cell.y)));
     return { city: { ...city, zones, buildings }, app: { ...app, stage: 'done', stageDay: day } };
   }
@@ -294,7 +297,9 @@ export function stepApplications(world: World, day: number, terrain?: Terrain, r
           if (elapsed >= buildDaysOf(a)) {
             if (a.kind === 'upgrade') {
               const lv = a.target.toLevel ?? 2;
-              city = { ...city, facilities: city.facilities.map((f) => (f.id === a.target.facilityId ? { ...f, level: lv } : f)) };
+              // 譲歩の性質は、施設が前から持つ性質に重ねて写す（17.1）
+              const mods = Object.keys(a.mods).length > 0 ? a.mods : null;
+              city = { ...city, facilities: city.facilities.map((f) => (f.id === a.target.facilityId ? { ...f, level: lv, ...(mods ? { mods: mergeMods(f.mods, mods) } : {}) } : f)) };
             } else {
               city = { ...city, facilities: city.facilities.map((f) => (f.id === a.target.facilityId ? { ...f, state: 'active' as const } : f)) };
             }

@@ -1,7 +1,7 @@
 import type { Point } from '@/city/types';
 import { reach } from './network';
 import {
-  LAND_BASE, LAND_FACILITY, LAND_HILL_STEP, LAND_JOBS, LAND_NOISE, LAND_PARK_MAX, LAND_ROAD, LAND_WATER, NIGHT_FACILITIES, NOISE, PARK_REACH,
+  LAND_BASE, LAND_FACILITY, LAND_HILL_STEP, LAND_JOBS, LAND_NOISE, LAND_PARK_MAX, LAND_ROAD, LAND_WATER, NIGHT_FACILITIES, NOISE, PARK_REACH, GREEN_REACH,
   piecewise,
 } from './rules';
 import { CELLS, DISTRICT_COUNT, districtOfIndex, hillLevels, indexOf, inMap, nearWater, NEIGHBORS, ROAD_KINDS, SIZE, type Space } from './space';
@@ -39,9 +39,9 @@ export interface LandField {
 /** 距離に比例して薄まり、半径で 0 */
 const falloff = (d: number, r: number): number => (d >= r ? 0 : 1 - d / r);
 
-/** 譲歩で変わった性質（docs/game-design.md 17.1。G5 で mods に入る）。夜の騒音の倍率 */
-function nightNoiseFactor(mods: Record<string, number> | undefined): number {
-  return mods?.nightNoise ?? 1;
+/** 譲歩で変わった性質（docs/game-design.md 17.1）。騒音の倍率（夜も動く施設は夜の騒音の倍率も掛ける） */
+function noiseFactor(mods: Record<string, number> | undefined, night = false): number {
+  return (mods?.noise ?? 1) * (night ? (mods?.nightNoise ?? 1) : 1);
 }
 
 export function noiseSourcesOf(space: Space): NoiseSource[] {
@@ -49,8 +49,10 @@ export function noiseSourcesOf(space: Space): NoiseSource[] {
   for (const w of space.workplaces) {
     const b = w.building;
     const at = { x: b.cell.x + 0.5, y: b.cell.y + 0.5 };
-    if (w.kind === 'industrial') out.push({ kind: 'building', id: b.id, at, value: b.level * NOISE.industrialPerLevel, radius: NOISE.industrialRadius });
-    else if (w.kind === 'commercial') out.push({ kind: 'building', id: b.id, at, value: NOISE.commercial, radius: NOISE.commercialRadius });
+    const k = noiseFactor(space.zoneMods.get(w.zoneId));
+    if (k <= 0) continue;
+    if (w.kind === 'industrial') out.push({ kind: 'building', id: b.id, at, value: b.level * NOISE.industrialPerLevel * k, radius: NOISE.industrialRadius });
+    else if (w.kind === 'commercial') out.push({ kind: 'building', id: b.id, at, value: NOISE.commercial * k, radius: NOISE.commercialRadius });
   }
   for (const i of space.roadCells) {
     if (ROAD_KINDS[space.roadKind[i] as number] !== 'avenue') continue;
@@ -59,7 +61,7 @@ export function noiseSourcesOf(space: Space): NoiseSource[] {
   for (const af of space.facilities) {
     const f = af.facility;
     if (!(NIGHT_FACILITIES as readonly string[]).includes(f.type)) continue;
-    const value = (NOISE.nightBase + f.level * NOISE.nightPerLevel) * nightNoiseFactor((f as { mods?: Record<string, number> }).mods);
+    const value = (NOISE.nightBase + f.level * NOISE.nightPerLevel) * noiseFactor(f.mods, true);
     if (value > 0) out.push({ kind: 'facility', id: f.id, at: af.center, value, radius: NOISE.nightRadius });
   }
   return out;
@@ -99,10 +101,13 @@ function parkCoverage(space: Space): { cover: Float32Array; src: Int32Array } {
   const cover = new Float32Array(CELLS);
   const src = new Int32Array(CELLS).fill(-1);
   space.parks.forEach((p, n) => {
-    const range = PARK_REACH[p.facility.type] ?? 0;
+    // 公園の類は種類の距離。施設は敷地の中の緑地（譲歩の green）の分だけ
+    const green = p.facility.mods?.green ?? 0;
+    const range = PARK_REACH[p.facility.type] ?? (green > 0 ? GREEN_REACH : 0);
+    const scale = PARK_REACH[p.facility.type] !== undefined ? 1 : Math.min(1, green);
     if (range <= 0 || p.fronts.length === 0) return;
     for (const [i, d] of reach(space, p.fronts, range)) {
-      const v = falloff(d, range);
+      const v = falloff(d, range) * scale;
       if (v > (cover[i] as number)) {
         cover[i] = v;
         src[i] = n;
