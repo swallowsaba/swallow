@@ -181,10 +181,11 @@ describe('理由の強さ（16.2。全ての Measure）', () => {
     expect(at(probe({ kind: 'service-load', service: 'school' }))).toBeUndefined();
   });
 
-  it('費用: 費用 ÷ 開発資金の残り', () => {
+  it('費用: 費用 ÷ 開発資金の残り（取り分けた費用を含む）', () => {
     const b = at({ ...probe({ kind: 'cost' }), group: 'taxpayers', radius: undefined });
-    expect(b?.basis).toEqual({ value: 650, ref: 20000 });
-    expect(b?.strength).toBeCloseTo(650 / 20000, 4);
+    // 今の残りは、取り分けた費用を含めた財布
+    expect(b?.basis).toEqual({ value: 650, ref: 20650 });
+    expect(b?.strength).toBeCloseTo(650 / 20650, 4);
   });
 });
 

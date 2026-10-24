@@ -261,7 +261,8 @@ export function strengthOf(reason: ObjectionReason, c: Ctx): Strength {
       // 公共サービスは G10 で作る。それまでは負担が無い
       return { strength: 0, basis: { value: 0 } };
     case 'cost': {
-      const wallet = app.wallet === 'funds' ? city.funds : world.budget.treasury;
+      // 今の残りは、取り分けた費用を含めた財布（取り分けは否決・取り下げで戻る、まだ都市のお金）
+      const wallet = (app.wallet === 'funds' ? city.funds : world.budget.treasury) + app.reserved;
       return { strength: wallet <= 0 ? 1 : clamp01(app.reserved / wallet), basis: { value: app.reserved, ref: Math.max(0, wallet) } };
     }
   }

@@ -17,19 +17,20 @@
       "lessons": ["trouble.b.01", "trouble.i.01"]
     },
     {
-      "id": "inc-cost",
-      "title": "費用",
+      "id": "inc-tower",
+      "title": "指令塔とアンテナ",
       "targets": ["incident", "upgrade:incident"],
-      "group": "taxpayers",
-      "issue": "finance",
-      "measure": { "kind": "cost" },
-      "misconception": 0.5,
-      "claim": "障害は起きない方がよいのに、起きた時のためだけの建物を建てるのはもったいない。",
+      "group": "neighbors",
+      "issue": "environment",
+      "measure": { "kind": "sunlight" },
+      "radius": 2,
+      "misconception": 0.3,
+      "claim": "指令塔とアンテナの柱が、すぐ裏の家の窓の前に立つ。日が陰るうえ、いつも見下ろされているようで落ち着かない。",
       "concessions": [
-        { "id": "inc-small", "label": "監視・運用センターの中に小さな対応室を置く形から始める", "mods": { "height": -1, "tech": 0.85 }, "cost": { "ratio": -0.25 } }
+        { "id": "inc-tower-low", "label": "指令塔は建てず、アンテナは屋上の低い柱にまとめる", "mods": { "height": -1, "tech": 0.9 } }
       ],
       "explanations": [],
-      "lessons": ["trouble.b.01", "trouble.a.03"]
+      "lessons": ["trouble.b.01"]
     }
   ]
 }

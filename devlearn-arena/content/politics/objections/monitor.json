@@ -17,16 +17,17 @@
       "lessons": ["mon.b.01", "mon.b.04"]
     },
     {
-      "id": "mon-cost",
-      "title": "費用",
+      "id": "mon-power",
+      "title": "止まらない電気",
       "targets": ["monitor", "upgrade:monitor"],
-      "group": "taxpayers",
-      "issue": "finance",
-      "measure": { "kind": "cost" },
-      "misconception": 0.5,
-      "claim": "止まってから直せばよいのに、止まる前から見張る施設に資金を使う理由が分からない。",
+      "group": "neighbors",
+      "issue": "safety",
+      "measure": { "kind": "power" },
+      "radius": 6,
+      "misconception": 0.4,
+      "claim": "壁一面の画面と、止まらないための予備の電源で、昼も夜も電気を使い続ける。島の電気が足りない日に、家より先に回されるのではないか。",
       "concessions": [
-        { "id": "mon-small", "label": "最初は大事な仕組みだけを見張る小さな部屋で始める", "mods": { "height": -1, "tech": 0.85 }, "cost": { "ratio": -0.2 } }
+        { "id": "mon-power-save", "label": "誰も見ていない画面は消し、集めるデータを大事な物に絞って機材を減らす", "mods": { "power": 0.6, "tech": 0.9 } }
       ],
       "explanations": [],
       "lessons": ["mon.b.01"]

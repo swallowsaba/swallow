@@ -17,16 +17,17 @@
       "lessons": ["sec.b.01", "sec.a.03"]
     },
     {
-      "id": "sec-cost",
-      "title": "費用",
+      "id": "sec-wall",
+      "title": "高い塀と見張りの塔",
       "targets": ["security", "upgrade:security"],
-      "group": "taxpayers",
-      "issue": "finance",
-      "measure": { "kind": "cost" },
-      "misconception": 0.5,
-      "claim": "守る仕組みに資金をかけても、何も起きなければ成果が目に見えない。本当に要るのか分からない。",
+      "group": "neighbors",
+      "issue": "environment",
+      "measure": { "kind": "sunlight" },
+      "radius": 2,
+      "misconception": 0.4,
+      "claim": "高い塀と見張りの塔で囲まれ、隣の家は一日中塀の影になる。監視カメラが自分の家の方を向いていないかも気になる。",
       "concessions": [
-        { "id": "sec-small", "label": "最初は小さな監視室から始め、人と機材は段階的に増やす", "mods": { "height": -1, "tech": 0.85 }, "cost": { "ratio": -0.2 } }
+        { "id": "sec-wall-low", "label": "塀を低い生け垣に替え、塔は建てずに屋上のカメラで見る", "mods": { "height": -1, "tech": 0.9 } }
       ],
       "explanations": [],
       "lessons": ["sec.b.01"]

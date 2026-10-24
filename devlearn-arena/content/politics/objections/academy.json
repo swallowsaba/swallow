@@ -32,21 +32,6 @@
       ],
       "explanations": [],
       "lessons": ["found.b.01"]
-    },
-    {
-      "id": "academy-cost",
-      "title": "費用",
-      "targets": ["academy", "upgrade:academy"],
-      "group": "taxpayers",
-      "issue": "finance",
-      "measure": { "kind": "cost" },
-      "misconception": 0.4,
-      "claim": "学院に資金を使うより、すぐ役に立つ道路や住まいに回すべきだ。卒業した人が市内で働く見込みも示されていない。",
-      "concessions": [
-        { "id": "academy-small", "label": "最初は校舎だけで始め、講堂は後に回す", "mods": { "height": -1, "tech": 0.85 }, "cost": { "ratio": -0.25 } }
-      ],
-      "explanations": [],
-      "lessons": ["found.b.01"]
     }
   ]
 }

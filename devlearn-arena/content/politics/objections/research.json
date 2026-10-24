@@ -31,21 +31,6 @@
       ],
       "explanations": [],
       "lessons": ["lab.a.03"]
-    },
-    {
-      "id": "research-cost",
-      "title": "費用",
-      "targets": ["research", "upgrade:research"],
-      "group": "taxpayers",
-      "issue": "finance",
-      "measure": { "kind": "cost" },
-      "misconception": 0.4,
-      "claim": "何を研究して、町に何が返ってくるのかが分からない。成果が見えないまま大きな額を使うのは困る。",
-      "concessions": [
-        { "id": "research-phase", "label": "実験棟は後に回し、最初は展示と試作の小さな建物で始める", "mods": { "height": -1, "tech": 0.8 }, "cost": { "ratio": -0.25 } }
-      ],
-      "explanations": [],
-      "lessons": ["lab.a.03"]
     }
   ]
 }

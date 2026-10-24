@@ -17,16 +17,17 @@
       "lessons": ["devops.b.01", "devops.b.02"]
     },
     {
-      "id": "devops-cost",
-      "title": "費用",
+      "id": "devops-height",
+      "title": "連絡橋と中層の棟",
       "targets": ["devops", "upgrade:devops"],
-      "group": "taxpayers",
-      "issue": "finance",
-      "measure": { "kind": "cost" },
-      "misconception": 0.5,
-      "claim": "仕組みと文化を変える本部と言われても、何に資金を使うのかが見えない。建物より先にやることがある。",
+      "group": "neighbors",
+      "issue": "environment",
+      "measure": { "kind": "sunlight" },
+      "radius": 2,
+      "misconception": 0.2,
+      "claim": "中層の棟と、ほかの施設へ渡る連絡橋が、低い家並みの上に長い影を落とす。冬は昼でも庭に日が当たらない。",
       "concessions": [
-        { "id": "devops-small", "label": "建物は小さくし、まず 1 つの部署で試してから広げる", "mods": { "height": -1, "tech": 0.85 }, "cost": { "ratio": -0.2 } }
+        { "id": "devops-low", "label": "棟を 1 階低くし、連絡橋は地下の通路に替える", "mods": { "height": -1, "tech": 0.9 }, "cost": { "ratio": 0.1 } }
       ],
       "explanations": [],
       "lessons": ["devops.b.01"]
