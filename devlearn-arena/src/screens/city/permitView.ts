@@ -180,8 +180,6 @@ export interface PermitDetail extends PermitRow {
   canWithdraw: boolean;
   /** 取り下げた時に戻る額 */
   refund: number;
-  /** 申請中の IT 施設の分野（ここで学ぶ） */
-  facilityType: Application['target']['type'] | null;
 }
 
 export function permitDetail(world: World, id: string): PermitDetail | null {
@@ -196,7 +194,6 @@ export function permitDetail(world: World, id: string): PermitDetail | null {
   } else if (a.target.zone) {
     gains.push({ label: '区画', value: `${ZONE_RULES[a.target.zone.kind].name} ${String(a.target.zone.cells.length)} マス` });
   }
-  const type = a.kind === 'facility' ? a.target.type ?? null : a.kind === 'upgrade' ? world.city.facilities.find((f) => f.id === a.target.facilityId)?.type ?? null : null;
   return {
     ...rowOf(a, world, day),
     filedDate: dateText(a.filedDay),
@@ -207,6 +204,5 @@ export function permitDetail(world: World, id: string): PermitDetail | null {
     gains,
     canWithdraw: isReviewing(a),
     refund: a.reserved,
-    facilityType: type,
   };
 }

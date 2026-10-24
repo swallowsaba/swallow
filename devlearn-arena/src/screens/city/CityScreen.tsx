@@ -293,7 +293,7 @@ export function CityScreen({ session, active = true, covered = false, current, d
           {state.windows.map((id, i) => {
             if (id === 'view') return <ViewWindow key={id} store={store} stack={i} shifted={panel !== null} />;
             if (id === 'permits') return <PermitListWindow key={id} store={store} stack={i} shifted={panel !== null} />;
-            return <PermitDetailWindow key={id} store={store} stack={i} shifted={panel !== null} onLearn={(appId) => learnFrom(store, appId)} />;
+            return <PermitDetailWindow key={id} store={store} stack={i} shifted={panel !== null} />;
           })}
           <HeatHover store={store} canvas={canvasRef} renderer={rendererRef} />
           <BuildMenu state={state} landmarks={landmarks} />
@@ -304,16 +304,6 @@ export function CityScreen({ session, active = true, covered = false, current, d
       ) : null}
     </div>
   );
-}
-
-/** 申請の詳細から「この施設の分野を学ぶ」: その施設の情報パネル（ここで学ぶ）を開く */
-function learnFrom(store: CityStore, appId: string): void {
-  const s = store.getState();
-  const app = s.world.applications.find((a) => a.id === appId);
-  if (!app) return;
-  const facilityId = app.target.facilityId;
-  if (facilityId && s.city.facilities.some((f) => f.id === facilityId)) s.select({ kind: 'facility', id: facilityId });
-  else s.select({ kind: 'application', id: appId });
 }
 
 function panelKeyOf(s: ReturnType<CityStore['getState']>): string {

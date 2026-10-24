@@ -69,9 +69,10 @@ export function PermitListWindow({ store, stack, shifted }: { store: CityStore; 
         </span>
         <span className="permit-row-mid">
           <Marks marks={r.marks} />
-          <span className="permit-row-stage">{r.stageLabel}<span className="permit-row-wait">{r.waiting}</span></span>
+          <span className="permit-row-stage">{r.stageLabel}</span>
           <Opposition value={r.opposition} />
         </span>
+        <span className="permit-row-wait">{r.waiting}</span>
       </button>
       <button type="button" className="permit-row-pin" onClick={() => goSite(r.id)} title="敷地へ寄る" aria-label={`${r.name}の敷地へ寄る`}>
         <Icon name="pin" size={16} />
@@ -101,13 +102,7 @@ export function PermitListWindow({ store, stack, shifted }: { store: CityStore; 
   );
 }
 
-export function PermitDetailWindow({ store, stack, shifted, onLearn }: {
-  store: CityStore;
-  stack: number;
-  shifted: boolean;
-  /** 申請中の IT 施設の分野を学ぶ（その施設の情報パネルを開く） */
-  onLearn?: (id: string) => void;
-}) {
+export function PermitDetailWindow({ store, stack, shifted }: { store: CityStore; stack: number; shifted: boolean }) {
   const s = useStore(store, useShallow((x) => ({
     id: x.permitId, apps: x.world.applications, day: Math.floor(x.world.city.day), closeWindow: x.closeWindow, openWindow: x.openWindow, focusAt: x.focusAt, withdraw: x.withdraw,
   })));
@@ -175,12 +170,6 @@ export function PermitDetailWindow({ store, stack, shifted, onLearn }: {
             ))}
           </dl>
         </section>
-      ) : null}
-      {d.facilityType && onLearn ? (
-        <button type="button" className="info-action" data-testid="permit-learn" onClick={() => onLearn(d.id)}>
-          <Icon name="learn" size={16} />
-          この施設の分野を学ぶ
-        </button>
       ) : null}
       {d.canWithdraw ? (
         confirm ? (

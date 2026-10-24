@@ -160,6 +160,24 @@ export default async function permitG3(page, shot) {
   await page.waitForTimeout(400);
   console.log('看板の重なり', JSON.stringify(await signOverlaps(page)));
   await shot(`g3-six${tag}`);
+  // 3 倍の速さで、看板と囲いを 6 件描いている時の fps
+  await page.keyboard.press('3');
+  console.log('fps（3 倍・申請 6 件）', await page.evaluate(async () => {
+    window.__city.setContinuous(true);
+    const t0 = performance.now();
+    let n = 0;
+    await new Promise((resolve) => {
+      const step = () => {
+        n += 1;
+        if (performance.now() - t0 < 2000) requestAnimationFrame(step);
+        else resolve();
+      };
+      requestAnimationFrame(step);
+    });
+    window.__city.setContinuous(false);
+    return Math.round((n / ((performance.now() - t0) / 1000)) * 10) / 10;
+  }));
+  await page.keyboard.press('1');
   // 7 件目: 置こうとすると「審議中の申請が多すぎる」
   await pick(page, 'facility');
   await page.click('[data-testid="facility-shelf-ops"]');

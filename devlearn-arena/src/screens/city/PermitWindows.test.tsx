@@ -66,7 +66,8 @@ describe('許認可の一覧（10.1）', () => {
     const host = mount(<PermitListWindow store={store} stack={0} shifted={false} />);
     const row = host.querySelector('[data-testid="permit-row-a1"]');
     expect(row?.textContent).toContain('サーバ施設');
-    expect(row?.textContent).toContain('反対の受付あと 9 日');
+    expect(row?.textContent).toContain('反対の受付');
+    expect(row?.querySelector('.permit-row-wait')?.textContent).toBe('あと 9 日');
     act(() => (row?.querySelector('.permit-row-pin') as HTMLButtonElement).click());
     expect(store.getState().focus).toMatchObject({ at: { x: 52, y: 49 }, size: { x: 2, y: 2 } });
     act(() => (row?.querySelector('.permit-row-main') as HTMLButtonElement).click());
