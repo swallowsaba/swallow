@@ -214,3 +214,18 @@
     padding: 0 12px;
   }
 }
+
+/* 支持率の 4 週の増減の矢印（上がれば ok・下がれば bad の色） */
+.topbar-trend {
+  display: inline-flex;
+  align-items: center;
+  margin-left: 3px;
+  vertical-align: middle;
+}
+.topbar-trend.is-up svg {
+  stroke: var(--ok);
+}
+/* 記号なので線の色で塗る（文字の明るさの差の決まりは文字に当てる） */
+.topbar-trend.is-down svg {
+  stroke: var(--bad);
+}

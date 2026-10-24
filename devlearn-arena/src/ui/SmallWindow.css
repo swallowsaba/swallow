@@ -1,0 +1,80 @@
+/* 都市の上に重ねる小さな窓（docs/ui-design.md 10.0）。計器の窓（docs/visual-design.md 4 章）。
+   幅 400、高さは内容に応じて最大 60%。後ろに都市が見える */
+.small-window {
+  position: absolute;
+  width: 400px;
+  max-height: 60vh;
+  display: flex;
+  flex-direction: column;
+  background: var(--hud-bg);
+  border: 2px solid var(--hud-line);
+  border-radius: 4px 18px 4px 18px;
+  box-shadow: var(--shadow-window);
+  backdrop-filter: blur(6px);
+  animation: small-window-in 0.2s ease-out;
+}
+@keyframes small-window-in {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .small-window {
+    animation: none;
+  }
+}
+:root[data-motion='reduced'] .small-window {
+  animation: none;
+}
+
+.small-window-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 8px 8px 14px;
+  border-bottom: 1px solid var(--hud-line);
+  cursor: grab;
+  user-select: none;
+  touch-action: none;
+}
+.small-window.is-collapsed .small-window-head {
+  border-bottom: none;
+}
+.small-window-icon {
+  display: flex;
+  color: var(--gold);
+}
+.small-window-title {
+  flex: 1;
+  margin: 0;
+  font-family: var(--font-heading);
+  font-weight: 800;
+  font-size: var(--fs-18);
+  line-height: 1.2;
+}
+.small-window-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: none;
+  background: var(--transparent);
+  color: var(--hud-text-sub);
+  cursor: pointer;
+}
+.small-window-button:hover,
+.small-window-button:focus-visible {
+  color: var(--gold-light);
+}
+
+.small-window-body {
+  min-height: 0;
+  overflow-y: auto;
+  padding: 10px 14px 14px;
+}

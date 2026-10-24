@@ -88,3 +88,36 @@
   line-height: 1.5;
   color: var(--hud-text);
 }
+
+/* 今重ねている表示の名前と、窓を開くボタン */
+.overlay-current {
+  padding: 0 10px 0 2px;
+  font-weight: 700;
+  font-size: var(--fs-13);
+  color: var(--hud-text);
+}
+.overlay-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.overlay-button kbd {
+  font-family: var(--font-number);
+  font-size: var(--fs-12);
+  opacity: 0.8;
+}
+/* ヒートマップの凡例: 値の幅と単位・5 段の色 */
+.overlay-span {
+  margin: 0 0 4px;
+  font-size: var(--fs-13);
+  color: var(--hud-text);
+}
+.overlay-span b {
+  color: var(--gold-light);
+}
+.overlay-ramp.is-steps {
+  display: flex;
+}
+.overlay-ramp.is-steps span {
+  flex: 1;
+}

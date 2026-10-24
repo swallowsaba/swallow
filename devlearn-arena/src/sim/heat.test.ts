@@ -65,3 +65,20 @@ describe('グラフの記録の間引き（docs/game-design.md 14 章）', () =>
     expect(thin(samples.slice(0, 208), 208)).toHaveLength(208);
   });
 });
+
+describe('雇用のヒートマップで住宅を指した時の失業率', () => {
+  it('住宅のマスに、その住民の地区（前の道路の地区）の失業率を持つ', () => {
+    const { world, terrain } = town();
+    const { world: w, view } = weekStep(world, terrain);
+    const heat = heatOf(w, view);
+    const zb = view.space.residential[0];
+    if (!zb) throw new Error('住宅が無い');
+    let employed = 0;
+    let all = 0;
+    for (let b = 0; b < 3; b += 1) {
+      employed += view.commute.employed[zb.district * 3 + b] as number;
+      all += view.workers[zb.district * 3 + b] as number;
+    }
+    expect(heat.jobless[zb.cell]).toBeCloseTo(all > 0 ? 1 - employed / all : 0, 5);
+  });
+});

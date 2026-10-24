@@ -5,7 +5,7 @@ import type { RoadPlan } from '@/city/roads';
 import { ROAD_RULES, ZONE_RULES } from '@/city/rules';
 import type { City, Point } from '@/city/types';
 import type { Op } from '@/sim/commands';
-import type { CityStore, Tool } from './cityStore';
+import type { CityStore, SmallWindowId, Tool } from './cityStore';
 
 /**
  * 建設の操作（docs/ui-design.md 4 章・docs/city-design.md 8 章）。
@@ -106,6 +106,7 @@ export function attachBuildControls(canvas: HTMLCanvasElement, renderer: CityRen
     const s = store.getState();
     if (s.confirm) s.askDemolish(null);
     else if (s.tool.kind !== 'none') s.setTool({ kind: 'none' });
+    else if (s.windows.length > 0) s.closeWindow(s.windows[s.windows.length - 1] as SmallWindowId);
     else if (s.selected) s.select(null);
     else s.openMenu(null);
   };

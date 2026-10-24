@@ -1,5 +1,5 @@
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef } from 'react';
-import { overlayOf, stageProgress, type OverlayKind } from '@/city/overlay';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { overlayOf, stageProgress } from '@/city/overlay';
 import { useStore } from 'zustand';
 import { useShallow } from 'zustand/react/shallow';
 import { displayOf, type Display } from '@/city/render/display';
@@ -8,7 +8,9 @@ import { Intro } from './Intro';
 import { CityRenderer } from '@/city/render/CityRenderer';
 import { RANK_NAMES, rankOf } from '@/game/rank';
 import { STAGE_NAMES } from '@/game/stage';
+import { HEAT_KINDS, type HeatKind } from '@/sim/heat';
 import { dateOf } from '@/sim/rules';
+import type { WeeklyBreakdown } from '@/sim/types';
 import { TopBar, type EntryId } from '@/ui/TopBar';
 import { finishBoot } from '@/ui/boot';
 import { BuildMenu } from './BuildMenu';
@@ -21,7 +23,10 @@ import { OverlayToggle, type OverlayLegend } from './OverlayToggle';
 import { RecommendPanel } from './RecommendPanel';
 import { unplacedLandmarks } from '@/learning/missions';
 import type { DomainId } from '@/city/types';
-import type { CityStore } from './cityStore';
+import type { CityStore, ViewKind } from './cityStore';
+import { HEAT_INFO, heatImage, heatLegend } from './heatScale';
+import { VIEW_LABELS } from './viewKinds';
+import { ViewWindow } from './ViewWindow';
 import type { Session } from '../session';
 import { useSkills, type SkillMap } from '../skills';
 import { attachControls } from './controls';
@@ -67,6 +72,8 @@ export function CityScreen({ session, active = true, covered = false, current, d
     techPower: s.city.techPower,
     day: Math.floor(s.city.day), speed: s.speed, held: s.holds.length > 0, togglePause: s.togglePause, setSpeed: s.setSpeed,
     approval: s.world.city.population > 0 ? s.world.sim.lastWeek.approval : null,
+    approvalDelta: approvalDeltaOf(s.world.history.breakdown),
+    windows: s.windows, toggleWindow: s.toggleWindow, openWindow: s.openWindow, heat: s.heat,
   })));
   // 受け取ったが、まだ置いていない記念碑（建設メニューの公園の引き出しに並ぶ）
   const facilities = useStore(store, (s) => s.city.facilities);
@@ -88,6 +95,7 @@ export function CityScreen({ session, active = true, covered = false, current, d
       const k = e.key.toLowerCase();
       if (k === 'l') onEntryRef.current?.('learn');
       else if (k === 'g') onEntryRef.current?.('graph');
+      else if (k === 'v') store.getState().toggleWindow('view');
       else if (k === '1' || k === '2' || k === '3') store.getState().setSpeed(Number(k) as 1 | 2 | 3);
     };
     window.addEventListener('keydown', onKey);
@@ -138,11 +146,15 @@ export function CityScreen({ session, active = true, covered = false, current, d
       }
       renderer.setSelection(s.selected);
       renderer.setLabelInsets({ right: s.selected ? 14 + 360 + 12 : 8 });
+      // 模擬のヒートマップは、週に 1 回だけ画面の外の絵を作り直す（docs/architecture.md 9.3）
+      const heatKind = s.overlay && isHeat(s.overlay) ? s.overlay : null;
+      renderer.setHeat(heatKind && s.heat ? { key: `${heatKind}|${String(s.heat.week)}`, image: heatImage(heatKind, s.heat.cells[heatKind]) } : null);
+      const plain = s.overlay && !isHeat(s.overlay) ? s.overlay : null;
       const values = Object.fromEntries(Object.entries(skillsRef.current).map(([d, v]) => [d, v.value]));
-      const key = s.overlay ? `${s.overlay}|${overlayKeyOf(s)}|${JSON.stringify(values)}` : '';
+      const key = plain ? `${plain}|${overlayKeyOf(s)}|${JSON.stringify(values)}` : '';
       if (key !== overlayKey) {
         overlayKey = key;
-        renderer.setOverlay(s.overlay ? { kind: s.overlay, data: overlayOf(s.overlay, s.city, { ...renderer.traffic(), skills: values }) } : null);
+        renderer.setOverlay(plain ? { kind: plain, data: overlayOf(plain, s.city, { ...renderer.traffic(), skills: values }) } : null);
       }
     };
     sync(store.getState());
@@ -216,6 +228,8 @@ export function CityScreen({ session, active = true, covered = false, current, d
           onSpeed: (speed) => (speed === 0 ? state.togglePause() : state.setSpeed(speed)),
         }}
         approval={state.approval}
+        approvalDelta={state.approvalDelta}
+        onApproval={() => state.openWindow('view')}
         funds={state.funds}
         xp={xp}
         rankName={RANK_NAMES[rankOf(xp)]}
@@ -239,7 +253,15 @@ export function CityScreen({ session, active = true, covered = false, current, d
             }}
             {...(onLesson ? { onLesson } : {})} {...(onLibrary ? { onLibrary } : {})} {...(onMission ? { onMission } : {})} />
           <Minimap store={store} source={minimapSource} />
-          <OverlayToggle value={state.overlay} onChange={state.setOverlay} legend={state.menu === null && state.overlay ? legendOf(state.overlay, store) : null} />
+          <OverlayToggle
+            value={state.overlay}
+            name={state.overlay ? VIEW_LABELS[state.overlay] : null}
+            legend={state.menu === null && state.overlay ? legendOf(state.overlay, store) : null}
+            open={state.windows.includes('view')}
+            onOpen={() => state.toggleWindow('view')}
+          />
+          {state.windows.map((id, i) => (id === 'view' ? <ViewWindow key={id} store={store} stack={i} shifted={panel !== null} /> : null))}
+          <HeatHover store={store} canvas={canvasRef} renderer={rendererRef} />
           <BuildMenu state={state} landmarks={landmarks} />
           <PlacementHint hint={state.confirm ? null : state.hint} />
           <DemolishConfirm target={state.confirm} onYes={onYes} onNo={onNo} />
@@ -264,8 +286,64 @@ function overlayKeyOf(s: ReturnType<CityStore['getState']>): string {
   return `${String(c.roads.length)}|${String(c.buildings.length)}|${String(c.population)}|${String(c.facilities.length)}|${String(c.stage)}|${c.roads.map((r) => r.id).join(',')}`;
 }
 
-function legendOf(kind: OverlayKind, store: CityStore): OverlayLegend {
-  const city = store.getState().city;
+const isHeat = (k: ViewKind): k is HeatKind => (HEAT_KINDS as readonly string[]).includes(k);
+
+/** 4 週前からの支持率の増減（上の帯の矢印。記録が足りなければ null） */
+function approvalDeltaOf(breakdown: readonly WeeklyBreakdown[]): number | null {
+  const last = breakdown.at(-1);
+  const prev = last ? breakdown.find((b) => b.week === last.week - 4) : undefined;
+  return last && prev ? last.approval - prev.approval : null;
+}
+
+/**
+ * ヒートマップのマスを指すと、値と単位を小窓で出す（docs/ui-design.md 11.1: 色だけに頼らない）。
+ * 雇用で住宅を指すと、その地区の失業率も出す
+ */
+function HeatHover({ store, canvas, renderer }: { store: CityStore; canvas: React.RefObject<HTMLCanvasElement>; renderer: React.RefObject<CityRenderer | null> }) {
+  const [tip, setTip] = useState<{ x: number; y: number; text: string } | null>(null);
+  useEffect(() => {
+    const el = canvas.current;
+    if (!el) return;
+    const onMove = (e: PointerEvent): void => {
+      const s = store.getState();
+      const r = renderer.current;
+      const kind = s.overlay && isHeat(s.overlay) ? s.overlay : null;
+      if (!kind || !s.heat || !r || s.tool.kind !== 'none') {
+        setTip(null);
+        return;
+      }
+      const c = r.cellAt(e.clientX, e.clientY);
+      const size = r.size;
+      if (c.x < 0 || c.y < 0 || c.x >= size || c.y >= size) {
+        setTip(null);
+        return;
+      }
+      const i = c.y * size + c.x;
+      const v = s.heat.cells[kind][i] as number;
+      const jobless = s.heat.jobless[i] as number;
+      // 雇用で住宅を指した時は、そこに住む人の地区の失業率
+      const text = kind === 'jobs' && !Number.isNaN(jobless) ? `住民の地区の失業率 ${String(Math.round(jobless * 100))}%` : Number.isNaN(v) ? null : HEAT_INFO[kind].format(v);
+      setTip(text ? { x: e.clientX, y: e.clientY, text } : null);
+    };
+    const onLeave = (): void => setTip(null);
+    el.addEventListener('pointermove', onMove);
+    el.addEventListener('pointerleave', onLeave);
+    return () => {
+      el.removeEventListener('pointermove', onMove);
+      el.removeEventListener('pointerleave', onLeave);
+    };
+  }, [store, canvas, renderer]);
+  if (!tip) return null;
+  return <div className="heat-tip" data-testid="heat-tip" style={{ left: tip.x + 14, top: tip.y + 14 }}>{tip.text}</div>;
+}
+
+function legendOf(kind: ViewKind, store: CityStore): OverlayLegend {
+  const s = store.getState();
+  const city = s.city;
+  if (isHeat(kind)) {
+    const l = heatLegend(kind, s.heat?.cells[kind] ?? new Float32Array(0));
+    return { low: '低い', high: '高い', note: l.note, span: l.span, colors: l.colors };
+  }
   switch (kind) {
     case 'learning':
       return { low: '未修得', high: '熟練', note: '施設ごとに、対応する分野のスキルで塗る。学習の記録が無いうちは灰色' };

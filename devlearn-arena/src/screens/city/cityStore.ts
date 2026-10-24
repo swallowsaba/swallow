@@ -9,7 +9,9 @@ import type { Terrain } from '@/city/terrain';
 import type { City, Facility, FacilityType, ZoneKind } from '@/city/types';
 import { FACILITY_DEFS } from '@/city/facilities';
 import { checkUpgrade } from '@/city/upgrade';
-import { NAME_PARTS } from '@/content/politics';
+import { EXPLAIN, NAME_PARTS } from '@/content/politics';
+import { explainApproval } from '@/sim/explain';
+import type { HeatFields, HeatKind } from '@/sim/heat';
 import { applyOp, type Command, type Op } from '@/sim/commands';
 import { workerHost, type SimHost } from '@/sim/host';
 import { SECONDS_PER_DAY, type Speed } from '@/sim/rules';
@@ -34,6 +36,14 @@ export type Tool =
   | { kind: 'demolish' };
 
 export type MenuGroup = 'road' | 'zone' | 'facility' | 'park' | 'demolish';
+
+/** 表示切替で重ねる物（今ある 4 つと、模擬のヒートマップ。docs/ui-design.md 11.1） */
+export type ViewKind = OverlayKind | HeatKind;
+
+/** 都市の上に重ねる小さな窓（docs/ui-design.md 10.0）。表示切替の窓は G2、市政の窓は G3 から */
+export type SmallWindowId = 'view';
+/** 同時に開ける小さな窓の数 */
+export const MAX_SMALL_WINDOWS = 3;
 
 /** 時間を止めている理由（docs/game-design.md 13.1: 都市画面が前に出ていない間・窓が隠れている間・大きな窓の間） */
 export type HoldReason = 'screen' | 'hidden' | 'window';
@@ -72,7 +82,11 @@ export interface CityGameState {
   /** 選んでいる建物（情報パネルを出す） */
   selected: Selection | null;
   /** 表示の切り替え */
-  overlay: OverlayKind | null;
+  overlay: ViewKind | null;
+  /** 模擬が週の終わりに返したヒートマップの値 */
+  heat: HeatFields | null;
+  /** 開いている小さな窓（前に開いた順。最後が一番上） */
+  windows: SmallWindowId[];
   /** 出番を待つ知らせ（今の知らせが消えたら順に出す） */
   queue: string[];
   /** 学習に出た時の都市とスキル（戻った時に変化を比べる） */
@@ -114,7 +128,13 @@ export interface CityGameState {
    */
   upgrade: (facilityId: string, skills: SkillValues, now: number) => boolean;
   select: (selection: Selection | null) => void;
-  setOverlay: (overlay: OverlayKind | null) => void;
+  /** その場所へカメラを寄せ、光の輪で示す（説明・記事・請願を押した時） */
+  focusAt: (at: { x: number; y: number }, size?: { x: number; y: number }) => void;
+  setOverlay: (overlay: ViewKind | null) => void;
+  /** 小さな窓を開く（開いていれば一番上へ）。4 つ目を開くと、一番前に開いた窓を閉じる */
+  openWindow: (id: SmallWindowId) => void;
+  closeWindow: (id: SmallWindowId) => void;
+  toggleWindow: (id: SmallWindowId) => void;
   /** 模擬を止める（画面を閉じる時） */
   stop: () => void;
 }
@@ -147,6 +167,8 @@ export function createCityStore(seed?: number, initial?: City, options: CityStor
   /** 進めてと送った日・模擬が進めた日 */
   let requested = Math.floor(clock);
   let acked = requested;
+  /** 支持率の動きを知らせた週（4 週は同じ知らせを出さない） */
+  let toldWeek = -Infinity;
 
   const store = create<CityGameState>((set, get) => {
     /** 写しを作り直す: 模擬が返した世界に、返事の無い命令を当てる */
@@ -158,10 +180,21 @@ export function createCityStore(seed?: number, initial?: City, options: CityStor
       if (w.city.stage > prevStage) get().notify(`都市が「${STAGE_NAMES[w.city.stage]}」に発展した。霧が晴れて、作れる物が増えた`, performance.now());
     };
     host.listen((m: StateMessage) => {
+      const before = base.history.breakdown.at(-1)?.week;
       base = { ...base, ...m.patch };
       acked = Math.max(acked, m.day);
       pending = pending.filter((c) => c.seq > m.seq);
       rebuild();
+      if (m.heat) set({ heat: m.heat });
+      // 支持率が 4 週で 3 以上動いたら、説明の 1 行目を知らせにも出す（docs/ui-design.md 11.3）
+      const last = base.history.breakdown.at(-1);
+      if (last && last.week !== before && last.week - toldWeek >= 4) {
+        const e = explainApproval(base.history.breakdown, { city: base.city, districtNames: base.sim.districtNames, taxRate: base.budget.taxRate }, EXPLAIN);
+        if (e && e.weeks >= 4 && Math.abs(e.delta) >= 3) {
+          toldWeek = last.week;
+          get().notify(e.lines[0] as string, performance.now());
+        }
+      }
     });
     const loadWorld = (w: World): void => {
       base = w;
@@ -187,6 +220,8 @@ export function createCityStore(seed?: number, initial?: City, options: CityStor
       notice: null,
       selected: null,
       overlay: null,
+      heat: null,
+      windows: [],
       queue: [],
       away: null,
       focus: null,
@@ -277,7 +312,14 @@ export function createCityStore(seed?: number, initial?: City, options: CityStor
         return true;
       },
       select: (selected) => set({ selected }),
+      focusAt: (at, size = { x: 1, y: 1 }) => set((s) => ({ focus: { at, size, seq: (s.focus?.seq ?? 0) + 1 } })),
       setOverlay: (overlay) => set({ overlay }),
+      openWindow: (id) => set((s) => {
+        const rest = s.windows.filter((w) => w !== id);
+        return { windows: [...rest.slice(Math.max(0, rest.length - (MAX_SMALL_WINDOWS - 1))), id] };
+      }),
+      closeWindow: (id) => set((s) => ({ windows: s.windows.filter((w) => w !== id) })),
+      toggleWindow: (id) => (get().windows.includes(id) ? get().closeWindow(id) : get().openWindow(id)),
       stop: () => host.stop(),
     };
   });

@@ -51,4 +51,22 @@ describe('上の帯の日付と速さ・支持率（docs/ui-design.md 3.1・docs
     expect(mount(clockOf(), 54.6).querySelector('[data-testid="topbar-approval"] .topbar-stat-value')?.textContent).toBe('55%');
     expect(mount(clockOf(), null).querySelector('[data-testid="topbar-approval"] .topbar-stat-value')?.textContent).toBe('—');
   });
+
+  it('支持率に 4 週前からの増減の矢印（1 未満は出さない）。押すと説明を開く（docs/ui-design.md 3.1）', () => {
+    const onApproval = vi.fn();
+    const host = document.createElement('div');
+    document.body.append(host);
+    const root = createRoot(host);
+    roots.push(root);
+    const render = (delta: number | null): void => act(() => root.render(<TopBar cityName="みなと市" clock={clockOf()} approval={50} approvalDelta={delta} onApproval={onApproval} funds={0} xp={0} rankName="見習い" population={1} stageName="村" />));
+    render(-6.2);
+    expect(host.querySelector('[data-testid="topbar-approval-trend"]')?.className).toContain('is-down');
+    expect(host.querySelector('[data-testid="topbar-approval-trend"]')?.getAttribute('aria-label')).toBe('4 週前から 6 下がった');
+    render(2.6);
+    expect(host.querySelector('[data-testid="topbar-approval-trend"]')?.className).toContain('is-up');
+    render(0.4);
+    expect(host.querySelector('[data-testid="topbar-approval-trend"]')).toBeNull();
+    act(() => host.querySelector<HTMLButtonElement>('[data-testid="topbar-approval"]')?.click());
+    expect(onApproval).toHaveBeenCalledTimes(1);
+  });
 });

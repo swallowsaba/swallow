@@ -106,13 +106,15 @@ export default async function inspect(page, shot) {
   await shot('p3-building');
   await page.keyboard.press('Escape');
 
-  // 表示切替
+  // 表示切替（右下の「表示切替」で窓を開き、窓の中の一覧から選ぶ。docs/ui-design.md 11 章）
+  await page.click('[data-testid="overlay-open"]');
   for (const kind of ['learning', 'population', 'traffic', 'stage']) {
     await page.click(`[data-testid="overlay-${kind}"]`);
     await page.waitForTimeout(300);
     await shot(`p3-overlay-${kind}`);
   }
   await page.click('[data-testid="overlay-stage"]');
+  await page.click('[data-testid="view-window-close"]');
 
   // 引いて、名札が間引かれても重ならないか
   await page.evaluate(() => window.__city.zoomBy(-3));

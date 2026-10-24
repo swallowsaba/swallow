@@ -6,7 +6,8 @@ export type IconName =
   | 'learn' | 'mission' | 'glossary' | 'settings' | 'funds' | 'xp' | 'people' | 'stage' | 'emblem'
   | 'road' | 'zone' | 'facility' | 'park' | 'demolish' | 'rotate' | 'pause' | 'curve' | 'straight' | 'alert'
   | 'graph' | 'list' | 'search' | 'close' | 'start' | 'check' | 'hint' | 'terminal' | 'upgrade' | 'down' | 'database'
-  | 'export' | 'import' | 'restart' | 'save' | 'calendar' | 'approval' | 'speed1' | 'speed2' | 'speed3';
+  | 'export' | 'import' | 'restart' | 'save' | 'calendar' | 'approval' | 'speed1' | 'speed2' | 'speed3'
+  | 'up' | 'heat' | 'collapse';
 
 const PATHS: Record<IconName, string> = {
   // 開いた本
@@ -85,6 +86,12 @@ const PATHS: Record<IconName, string> = {
   speed1: 'M9 6l6 6-6 6',
   speed2: 'M6 6l6 6-6 6 M12 6l6 6-6 6',
   speed3: 'M4 6l5 6-5 6 M10 6l5 6-5 6 M16 6l5 6-5 6',
+  // 上がった（down の逆向き）
+  up: 'M6 14.5l6-6 6 6',
+  // 表示切替（地図の上に重ねた色の層。菱形を 3 枚重ねる）
+  heat: 'M12 3.5 21 8l-9 4.5L3 8Z M3 12l9 4.5 9-4.5 M3 16l9 4.5 9-4.5',
+  // 窓を畳む（横の線）
+  collapse: 'M6 12h12',
 };
 
 export function Icon({ name, size = 20 }: { name: IconName; size?: number }) {

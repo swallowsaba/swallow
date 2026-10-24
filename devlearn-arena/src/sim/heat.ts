@@ -18,8 +18,8 @@ export interface HeatFields {
   week: number;
   /** マスごとの値（96×96。値の無いマスは NaN） */
   cells: Record<HeatKind, Float32Array>;
-  /** [地区 144] 失業率（0〜1）。雇用のヒートマップで、住宅を指した時に出す */
-  unemployment: Float32Array;
+  /** 住宅のマス → その住民の地区の失業率（0〜1）。雇用のヒートマップで、住宅を指した時に出す */
+  jobless: Float32Array;
 }
 
 /** 地価と騒音を塗る陸のマス（地形ごとに 1 回） */
@@ -83,6 +83,7 @@ export function heatOf(world: World, view: WeekView): HeatFields {
     }
   }
   const unemployment = new Float32Array(DISTRICT_COUNT);
+  const jobless = blank();
   for (let d = 0; d < DISTRICT_COUNT; d += 1) {
     let employed = 0;
     let all = 0;
@@ -92,10 +93,11 @@ export function heatOf(world: World, view: WeekView): HeatFields {
     }
     unemployment[d] = all > 0 ? 1 - employed / all : 0;
   }
-  return { week: world.sim.week, cells: { land, rent, density, noise, jobs, approval }, unemployment };
+  for (const zb of view.space.residential) jobless[zb.cell] = unemployment[zb.district] as number;
+  return { week: world.sim.week, cells: { land, rent, density, noise, jobs, approval }, jobless };
 }
 
 /** 移す（transfer）物の一覧 */
 export function heatBuffers(h: HeatFields): ArrayBuffer[] {
-  return [...Object.values(h.cells).map((a) => a.buffer as ArrayBuffer), h.unemployment.buffer as ArrayBuffer];
+  return [...Object.values(h.cells).map((a) => a.buffer as ArrayBuffer), h.jobless.buffer as ArrayBuffer];
 }

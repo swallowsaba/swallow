@@ -12,6 +12,10 @@ export interface TopBarProps {
   clock?: TopBarClock;
   /** 支持率（0〜100。住む人がいなければ null） */
   approval?: number | null;
+  /** 4 週前からの支持率の増減（記録が足りなければ null） */
+  approvalDelta?: number | null;
+  /** 支持率を押すと、表示切替の窓の説明を開く（docs/ui-design.md 3.1） */
+  onApproval?: () => void;
   funds: number;
   xp: number;
   /** エンジニア段階の名前（docs/game-design.md 9 章） */
@@ -109,6 +113,35 @@ function Stat({ icon, label, value, unit, testId }: { icon: IconName; label: str
   );
 }
 
+/** 支持率と、4 週前からの増減の矢印（1 未満は矢印を出さない）。押すと説明（docs/ui-design.md 3.1） */
+function Approval({ value, delta, onOpen }: { value: number | null; delta: number | null; onOpen?: () => void }) {
+  const d = delta === null ? 0 : Math.round(delta);
+  const dir = d >= 1 ? 'up' : d <= -1 ? 'down' : null;
+  return (
+    <button
+      type="button"
+      className="topbar-stat is-entry"
+      data-testid="topbar-approval"
+      title={`支持率${dir ? `（4 週前から ${d > 0 ? '+' : ''}${String(d)}）` : ''}。押すと、動いた理由を出す（V）`}
+      onClick={() => onOpen?.()}
+    >
+      <span className="topbar-stat-icon"><Icon name="approval" size={18} /></span>
+      <span className="topbar-stat-text">
+        <span className="topbar-stat-label">支持率</span>
+        <span className="topbar-stat-value num">
+          {value === null ? '—' : String(Math.round(value))}
+          {value === null ? null : <span className="topbar-stat-unit">%</span>}
+          {dir ? (
+            <span className={`topbar-trend is-${dir}`} data-testid="topbar-approval-trend" aria-label={`4 週前から ${String(Math.abs(d))} ${dir === 'up' ? '上がった' : '下がった'}`}>
+              <Icon name={dir} size={12} />
+            </span>
+          ) : null}
+        </span>
+      </span>
+    </button>
+  );
+}
+
 export function TopBar(props: TopBarProps) {
   const disabled = new Set(props.disabled ?? []);
   return (
@@ -120,9 +153,7 @@ export function TopBar(props: TopBarProps) {
       <div className="topbar-stats">
         {props.clock ? <Clock clock={props.clock} /> : null}
         <Stat icon="funds" label="開発資金" value={format(props.funds)} unit="資金" />
-        {props.approval !== undefined ? (
-          <Stat icon="approval" label="支持率" value={props.approval === null ? '—' : String(Math.round(props.approval))} {...(props.approval === null ? {} : { unit: '%' })} testId="topbar-approval" />
-        ) : null}
+        {props.approval !== undefined ? <Approval value={props.approval} delta={props.approvalDelta ?? null} {...(props.onApproval ? { onOpen: props.onApproval } : {})} /> : null}
         <button
           type="button"
           className={`topbar-stat is-entry${props.current === 'growth' ? ' is-current' : ''}`}

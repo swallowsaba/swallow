@@ -10,3 +10,18 @@
   cursor: default;
   touch-action: none;
 }
+
+/* ヒートマップのマスを指した時の値（docs/ui-design.md 11.1） */
+.heat-tip {
+  position: fixed;
+  z-index: 30;
+  padding: 4px 10px;
+  background: var(--hud-bg-strong);
+  border: 1px solid var(--hud-line);
+  border-radius: 2px 8px 2px 8px;
+  color: var(--hud-text);
+  font-size: var(--fs-13);
+  font-weight: 700;
+  pointer-events: none;
+  white-space: nowrap;
+}

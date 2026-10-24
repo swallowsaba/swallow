@@ -91,6 +91,8 @@ export class CityRenderer {
   /** 変化のあった場所の光の輪（docs/city-design.md 5 章）。until は performance.now() の時刻 */
   private highlight: { at: Point; size: Point; until: number } | null = null;
   private overlay: { kind: OverlayKind; data: Overlay } | null = null;
+  /** ヒートマップ（docs/ui-design.md 11.1）。マス 1 つを 1 画素にした画面の外の Canvas。週に 1 回だけ塗り直す */
+  private heat: { key: string; canvas: HTMLCanvasElement } | null = null;
   private net: Network;
   private agents: Agent[];
   private agentsKey = '';
@@ -235,6 +237,43 @@ export class CityRenderer {
   setOverlay(overlay: { kind: OverlayKind; data: Overlay } | null): void {
     this.overlay = overlay;
     this.dirty = true;
+  }
+
+  /**
+   * ヒートマップを重ねる（null で消す）。image はマスごとの RGBA（size × size）。key が同じなら塗り直さない。
+   * 毎フレームは、この小さな絵を地図の座標から画面の座標への変換（等角投影は 1 次の変換）で地面に重ねるだけ
+   */
+  setHeat(heat: { key: string; image: Uint8ClampedArray } | null): void {
+    if (!heat) {
+      if (this.heat) this.dirty = true;
+      this.heat = null;
+      return;
+    }
+    if (this.heat?.key === heat.key) return;
+    const canvas = this.heat?.canvas ?? document.createElement('canvas');
+    canvas.width = this.size;
+    canvas.height = this.size;
+    const c = canvas.getContext('2d');
+    if (c) c.putImageData(new ImageData(new Uint8ClampedArray(heat.image), this.size, this.size), 0, 0);
+    this.heat = { key: heat.key, canvas };
+    this.dirty = true;
+  }
+
+  /** ヒートマップを地面の上に重ねる（建物の下） */
+  private drawHeat(o: { x: number; y: number }): void {
+    if (!this.heat) return;
+    const ctx = this.ctx;
+    const s = this.space();
+    // 地図の (0,0)・(1,0)・(0,1) が画面のどこに来るかから、1 次の変換を作る
+    const [x0, y0] = toLayer(s, { x: 0, y: 0 });
+    const [x1, y1] = toLayer(s, { x: 1, y: 0 });
+    const [x2, y2] = toLayer(s, { x: 0, y: 1 });
+    ctx.save();
+    ctx.transform(x1 - x0, y1 - y0, x2 - x0, y2 - y0, o.x + x0, o.y + y0);
+    ctx.imageSmoothingEnabled = false;
+    ctx.globalAlpha = 0.5;
+    ctx.drawImage(this.heat.canvas, 0, 0);
+    ctx.restore();
   }
 
   /** 道路の網と車（表示切替の交通が使う） */
@@ -468,8 +507,11 @@ export class CityRenderer {
     const s = this.space();
     let drawn = 0;
     const order = this.sortedObjects();
+    this.drawHeat(o);
     this.drawSelectionBase(o);
     this.drawHighlight(o);
+    // ヒートマップを重ねている間は、建物を薄くして色を見せる（docs/ui-design.md 11.1）
+    if (this.heat) ctx.globalAlpha = 0.5;
     const agents = this.placeAgents(order);
     this.drawAgents(ctx, o, agents.get(-1));
     for (let pos = 0; pos < order.list.length; pos += 1) {
@@ -495,6 +537,7 @@ export class CityRenderer {
       drawn += 1;
     }
     this.drawAgents(ctx, o, agents.get(order.list.length - 1));
+    ctx.globalAlpha = 1;
     this.stats.drawnObjects = drawn;
     this.stats.agents = this.agents.length;
     this.drawFog(o);
