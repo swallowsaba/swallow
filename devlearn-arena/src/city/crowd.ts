@@ -52,4 +52,4 @@ export function crowdSpots(site: CrowdSite, count: number): Point[] {
 }
 
 /** 遠く（この拡大率より小さい）では人の影を間引き、看板だけを残す */
-export const CROWD_MIN_ZOOM = 0.8;
+export const CROWD_MIN_ZOOM = 1;
