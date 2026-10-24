@@ -48,6 +48,18 @@ async function cityVisible(page) {
   });
 }
 
+/** 開いた窓（小さな窓・情報パネル・公聴会の窓）の合計の面積（docs/ui-design.md 10.0: 60% を超えない） */
+async function windowsShare(page) {
+  return page.evaluate(() => {
+    const rects = [...document.querySelectorAll('.small-window, [data-testid="info-panel"], [data-testid="hearing-window"]')].map((el) => el.getBoundingClientRect());
+    const W = window.innerWidth;
+    const H = window.innerHeight;
+    let covered = 0;
+    for (let y = 1; y < H; y += 2) for (let x = 1; x < W; x += 2) if (rects.some((r) => x >= r.left && x < r.right && y >= r.top && y < r.bottom)) covered += 1;
+    return Math.round((covered / ((W / 2) * (H / 2))) * 1000) / 10;
+  });
+}
+
 const appOf = (page, id) => page.evaluate((x) => {
   const a = window.__cityStore.getState().world.applications.find((y) => y.id === x);
   return a ? {
@@ -285,7 +297,7 @@ export default async function permitG5(page, shot) {
   const d1 = await page.evaluate(() => window.__cityStore.getState().world.city.day);
   console.log('公聴会の窓を開いている間の日付', d0, '→', d1, d0 === d1 ? '（止まっている）' : '（動いた）');
   console.log('公聴会の窓（スキル 0）', JSON.stringify(await hearingState(page)));
-  console.log('窓を開いた時に都市が見える割合', await cityVisible(page), '%');
+  console.log('窓を開いた時に都市が見える割合', await cityVisible(page), '%', '開いた窓の合計', await windowsShare(page), '%');
   console.log('fps（公聴会の窓）', await hearingFps(page));
   await shot(`g5-hearing${tag}`);
   // 雇用が少ないは押し切る。残りは譲歩
