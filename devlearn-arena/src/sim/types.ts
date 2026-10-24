@@ -94,6 +94,8 @@ export interface WeeklyBreakdown {
   causes: Cause[];
   /** その週の支持率（確かめに使う） */
   approval: number;
+  /** [層 12] 都市全体の層の支持（18 歳以上の人数で重みを付けた平均。住む人がいなければ −1）。説明の 2 行目「特に、〇〇で 11 下がった」に使う */
+  layers?: number[];
 }
 
 export type NewsKind =

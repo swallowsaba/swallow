@@ -8,7 +8,7 @@ import { LAYER_COUNT, LAYER_SHARE, MEAN_HOUSEHOLD_SIZE } from './layers';
 import { DAYS_PER_WEEK, EXTERNAL_POWER_CAP, INITIAL_CAPITAL, INITIAL_TAX_RATE, INITIAL_TREASURY } from './rules';
 import { DISTRICT_COUNT, landingOf, spaceOf } from './space';
 import type { Difficulty, Politics, SimState, World } from './types';
-import { weekStep } from './week';
+import { weekStep, type WeekView } from './week';
 
 /**
  * 都市と模擬と市政の全体（docs/data-model.md 12 章の版 4）。
@@ -142,6 +142,11 @@ export function withCity(world: World, city: City, terrain: Terrain, names: Name
  * 週の終わり（7 日ごと）: 毎週の計算（src/sim/week.ts）
  */
 export function stepDay(world: World, terrain: Terrain): World {
+  return stepDayView(world, terrain).world;
+}
+
+/** 1 日進め、週の終わりなら、その週の計算の途中の値（ヒートマップに使う）も返す */
+export function stepDayView(world: World, terrain: Terrain): { world: World; view: WeekView | null } {
   const day = Math.floor(world.city.day) + 1;
   const city = growDay(world.city, day, {
     unemployedLowMid: world.sim.lastWeek.unemployedLowMid,
@@ -149,5 +154,5 @@ export function stepDay(world: World, terrain: Terrain): World {
     simPopulation: true,
   });
   const next: World = { ...world, city };
-  return day % DAYS_PER_WEEK === 0 ? weekStep(next, terrain).world : next;
+  return day % DAYS_PER_WEEK === 0 ? weekStep(next, terrain) : { world: next, view: null };
 }

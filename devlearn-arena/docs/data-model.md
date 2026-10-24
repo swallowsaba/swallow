@@ -231,6 +231,7 @@ interface WeeklyBreakdown {              // 支持率の内訳（docs/game-desig
   week: number;
   factors: number[][];                   // [要因 12][層 12] の点（重みを掛けた後）
   causes: Cause[];                       // 原因ごとの点の上位 20 件
+  layers?: number[];                     // [層 12] 層の支持の都市全体の平均（18 歳以上の人数で重み。住む人がいなければ −1）。説明の 2 行目（一番効いた層。docs/game-design.md 14 章）
 }
 interface Cause {
   factor: FactorId;                      // 'afford' | 'jobs' | 'commute' | 'noise' | 'green' | 'police' | 'school' | 'clinic' | 'fire' | 'power' | 'tax' | 'trust'

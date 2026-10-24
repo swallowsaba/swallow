@@ -1,7 +1,9 @@
 import { generateTerrain, type Terrain } from '@/city/terrain';
 import { applyOp, type Command } from './commands';
+import { heatOf, type HeatFields } from './heat';
 import type { World } from './types';
-import { stepDay } from './world';
+import { weekStep } from './week';
+import { stepDayView } from './world';
 
 /**
  * 模擬を動かす入れ物（docs/architecture.md 9.1）。Worker の中と、Worker を作れない時の画面の流れの、両方が同じ物を使う。
@@ -18,6 +20,8 @@ export interface StateMessage {
   /** 世界の日付（整数） */
   day: number;
   patch: WorldPatch;
+  /** 新しい週の終わりか読み込みの後に、その週のヒートマップの値（docs/ui-design.md 11.1） */
+  heat?: HeatFields;
 }
 
 const terrains = new Map<number, Terrain>();
@@ -35,6 +39,8 @@ export class SimRunner {
   private world: World;
   private seq = 0;
   private sent: Partial<World> = {};
+  /** まだ送っていないヒートマップの値 */
+  private heat: HeatFields | null = null;
 
   constructor(world: World) {
     this.world = world;
@@ -52,6 +58,8 @@ export class SimRunner {
     this.world = world;
     this.seq = seq;
     this.sent = {};
+    // 読み込んだ都市のヒートマップは、今の状態から 1 週分の途中の値を計算して作る（世界は変えない）
+    this.heat = heatOf(world, weekStep(world, terrainOf(world.city.seed), true).view);
   }
 
   apply(cmd: Command): void {
@@ -62,7 +70,11 @@ export class SimRunner {
   /** day まで 1 日ずつ進める（戻すことはしない） */
   advance(day: number): void {
     const terrain = terrainOf(this.world.city.seed);
-    while (Math.floor(this.world.city.day) < day) this.world = stepDay(this.world, terrain);
+    while (Math.floor(this.world.city.day) < day) {
+      const r = stepDayView(this.world, terrain);
+      this.world = r.world;
+      if (r.view) this.heat = heatOf(this.world, r.view);
+    }
   }
 
   /** 前に送った時から変わった所 */
@@ -79,6 +91,8 @@ export class SimRunner {
   }
 
   state(): StateMessage {
-    return { type: 'state', seq: this.seq, day: Math.floor(this.world.city.day), patch: this.patch() };
+    const heat = this.heat;
+    this.heat = null;
+    return { type: 'state', seq: this.seq, day: Math.floor(this.world.city.day), patch: this.patch(), ...(heat ? { heat } : {}) };
   }
 }

@@ -67,6 +67,8 @@ export interface WeekView {
   space: Space;
   net: Network;
   commute: Commute;
+  /** [地区 × 3 + 帯] 働く人 */
+  workers: Float64Array;
   field: LandField;
   employers: Employer[];
   /** 住宅の建物 ID → 家賃（円・月）と、層ごとの負担 */
@@ -429,7 +431,19 @@ export function weekStep(world: World, terrain: Terrain, init = false): { world:
   city = { ...city, population: Math.round(peopleAfter) };
   const employed: Record<string, number> = {};
   for (const [id, v] of employedNow) employed[id] = Math.round(v * 1e6) / 1e6;
-  const breakdown: WeeklyBreakdown = { week, factors: factors.map((r) => r.map((v) => Math.round(v * 1e6) / 1e6)), causes: topCauses, approval: approvalR };
+  // 層ごとの支持の平均（地区の支持を 18 歳以上の人数で重み付け）
+  const layerSupport = LAYERS.map((l) => {
+    let s = 0;
+    let w = 0;
+    for (const [d, a] of adultsBy) {
+      const n = a[l] as number;
+      if (n <= 0) continue;
+      s += n * ((support[d] as number[])[l] as number);
+      w += n;
+    }
+    return w > 0 ? Math.round((s / w) * 1e6) / 1e6 : -1;
+  });
+  const breakdown: WeeklyBreakdown = { week, factors: factors.map((r) => r.map((v) => Math.round(v * 1e6) / 1e6)), causes: topCauses, approval: approvalR, layers: layerSupport };
   const sample: WeeklySample = {
     week, population: city.population, funds: city.funds, treasury, approval: approvalR, jobs: Math.round(totalJobs),
     unemployment: Math.round(unemployment * 1e6) / 1e6, marks: [],
@@ -460,7 +474,7 @@ export function weekStep(world: World, terrain: Terrain, init = false): { world:
   };
   return {
     world: next,
-    view: { space, net, commute, field, employers, rent, points, population: city.population, jobs: totalJobs, unemployment, approval: approvalR, tax: income },
+    view: { space, net, commute, workers, field, employers, rent, points, population: city.population, jobs: totalJobs, unemployment, approval: approvalR, tax: income },
   };
 }
 

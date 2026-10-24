@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import explainData from '../../content/politics/explain.json';
 import namesData from '../../content/politics/names.json';
 
 /**
@@ -15,3 +16,21 @@ export const nameSchema = z.object({
 export type NameParts = z.infer<typeof nameSchema>;
 
 export const NAME_PARTS: NameParts = nameSchema.parse(namesData);
+
+/** 説明と判断の 1 行の型の文（7.6）。全ての要因と原因の種類に文がある */
+const FACTOR_IDS = ['afford', 'jobs', 'commute', 'noise', 'green', 'police', 'school', 'clinic', 'fire', 'power', 'tax', 'trust'] as const;
+const CAUSE_KINDS = ['facility', 'zone', 'building', 'road', 'decision', 'demand'] as const;
+const MEMBER_KEYS = ['gain', 'concern', 'unanswered', 'explained', 'wrong', 'pushed', 'approval', 'persuaded', 'stance'] as const;
+const text = z.string().min(1);
+const recordOf = <K extends string>(keys: readonly K[]) => z.object(Object.fromEntries(keys.map((k) => [k, text])) as Record<K, typeof text>).strict();
+
+export const explainSchema = z.object({
+  approval: z.object({ up: text, down: text, flat: text }).strict(),
+  layer: text,
+  causes: recordOf(CAUSE_KINDS),
+  factors: recordOf(FACTOR_IDS),
+  member: recordOf(MEMBER_KEYS),
+}).strict();
+export type ExplainTemplates = z.infer<typeof explainSchema>;
+
+export const EXPLAIN: ExplainTemplates = explainSchema.parse(explainData);

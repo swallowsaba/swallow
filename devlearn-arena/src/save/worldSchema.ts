@@ -47,7 +47,7 @@ export const historySchema = z.object({
   weekly: z.array(z.object({
     week: z.number().int(), population: num, funds: num, treasury: num, approval: num, jobs: num, unemployment: num, marks: z.array(z.string()),
   }).strict()),
-  breakdown: z.array(z.object({ week: z.number().int(), factors: z.array(z.array(num).length(12)).length(12), causes: z.array(causeSchema), approval: num }).strict()),
+  breakdown: z.array(z.object({ week: z.number().int(), factors: z.array(z.array(num).length(12)).length(12), causes: z.array(causeSchema), approval: num, layers: z.array(num).length(12).optional() }).strict()),
   news: z.array(z.object({
     id: z.string(), week: z.number().int(), day: num,
     kind: z.enum(['application', 'approved', 'rejected', 'appeal', 'completed', 'election', 'term-end', 'closure', 'outage', 'tax', 'petition', 'mission', 'reward', 'scandal', 'start']),

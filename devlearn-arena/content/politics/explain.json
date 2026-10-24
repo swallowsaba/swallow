@@ -1,0 +1,41 @@
+{
+  "approval": {
+    "up": "この {weeks} 週で支持率が {delta} 上がった。主な理由は、{cause}（{factor}）",
+    "down": "この {weeks} 週で支持率が {delta} 下がった。主な理由は、{cause}（{factor}）",
+    "flat": "この {weeks} 週、支持率はほぼ変わらない"
+  },
+  "layer": "特に、{layer}で {delta} {dir}",
+  "causes": {
+    "facility": "{district}の{name}",
+    "zone": "{district}の{name}",
+    "building": "{district}の{name}",
+    "road": "{district}の{name}",
+    "decision": "{name}",
+    "demand": "{name}"
+  },
+  "factors": {
+    "afford": "家賃の負担",
+    "jobs": "仕事",
+    "commute": "通勤の時間",
+    "noise": "騒音",
+    "green": "緑地",
+    "police": "治安",
+    "school": "教育",
+    "clinic": "医療",
+    "fire": "防災",
+    "power": "電力",
+    "tax": "税",
+    "trust": "市政への信頼"
+  },
+  "member": {
+    "gain": "{issue}で得るものが大きいので賛成する",
+    "concern": "{reason}の懸念が大きいので反対する",
+    "unanswered": "{reason}の懸念が大きく、公聴会で答えがなかった",
+    "explained": "{reason}について、公聴会の説明に納得した",
+    "wrong": "{reason}についての説明が誤っていて、かえって不信を持った",
+    "pushed": "{reason}は押し切られたが、懸念は残っている",
+    "approval": "市長への支持が {rate}% なので、それに合わせる",
+    "persuaded": "市長に説得されて、考えを改めた",
+    "stance": "もともと、この種の計画には {dir}の立場だ"
+  }
+}

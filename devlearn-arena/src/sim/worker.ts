@@ -1,5 +1,6 @@
 /// <reference lib="webworker" />
 import type { HostMessage } from './host';
+import { heatBuffers } from './heat';
 import { SimRunner } from './runner';
 
 /**
@@ -17,5 +18,7 @@ self.onmessage = (e: MessageEvent<HostMessage>) => {
   if (m.type === 'load') runner.load(m.world, m.seq);
   else if (m.type === 'cmd') runner.apply(m.cmd);
   else runner.advance(m.day);
-  self.postMessage(runner.state());
+  const state = runner.state();
+  // ヒートマップの値は写さずに移す
+  self.postMessage(state, state.heat ? heatBuffers(state.heat) : []);
 };
