@@ -37,6 +37,7 @@ export interface ZoneBuilding {
   kind: ZoneKind;
   zoneId: string;
   cell: number;
+  /** 地区（前の道路のマスの地区） */
   district: number;
   /** 前の道路のマス（面している道路のうち最初の 1 つ） */
   front: number;
@@ -136,7 +137,8 @@ export function spaceOf(city: City, terrain: Terrain): Space {
     if (b.level <= 1 && constructionStage(b.builtDay, city.day) !== 'done') continue;
     const front = frontRoad(b.cell.x, b.cell.y, roadKind);
     if (front < 0) continue;
-    const zb: ZoneBuilding = { building: b, kind: zone.kind, zoneId: zone.id, cell: indexOf(b.cell.x, b.cell.y), district: districtOf(b.cell.x, b.cell.y), front };
+    // 地区は前の道路のマスの地区（通勤はその道路から出る。建物のマスの地区に道路が無くても仕事に通える）
+    const zb: ZoneBuilding = { building: b, kind: zone.kind, zoneId: zone.id, cell: indexOf(b.cell.x, b.cell.y), district: districtOfIndex(front), front };
     byBuilding.set(b.id, zb);
     if (zone.kind === 'residential') residential.push(zb);
     else workplaces.push(zb);
@@ -148,7 +150,9 @@ export function spaceOf(city: City, terrain: Terrain): Space {
     const def = FACILITY_DEFS[f.type];
     if (f.state !== 'active' || !facilityFacesRoad(f, roadSet, def.group === 'facility')) continue;
     const center = facilityCenter(f);
-    const af: ActiveFacility = { facility: f, center, district: districtOf(Math.floor(center.x), Math.floor(center.y)), fronts: frontsOf(f, roadKind) };
+    const fronts = frontsOf(f, roadKind);
+    const first = fronts[0];
+    const af: ActiveFacility = { facility: f, center, district: first !== undefined ? districtOfIndex(first) : districtOf(Math.floor(center.x), Math.floor(center.y)), fronts };
     if (def.group === 'facility') facilities.push(af);
     else if (def.group === 'park') parks.push(af);
   }

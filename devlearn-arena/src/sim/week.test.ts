@@ -232,10 +232,10 @@ describe('騒音と地価（docs/game-design.md 13.4）', () => {
     expect(view.field.noise[i]).toBeCloseTo(8, 4);
     const terms = noiseTermsAt(view.field, 40, 48);
     expect(terms.map((t) => [t.source.kind, t.source.id, Math.round(t.value * 1000) / 1000])).toEqual([['building', 'b-fac', 8]]);
-    // 地価の項の合計は地価のヒートマップの値と同じ。騒音は −0.8 倍で効く
+    // 地価の項の合計は地価のヒートマップの値と同じ。騒音は −0.4 倍で効く
     const land = landTermsAt(view.space, view.field, view.commute.minutes, 40, 48, 'z-home');
     expect(land.reduce((s, t) => s + t.value, 0)).toBeCloseTo(view.field.land[i] as number, 3);
-    expect(land.find((t) => t.source.id === 'b-fac')?.value).toBeCloseTo(-6.4, 4);
+    expect(land.find((t) => t.source.id === 'b-fac')?.value).toBeCloseTo(-3.2, 4);
   });
 
   it('住宅から離して置くと、騒音は届かない', () => {
@@ -272,6 +272,22 @@ describe('雇用と通勤（docs/game-design.md 13.6）', () => {
     jobs[far * 3 + 1] = 10;
     const c2 = commuteOf(space, net, workers, jobs);
     expect(c2.unemployment[a * 3 + 1]).toBeCloseTo(0.3, 9);
+  });
+
+  it('前の道路が隣の地区にある建物も、その道路から通勤する（地区の境の y = 47 の道路と y = 48 の住宅）', () => {
+    const { world, terrain } = village();
+    const homes: Building[] = [40, 41].map((x) => ({ id: `b-h${String(x)}`, zoneId: 'z-home', cell: { x, y: 48 }, variant: 'h', level: 1, builtDay: -10 }));
+    const office: Building = { id: 'b-off', zoneId: 'z-off', cell: { x: 44, y: 46 }, variant: 'o', level: 2, builtDay: -10 };
+    const shop: Building = { id: 'b-shop', zoneId: 'z-shop', cell: { x: 45, y: 46 }, variant: 's', level: 2, builtDay: -10 };
+    const city: City = {
+      ...world.city,
+      zones: [{ id: 'z-home', kind: 'residential', cells: homes.map((h) => h.cell) }, { id: 'z-off', kind: 'office', cells: [office.cell] }, { id: 'z-shop', kind: 'commercial', cells: [shop.cell] }],
+      buildings: [...homes, office, shop],
+    };
+    expect(districtOf(40, 48)).not.toBe(districtOf(40, 47));
+    const { view } = weekStep(worldFromCity(city, terrain, NAME_PARTS), terrain);
+    expect(view.unemployment).toBe(0);
+    expect(Number.isFinite(view.commute.minutes[districtOf(40, 47)])).toBe(true);
   });
 
   it('道路の流れが容量を超えると、通勤時間が延びる', () => {

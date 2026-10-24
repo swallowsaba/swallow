@@ -90,7 +90,8 @@ export const LAND_WATER = { value: 15, range: 3 } as const;
 export const LAND_HILL_STEP = 5;
 /** 施設: Lv × 4、半径 6 マスで薄まる */
 export const LAND_FACILITY = { perLevel: 4, radius: 6 } as const;
-export const LAND_NOISE = 0.8;
+/** 騒音 × この値を地価から引く（G2 で 0.8 から下げた。docs/game-design.md 13.4） */
+export const LAND_NOISE = 0.4;
 
 /** 騒音の発生源（値・半径）。距離に比例して薄まり、半径で 0 */
 export const NOISE = {
