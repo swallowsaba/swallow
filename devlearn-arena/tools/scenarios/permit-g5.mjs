@@ -415,7 +415,12 @@ export default async function permitG5(page, shot) {
     window.__city.zoomBy(-10);
     window.__city.focusOn(50, 47);
   });
-  await closeUp(page, 50, 47, 6);
+  await closeUp(page, 50, 47, 12);
+  // 譲歩した区画の向かいの住まいを指して、値を出す（色だけに頼らない）
+  const home = await at(page, 49, 48);
+  await page.mouse.move(home.sx, home.sy, { steps: 3 });
+  await page.waitForTimeout(500);
+  console.log('指したマスの値', await page.evaluate(() => document.querySelector('[data-testid="overlay-hover"], .overlay-hover, [data-testid="heat-tip"]')?.textContent ?? null));
   await shot(`g5-effect${tag}`);
   await page.evaluate(() => window.__cityStore.getState().setOverlay(null));
 
