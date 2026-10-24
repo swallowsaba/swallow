@@ -103,6 +103,7 @@ export const applicationSchema = z.object({
   appeal: z.object({ day: num, group: groupId, resolved: z.enum(['conceded', 'capital', 'expired']).optional() }).strict().optional(),
   mods: z.record(z.string(), num),
   pendingCost: num.optional(),
+  persuaded: z.string().optional(),
 }).strict();
 
 const snapshot = z.object({ population: num, jobs: num, treasury: num, approval: num, lessonsDone: num }).strict();

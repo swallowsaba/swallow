@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { ENTRIES } from './catalog';
 import { TERMS } from './glossary';
-import { lowersMeasure, objectionTargets, POLITICS_RULES, REASONS, validateReasons } from './politics';
+import { COUNCIL, EXPLAIN, lowersMeasure, MEMBER_KEYS, objectionTargets, POLITICS_RULES, REASONS, validateCouncil, validateReasons } from './politics';
 import type { ObjectionReason } from '@/sim/types';
 
 /**
@@ -54,5 +54,32 @@ describe('反対の理由のデータ（content/politics/objections/。7.1）', 
     for (const t of ['datacenter', 'cluster', 'cloud'] as const) expect(POLITICS_RULES.facilities[t]?.powerMW).toBe(3);
     expect(POLITICS_RULES.facilities.datacenter?.traits).toEqual({ coolingWater: 0.15 });
     expect(POLITICS_RULES.facilities.park).toBeUndefined();
+  });
+});
+
+describe('議員のデータ（content/politics/council.json。7.2）', () => {
+  it('ちょうど 7 人。7 つの論点のそれぞれが、ちょうど 1 人の主な論点。口ぶりの文を使い回さない', () => {
+    expect(validateCouncil(COUNCIL)).toEqual([]);
+    expect(POLITICS_RULES.council).toBe(COUNCIL);
+  });
+
+  it('7 人が同じ顔に見えない: 名前・人柄・人の影・姿勢が違い、どの議員も 9 種の 1 行を自分の口ぶりで持つ', () => {
+    for (const key of ['name', 'profile', 'icon'] as const) expect(new Set(COUNCIL.map((m) => m[key])).size, key).toBe(7);
+    expect(new Set(COUNCIL.map((m) => m.stance)).size).toBeGreaterThanOrEqual(4);
+    for (const m of COUNCIL) expect(Object.keys(m.lines ?? {}).sort(), m.id).toEqual([...MEMBER_KEYS].sort());
+    // 共通の型の文とも同じにしない
+    const defaults = new Set(Object.values(EXPLAIN.member));
+    for (const m of COUNCIL) for (const line of Object.values(m.lines ?? {})) expect(defaults.has(line), line).toBe(false);
+  });
+
+  it('検証は誤りを見つける: 6 人・主な論点の重なり・同じ文・知らない差し込み名', () => {
+    const [a, b] = COUNCIL as [typeof COUNCIL[number], typeof COUNCIL[number]];
+    expect(validateCouncil(COUNCIL.slice(1))).toContain('議員が 6 人（ちょうど 7 人）');
+    const twice = COUNCIL.map((m) => (m.id === b.id ? { ...m, main: a.main } : m));
+    expect(validateCouncil(twice)).toContain(`論点 ${a.main} を主に見る議員が 2 人（ちょうど 1 人）`);
+    const copied = COUNCIL.map((m) => (m.id === b.id ? { ...m, lines: { ...m.lines, gain: a.lines?.gain ?? '' } } : m));
+    expect(validateCouncil(copied)).toContain(`${b.id}: gain の文が ${a.id} と同じ`);
+    const unknown = COUNCIL.map((m) => (m.id === a.id ? { ...m, lines: { ...m.lines, stance: '{name}は{dir}' } } : m));
+    expect(validateCouncil(unknown)).toContain(`${a.id}: stance に知らない差し込み名 {name}`);
   });
 });

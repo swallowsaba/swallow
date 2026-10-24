@@ -229,7 +229,15 @@ describe('版 3 → 版 4 の移行（docs/data-model.md 12 章・docs/acceptanc
           { id: 'a1', kind: 'facility', target: { type: 'web', origin: { x: 12, y: 5 }, rotation: 90 }, stage: 'objection', stageDay: 8, filedDay: 1, wallet: 'funds', reserved: 450, exception: true, objections: [{ reasonId: 'web-crowd', group: 'neighbors', district: 3, strength: 0.4125, share: 6.25, full: 12.5, basis: { value: 15, ref: 36.4 }, topLayer: 4 }, { reasonId: 'web-rent', group: 'merchants', strength: 0.2, share: 1.5, full: 3, basis: { value: 2 } }], opposition: 7.75, mods: {} },
           { id: 'a2', kind: 'facility', target: { type: 'datacenter', origin: { x: 20, y: 5 }, rotation: 0, facilityId: 'f3' }, stage: 'construction', stageDay: 28, filedDay: 0, wallet: 'funds', reserved: 650, exception: false, objections: [], opposition: 0, mods: {}, vote: { day: 28, consent: true, members: [], passed: true } },
           { id: 'a3', kind: 'rezone', target: { zone: { kind: 'industrial', cells: [{ x: 3, y: 4 }], from: 'residential' } }, stage: 'withdrawn', stageDay: 9, filedDay: 2, wallet: 'funds', reserved: 30, exception: true, objections: [], opposition: 0, mods: {}, hearing: { heldDay: 9, attended: false } },
-          { id: 'a4', kind: 'upgrade', target: { facilityId: 'f1', toLevel: 3 }, stage: 'council', stageDay: 12, filedDay: 0, wallet: 'funds', reserved: 600, exception: false, objections: [], opposition: 0, mods: {} },
+          { id: 'a4', kind: 'upgrade', target: { facilityId: 'f1', toLevel: 3 }, stage: 'council', stageDay: 12, filedDay: 0, wallet: 'funds', reserved: 600, exception: false, objections: [], opposition: 0, mods: {}, persuaded: 'kajiya' },
+          // 議会で可決し、異議申し立てで止まっている申請（採決の 7 人と、申し立てた集団）
+          {
+            id: 'a5', kind: 'facility', target: { type: 'server', origin: { x: 30, y: 5 }, rotation: 0 }, stage: 'appeal', stageDay: 42, filedDay: 3, wallet: 'funds', reserved: 460, exception: true,
+            objections: [{ reasonId: 'server-noise', group: 'neighbors', district: 2, strength: 0.6, share: 30, full: 30, basis: { value: 18 }, issue: true, layers: [0, 4], hand: { kind: 'push', capital: 6, day: 35 } }],
+            opposition: 30, mods: {}, hearing: { heldDay: 35, attended: true }, persuaded: 'shinjo',
+            vote: { day: 42, consent: false, passed: true, members: ['nadamoto', 'shiomi', 'kajiya', 'chouba', 'iwakiri', 'michishita', 'shinjo'].map((m, i) => ({ memberId: m, score: i - 3 + 0.5, yes: i >= 3, reasonKey: i >= 3 ? 'gain:tech' : 'pushed:server-noise', persuaded: m === 'shinjo' })) },
+            appeal: { day: 42, group: 'neighbors' },
+          },
         ],
       },
     };

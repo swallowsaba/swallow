@@ -174,14 +174,32 @@ export interface ObjectionReason {
   lessons: string[];
 }
 
+/** 議員の 1 行の種類（docs/content-spec.md 7.6） */
+export type MemberLineKey = 'gain' | 'concern' | 'unanswered' | 'explained' | 'wrong' | 'pushed' | 'approval' | 'persuaded' | 'stance';
+
+/** 議員（docs/content-spec.md 7.2）。content/politics/council.json のデータ */
+export interface CouncilMember {
+  id: string;
+  name: string;
+  profile: string;
+  main: IssueId;
+  second: IssueId;
+  stance: number;
+  icon: string;
+  /** その議員の口ぶりの 1 行（無い鍵は共通の型の文。docs/decisions.md C-10） */
+  lines?: Partial<Record<MemberLineKey, string>>;
+}
+
 /** 模擬が引数で受け取る市政のデータ（模擬の層は内容の置き場所を知らない） */
 export interface PoliticsRules {
   reasons: readonly ObjectionReason[];
+  /** 議員 7 人（docs/game-design.md 18 章） */
+  council: readonly CouncilMember[];
   /** 施設の電力の使用量（MW / Lv）と性質の初めの値（docs/content-spec.md 7.9） */
   facilities: Partial<Record<FacilityType, { powerMW?: number; traits?: Partial<Record<ModKey, number>> }>>;
 }
 
-export const NO_RULES: PoliticsRules = { reasons: [], facilities: {} };
+export const NO_RULES: PoliticsRules = { reasons: [], council: [], facilities: {} };
 
 export type GroupId = 'neighbors' | 'merchants' | 'environment' | 'taxpayers' | 'workers';
 export type ApplicationKind = 'facility' | 'upgrade' | 'rezone' | 'civic' | 'power' | 'reward';
@@ -241,6 +259,8 @@ export interface Application {
   mods: Record<string, number>;
   /** 譲歩の費用（可決した時に取り分けに足す。負の値は規模を小さくして下がる分。docs/game-design.md 17.1） */
   pendingCost?: number;
+  /** 採決の前に説得した議員（1 件の申請で 1 人まで。docs/game-design.md 18.2） */
+  persuaded?: string;
 }
 
 /* ---------- 11 章 市政 ---------- */

@@ -1,8 +1,9 @@
 import { z } from 'zod';
+import councilData from '../../content/politics/council.json';
 import explainData from '../../content/politics/explain.json';
 import namesData from '../../content/politics/names.json';
 import { FACILITY_DEFS } from '@/city/facilities';
-import { MOD_KEYS, type GroupId, type IssueId, type Measure, type ModKey, type ObjectionReason, type PoliticsRules } from '@/sim/types';
+import { MOD_KEYS, type CouncilMember, type GroupId, type IssueId, type Measure, type MemberLineKey, type ModKey, type ObjectionReason, type PoliticsRules } from '@/sim/types';
 import { termsIn } from './rich';
 import { domainId } from './schema';
 
@@ -24,7 +25,8 @@ export const NAME_PARTS: NameParts = nameSchema.parse(namesData);
 /** 説明と判断の 1 行の型の文（7.6）。全ての要因と原因の種類に文がある */
 const FACTOR_IDS = ['afford', 'jobs', 'commute', 'noise', 'green', 'police', 'school', 'clinic', 'fire', 'power', 'tax', 'trust'] as const;
 const CAUSE_KINDS = ['facility', 'zone', 'building', 'road', 'decision', 'demand'] as const;
-const MEMBER_KEYS = ['gain', 'concern', 'unanswered', 'explained', 'wrong', 'pushed', 'approval', 'persuaded', 'stance'] as const;
+export const MEMBER_KEYS = ['gain', 'concern', 'unanswered', 'explained', 'wrong', 'pushed', 'approval', 'persuaded', 'stance'] as const satisfies readonly MemberLineKey[];
+export const ISSUES = ['afford', 'environment', 'jobs', 'finance', 'safety', 'traffic', 'tech'] as const satisfies readonly IssueId[];
 const text = z.string().min(1);
 const recordOf = <K extends string>(keys: readonly K[]) => z.object(Object.fromEntries(keys.map((k) => [k, text])) as Record<K, typeof text>).strict();
 
@@ -34,6 +36,8 @@ export const explainSchema = z.object({
   causes: recordOf(CAUSE_KINDS),
   factors: recordOf(FACTOR_IDS),
   member: recordOf(MEMBER_KEYS),
+  /** 得の言い表し（議員の 1 行の {gain}。docs/decisions.md C-10） */
+  gains: recordOf(ISSUES),
 }).strict();
 export type ExplainTemplates = z.infer<typeof explainSchema>;
 
@@ -41,7 +45,6 @@ export const EXPLAIN: ExplainTemplates = explainSchema.parse(explainData);
 
 /* ---------- 反対の理由（7.1） ---------- */
 
-const ISSUES = ['afford', 'environment', 'jobs', 'finance', 'safety', 'traffic', 'tech'] as const satisfies readonly IssueId[];
 const GROUPS = ['neighbors', 'merchants', 'environment', 'taxpayers', 'workers'] as const satisfies readonly GroupId[];
 const stage = z.union([z.literal(1), z.literal(2), z.literal(3), z.literal(4), z.literal(5)]);
 const modsSchema = z.object(Object.fromEntries(MOD_KEYS.map((k) => [k, z.number().optional()])) as Record<ModKey, z.ZodOptional<z.ZodNumber>>).strict();
@@ -94,9 +97,54 @@ const objectionFiles = import.meta.glob<unknown>('../../content/politics/objecti
 export const REASONS: readonly ObjectionReason[] = Object.keys(objectionFiles).sort()
   .flatMap((path) => z.object({ reasons: z.array(reasonSchema) }).strict().parse(objectionFiles[path]).reasons);
 
-/** 模擬に渡す市政のデータ（理由と、施設の電力・性質） */
+/* ---------- 議員（7.2） ---------- */
+
+export const councilSchema = z.object({
+  members: z.array(z.object({
+    id: z.string().regex(/^[a-z0-9-]+$/),
+    name: text,
+    profile: text,
+    main: z.enum(ISSUES),
+    second: z.enum(ISSUES),
+    stance: z.number().int().min(-3).max(3),
+    icon: z.string().regex(/^figure-[a-z]+$/),
+    lines: z.object(Object.fromEntries(MEMBER_KEYS.map((k) => [k, text.optional()])) as Record<MemberLineKey, z.ZodOptional<typeof text>>).strict().optional(),
+  }).strict()),
+}).strict();
+
+export const COUNCIL: readonly CouncilMember[] = councilSchema.parse(councilData).members;
+
+/**
+ * 議員の検証（docs/content-spec.md 6 章）: ちょうど 7 人・7 つの論点のそれぞれが、ちょうど 1 人の主な論点・
+ * 次の論点は主な論点と違う・口ぶりの文を議員どうしで使い回さない・差し込み名は 7.6 の物だけ
+ */
+export function validateCouncil(members: readonly CouncilMember[]): string[] {
+  const out: string[] = [];
+  if (members.length !== 7) out.push(`議員が ${String(members.length)} 人（ちょうど 7 人）`);
+  for (const issue of ISSUES) {
+    const n = members.filter((m) => m.main === issue).length;
+    if (n !== 1) out.push(`論点 ${issue} を主に見る議員が ${String(n)} 人（ちょうど 1 人）`);
+  }
+  const ids = new Set<string>();
+  const seen = new Map<string, string>();
+  for (const m of members) {
+    if (ids.has(m.id)) out.push(`${m.id}: 議員の ID が重なる`);
+    ids.add(m.id);
+    if (m.second === m.main) out.push(`${m.id}: 次の論点が主な論点と同じ`);
+    for (const [k, line] of Object.entries(m.lines ?? {})) {
+      const other = seen.get(line);
+      if (other) out.push(`${m.id}: ${k} の文が ${other} と同じ`);
+      seen.set(line, m.id);
+      for (const name of line.match(/\{[a-z]+\}/g) ?? []) if (!['{issue}', '{reason}', '{gain}', '{rate}', '{dir}'].includes(name)) out.push(`${m.id}: ${k} に知らない差し込み名 ${name}`);
+    }
+  }
+  return out;
+}
+
+/** 模擬に渡す市政のデータ（理由と議員と、施設の電力・性質） */
 export const POLITICS_RULES: PoliticsRules = {
   reasons: REASONS,
+  council: COUNCIL,
   facilities: Object.fromEntries(Object.values(FACILITY_DEFS).filter((d) => d.powerMW !== undefined || d.traits).map((d) => [d.type, {
     ...(d.powerMW !== undefined ? { powerMW: d.powerMW } : {}),
     ...(d.traits ? { traits: d.traits } : {}),

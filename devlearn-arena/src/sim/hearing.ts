@@ -116,7 +116,8 @@ export function reassess(world: World, terrain: Terrain, app: Application, rules
   const objections = app.objections.map((o): ObjectionState => {
     const n = result.objections.find((x) => x.reasonId === o.reasonId);
     if (!n) return { ...o, strength: 0, full: 0, share: 0 };
-    return { ...n, share: n.full * progress, ...(o.hand ? { hand: o.hand } : {}) };
+    // 手と論点の印（公聴会に入った時に決めた）は、計算し直しても残す
+    return { ...n, share: n.full * progress, ...(o.hand ? { hand: o.hand } : {}), ...(o.issue !== undefined ? { issue: o.issue } : {}) };
   });
   return { ...app, objections, opposition: objections.reduce((a, o) => a + o.share, 0) };
 }

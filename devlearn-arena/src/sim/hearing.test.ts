@@ -4,7 +4,8 @@ import { applyOp, type Op } from './commands';
 import { closeHearing, handOptions, issuesOf, playHand, pushCost, PUSH_TRUST, WRONG_TRUST, type Hand, type SkillValues } from './hearing';
 import { previewOf } from './week';
 import { concernFactor, explainCut, PARTIAL_CUT, WRONG_RAISE } from './opposition';
-import { PROVISIONAL_PASS, STAGE_DAYS } from './permits';
+import { persuade } from './council';
+import { STAGE_DAYS } from './permits';
 import { indexOf } from './space';
 import type { Application, ObjectionReason, World } from './types';
 import { stepDay } from './world';
@@ -12,7 +13,7 @@ import { grownVillage } from './__fixtures__/cities';
 
 /**
  * 公聴会と譲歩（docs/game-design.md 17 章・docs/testing-strategy.md 10.2「公聴会」）。
- * G5 では、公聴会の後の反対率が 50% 未満なら可決、以上なら否決の仮の決まりで進める（議会の採決は G6）
+ * 公聴会の後は、議会 7 席の採決（G6。council.test.ts）で決まる
  */
 
 const GROWN = grownVillage();
@@ -90,6 +91,13 @@ describe('譲歩する（17.1）', () => {
     expect(after.opposition).toBeLessThan(before.opposition);
     expect(after.objections.reduce((a, o) => a + o.share, 0)).toBeCloseTo(after.opposition, 9);
     expect(p1?.hand).toMatchObject({ kind: 'concede', concessionId: 'dc-power-trim' });
+  });
+
+  it('手を出して計算し直しても、論点は公聴会に入った時のまま（論点の印が消えない）', () => {
+    const flags = (w: World): [string, boolean | undefined][] => appOf(w, HEARING.id).objections.map((o) => [o.reasonId, o.issue]);
+    expect(flags(HEARING.world).some(([, f]) => f === true)).toBe(true);
+    const { world } = hand(HEARING.world, 'dc-power', { kind: 'concede', concessionId: 'dc-power-trim' });
+    expect(flags(world)).toEqual(flags(HEARING.world));
   });
 
   it('1 つの論点に手は 1 つ。論点でない理由（5% 未満）には出せない', () => {
@@ -173,35 +181,43 @@ describe('押し切る（17.3）', () => {
   });
 });
 
-describe('公聴会の終わり（17.4）と、G5 の仮の決まり', () => {
-  it('公聴会を終えると議会の段へ。反対率が 50% 以上なら否決され、費用は全て戻る', () => {
-    // 反対率だけを 50% にした申請（議会の決まりを確かめる）
-    const high = { ...HEARING.world, applications: HEARING.world.applications.map((a) => (a.id === HEARING.id ? { ...a, opposition: PROVISIONAL_PASS } : a)) };
-    let w = closeHearing(high, HEARING.id, today(high));
+describe('公聴会の終わり（17.4）と議会の採決', () => {
+  it('答えずに公聴会を終えると議会の段へ。採決で否決され、費用は全て戻る', () => {
+    let w = closeHearing(HEARING.world, HEARING.id, today(HEARING.world));
     expect(appOf(w, HEARING.id)).toMatchObject({ stage: 'council', hearing: { attended: true } });
     const funds = w.city.funds;
     w = days(w, 15);
-    expect(appOf(w, HEARING.id).stage).toBe('rejected');
+    const app = appOf(w, HEARING.id);
+    expect(app.stage).toBe('rejected');
+    expect(app.vote?.members).toHaveLength(7);
+    expect(app.vote?.members.filter((m) => m.yes).length).toBeLessThan(4);
     expect(w.city.funds).toBe(funds + 650);
   });
 
-  it('スキル 0 のまま、譲歩と押し切るだけで反対率を 50% 未満にして可決させ、譲歩の費用が取り分けに足される', () => {
+  it('スキル 0 のまま、譲歩と政治資本（一番大きな論点を押し切り、1 人を説得する）で可決させ、譲歩の費用が取り分けに足される（S3）', () => {
     let w = HEARING.world;
-    const app = appOf(w, HEARING.id);
-    // 全ての論点に、requires の無い譲歩を出す
-    for (const o of issuesOf(app)) {
-      const opt = handOptions(w, appOf(w, HEARING.id), o.reasonId, {}, POLITICS_RULES);
-      const c = opt?.concessions.find((x) => x.ok);
+    const issues = [...issuesOf(appOf(w, HEARING.id))].sort((a, b) => b.share - a.share);
+    issues.forEach((o, i) => {
+      if (i === 0) {
+        w = hand(w, o.reasonId, { kind: 'push' }).world;
+        return;
+      }
+      const c = handOptions(w, appOf(w, HEARING.id), o.reasonId, {}, POLITICS_RULES)?.concessions.find((x) => x.ok && !x.concession.requires);
       if (c) w = hand(w, o.reasonId, { kind: 'concede', concessionId: c.concession.id }).world;
-    }
-    const conceded = appOf(w, HEARING.id);
-    expect(conceded.opposition).toBeLessThan(PROVISIONAL_PASS);
-    const pending = conceded.pendingCost ?? 0;
+    });
+    const pending = appOf(w, HEARING.id).pendingCost ?? 0;
+    expect(pending).toBeGreaterThan(0);
     w = closeHearing(w, HEARING.id, today(w));
+    // 反対の向きで一番 0 に近い議員を説得する（政治資本 3）
+    const r = persuade(w, POLITICS_RULES, HEARING.id, 'michishita', today(w));
+    expect(r.problem).toBeUndefined();
+    w = r.world;
     const funds = w.city.funds;
     w = days(w, 15);
     const done = appOf(w, HEARING.id);
-    expect(done.stage).toBe('construction');
+    expect(done.vote?.passed).toBe(true);
+    expect(done.vote?.members.filter((m) => m.yes).length).toBeGreaterThanOrEqual(4);
+    expect(['construction', 'appeal']).toContain(done.stage);
     expect(done.reserved).toBe(650 + pending);
     expect(w.city.funds).toBe(funds - pending);
   });

@@ -463,10 +463,12 @@ interface CouncilMember {
   second: IssueId;                // 次の論点（重み 1.5）
   stance: -3 | -2 | -1 | 0 | 1 | 2 | 3;   // 姿勢（docs/game-design.md 18.2）
   icon: string;                   // 人の影の SVG の ID（顔を描かない）
+  lines?: Partial<Record<MemberLineKey, string>>;  // その議員の口ぶりの 1 行（7.6 の member と同じ鍵と差し込み名。無い鍵は共通の型の文。docs/decisions.md C-10）
 }
 ```
 
 - `council.json` は 7 人ちょうど。7 つの論点のそれぞれが、ちょうど 1 人の `main` になる（検証）
+- `lines` の文は、議員どうしで同じ文にしない（検証）
 
 ### 7.3 請願
 
@@ -529,9 +531,13 @@ interface ExplainTemplates {
   layer: string;                                                // 「特に、{layer}で {delta} {dir}」
   causes: Record<'facility' | 'zone' | 'road' | 'building' | 'decision' | 'demand', string>;  // 原因の言い表し方（「{name}が{district}に建ったこと」）
   factors: Record<FactorId, string>;                            // 要因の名前（「騒音」「家賃の負担」）
-  member: Record<'gain' | 'concern' | 'unanswered' | 'explained' | 'wrong' | 'pushed' | 'approval' | 'persuaded' | 'stance', string>; // 議員の 1 行（docs/game-design.md 18.2）
+  member: Record<MemberLineKey, string>; // 議員の 1 行（docs/game-design.md 18.2）。議員ごとの口ぶりは 7.2 の lines
+  gains: Record<IssueId, string>;        // 得の言い表し（「雇用が {value} 人分増える」）。member の {gain} に入る（docs/decisions.md C-10）
 }
+type MemberLineKey = 'gain' | 'concern' | 'unanswered' | 'explained' | 'wrong' | 'pushed' | 'approval' | 'persuaded' | 'stance';
 ```
+
+- 議員の 1 行の差し込み名: `{issue}`（論点の名前）・`{reason}`（理由の題）・`{gain}`（得の言い表し）・`{rate}`（支持率）・`{dir}`（「賛成」か「反対」）
 
 - 数字は四捨五入した整数で入れる。全ての要因と原因の種類に文があることを検証で確かめる
 

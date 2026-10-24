@@ -232,7 +232,8 @@ describe('費用の取り分けと戻し・取り下げ・6 件まで（15.2）'
 describe('申請中の物は模擬に数えない（15.2）', () => {
   it('申請中・工事中の施設は、雇用・技術力・地価に数えず、完成した日から数える', () => {
     const { world, terrain } = rich();
-    let w = apply(world, terrain, { kind: 'zone', zone: 'residential', a: { x: 38, y: 48 }, b: { x: 45, y: 48 } });
+    // 住宅は道の向かい（北）に塗る。施設は南に置くので、住宅に接さず（用途の例外でなく）同意の案件で可決する
+    let w = apply(world, terrain, { kind: 'zone', zone: 'residential', a: { x: 38, y: 46 }, b: { x: 45, y: 46 } });
     for (let i = 0; i < 7; i += 1) w = stepDay(w, terrain);
     w = place(w, terrain, 'server');
     const id = (w.applications.at(-1) as Application).id;

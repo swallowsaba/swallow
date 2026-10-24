@@ -274,6 +274,7 @@ interface Application {
   appeal?: { day: number; group: GroupId; resolved?: 'conceded' | 'capital' | 'expired' };
   mods: Record<string, number>;          // 譲歩で変わった性質（'height': −1, 'nightNoise': 0, 'coolingWater': 0.3 など）。完成した建物に写す
   pendingCost?: number;                  // 譲歩の費用（可決した時に reserved に足す。負の値は規模を小さくして下がる分）
+  persuaded?: string;                    // 採決の前に説得した議員の ID（1 件の申請で 1 人まで。docs/game-design.md 18.2）
 }
 interface ObjectionState {
   reasonId: string;                      // content/politics/objections の理由

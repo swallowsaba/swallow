@@ -37,5 +37,14 @@
     "approval": "市長への支持が {rate}% なので、それに合わせる",
     "persuaded": "市長に説得されて、考えを改めた",
     "stance": "もともと、この種の計画には {dir}の立場だ"
+  },
+  "gains": {
+    "afford": "住まいが {value} 戸増える",
+    "environment": "緑地が {value} マス増える",
+    "jobs": "雇用が {value} 人分増える",
+    "finance": "税収が週に {value} 増える",
+    "safety": "暮らしの備えが {value} 増える",
+    "traffic": "道の流れが {value} 良くなる",
+    "tech": "技術力が {value} 上がる"
   }
 }

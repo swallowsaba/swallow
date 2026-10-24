@@ -5,6 +5,8 @@ import type { Facility, FacilityType, Point, ZoneKind } from '@/city/types';
 import { cellKey, facilityCells, roadCellsOf } from '@/city/cells';
 import { checkUpgrade, type SkillValueMap } from '@/city/upgrade';
 import { file, needsApplication, occupiedSites, permitProblems, rezoneOf, withdraw, type PermitProblem } from './permits';
+import { appealConcede, appealSuppress } from './appeal';
+import { persuade } from './council';
 import { closeHearing, playHand, type Hand } from './hearing';
 import { NO_RULES, type Application, type PoliticsRules, type World } from './types';
 
@@ -27,7 +29,13 @@ export type Op =
   /** 公聴会の論点に手を出す（受付の間は先回りの譲歩だけ。docs/game-design.md 17 章）。スキルの値は出した時の値を載せる */
   | { kind: 'hand'; applicationId: string; reasonId: string; hand: Hand; skills: SkillValueMap }
   /** 公聴会を終える（議会の採決の段へ） */
-  | { kind: 'closeHearing'; applicationId: string };
+  | { kind: 'closeHearing'; applicationId: string }
+  /** 議員を説得する（採決の前。政治資本 3。docs/game-design.md 18.2） */
+  | { kind: 'persuade'; applicationId: string; memberId: string }
+  /** 異議申し立てに、追加の譲歩で答える（docs/game-design.md 19 章） */
+  | { kind: 'appealConcede'; applicationId: string; reasonId: string; concessionId: string; skills: SkillValueMap }
+  /** 政治資本 4 で、異議申し立てを抑える */
+  | { kind: 'appealSuppress'; applicationId: string };
 
 export interface Command {
   /** 出した順の番号（画面が付ける。模擬が当てた所までを返す） */
@@ -97,6 +105,12 @@ export function applyOp(world: World, op: Op, terrain: Terrain, rules: PoliticsR
       return playHand(world, terrain, rules, op.applicationId, op.reasonId, op.hand, op.skills, day).world;
     case 'closeHearing':
       return closeHearing(world, op.applicationId, day);
+    case 'persuade':
+      return persuade(world, rules, op.applicationId, op.memberId, day).world;
+    case 'appealConcede':
+      return appealConcede(world, terrain, rules, op.applicationId, op.reasonId, op.concessionId, op.skills, day).world;
+    case 'appealSuppress':
+      return appealSuppress(world, op.applicationId, day).world;
     case 'funds':
       return { ...world, city: { ...city, funds: city.funds + op.amount } };
   }

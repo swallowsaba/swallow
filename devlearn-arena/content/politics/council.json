@@ -1,0 +1,144 @@
+{
+  "members": [
+    {
+      "id": "nadamoto",
+      "name": "灘本 千景",
+      "profile": "元 市営住宅の管理人。毎月、家賃の滞納の張り紙を貼る側にいた。声は柔らかいが、家計の数字にはうるさい",
+      "main": "afford",
+      "second": "jobs",
+      "stance": -1,
+      "icon": "figure-bun",
+      "lines": {
+        "gain": "{gain}。家計が楽になる人の顔が浮かびます。賛成します",
+        "concern": "{reason}の心配を抱えたまま暮らす人がいます。今回は反対です",
+        "unanswered": "{reason}について、公聴会で一言もありませんでした。住む人を置き去りにはできません",
+        "explained": "{reason}の説明は、住んでいる人にも分かる言葉でした。納得しました",
+        "wrong": "{reason}の説明は事実と違っていました。住む人をごまかすのは困ります",
+        "pushed": "{reason}は押し切られましたが、近所の不安は消えていません",
+        "approval": "市長の支持が {rate}% です。暮らしの声として受け止めます",
+        "persuaded": "市長が団地の集会所まで話しに来てくれました。その手間に、今回は応えます",
+        "stance": "この種の計画には、以前から{dir}です。暮らしの側から見ています"
+      }
+    },
+    {
+      "id": "shiomi",
+      "name": "汐見 律",
+      "profile": "元 高校の理科の先生。夜の浜で渡り鳥を数える会を 20 年続けている。測っていない話は信じない",
+      "main": "environment",
+      "second": "safety",
+      "stance": -2,
+      "icon": "figure-hat",
+      "lines": {
+        "gain": "{gain}。数字で見て、環境にも得があると判断した。賛成する",
+        "concern": "{reason}は測れば分かる負担だ。測らずに通すことはできない。反対",
+        "unanswered": "{reason}を誰も測らず、公聴会で答えもなかった。反対する",
+        "explained": "{reason}について、仕組みと数字の説明があった。筋が通っている",
+        "wrong": "{reason}の説明は理屈が逆だった。答案なら赤で直すところだ",
+        "pushed": "{reason}は押し切られた。だが、測った値は何も変わっていない",
+        "approval": "支持率 {rate}%。数字は数字として受け取る",
+        "persuaded": "市長が測った値の表を持って来た。一度だけ、その表に賭けてみる",
+        "stance": "この種の計画には、以前から{dir}の側に立っている"
+      }
+    },
+    {
+      "id": "kajiya",
+      "name": "鍛冶谷 剛",
+      "profile": "港の荷役から、働く人の組合の世話役になった。口癖は「で、何人雇うんだ」",
+      "main": "jobs",
+      "second": "finance",
+      "stance": 1,
+      "icon": "figure-cap",
+      "lines": {
+        "gain": "{gain}。働き口が増えるなら、文句はねえ。賛成だ",
+        "concern": "{reason}がでかすぎる。これじゃ町の連中に顔向けできねえ。反対",
+        "unanswered": "{reason}を聞かれて、市長は黙ってた。それじゃ通せねえよ",
+        "explained": "{reason}の話は分かった。ちゃんと答えたなら、こっちも筋は通す",
+        "wrong": "{reason}について、出まかせを言ったな。現場の人間はそれを一番嫌う",
+        "pushed": "{reason}は押し切られた。決まったことには従うが、腹には落ちてねえ",
+        "approval": "支持が {rate}% か。町の空気には逆らえねえな",
+        "persuaded": "市長がわざわざ組合の詰所まで来た。そこまでされちゃ、今回は乗る",
+        "stance": "こういう話には、昔から{dir}だ"
+      }
+    },
+    {
+      "id": "chouba",
+      "name": "帳場 冬子",
+      "profile": "信用金庫で 35 年、帳簿を見てきた。勘定の合わない話には、判を押さない",
+      "main": "finance",
+      "second": "afford",
+      "stance": 0,
+      "icon": "figure-long",
+      "lines": {
+        "gain": "{gain}。収支が合います。賛成いたします",
+        "concern": "{reason}の分が、帳簿のどこにも載っていません。反対です",
+        "unanswered": "{reason}についての問いに、答えがありませんでした。未処理のままでは判を押せません",
+        "explained": "{reason}の説明で、勘定が合いました。承知しました",
+        "wrong": "{reason}の説明は、数字が合っていませんでした。信用に関わります",
+        "pushed": "{reason}は押し切られました。記録には残しておきます",
+        "approval": "支持率 {rate}% も、一つの指標として加味します",
+        "persuaded": "市長から直接、返済の見通しのような話を伺いました。今回は貸しにしておきます",
+        "stance": "この手の計画には、以前から{dir}の立場です"
+      }
+    },
+    {
+      "id": "iwakiri",
+      "name": "岩切 寛",
+      "profile": "元 消防団の分団長。停電の夜に発電機を回して回った。何かあった夜のことから考える",
+      "main": "safety",
+      "second": "environment",
+      "stance": -1,
+      "icon": "figure-broad",
+      "lines": {
+        "gain": "{gain}。いざという時の備えになる。賛成します",
+        "concern": "{reason}は、何かあった夜に効いてくる。今回は反対だ",
+        "unanswered": "{reason}について、備えの話が一つもなかった。反対せざるを得ない",
+        "explained": "{reason}の段取りを聞いた。それなら現場は回る",
+        "wrong": "{reason}の説明は、現場を知らない人の話だった。危ない",
+        "pushed": "{reason}は押し切られた。当番の夜に何も起きないことを祈るよ",
+        "approval": "支持が {rate}% だ。町の人の判断も重いと思っている",
+        "persuaded": "市長が詰所まで来て、頭を下げた。今回は信じてみる",
+        "stance": "こういう計画には、もとから{dir}だ"
+      }
+    },
+    {
+      "id": "michishita",
+      "name": "道下 健吾",
+      "profile": "路線バスの運転士を 30 年。朝の 7 時半に、どの交差点が詰まるかが体で分かる",
+      "main": "traffic",
+      "second": "jobs",
+      "stance": 0,
+      "icon": "figure-short",
+      "lines": {
+        "gain": "{gain}。道が詰まらないなら、乗る人も喜ぶ。賛成",
+        "concern": "{reason}で、朝の便が遅れるのが目に見える。反対です",
+        "unanswered": "{reason}について、どの道をどう通すのか、答えがなかった",
+        "explained": "{reason}の話で、車の流れが頭に描けた。それならいい",
+        "wrong": "{reason}の説明は、道を走ったことのない人の言い方だった",
+        "pushed": "{reason}は押し切られた。ハンドルを握る身としては、まだ心配だ",
+        "approval": "支持が {rate}%。乗客の顔色みたいなものだ。合わせるよ",
+        "persuaded": "市長と朝の交差点に立った。あれを見て、今回は賛成に回る",
+        "stance": "この種の計画には、昔から{dir}でね"
+      }
+    },
+    {
+      "id": "shinjo",
+      "name": "新庄 ひかり",
+      "profile": "都会で働いた後に島へ戻り、小さなソフトウェアの会社を起こした。技術で解ける問題は、解いてから通したい",
+      "main": "tech",
+      "second": "finance",
+      "stance": 2,
+      "icon": "figure-ponytail",
+      "lines": {
+        "gain": "{gain}。町で技術を磨ける場所が増えるのは大きい。賛成です",
+        "concern": "{reason}は技術で解ける問題のはずなのに、解かれていません。今回は反対",
+        "unanswered": "{reason}を聞かれて答えられないなら、まだ設計が足りないと思います",
+        "explained": "{reason}の説明、技術的に正しかったです。そういう答えを待っていました",
+        "wrong": "{reason}の説明は、技術的に間違っています。そこは曖昧にできません",
+        "pushed": "{reason}を押し切るのは、技術の側の負けだと思います",
+        "approval": "支持率 {rate}%。町の期待として受け取ります",
+        "persuaded": "市長と一晩、構成図を囲みました。今回は乗ります",
+        "stance": "この手の計画には、もともと{dir}寄りです"
+      }
+    }
+  ]
+}

@@ -4,6 +4,8 @@ import { nextId, type ReasonCode } from '@/city/place';
 import { mergeMods, ZONE_RULES } from '@/city/rules';
 import type { City, Facility, FacilityType, Point, Zone, ZoneKind } from '@/city/types';
 import type { Terrain } from '@/city/terrain';
+import { APPEAL_DAYS, appealLayers, appealOf, EXPIRE_TRUST, moveTrust } from './appeal';
+import { voteOf } from './council';
 import { oppositionOf, risingShare } from './opposition';
 import { NO_RULES, type Application, type ApplicationStage, type PoliticsRules, type World } from './types';
 
@@ -29,8 +31,6 @@ export const RETRY_DAYS = 28;
 export const CONSENT_LIMIT = 20;
 /** 公聴会の論点に並ぶ理由の割合の下限（%。docs/game-design.md 17 章） */
 export const ISSUE_MIN_SHARE = 5;
-/** 公聴会を経た申請の仮の決まり（議会の採決は G6。docs/development-plan.md G5）: 反対率がこれ未満なら可決、以上なら否決 */
-export const PROVISIONAL_PASS = 50;
 /** 用途地域の変更が申請になる、人の住む住宅の建物からの距離（マス） */
 export const REZONE_NEAR = 3;
 /** 終わった申請を残す日数（1 任期。許認可の一覧の「終わった申請」） */
@@ -247,11 +247,13 @@ function startConstruction(city: City, app: Application, day: number): { city: C
  * - 用途地域の審査（7 日）→ 用途の例外を決め、反対の受付へ
  * - 反対の受付（14 日）→ 反対率が 20% 未満で例外でなければ同意の案件（公聴会を省く）、それ以外は公聴会
  * - 公聴会（14 日。開かずに過ぎると市長抜きで開かれ、答えなかったことになる）→ 議会の採決
- * - 議会の採決（次の議会の日）→ 可決すれば着工。G3 では反対率を 0 として全て可決する（採決と申し立ては G6）
+ * - 議会の採決（次の議会の日）→ 同意の案件は採決なしに可決。ほかは 7 人の採決（18 章。賛成 4 以上で可決）
+ * - 異議申し立て（19 章。可決した時の反対率が境以上で、押し切った・答えなかった論点がある時だけ。28 日）→ 着工
  * - 工事（大きさで決まる日数）→ 完成
  */
 export function stepApplications(world: World, day: number, terrain?: Terrain, rules: PoliticsRules = NO_RULES): World {
   let city = world.city;
+  let trust = world.sim.trust;
   let changed = false;
   /** 財政の財布の出し入れ（公共サービスなど。G9 で使う） */
   let treasuryBack = 0;
@@ -294,11 +296,11 @@ export function stepApplications(world: World, day: number, terrain?: Terrain, r
           break;
         case 'council':
           if (day >= nextCouncilDay(a.stageDay)) {
-            // 同意の案件は採決なしに可決。公聴会を経た申請は、G6 の採決までの仮の決まりで決める
+            // 同意の案件は採決なしに可決。公聴会を経た申請は、7 人の採決（18 章）
             const consent = !a.hearing && a.opposition < CONSENT_LIMIT && !a.exception;
-            const passed = consent || a.opposition < PROVISIONAL_PASS;
-            const voted: Application = { ...a, vote: { day, consent, members: [], passed } };
-            if (!passed) {
+            const vote = consent ? { day, consent: true, members: [], passed: true } : voteOf({ ...world, city, sim: { ...world.sim, trust } }, a, rules, day);
+            const voted: Application = { ...a, vote };
+            if (!vote.passed) {
               // 否決: 申請は終わり、費用は全て戻る（譲歩の費用はまだ取り分けていない）
               if (a.wallet === 'funds') city = { ...city, funds: city.funds + a.reserved };
               else treasuryBack += a.reserved;
@@ -313,11 +315,31 @@ export function stepApplications(world: World, day: number, terrain?: Terrain, r
               else treasuryBack -= extra;
               paid = { ...voted, reserved: a.reserved + extra, pendingCost: 0 };
             }
+            // 異議申し立て（19 章）: 条件を満たした時だけ立ち、28 日、着工が止まる
+            const group = consent ? null : appealOf(paid, world.politics.difficulty);
+            if (group) {
+              next = { ...paid, stage: 'appeal', stageDay: day, appeal: { day, group } };
+              break;
+            }
             const started = startConstruction(city, paid, day);
             city = started.city;
             next = started.app;
           }
           break;
+        case 'appeal': {
+          // 取り下げさせたか（追加の譲歩・政治資本）、28 日が過ぎて退けられたら着工する
+          let resolved = a.appeal?.resolved;
+          if (!resolved && elapsed >= APPEAL_DAYS) {
+            resolved = 'expired';
+            trust = moveTrust(trust, appealLayers(a), EXPIRE_TRUST);
+          }
+          if (resolved) {
+            const started = startConstruction(city, { ...a, appeal: { ...(a.appeal as NonNullable<Application['appeal']>), resolved } }, day);
+            city = started.city;
+            next = started.app;
+          }
+          break;
+        }
         case 'construction':
           if (elapsed >= buildDaysOf(a)) {
             if (a.kind === 'upgrade') {
@@ -344,7 +366,8 @@ export function stepApplications(world: World, day: number, terrain?: Terrain, r
   const kept = apps.filter((a) => isOpen(a) || day - a.stageDay <= KEEP_FINISHED_DAYS);
   if (!changed && kept.length === apps.length) return world;
   const budget = treasuryBack !== 0 ? { ...world.budget, treasury: world.budget.treasury + treasuryBack } : world.budget;
-  return { ...world, city, budget, applications: kept };
+  const sim = trust !== world.sim.trust ? { ...world.sim, trust } : world.sim;
+  return { ...world, city, sim, budget, applications: kept };
 }
 
 /** 段階の残りの日数（議会は次の議会の日まで。公聴会は最大の日数まで） */
