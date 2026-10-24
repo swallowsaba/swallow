@@ -76,6 +76,25 @@ describe('家賃と手頃さ（docs/game-design.md 13.5）', () => {
     expect(nextRentFactor(1.31, 0.03)).toBeCloseTo(1.32, 6);
   });
 
+  it('仕事に引かれて入る世帯は、空いた仕事の収入の帯の人（オフィスの仕事だけなら、低の帯は初めの分布より少ない）', () => {
+    const { world, terrain } = village();
+    const homes: Building[] = [40, 41, 42, 43].map((x) => ({ id: `b-h${String(x)}`, zoneId: 'z-home', cell: { x, y: 48 }, variant: 'h', level: 2, builtDay: -10 }));
+    const office: Building = { id: 'b-off', zoneId: 'z-off', cell: { x: 46, y: 48 }, variant: 'o', level: 3, builtDay: -10 };
+    const city: City = { ...world.city, zones: [{ id: 'z-home', kind: 'residential', cells: homes.map((h) => h.cell) }, { id: 'z-off', kind: 'office', cells: [office.cell] }], buildings: [...homes, office] };
+    const empty: World = { ...worldFromCity(city, terrain, NAME_PARTS), sim: { ...worldFromCity(city, terrain, NAME_PARTS).sim, households: {} } };
+    const after = weekStep(empty, terrain).world;
+    let low = 0;
+    let all = 0;
+    for (const hh of Object.values(after.sim.households)) {
+      hh.forEach((v, l) => {
+        all += v;
+        if (l % 3 === 0) low += v;
+      });
+    }
+    expect(all).toBeGreaterThan(0);
+    expect(low / all).toBeLessThan(0.3);
+  });
+
   it('戸数は住宅の CAPACITY を 1 世帯 2.3 人で割った数', () => {
     expect(unitsOf({ level: 1 })).toBeCloseTo(8 / 2.3, 6);
     expect(unitsOf({ level: 2 })).toBeCloseTo(40 / 2.3, 6);

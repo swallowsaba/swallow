@@ -3,7 +3,7 @@
 //   SHOOT_SCRIPT=tools/scenarios/town.mjs npm run shoot -- p2-town
 //
 // 建設メニューを押し、道路をドラッグで引き、区画を塗り、施設と公園を置く。
-// 時間だけは都市の時計を早回しする（1 日 = 4 秒を待たずに、同じ計算で日付を進める）。
+// 時間だけは都市の時計を早回しする（1 日 = 2 秒を待たずに、同じ計算で日付を進める）。
 
 import { fundBy } from './learning.mjs';
 
@@ -47,8 +47,19 @@ export async function facility(page, type, cell, turns = 0) {
   for (let i = 0; i < (4 - turns) % 4; i += 1) await page.keyboard.press('r');
 }
 
+/**
+ * 都市の時計を n 日進める（1 倍で 1 日 2 秒。docs/game-design.md 13.1）。
+ * 模擬は Worker で動くので、進めた日まで模擬が追いつくのを待つ
+ */
 export async function days(page, n) {
-  await page.evaluate((d) => window.__cityStore.getState().tick(d * 4), n);
+  const target = await page.evaluate((d) => {
+    const s = window.__cityStore.getState();
+    if (s.paused) s.togglePause();
+    const to = Math.floor(s.city.day + d);
+    s.tick((d * 2) / s.speed);
+    return to;
+  }, n);
+  await page.waitForFunction((t) => window.__cityStore.getState().world.city.day >= t, target, { timeout: 60000 });
   await page.waitForTimeout(200);
 }
 

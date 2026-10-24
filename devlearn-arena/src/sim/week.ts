@@ -5,7 +5,7 @@ import { employersOf, salesOf, settleBusinesses, type Employer } from './busines
 import { commuteOf, type Commute } from './commute';
 import { landFieldOf, landTermsAt, noiseTermsAt, parkAt, type LandField, type Source } from './land';
 import {
-  adultsOf, FACTOR_COUNT, FACTORS, incomeOf, incomeYenOf, LAYER_COUNT, LAYER_SHARE, LAYERS, MEAN_HOUSEHOLD_SIZE, MONTHLY_INCOME, sizeOf, WEIGHTS,
+  adultsOf, AGE_SHARE, ageOf, FACTOR_COUNT, FACTORS, INCOME_SHARE, incomeOf, incomeYenOf, LAYER_COUNT, LAYER_SHARE, LAYERS, MONTHLY_INCOME, sizeOf, WEIGHTS,
   workersOf, type FactorId,
 } from './layers';
 import { networkOf, type Network } from './network';
@@ -350,7 +350,18 @@ export function weekStep(world: World, terrain: Terrain, init = false): { world:
       }
       attraction = s / space.residential.length;
     }
-    let incoming = Math.max(0, openJobs * 1.2 + attraction * 2) / MEAN_HOUSEHOLD_SIZE;
+    // 入る人の数 = 空いた仕事 × 1.2 + 魅力 × 2（23 章の住宅の需要の項）。
+    // 仕事に引かれて来る人は、空いた仕事の収入の帯の人（13.6: 収入の帯の合う仕事に入る）。魅力に引かれて来る人は初めの分布
+    const people = Math.max(0, openJobs * 1.2 + attraction * 2);
+    const openByBand = [0, 0, 0];
+    for (let i = 0; i < jobs.length; i += 1) openByBand[i % 3] = (openByBand[i % 3] as number) + (jobs[i] as number) * (1 - (commute.fill[i] as number));
+    const pull = openByBand.map((o, b) => o * 1.2 + Math.max(0, attraction * 2) * (INCOME_SHARE[b] as number));
+    const pullSum = pull.reduce((s, v) => s + v, 0);
+    const newcomer = LAYERS.map((l) => (pullSum > 0 ? (pull[incomeOf(l)] as number) / pullSum : (INCOME_SHARE[incomeOf(l)] as number)) * (AGE_SHARE[ageOf(l)] as number));
+    const meanSize = LAYERS.reduce((s, l) => s + (newcomer[l] as number) * sizeOf(l), 0);
+    /** 層ごとに、この週に入る世帯の数 */
+    const quota = newcomer.map((share) => (meanSize > 0 ? (people / meanSize) * share : 0));
+    let incoming = quota.reduce((s, v) => s + v, 0);
     const order = space.residential
       .map((zb) => {
         const rows = points.get(zb.building.id) as number[][];
@@ -364,11 +375,15 @@ export function weekStep(world: World, terrain: Terrain, init = false): { world:
       const room = unitsOf(zb.building) - hh.reduce((s, v) => s + v, 0);
       if (room <= 1e-9) continue;
       const burden = (rent.get(zb.building.id) as { burden: number[] }).burden;
-      const can = LAYERS.filter((l) => (burden[l] as number) <= BURDEN_LIVABLE);
-      const shareSum = can.reduce((s, l) => s + (LAYER_SHARE[l] as number), 0);
-      if (shareSum <= 0) continue;
-      const take = Math.min(room, incoming);
-      for (const l of can) hh[l] = (hh[l] as number) + (take * (LAYER_SHARE[l] as number)) / shareSum;
+      const can = LAYERS.filter((l) => (burden[l] as number) <= BURDEN_LIVABLE && (quota[l] as number) > 1e-9);
+      const left = can.reduce((s, l) => s + (quota[l] as number), 0);
+      if (left <= 1e-9) continue;
+      const take = Math.min(room, left);
+      for (const l of can) {
+        const n = (take * (quota[l] as number)) / left;
+        hh[l] = (hh[l] as number) + n;
+        quota[l] = (quota[l] as number) - n;
+      }
       incoming -= take;
     }
   }
