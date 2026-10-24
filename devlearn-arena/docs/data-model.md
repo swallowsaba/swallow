@@ -280,6 +280,9 @@ interface ObjectionState {
   district?: number;                     // 近隣の住民の時、地区の番号
   strength: number;                      // 0〜1（docs/game-design.md 16.2）
   share: number;                         // 反対率の内訳（%）。全ての理由の合計が opposition
+  full: number;                          // 反対の受付が終わった時の割合（%）。受付の間は share がここへ日ごとに直線で上がる
+  basis: { value: number; ref?: number };  // 強さの元になった模擬の値と、比べた値（申請の詳細に出す。docs/ui-design.md 10.2 の 3）
+  topLayer?: number;                     // この理由の反対で一番多い層（0〜11。申請の詳細の「多い層」）
   hand?:
     | { kind: 'concede'; concessionId: string; day: number }
     | { kind: 'explain'; explanationId: string; quality: 'sound' | 'partial' | 'wrong'; day: number }
