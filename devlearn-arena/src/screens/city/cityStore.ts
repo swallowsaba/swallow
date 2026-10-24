@@ -9,7 +9,7 @@ import type { Terrain } from '@/city/terrain';
 import type { City, Facility, FacilityType, ZoneKind } from '@/city/types';
 import { FACILITY_DEFS } from '@/city/facilities';
 import { checkUpgrade } from '@/city/upgrade';
-import { EXPLAIN, NAME_PARTS } from '@/content/politics';
+import { EXPLAIN, NAME_PARTS, POLITICS_RULES } from '@/content/politics';
 import { explainApproval } from '@/sim/explain';
 import { applicationName, daysLeft, daysToComplete, isReviewing } from '@/sim/permits';
 import type { HeatFields, HeatKind } from '@/sim/heat';
@@ -219,7 +219,7 @@ export function createCityStore(seed?: number, initial?: City, options: CityStor
       requested = Math.floor(clock);
       acked = requested;
       set({ world: w, city: w.city });
-      host.post({ type: 'load', world: w, seq });
+      host.post({ type: 'load', world: w, seq, rules: POLITICS_RULES });
     };
     return {
       city: startWorld.city,
@@ -359,7 +359,7 @@ export function createCityStore(seed?: number, initial?: City, options: CityStor
       stop: () => host.stop(),
     };
   });
-  host.post({ type: 'load', world: startWorld, seq: 0 });
+  host.post({ type: 'load', world: startWorld, seq: 0, rules: POLITICS_RULES });
   return store;
 }
 

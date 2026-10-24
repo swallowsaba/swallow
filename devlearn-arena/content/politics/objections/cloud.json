@@ -1,0 +1,53 @@
+{
+  "reasons": [
+    {
+      "id": "cloud-night-noise",
+      "title": "夜通しの冷却の音",
+      "targets": ["cloud", "upgrade:cloud"],
+      "group": "neighbors",
+      "issue": "environment",
+      "measure": { "kind": "noise", "night": true },
+      "radius": 3,
+      "misconception": 0.2,
+      "claim": "よその町の仕事まで引き受けて、一年中、夜も冷却が止まらない。夜に静かになる時間が無くなる。",
+      "concessions": [
+        { "id": "cloud-night-move", "label": "夜の重い処理は、ほかの地域の設備へ回して受け持つ", "mods": { "nightNoise": 0.2, "tech": 0.8 } },
+        { "id": "cloud-wall", "label": "冷却塔を地下の機械室へ移す", "mods": { "noise": 0.5 }, "cost": { "ratio": 0.25 } }
+      ],
+      "explanations": [],
+      "lessons": ["cloud.b.03", "cloud.i.01"]
+    },
+    {
+      "id": "cloud-power",
+      "title": "電力の逼迫",
+      "targets": ["cloud", "upgrade:cloud"],
+      "group": "neighbors",
+      "issue": "safety",
+      "measure": { "kind": "power" },
+      "radius": 6,
+      "misconception": 0.3,
+      "claim": "クラウドの建物はデータセンターを何棟も並べた物だ。島の電気の多くを一つの施設が使うことになる。",
+      "concessions": [
+        { "id": "cloud-power-phase", "label": "設備は需要に合わせて段階的に入れ、最初の規模を小さくする", "mods": { "power": 0.6, "tech": 0.8 }, "cost": { "ratio": -0.15 } }
+      ],
+      "explanations": [],
+      "lessons": ["cloud.b.01", "cloud.i.04"]
+    },
+    {
+      "id": "cloud-jobs",
+      "title": "雇用が少ない",
+      "targets": ["cloud", "upgrade:cloud"],
+      "group": "neighbors",
+      "issue": "jobs",
+      "measure": { "kind": "jobs-density" },
+      "radius": 5,
+      "misconception": 0.4,
+      "claim": "運用はよその町から遠隔でするので、ここで働く人はほとんどいないのではないか。",
+      "concessions": [
+        { "id": "cloud-jobs-desk", "label": "利用者の相談窓口と技術者の育成の場を市内に置く", "mods": { "jobs": 1.6 }, "cost": { "ratio": 0.15 } }
+      ],
+      "explanations": [],
+      "lessons": ["cloud.b.02", "cloud.i.03"]
+    }
+  ]
+}

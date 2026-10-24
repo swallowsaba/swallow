@@ -120,6 +120,69 @@ export interface SimHistory {
 
 /* ---------- 10 章 申請と審議 ---------- */
 
+/** 議員が見る論点（docs/game-design.md 18.1） */
+export type IssueId = 'afford' | 'environment' | 'jobs' | 'finance' | 'safety' | 'traffic' | 'tech';
+
+/** 譲歩で変えられる性質（docs/content-spec.md 7.1.1） */
+export const MOD_KEYS = ['height', 'noise', 'nightNoise', 'traffic', 'tech', 'jobs', 'power', 'coolingWater', 'green', 'units'] as const;
+export type ModKey = (typeof MOD_KEYS)[number];
+
+/** 理由の強さの計算（docs/game-design.md 16.2） */
+export type Measure =
+  | { kind: 'noise'; night?: boolean }
+  | { kind: 'power' }
+  | { kind: 'jobs-density' }
+  | { kind: 'sunlight' }
+  | { kind: 'traffic' }
+  | { kind: 'rent' }
+  | { kind: 'trait'; trait: ModKey }
+  | { kind: 'service-load'; service: 'police' | 'fire' | 'school' | 'clinic' }
+  | { kind: 'cost' };
+
+export interface Concession {
+  id: string;
+  label: string;
+  mods: Partial<Record<ModKey, number>>;
+  cost?: { ratio?: number; fixed?: number };
+  loss?: string;
+  requires?: { domain: DomainId; stage: 1 | 2 | 3 | 4 | 5 };
+}
+
+export interface Explanation {
+  id: string;
+  domain: DomainId;
+  stage: 1 | 2 | 3 | 4 | 5;
+  text: string;
+  quality: 'sound' | 'partial' | 'wrong';
+  why: string;
+  lesson?: string;
+}
+
+/** 反対の理由（docs/content-spec.md 7.1）。content/politics/objections/ のデータ */
+export interface ObjectionReason {
+  id: string;
+  title: string;
+  targets: string[];
+  group: GroupId;
+  issue: IssueId;
+  measure: Measure;
+  radius?: number;
+  misconception: number;
+  claim: string;
+  concessions: Concession[];
+  explanations: Explanation[];
+  lessons: string[];
+}
+
+/** 模擬が引数で受け取る市政のデータ（模擬の層は内容の置き場所を知らない） */
+export interface PoliticsRules {
+  reasons: readonly ObjectionReason[];
+  /** 施設の電力の使用量（MW / Lv）と性質の初めの値（docs/content-spec.md 7.9） */
+  facilities: Partial<Record<FacilityType, { powerMW?: number; traits?: Partial<Record<ModKey, number>> }>>;
+}
+
+export const NO_RULES: PoliticsRules = { reasons: [], facilities: {} };
+
 export type GroupId = 'neighbors' | 'merchants' | 'environment' | 'taxpayers' | 'workers';
 export type ApplicationKind = 'facility' | 'upgrade' | 'rezone' | 'civic' | 'power' | 'reward';
 export type ApplicationStage = 'filed' | 'zoning' | 'objection' | 'hearing' | 'council' | 'appeal' | 'construction' | 'done' | 'rejected' | 'withdrawn';
@@ -130,6 +193,12 @@ export interface ObjectionState {
   district?: number;
   strength: number;
   share: number;
+  /** 反対の受付が終わった時の割合（%）。受付の間は share がここへ日ごとに直線で上がる */
+  full: number;
+  /** 強さの元になった模擬の値（value）と、比べた値（ref。電力の余り・都市の平均など） */
+  basis: { value: number; ref?: number };
+  /** この理由の反対で一番多い層（層の番号） */
+  topLayer?: number;
   hand?:
     | { kind: 'concede'; concessionId: string; day: number }
     | { kind: 'explain'; explanationId: string; quality: 'sound' | 'partial' | 'wrong'; day: number }

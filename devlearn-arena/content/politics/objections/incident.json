@@ -1,0 +1,35 @@
+{
+  "reasons": [
+    {
+      "id": "inc-rush",
+      "title": "夜中の駆けつけ",
+      "targets": ["incident", "upgrade:incident"],
+      "group": "neighbors",
+      "issue": "traffic",
+      "measure": { "kind": "traffic" },
+      "radius": 4,
+      "misconception": 0.6,
+      "claim": "障害が起きるたびに、夜中でも人が車で駆けつけて集まる。いつ騒がしくなるか分からず落ち着かない。",
+      "concessions": [
+        { "id": "inc-remote", "label": "離れた所から調べて直せる手順を整え、集まる人数を絞る", "mods": { "traffic": 0.5, "jobs": 0.9 } }
+      ],
+      "explanations": [],
+      "lessons": ["trouble.b.01", "trouble.i.01"]
+    },
+    {
+      "id": "inc-cost",
+      "title": "費用",
+      "targets": ["incident", "upgrade:incident"],
+      "group": "taxpayers",
+      "issue": "finance",
+      "measure": { "kind": "cost" },
+      "misconception": 0.5,
+      "claim": "障害は起きない方がよいのに、起きた時のためだけの建物を建てるのはもったいない。",
+      "concessions": [
+        { "id": "inc-small", "label": "監視・運用センターの中に小さな対応室を置く形から始める", "mods": { "height": -1, "tech": 0.85 }, "cost": { "ratio": -0.25 } }
+      ],
+      "explanations": [],
+      "lessons": ["trouble.b.01", "trouble.a.03"]
+    }
+  ]
+}

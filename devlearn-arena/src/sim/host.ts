@@ -1,6 +1,6 @@
 import type { Command } from './commands';
 import { SimRunner, type StateMessage } from './runner';
-import type { World } from './types';
+import type { PoliticsRules, World } from './types';
 
 /**
  * 画面から模擬を動かす口（docs/architecture.md 9.1）。
@@ -9,7 +9,7 @@ import type { World } from './types';
  */
 
 export type HostMessage =
-  | { type: 'load'; world: World; seq: number }
+  | { type: 'load'; world: World; seq: number; rules?: PoliticsRules }
   | { type: 'cmd'; cmd: Command }
   | { type: 'advance'; day: number };
 
@@ -31,7 +31,7 @@ export function directHost(): SimHost {
     post: (m) => {
       if (m.type === 'load') {
         runner ??= new SimRunner(m.world);
-        runner.load(m.world, m.seq);
+        runner.load(m.world, m.seq, m.rules);
       }
       if (!runner) return;
       if (m.type === 'cmd') runner.apply(m.cmd);

@@ -1,0 +1,37 @@
+{
+  "reasons": [
+    {
+      "id": "cluster-heat-noise",
+      "title": "排熱の音",
+      "targets": ["cluster", "upgrade:cluster"],
+      "group": "neighbors",
+      "issue": "environment",
+      "measure": { "kind": "noise", "night": true },
+      "radius": 3,
+      "misconception": 0.2,
+      "claim": "何十台もの {{term:k8s-node}} が昼も夜も動き、屋上の排熱の装置が一晩中うなる。夜に処理の量が減っても、機械は止めないと聞いた。",
+      "concessions": [
+        { "id": "cluster-night-scale", "label": "夜は動かす機械の台数を減らし、使わない機械は電源を落とす", "mods": { "nightNoise": 0.3, "power": 0.85, "tech": 0.85 } },
+        { "id": "cluster-wall", "label": "排熱の装置を敷地の奥へ移し、防音の壁で囲う", "mods": { "noise": 0.5 }, "cost": { "ratio": 0.2 } }
+      ],
+      "explanations": [],
+      "lessons": ["k8s.b.03", "k8s.i.06"]
+    },
+    {
+      "id": "cluster-power",
+      "title": "電力の逼迫",
+      "targets": ["cluster", "upgrade:cluster"],
+      "group": "neighbors",
+      "issue": "safety",
+      "measure": { "kind": "power" },
+      "radius": 6,
+      "misconception": 0.3,
+      "claim": "台数を自動で増やす仕組みだと聞いた。処理が増えるたびに電気の使う量が勝手に増え、町の電気が先に足りなくなる。",
+      "concessions": [
+        { "id": "cluster-power-cap", "label": "自動で増やす台数に上限を決め、電気の余りを見て増やす", "mods": { "power": 0.6, "tech": 0.85 } }
+      ],
+      "explanations": [],
+      "lessons": ["k8s.i.06", "k8s.i.07"]
+    }
+  ]
+}

@@ -23,6 +23,10 @@ export interface FacilityDef {
   minStage: 1 | 2 | 3 | 4 | 5;
   /** Lv が上がると加わる見た目（docs/city-design.md 4 章。[0] が Lv1 の姿） */
   looks?: string[];
+  /** 使う電力（MW / Lv。docs/game-design.md 24.1・docs/content-spec.md 7.9） */
+  powerMW?: number;
+  /** 譲歩で変えられる性質の初めの値（Lv を掛けて使う。docs/content-spec.md 7.1.1） */
+  traits?: { coolingWater?: number };
 }
 
 export type FacilityShelf = 'base' | 'dev' | 'ops';
@@ -50,6 +54,8 @@ const schema = z.object({
     cost: z.number().int().min(0),
     minStage: z.union([z.literal(1), z.literal(2), z.literal(3), z.literal(4), z.literal(5)]),
     looks: z.array(z.string().min(1)).min(2).optional(),
+    powerMW: z.number().min(0).optional(),
+    traits: z.object({ coolingWater: z.number().min(0).max(1).optional() }).strict().optional(),
   })),
 });
 

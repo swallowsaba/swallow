@@ -1,0 +1,35 @@
+{
+  "reasons": [
+    {
+      "id": "devops-jobs",
+      "title": "自動化で仕事が減る",
+      "targets": ["devops", "upgrade:devops"],
+      "group": "neighbors",
+      "issue": "jobs",
+      "measure": { "kind": "jobs-density" },
+      "radius": 5,
+      "misconception": 0.6,
+      "claim": "自動化を広める本部だと聞いた。町の会社で人がしていた作業が機械に置き換わり、働き口が減るのではないか。",
+      "concessions": [
+        { "id": "devops-jobs-reskill", "label": "自動化で手の空いた人が次の仕事を学べる講座を開き、受講した人を雇う", "mods": { "jobs": 1.6 }, "cost": { "ratio": 0.15 } }
+      ],
+      "explanations": [],
+      "lessons": ["devops.b.01", "devops.b.02"]
+    },
+    {
+      "id": "devops-cost",
+      "title": "費用",
+      "targets": ["devops", "upgrade:devops"],
+      "group": "taxpayers",
+      "issue": "finance",
+      "measure": { "kind": "cost" },
+      "misconception": 0.5,
+      "claim": "仕組みと文化を変える本部と言われても、何に資金を使うのかが見えない。建物より先にやることがある。",
+      "concessions": [
+        { "id": "devops-small", "label": "建物は小さくし、まず 1 つの部署で試してから広げる", "mods": { "height": -1, "tech": 0.85 }, "cost": { "ratio": -0.2 } }
+      ],
+      "explanations": [],
+      "lessons": ["devops.b.01"]
+    }
+  ]
+}

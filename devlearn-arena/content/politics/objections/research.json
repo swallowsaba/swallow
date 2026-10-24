@@ -1,0 +1,51 @@
+{
+  "reasons": [
+    {
+      "id": "research-rent",
+      "title": "家賃の上がり方",
+      "targets": ["research", "upgrade:research"],
+      "group": "neighbors",
+      "issue": "afford",
+      "measure": { "kind": "rent" },
+      "radius": 5,
+      "misconception": 0.3,
+      "claim": "研究所ができると、周りの土地の値が上がり、古い借家の家賃も上がる。今の暮らしのままでは住み続けられない人が出る。",
+      "concessions": [
+        { "id": "research-low", "label": "建物を 1 段低くし、最初の規模を抑える", "mods": { "height": -1, "tech": 0.85 } }
+      ],
+      "explanations": [],
+      "lessons": ["lab.a.03", "lab.i.01"]
+    },
+    {
+      "id": "research-trucks",
+      "title": "搬入のトラック",
+      "targets": ["research", "upgrade:research"],
+      "group": "neighbors",
+      "issue": "traffic",
+      "measure": { "kind": "traffic" },
+      "radius": 5,
+      "misconception": 0.3,
+      "claim": "機材と試料を運ぶトラックが昼夜を問わず出入りし、子どもの通学路を横切る。",
+      "concessions": [
+        { "id": "research-trucks-day", "label": "搬入は昼の時間に限り、裏の道から入れる", "mods": { "traffic": 0.6 }, "cost": { "ratio": 0.05 } }
+      ],
+      "explanations": [],
+      "lessons": ["lab.a.03"]
+    },
+    {
+      "id": "research-cost",
+      "title": "費用",
+      "targets": ["research", "upgrade:research"],
+      "group": "taxpayers",
+      "issue": "finance",
+      "measure": { "kind": "cost" },
+      "misconception": 0.4,
+      "claim": "何を研究して、町に何が返ってくるのかが分からない。成果が見えないまま大きな額を使うのは困る。",
+      "concessions": [
+        { "id": "research-phase", "label": "実験棟は後に回し、最初は展示と試作の小さな建物で始める", "mods": { "height": -1, "tech": 0.8 }, "cost": { "ratio": -0.25 } }
+      ],
+      "explanations": [],
+      "lessons": ["lab.a.03"]
+    }
+  ]
+}

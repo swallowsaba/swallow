@@ -1,0 +1,36 @@
+{
+  "reasons": [
+    {
+      "id": "net-tower",
+      "title": "鉄塔と電波",
+      "targets": ["network", "upgrade:network"],
+      "group": "neighbors",
+      "issue": "environment",
+      "measure": { "kind": "sunlight" },
+      "radius": 3,
+      "misconception": 0.6,
+      "claim": "家のすぐ横に鉄塔とアンテナが立ち、窓からの空がふさがれる。電波が体に悪いのではないかと心配する人も多い。",
+      "concessions": [
+        { "id": "net-tower-roof", "label": "鉄塔をやめ、アンテナを局舎の屋上に低く付ける（届く範囲は狭くなる）", "mods": { "height": -1, "tech": 0.9 } }
+      ],
+      "explanations": [],
+      "lessons": ["net.b.01", "net.b.02"]
+    },
+    {
+      "id": "net-roadworks",
+      "title": "ケーブル工事と車",
+      "targets": ["network", "upgrade:network"],
+      "group": "merchants",
+      "issue": "traffic",
+      "measure": { "kind": "traffic" },
+      "radius": 5,
+      "misconception": 0.3,
+      "claim": "光ケーブルを引くたびに店の前の道路を掘り返され、点検の車が路上に止まる。客が来にくくなる。",
+      "concessions": [
+        { "id": "net-roadworks-duct", "label": "今ある電柱と地中の管にケーブルを通し、新しく道路を掘らない", "mods": { "traffic": 0.5 }, "cost": { "ratio": 0.1 } }
+      ],
+      "explanations": [],
+      "lessons": ["net.b.01", "net.i.01"]
+    }
+  ]
+}

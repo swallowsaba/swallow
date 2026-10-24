@@ -1,0 +1,52 @@
+{
+  "reasons": [
+    {
+      "id": "academy-traffic",
+      "title": "通学の車と人",
+      "targets": ["academy", "upgrade:academy"],
+      "group": "neighbors",
+      "issue": "traffic",
+      "measure": { "kind": "traffic" },
+      "radius": 6,
+      "misconception": 0.3,
+      "claim": "朝と夕方に学生と送り迎えの車が一度に押し寄せ、家の前の細い道が通れなくなる。",
+      "concessions": [
+        { "id": "academy-bus", "label": "送迎のバスを出し、車での通学を認めない", "mods": { "traffic": 0.5 }, "cost": { "ratio": 0.15 } },
+        { "id": "academy-online", "label": "講義の半分を自宅から受けられる形にする（教室での実習は減る）", "mods": { "traffic": 0.6, "tech": 0.9 } }
+      ],
+      "explanations": [],
+      "lessons": ["found.b.07", "found.b.01"]
+    },
+    {
+      "id": "academy-sunlight",
+      "title": "日照",
+      "targets": ["academy", "upgrade:academy"],
+      "group": "neighbors",
+      "issue": "environment",
+      "measure": { "kind": "sunlight" },
+      "radius": 2,
+      "misconception": 0.1,
+      "claim": "3 階建ての校舎と時計塔が南に建つと、冬の午後には庭と 1 階の窓に日が当たらなくなる。",
+      "concessions": [
+        { "id": "academy-low", "label": "時計塔をやめ、校舎を 1 段低くする", "mods": { "height": -1, "tech": 0.9 } }
+      ],
+      "explanations": [],
+      "lessons": ["found.b.01"]
+    },
+    {
+      "id": "academy-cost",
+      "title": "費用",
+      "targets": ["academy", "upgrade:academy"],
+      "group": "taxpayers",
+      "issue": "finance",
+      "measure": { "kind": "cost" },
+      "misconception": 0.4,
+      "claim": "学院に資金を使うより、すぐ役に立つ道路や住まいに回すべきだ。卒業した人が市内で働く見込みも示されていない。",
+      "concessions": [
+        { "id": "academy-small", "label": "最初は校舎だけで始め、講堂は後に回す", "mods": { "height": -1, "tech": 0.85 }, "cost": { "ratio": -0.25 } }
+      ],
+      "explanations": [],
+      "lessons": ["found.b.01"]
+    }
+  ]
+}

@@ -1,0 +1,35 @@
+{
+  "reasons": [
+    {
+      "id": "sec-shift",
+      "title": "夜通しの出入り",
+      "targets": ["security", "upgrade:security"],
+      "group": "neighbors",
+      "issue": "traffic",
+      "measure": { "kind": "traffic" },
+      "radius": 4,
+      "misconception": 0.5,
+      "claim": "24 時間の監視で、夜中も交代の人と車が出入りする。攻撃の的になって、近所まで巻き込まれるのではないかとも心配だ。",
+      "concessions": [
+        { "id": "sec-shift-merge", "label": "交代を朝と夕方の 2 回にまとめ、車は敷地の奥に止める", "mods": { "traffic": 0.6 } }
+      ],
+      "explanations": [],
+      "lessons": ["sec.b.01", "sec.a.03"]
+    },
+    {
+      "id": "sec-cost",
+      "title": "費用",
+      "targets": ["security", "upgrade:security"],
+      "group": "taxpayers",
+      "issue": "finance",
+      "measure": { "kind": "cost" },
+      "misconception": 0.5,
+      "claim": "守る仕組みに資金をかけても、何も起きなければ成果が目に見えない。本当に要るのか分からない。",
+      "concessions": [
+        { "id": "sec-small", "label": "最初は小さな監視室から始め、人と機材は段階的に増やす", "mods": { "height": -1, "tech": 0.85 }, "cost": { "ratio": -0.2 } }
+      ],
+      "explanations": [],
+      "lessons": ["sec.b.01"]
+    }
+  ]
+}

@@ -1,0 +1,69 @@
+{
+  "reasons": [
+    {
+      "id": "dc-night-noise",
+      "title": "夜間の騒音",
+      "targets": ["datacenter", "upgrade:datacenter"],
+      "group": "neighbors",
+      "issue": "environment",
+      "measure": { "kind": "noise", "night": true },
+      "radius": 3,
+      "misconception": 0.2,
+      "claim": "サーバを冷やす送風機が夜通し回り、窓を閉めても低いうなりが寝室まで届く。夜中の集計処理の時間ほど音が大きくなる。",
+      "concessions": [
+        { "id": "dc-noise-night", "label": "夜間（22 時〜6 時）は重い集計処理を止め、送風機を低速で回す", "mods": { "nightNoise": 0, "tech": 0.8 } },
+        { "id": "dc-noise-wall", "label": "屋外の送風機を建物の中へ移し、防音の壁で囲う", "mods": { "noise": 0.5 }, "cost": { "ratio": 0.2 } }
+      ],
+      "explanations": [],
+      "lessons": ["db.a.01", "db.b.01"]
+    },
+    {
+      "id": "dc-power",
+      "title": "電力の逼迫",
+      "targets": ["datacenter", "upgrade:datacenter"],
+      "group": "neighbors",
+      "issue": "safety",
+      "measure": { "kind": "power" },
+      "radius": 6,
+      "misconception": 0.3,
+      "claim": "サーバと冷却で、この町の家を全部合わせたほどの電気を使う。島に来る電気の余裕が無くなり、夏の夕方に停電するのではないか。",
+      "concessions": [
+        { "id": "dc-power-trim", "label": "使っていないサーバの電源を落とし、古いデータを圧縮して台数を減らす", "mods": { "power": 0.6, "tech": 0.85 } },
+        { "id": "dc-power-small", "label": "最初は半分の区画だけを使い、残りは電気が足りてから入れる", "mods": { "power": 0.5, "tech": 0.7, "jobs": 0.8 }, "cost": { "ratio": -0.2 } }
+      ],
+      "explanations": [],
+      "lessons": ["db.b.01", "cloud.b.03"]
+    },
+    {
+      "id": "dc-jobs",
+      "title": "雇用が少ない",
+      "targets": ["datacenter", "upgrade:datacenter"],
+      "group": "neighbors",
+      "issue": "jobs",
+      "measure": { "kind": "jobs-density" },
+      "radius": 5,
+      "misconception": 0.3,
+      "claim": "工場の何倍もの敷地を使うのに、中で働くのは交代の運用担当が数人だけだ。同じ土地に店や事務所が来れば、もっと多くの人が働けた。",
+      "concessions": [
+        { "id": "dc-jobs-local", "label": "保守と運用の窓口を市内に置き、地元から人を雇って育てる", "mods": { "jobs": 1.6 }, "cost": { "ratio": 0.15 } }
+      ],
+      "explanations": [],
+      "lessons": ["db.b.01", "db.a.02"]
+    },
+    {
+      "id": "dc-cooling-water",
+      "title": "冷却水の使用",
+      "targets": ["datacenter", "upgrade:datacenter"],
+      "group": "environment",
+      "issue": "environment",
+      "measure": { "kind": "trait", "trait": "coolingWater" },
+      "misconception": 0.6,
+      "claim": "サーバを冷やすのに大量の水を使い、川の水が減るのではないか。夏の渇水の時期にも止めずに使い続けるはずだ。",
+      "concessions": [
+        { "id": "dc-water-closed", "label": "冷却水を閉じた配管で回し、補給には屋根にためた雨水を使う", "mods": { "coolingWater": 0.3 }, "cost": { "ratio": 0.2 } }
+      ],
+      "explanations": [],
+      "lessons": ["cloud.b.03", "db.b.01"]
+    }
+  ]
+}

@@ -1,0 +1,36 @@
+{
+  "reasons": [
+    {
+      "id": "dev-rent",
+      "title": "家賃の上がり方",
+      "targets": ["devoffice", "upgrade:devoffice"],
+      "group": "neighbors",
+      "issue": "afford",
+      "measure": { "kind": "rent" },
+      "radius": 5,
+      "misconception": 0.3,
+      "claim": "IT の会社が入ると給料の高い人が周りに住みたがり、家賃が上がって、古くから住む人が出ていくことになる。",
+      "concessions": [
+        { "id": "dev-low", "label": "建物を 1 段低くし、入る会社の数を絞る", "mods": { "height": -1, "tech": 0.85 } }
+      ],
+      "explanations": [],
+      "lessons": ["git.b.01", "git.i.03"]
+    },
+    {
+      "id": "dev-traffic",
+      "title": "通勤の車",
+      "targets": ["devoffice", "upgrade:devoffice"],
+      "group": "neighbors",
+      "issue": "traffic",
+      "measure": { "kind": "traffic" },
+      "radius": 5,
+      "misconception": 0.3,
+      "claim": "朝の 9 時前後に、開発者の車が一斉にこの通りへ入ってくる。今でも細い道が詰まっている。",
+      "concessions": [
+        { "id": "dev-remote", "label": "在宅で働く日を決め、出社は週 3 日にする", "mods": { "traffic": 0.6, "tech": 0.95 } }
+      ],
+      "explanations": [],
+      "lessons": ["git.i.01", "git.i.03"]
+    }
+  ]
+}

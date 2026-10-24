@@ -1,0 +1,36 @@
+{
+  "reasons": [
+    {
+      "id": "web-crowd",
+      "title": "人の流れ",
+      "targets": ["web", "upgrade:web"],
+      "group": "neighbors",
+      "issue": "traffic",
+      "measure": { "kind": "traffic" },
+      "radius": 5,
+      "misconception": 0.3,
+      "claim": "発表会や見学で人が集まり、夜まで車と人の出入りが続く。静かな住宅の通りが、催しの会場の裏口になる。",
+      "concessions": [
+        { "id": "web-crowd-day", "label": "催しは昼の時間に限り、来る人には公共の交通を案内する", "mods": { "traffic": 0.6 } }
+      ],
+      "explanations": [],
+      "lessons": ["web.b.07", "web.b.02"]
+    },
+    {
+      "id": "web-rent",
+      "title": "家賃の上がり方",
+      "targets": ["web", "upgrade:web"],
+      "group": "merchants",
+      "issue": "afford",
+      "measure": { "kind": "rent" },
+      "radius": 4,
+      "misconception": 0.3,
+      "claim": "ガラス張りのビルが建つと通りの土地の値が上がり、昔からの小さな店が家賃を払えなくなる。",
+      "concessions": [
+        { "id": "web-low", "label": "低層に抑え、1 階に小さな店が入れる区画を残す", "mods": { "height": -1, "tech": 0.9 } }
+      ],
+      "explanations": [],
+      "lessons": ["web.b.07"]
+    }
+  ]
+}

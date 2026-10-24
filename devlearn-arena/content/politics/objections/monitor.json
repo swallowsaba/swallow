@@ -1,0 +1,35 @@
+{
+  "reasons": [
+    {
+      "id": "mon-shift",
+      "title": "24 時間の運用",
+      "targets": ["monitor", "upgrade:monitor"],
+      "group": "neighbors",
+      "issue": "traffic",
+      "measure": { "kind": "traffic" },
+      "radius": 4,
+      "misconception": 0.4,
+      "claim": "一晩中、画面を見張る人が交代で出入りし、深夜にも車のドアの音とヘッドライトが寝室に入ってくる。",
+      "concessions": [
+        { "id": "mon-shift-merge", "label": "交代を 1 日 2 回にまとめ、夜は少ない人数で見る", "mods": { "traffic": 0.6, "jobs": 0.9 } }
+      ],
+      "explanations": [],
+      "lessons": ["mon.b.01", "mon.b.04"]
+    },
+    {
+      "id": "mon-cost",
+      "title": "費用",
+      "targets": ["monitor", "upgrade:monitor"],
+      "group": "taxpayers",
+      "issue": "finance",
+      "measure": { "kind": "cost" },
+      "misconception": 0.5,
+      "claim": "止まってから直せばよいのに、止まる前から見張る施設に資金を使う理由が分からない。",
+      "concessions": [
+        { "id": "mon-small", "label": "最初は大事な仕組みだけを見張る小さな部屋で始める", "mods": { "height": -1, "tech": 0.85 }, "cost": { "ratio": -0.2 } }
+      ],
+      "explanations": [],
+      "lessons": ["mon.b.01"]
+    }
+  ]
+}

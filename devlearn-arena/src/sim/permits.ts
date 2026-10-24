@@ -3,7 +3,9 @@ import { FACILITY_DEFS, footprintOf } from '@/city/facilities';
 import { nextId, type ReasonCode } from '@/city/place';
 import { ZONE_RULES } from '@/city/rules';
 import type { City, Facility, FacilityType, Point, Zone, ZoneKind } from '@/city/types';
-import type { Application, ApplicationStage, World } from './types';
+import type { Terrain } from '@/city/terrain';
+import { oppositionOf, risingShare } from './opposition';
+import { NO_RULES, type Application, type ApplicationStage, type PoliticsRules, type World } from './types';
 
 /**
  * 許認可（docs/game-design.md 15 章）。置いた物は申請になり、段階を順に進んで、着工・完成する。
@@ -174,14 +176,17 @@ export function exceptionOf(app: Pick<Application, 'kind' | 'target'>, city: Cit
 }
 
 /** 申請を出す。費用を取り分け（開発資金から引き）、敷地に囲いと看板が立つ（用途地域の審査から始める。アップグレードは反対の受付から） */
-export function file(world: World, draft: Pick<Application, 'kind' | 'target'>, cost: number, day: number): World {
+export function file(world: World, draft: Pick<Application, 'kind' | 'target'>, cost: number, day: number, terrain?: Terrain, rules: PoliticsRules = NO_RULES): World {
   const id = nextId('a', world.applications.map((a) => a.id));
   const stage: ApplicationStage = draft.kind === 'upgrade' ? 'objection' : 'zoning';
-  const app: Application = {
+  let app: Application = {
     id, kind: draft.kind, target: draft.target, stage, stageDay: day, filedDay: day, wallet: 'funds', reserved: cost,
     exception: false, objections: [], opposition: 0, mods: {},
   };
-  return { ...world, city: { ...world.city, funds: world.city.funds - cost }, applications: [...world.applications, app] };
+  const reserved: World = { ...world, city: { ...world.city, funds: world.city.funds - cost } };
+  // アップグレードは、出した日から反対の受付（費用を取り分けた後の都市で、反対を計算する）
+  if (stage === 'objection' && terrain) app = { ...app, objections: oppositionOf(reserved, terrain, app, rules).objections.map((o) => ({ ...o, share: 0 })) };
+  return { ...reserved, applications: [...world.applications, app] };
 }
 
 /** 取り下げる（着工の前ならいつでも）。費用は全て戻る */
@@ -238,9 +243,15 @@ function startConstruction(city: City, app: Application, day: number): { city: C
  * - 議会の採決（次の議会の日）→ 可決すれば着工。G3 では反対率を 0 として全て可決する（採決と申し立ては G6）
  * - 工事（大きさで決まる日数）→ 完成
  */
-export function stepApplications(world: World, day: number): World {
+export function stepApplications(world: World, day: number, terrain?: Terrain, rules: PoliticsRules = NO_RULES): World {
   let city = world.city;
   let changed = false;
+  // 反対は、反対の受付に入った日の都市で計算する（16 章。その日の前の段階が全て進んだ後の都市ではなく、前の日の終わりの都市）
+  const assess = (a: Application): Application => {
+    if (!terrain) return a;
+    const r = oppositionOf({ ...world, city }, terrain, a, rules);
+    return { ...a, objections: r.objections.map((o) => ({ ...o, share: 0 })), opposition: 0 };
+  };
   const apps = world.applications.map((a0) => {
     let a = a0;
     // 同じ日に段階を続けて進められるように回す（日数 0 の段階・用途地域の変更の着工）
@@ -252,15 +263,23 @@ export function stepApplications(world: World, day: number): World {
           next = { ...a, stage: 'zoning', stageDay: day };
           break;
         case 'zoning':
-          if (elapsed >= STAGE_DAYS.zoning) next = { ...a, stage: 'objection', stageDay: day, exception: exceptionOf(a, city) };
+          if (elapsed >= STAGE_DAYS.zoning) next = assess({ ...a, stage: 'objection', stageDay: day, exception: exceptionOf(a, city) });
           break;
-        case 'objection':
+        case 'objection': {
+          // 反対率は 0 から計算の値まで、日ごとに直線で上がる（15.2）
+          const rising = risingShare(a, elapsed / STAGE_DAYS.objection);
           if (elapsed >= STAGE_DAYS.objection) {
-            const consent = a.opposition < CONSENT_LIMIT && !a.exception;
-            next = { ...a, stage: consent ? 'council' : 'hearing', stageDay: day };
+            const consent = rising.opposition < CONSENT_LIMIT && !a.exception;
+            next = { ...a, ...rising, stage: consent ? 'council' : 'hearing', stageDay: day };
+          } else if (rising.opposition !== a.opposition) {
+            a = { ...a, ...rising };
+            changed = true;
           }
           break;
+        }
         case 'hearing':
+          // 公聴会の手は G5 で作る。それまでは、反対率が 20% 以上の申請は公聴会の段で待ち、取り下げだけができる（docs/development-plan.md G4）
+          if (a.opposition >= CONSENT_LIMIT) break;
           if (elapsed >= STAGE_DAYS.hearing) next = { ...a, stage: 'council', stageDay: day, hearing: a.hearing ?? { heldDay: day, attended: false } };
           break;
         case 'council':

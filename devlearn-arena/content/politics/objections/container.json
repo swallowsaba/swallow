@@ -1,0 +1,36 @@
+{
+  "reasons": [
+    {
+      "id": "ctr-trucks",
+      "title": "コンテナを積んだトラック",
+      "targets": ["container", "upgrade:container"],
+      "group": "neighbors",
+      "issue": "traffic",
+      "measure": { "kind": "traffic" },
+      "radius": 5,
+      "misconception": 0.8,
+      "claim": "コンテナ施設と聞いて、鉄の箱を積んだ大型のトラックが一日中出入りする置き場になるのではと心配している。",
+      "concessions": [
+        { "id": "ctr-trucks-day", "label": "機材の搬入は月に 1 度、昼の時間に限る", "mods": { "traffic": 0.5 } }
+      ],
+      "explanations": [],
+      "lessons": ["ctr.b.01", "ctr.b.03"]
+    },
+    {
+      "id": "ctr-power",
+      "title": "電力の逼迫",
+      "targets": ["container", "upgrade:container"],
+      "group": "neighbors",
+      "issue": "safety",
+      "measure": { "kind": "power" },
+      "radius": 6,
+      "misconception": 0.4,
+      "claim": "いくつもの仕組みを 1 か所で動かすと聞いた。サーバが増え続け、町の電気が足りなくなるのではないか。",
+      "concessions": [
+        { "id": "ctr-power-pack", "label": "1 台のサーバにコンテナを詰めて動かし、台数を増やさない", "mods": { "power": 0.6, "tech": 0.9 } }
+      ],
+      "explanations": [],
+      "lessons": ["ctr.b.02", "ctr.i.02"]
+    }
+  ]
+}

@@ -1,0 +1,132 @@
+{
+  "reasons": [
+    {
+      "id": "rz-ind-noise",
+      "title": "工場の音",
+      "targets": ["rezone:industrial"],
+      "group": "neighbors",
+      "issue": "environment",
+      "measure": { "kind": "noise" },
+      "radius": 4,
+      "misconception": 0.1,
+      "claim": "家の向かいが工場になると、朝から機械の音とフォークリフトの警告音が聞こえ続ける。窓を開けて暮らせなくなる。",
+      "concessions": [
+        { "id": "rz-ind-light", "label": "音の大きい工場は入れず、組み立てと倉庫の軽い工業に限る", "mods": { "noise": 0.5, "jobs": 0.8 } }
+      ],
+      "explanations": [],
+      "lessons": ["found.b.01"]
+    },
+    {
+      "id": "rz-ind-trucks",
+      "title": "大型のトラック",
+      "targets": ["rezone:industrial"],
+      "group": "neighbors",
+      "issue": "traffic",
+      "measure": { "kind": "traffic" },
+      "radius": 5,
+      "misconception": 0.2,
+      "claim": "部品と製品を運ぶ大型のトラックが住宅の前の道を通るようになり、子どもを外で遊ばせられない。",
+      "concessions": [
+        { "id": "rz-ind-route", "label": "トラックは住宅の側を通らない道に限り、搬入は昼だけにする", "mods": { "traffic": 0.6 } }
+      ],
+      "explanations": [],
+      "lessons": ["found.b.01"]
+    },
+    {
+      "id": "rz-com-noise",
+      "title": "夜の人の声と明かり",
+      "targets": ["rezone:commercial"],
+      "group": "neighbors",
+      "issue": "environment",
+      "measure": { "kind": "noise" },
+      "radius": 2,
+      "misconception": 0.2,
+      "claim": "店が並ぶと、夜遅くまで人の声と車の出入りが続き、看板の明かりが寝室に差し込む。",
+      "concessions": [
+        { "id": "rz-com-hours", "label": "営業は夜 9 時までとし、大きな看板を付けない", "mods": { "noise": 0.5, "jobs": 0.9 } }
+      ],
+      "explanations": [],
+      "lessons": ["found.b.01"]
+    },
+    {
+      "id": "rz-com-traffic",
+      "title": "買い物の車",
+      "targets": ["rezone:commercial"],
+      "group": "neighbors",
+      "issue": "traffic",
+      "measure": { "kind": "traffic" },
+      "radius": 4,
+      "misconception": 0.3,
+      "claim": "週末になると買い物の車が住宅の前の道に並び、家の車が出せなくなる。",
+      "concessions": [
+        { "id": "rz-com-parking", "label": "店の裏に駐車場をまとめ、入口は大きな道の側に向ける", "mods": { "traffic": 0.6 } }
+      ],
+      "explanations": [],
+      "lessons": ["found.b.01"]
+    },
+    {
+      "id": "rz-off-sunlight",
+      "title": "日照",
+      "targets": ["rezone:office"],
+      "group": "neighbors",
+      "issue": "environment",
+      "measure": { "kind": "sunlight" },
+      "radius": 2,
+      "misconception": 0.1,
+      "claim": "事務所のビルは何階にもなる。隣の家は一日のほとんどが日陰になり、洗濯物も乾かない。",
+      "concessions": [
+        { "id": "rz-off-low", "label": "建てられる高さの上限を 1 段下げる", "mods": { "height": -1, "jobs": 0.8 } }
+      ],
+      "explanations": [],
+      "lessons": ["found.b.01"]
+    },
+    {
+      "id": "rz-off-traffic",
+      "title": "通勤の車",
+      "targets": ["rezone:office"],
+      "group": "neighbors",
+      "issue": "traffic",
+      "measure": { "kind": "traffic" },
+      "radius": 5,
+      "misconception": 0.3,
+      "claim": "朝と夕方に通勤の車が集まり、今でも混む交差点がさらに詰まる。",
+      "concessions": [
+        { "id": "rz-off-bus", "label": "入る会社に送迎のバスと時差の出勤を約束させる", "mods": { "traffic": 0.6 } }
+      ],
+      "explanations": [],
+      "lessons": ["found.b.01"]
+    },
+    {
+      "id": "rz-res-sunlight",
+      "title": "日照",
+      "targets": ["rezone:residential"],
+      "group": "neighbors",
+      "issue": "environment",
+      "measure": { "kind": "sunlight" },
+      "radius": 2,
+      "misconception": 0.1,
+      "claim": "集合住宅が建つと、隣の低い家の庭と窓に日が当たらなくなる。",
+      "concessions": [
+        { "id": "rz-res-low", "label": "建てられる高さの上限を 1 段下げ、戸数を減らす", "mods": { "height": -1, "units": 0.8 } }
+      ],
+      "explanations": [],
+      "lessons": ["found.b.01"]
+    },
+    {
+      "id": "rz-res-traffic",
+      "title": "住む人の車",
+      "targets": ["rezone:residential"],
+      "group": "neighbors",
+      "issue": "traffic",
+      "measure": { "kind": "traffic" },
+      "radius": 5,
+      "misconception": 0.3,
+      "claim": "住む人が一度に増え、朝の通勤の車で通りが詰まる。今ある道路の幅のままでは足りない。",
+      "concessions": [
+        { "id": "rz-res-fewer", "label": "戸数を 2 割減らし、敷地の中に駐輪場を作る", "mods": { "units": 0.8, "traffic": 0.8 } }
+      ],
+      "explanations": [],
+      "lessons": ["found.b.01"]
+    }
+  ]
+}

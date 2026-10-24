@@ -1,0 +1,36 @@
+{
+  "reasons": [
+    {
+      "id": "deploy-jobs",
+      "title": "雇用が少ない",
+      "targets": ["deploy", "upgrade:deploy"],
+      "group": "neighbors",
+      "issue": "jobs",
+      "measure": { "kind": "jobs-density" },
+      "radius": 5,
+      "misconception": 0.4,
+      "claim": "ソフトを組み立てて配るのは全部自動で、建物の割に人がいらないと聞いた。町の仕事は増えない。",
+      "concessions": [
+        { "id": "deploy-jobs-train", "label": "パイプラインを作る技術者を市内で募集し、研修の場を置く", "mods": { "jobs": 1.6 }, "cost": { "ratio": 0.15 } }
+      ],
+      "explanations": [],
+      "lessons": ["cicd.b.01", "cicd.b.02"]
+    },
+    {
+      "id": "deploy-night",
+      "title": "夜中の更新作業",
+      "targets": ["deploy", "upgrade:deploy"],
+      "group": "neighbors",
+      "issue": "traffic",
+      "measure": { "kind": "traffic" },
+      "radius": 4,
+      "misconception": 0.4,
+      "claim": "本番の更新は利用の少ない夜中にするものだと聞く。夜中に人と車が集まり、作業が長引けば明け方まで続く。",
+      "concessions": [
+        { "id": "deploy-day", "label": "更新は昼の時間に、小さく分けて少しずつ出す", "mods": { "traffic": 0.6 } }
+      ],
+      "explanations": [],
+      "lessons": ["cicd.b.05", "cicd.a.01"]
+    }
+  ]
+}

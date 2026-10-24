@@ -1,7 +1,7 @@
 import { generateTerrain, type Terrain } from '@/city/terrain';
 import { applyOp, type Command } from './commands';
 import { heatOf, type HeatFields } from './heat';
-import type { World } from './types';
+import { NO_RULES, type PoliticsRules, type World } from './types';
 import { weekStep } from './week';
 import { stepDayView } from './world';
 
@@ -37,6 +37,8 @@ export function terrainOf(seed: number): Terrain {
 
 export class SimRunner {
   private world: World;
+  /** 市政のデータ（反対の理由など。読み込みの時に画面から受け取る） */
+  private rules: PoliticsRules = NO_RULES;
   private seq = 0;
   private sent: Partial<World> = {};
   /** まだ送っていないヒートマップの値 */
@@ -54,8 +56,9 @@ export class SimRunner {
     return this.seq;
   }
 
-  load(world: World, seq: number): void {
+  load(world: World, seq: number, rules?: PoliticsRules): void {
     this.world = world;
+    if (rules) this.rules = rules;
     this.seq = seq;
     this.sent = {};
     // 読み込んだ都市のヒートマップは、今の状態から 1 週分の途中の値を計算して作る（世界は変えない）
@@ -63,7 +66,7 @@ export class SimRunner {
   }
 
   apply(cmd: Command): void {
-    this.world = applyOp(this.world, cmd.op, terrainOf(this.world.city.seed));
+    this.world = applyOp(this.world, cmd.op, terrainOf(this.world.city.seed), this.rules);
     this.seq = cmd.seq;
   }
 
@@ -71,7 +74,7 @@ export class SimRunner {
   advance(day: number): void {
     const terrain = terrainOf(this.world.city.seed);
     while (Math.floor(this.world.city.day) < day) {
-      const r = stepDayView(this.world, terrain);
+      const r = stepDayView(this.world, terrain, this.rules);
       this.world = r.world;
       if (r.view) this.heat = heatOf(this.world, r.view);
     }

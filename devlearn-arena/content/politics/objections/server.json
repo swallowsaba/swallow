@@ -1,0 +1,36 @@
+{
+  "reasons": [
+    {
+      "id": "server-power",
+      "title": "電力の逼迫",
+      "targets": ["server", "upgrade:server"],
+      "group": "neighbors",
+      "issue": "safety",
+      "measure": { "kind": "power" },
+      "radius": 6,
+      "misconception": 0.4,
+      "claim": "サーバは一年中、昼も夜も電気を使い続ける。島に来る電気の余裕が減り、夏の夕方に家の電気が止まるのではないか。",
+      "concessions": [
+        { "id": "server-power-virtual", "label": "仮想化でサーバの台数をまとめ、使っていない機械の電源を落とす", "mods": { "power": 0.6, "tech": 0.9 } }
+      ],
+      "explanations": [],
+      "lessons": ["found.i.03", "linux.b.08"]
+    },
+    {
+      "id": "server-jobs",
+      "title": "雇用が少ない",
+      "targets": ["server", "upgrade:server"],
+      "group": "neighbors",
+      "issue": "jobs",
+      "measure": { "kind": "jobs-density" },
+      "radius": 5,
+      "misconception": 0.4,
+      "claim": "機械が自分で動くので、夜はだれもいない建物になる。地元の人が働ける場所にはならない。",
+      "concessions": [
+        { "id": "server-jobs-local", "label": "保守の仕事を市内の会社に任せ、地元から運用の担当を雇う", "mods": { "jobs": 1.6 }, "cost": { "ratio": 0.1 } }
+      ],
+      "explanations": [],
+      "lessons": ["linux.i.01", "linux.b.00"]
+    }
+  ]
+}

@@ -7,7 +7,7 @@ import type { City } from '@/city/types';
 import { LAYER_COUNT, LAYER_SHARE, MEAN_HOUSEHOLD_SIZE } from './layers';
 import { DAYS_PER_WEEK, EXTERNAL_POWER_CAP, INITIAL_CAPITAL, INITIAL_TAX_RATE, INITIAL_TREASURY } from './rules';
 import { DISTRICT_COUNT, landingOf, spaceOf } from './space';
-import type { Difficulty, Politics, SimState, World } from './types';
+import { NO_RULES, type Difficulty, type Politics, type PoliticsRules, type SimState, type World } from './types';
 import { stepApplications } from './permits';
 import { weekStep, type WeekView } from './week';
 
@@ -142,15 +142,15 @@ export function withCity(world: World, city: City, terrain: Terrain, names: Name
  * 1 日進める（docs/game-design.md 13.1）。毎日: 区画の建物が建ち・育ち、施設の工事が進む。
  * 週の終わり（7 日ごと）: 毎週の計算（src/sim/week.ts）
  */
-export function stepDay(world: World, terrain: Terrain): World {
-  return stepDayView(world, terrain).world;
+export function stepDay(world: World, terrain: Terrain, rules: PoliticsRules = NO_RULES): World {
+  return stepDayView(world, terrain, rules).world;
 }
 
 /** 1 日進め、週の終わりなら、その週の計算の途中の値（ヒートマップに使う）も返す */
-export function stepDayView(world: World, terrain: Terrain): { world: World; view: WeekView | null } {
+export function stepDayView(world: World, terrain: Terrain, rules: PoliticsRules = NO_RULES): { world: World; view: WeekView | null } {
   const day = Math.floor(world.city.day) + 1;
   // 申請の段階と工事（毎日。docs/game-design.md 13.1）
-  const permitted = stepApplications(world, day);
+  const permitted = stepApplications(world, day, terrain, rules);
   const city = growDay(permitted.city, day, {
     unemployedLowMid: world.sim.lastWeek.unemployedLowMid,
     upgradeKinds: ['residential'],

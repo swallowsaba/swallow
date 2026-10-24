@@ -15,7 +15,7 @@ self.onmessage = (e: MessageEvent<HostMessage>) => {
   const m = e.data;
   if (m.type === 'load') runner = new SimRunner(m.world);
   if (!runner) return;
-  if (m.type === 'load') runner.load(m.world, m.seq);
+  if (m.type === 'load') runner.load(m.world, m.seq, m.rules);
   else if (m.type === 'cmd') runner.apply(m.cmd);
   else runner.advance(m.day);
   const state = runner.state();

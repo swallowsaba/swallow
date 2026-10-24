@@ -5,7 +5,7 @@ import type { Facility, FacilityType, Point, ZoneKind } from '@/city/types';
 import { cellKey, facilityCells, roadCellsOf } from '@/city/cells';
 import { checkUpgrade, type SkillValueMap } from '@/city/upgrade';
 import { file, needsApplication, occupiedSites, permitProblems, rezoneOf, withdraw, type PermitProblem } from './permits';
-import type { Application, World } from './types';
+import { NO_RULES, type Application, type PoliticsRules, type World } from './types';
 
 /**
  * 日付付きの命令（docs/architecture.md 9.1）。画面の操作は、全てこの形で模擬へ送る。
@@ -37,7 +37,7 @@ export interface Command {
  * IT 施設・アップグレード・人の住む所の隣の用途地域の変更は、置いたらすぐ建てずに申請にする（docs/game-design.md 15.1）。
  * 申請中・工事中の敷地には、ほかの物を置けない
  */
-export function applyOp(world: World, op: Op, terrain: Terrain): World {
+export function applyOp(world: World, op: Op, terrain: Terrain, rules: PoliticsRules = NO_RULES): World {
   const city = world.city;
   const day = Math.floor(city.day);
   switch (op.kind) {
@@ -58,14 +58,14 @@ export function applyOp(world: World, op: Op, terrain: Terrain): World {
       const rezone = rezoneOf(world, op.zone, paint);
       if (!rezone.needed) return { ...world, city: placeZone(city, op.zone, { ...check, paint, cost }) };
       const draft: Pick<Application, 'kind' | 'target'> = { kind: 'rezone', target: { zone: { kind: op.zone, cells: paint, ...(rezone.from ? { from: rezone.from } : {}) } } };
-      return permitProblems(world, draft, day).length > 0 ? world : file(world, draft, cost, day);
+      return permitProblems(world, draft, day).length > 0 ? world : file(world, draft, cost, day, terrain, rules);
     }
     case 'facility': {
       const check = checkFacility(city, terrain, op.type, op.origin, op.rotation);
       if (!check.ok) return world;
       if (needsApplication(op.type)) {
         const draft: Pick<Application, 'kind' | 'target'> = { kind: 'facility', target: { type: op.type, origin: { ...op.origin }, rotation: op.rotation } };
-        return permitProblems(world, draft, day).length > 0 ? world : file(world, draft, check.cost, day);
+        return permitProblems(world, draft, day).length > 0 ? world : file(world, draft, check.cost, day, terrain, rules);
       }
       const sites = occupiedSites(world);
       if (facilityCells({ type: op.type, origin: op.origin, rotation: op.rotation }).some((c) => sites.has(cellKey(c.x, c.y)))) return world;
@@ -84,7 +84,7 @@ export function applyOp(world: World, op: Op, terrain: Terrain): World {
       const check = checkUpgrade(city, op.facilityId, op.skills);
       if (!check?.ok) return world;
       const draft: Pick<Application, 'kind' | 'target'> = { kind: 'upgrade', target: { facilityId: op.facilityId, toLevel: check.level as 2 | 3 | 4 | 5 } };
-      return permitProblems(world, draft, day).length > 0 ? world : file(world, draft, check.cost, day);
+      return permitProblems(world, draft, day).length > 0 ? world : file(world, draft, check.cost, day, terrain, rules);
     }
     case 'withdraw':
       return withdraw(world, op.applicationId, day);
