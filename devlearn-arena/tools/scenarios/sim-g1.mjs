@@ -89,4 +89,8 @@ export default async function simG1(page, shot) {
   await page.waitForTimeout(200);
   for (let i = 0; i < 4; i += 1) await page.evaluate(() => window.__city.zoomBy(-1));
   await page.waitForTimeout(300);
+  await shot(`g1-paused${tag}`);
+  // 3 倍で動かしたまま終える（SHOOT_FPS で、3 倍の速さの fps を測る）
+  await page.keyboard.press('3');
+  console.log('速さ', JSON.stringify(await page.evaluate(() => ({ speed: window.__cityStore.getState().speed, paused: window.__cityStore.getState().paused }))));
 }
