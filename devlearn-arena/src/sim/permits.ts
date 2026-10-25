@@ -297,7 +297,7 @@ export function stepApplications(world: World, day: number, terrain?: Terrain, r
         case 'council':
           if (day >= nextCouncilDay(a.stageDay)) {
             // 同意の案件は採決なしに可決。公聴会を経た申請は、7 人の採決（18 章）
-            const consent = !a.hearing && a.opposition < CONSENT_LIMIT && !a.exception;
+            const consent = isConsent(a);
             const vote = consent ? { day, consent: true, members: [], passed: true } : voteOf({ ...world, city, sim: { ...world.sim, trust } }, a, rules, day);
             const voted: Application = { ...a, vote };
             if (!vote.passed) {
@@ -368,6 +368,11 @@ export function stepApplications(world: World, day: number, terrain?: Terrain, r
   const budget = treasuryBack !== 0 ? { ...world.budget, treasury: world.budget.treasury + treasuryBack } : world.budget;
   const sim = trust !== world.sim.trust ? { ...world.sim, trust } : world.sim;
   return { ...world, city, sim, budget, applications: kept };
+}
+
+/** 同意の案件（docs/game-design.md 15.2）: 公聴会を経ず、反対率が 20% 未満で、用途の例外でない申請。議会で採決なしに可決する（説得も採決の画面も無い） */
+export function isConsent(a: Pick<Application, 'hearing' | 'opposition' | 'exception'>): boolean {
+  return !a.hearing && a.opposition < CONSENT_LIMIT && !a.exception;
 }
 
 /** 段階の残りの日数（議会は次の議会の日まで。公聴会は最大の日数まで） */

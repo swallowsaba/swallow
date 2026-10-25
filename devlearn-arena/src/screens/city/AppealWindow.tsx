@@ -23,9 +23,9 @@ export function AppealWindow({ store, stack, shifted, skills }: { store: CitySto
   if (!m) return null;
   const done = m.resolved !== null;
   return (
-    <SmallWindow testId="appeal-window" icon="alert" title={`${m.name}への異議申し立て`} stack={stack} shifted={shifted} onClose={() => s.closeWindow('appeal')} onFront={() => s.openWindow('appeal')}>
+    <SmallWindow testId="appeal-window" icon="alert" title="異議申し立て" stack={stack} shifted={shifted} onClose={() => s.closeWindow('appeal')} onFront={() => s.openWindow('appeal')}>
       <p className="permit-now appeal-now" data-testid="appeal-now">
-        <span className="permit-now-stage">{m.group}が申し立てた</span>
+        <span className="permit-now-stage">{m.name}に、{m.group}が申し立てた</span>
         <span>
           {done
             ? m.resolved === 'conceded' ? '追加の譲歩で取り下げられた。次の日に着工する' : m.resolved === 'capital' ? '政治資本で抑えた。次の日に着工する' : '28 日が過ぎ、退けられた'

@@ -14,7 +14,7 @@ import { explainApproval } from '@/sim/explain';
 import type { Hand } from '@/sim/hearing';
 import { reactionLesson, reactionText } from './hearingView';
 import { groupName } from './permitView';
-import { applicationName, daysLeft, daysToComplete, isReviewing } from '@/sim/permits';
+import { applicationName, daysLeft, daysToComplete, isConsent, isReviewing } from '@/sim/permits';
 import type { HeatFields, HeatKind } from '@/sim/heat';
 import { applyOp, type Command, type Op } from '@/sim/commands';
 import { workerHost, type SimHost } from '@/sim/host';
@@ -409,7 +409,7 @@ export function createCityStore(seed?: number, initial?: City, options: CityStor
       },
       openCouncil: (id) => {
         const app = get().world.applications.find((a) => a.id === id);
-        if (!app || !(app.stage === 'council' || (app.vote && !app.vote.consent))) return;
+        if (!app || !((app.stage === 'council' && !isConsent(app)) || (app.vote && !app.vote.consent))) return;
         set({ councilId: id, hearingId: null, reaction: null });
         get().hold('window', true);
       },

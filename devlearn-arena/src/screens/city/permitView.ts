@@ -4,7 +4,7 @@ import type { SiteView } from '@/city/render/CityRenderer';
 import { ZONE_RULES } from '@/city/rules';
 import type { Point } from '@/city/types';
 import {
-  applicationName, daysLeft, daysToComplete, isOpen, isReviewing, needsMayor, nextCouncilDay, PROGRESS_STAGES, siteCells, STAGE_DAYS, STAGE_LABEL, waitingText,
+  applicationName, daysLeft, daysToComplete, isConsent, isOpen, isReviewing, needsMayor, nextCouncilDay, PROGRESS_STAGES, siteCells, STAGE_DAYS, STAGE_LABEL, waitingText,
 } from '@/sim/permits';
 import { REASONS } from '@/content/politics';
 import type { HeatKind } from '@/sim/heat';
@@ -225,7 +225,7 @@ export function permitDetail(world: World, id: string): PermitDetail | null {
     exception: a.exception,
     objections: objectionRows(a, world),
     gains,
-    council: a.stage === 'council' ? 'outlook' : a.vote && !a.vote.consent ? 'result' : null,
+    council: a.stage === 'council' && !isConsent(a) ? 'outlook' : a.vote && !a.vote.consent ? 'result' : null,
     canWithdraw: isReviewing(a),
     refund: a.reserved,
   };

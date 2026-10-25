@@ -3,7 +3,7 @@ import { CAPACITY, facilityJobs, facilityTech } from '@/city/rules';
 import type { City } from '@/city/types';
 import { MONTHLY_INCOME } from './layers';
 import { completedCity } from './opposition';
-import { siteCells } from './permits';
+import { isConsent, siteCells } from './permits';
 import { PEOPLE_PER_UNIT, TAX_BUSINESS, TAX_RESIDENT } from './rules';
 import type { Application, CouncilMember, IssueId, MemberLineKey, PoliticsRules, VoteRecord, World } from './types';
 
@@ -156,13 +156,15 @@ export function voteOf(world: World, app: Application, rules: PoliticsRules, day
   return { day, consent: false, members, passed: members.filter((m) => m.yes).length >= PASS_VOTES };
 }
 
-export type PersuadeProblem = 'unknown' | 'stage' | 'used' | 'capital' | 'member';
+export type PersuadeProblem = 'unknown' | 'stage' | 'consent' | 'used' | 'capital' | 'member';
 
 /** 議員を説得する（18.2）: 採決の前に、政治資本 3 で 1 人の点に +4。1 件の申請で 1 人まで */
 export function persuade(world: World, rules: PoliticsRules, appId: string, memberId: string, day: number): { world: World; problem?: PersuadeProblem } {
   const app = world.applications.find((a) => a.id === appId);
   if (!app) return { world, problem: 'unknown' };
   if (app.stage !== 'council' || app.vote) return { world, problem: 'stage' };
+  // 同意の案件は採決しないので、説得しても効かない（政治資本を無駄にさせない）
+  if (isConsent(app)) return { world, problem: 'consent' };
   if (app.persuaded) return { world, problem: 'used' };
   const member = rules.council.find((m) => m.id === memberId);
   if (!member) return { world, problem: 'member' };

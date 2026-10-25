@@ -10,6 +10,7 @@ import { createCityStore, stageNotices } from './cityStore';
 import { CouncilWindow, REVEAL_MS } from './CouncilWindow';
 import { appealModel, councilModel, memberLine } from './councilView';
 import { PermitDetailWindow } from './PermitWindows';
+import { permitDetail } from './permitView';
 
 /**
  * 議会の採決の画面（docs/ui-design.md 10.4）と、異議申し立ての知らせと小さな窓（10.5）。
@@ -63,12 +64,12 @@ describe('議員の 1 行（18.2・docs/decisions.md C-10）', () => {
     const kajiya = COUNCIL.find((m) => m.id === 'kajiya');
     if (!kajiya) throw new Error('鍛冶谷がいない');
     expect(memberLine(kajiya, 'gain:jobs:60')).toBe('雇用が 60 人分増える。働き口が増えるなら、文句はねえ。賛成だ');
-    expect(memberLine(kajiya, 'unanswered:dc-jobs')).toBe('雇用が少ないを聞かれて、市長は黙ってた。それじゃ通せねえよ');
+    expect(memberLine(kajiya, 'unanswered:dc-jobs')).toBe('「雇用が少ない」を聞かれて、市長は黙ってた。それじゃ通せねえよ');
     expect(memberLine(kajiya, 'approval:35')).toBe('支持が 35% か。町の空気には逆らえねえな');
     expect(memberLine(kajiya, 'stance')).toBe('こういう話には、昔から賛成だ');
     // 口ぶりが無い鍵は共通の型の文
     const plain = { ...kajiya, lines: {} };
-    expect(memberLine(plain, 'concern:dc-power')).toBe(EXPLAIN.member.concern.replace('{reason}', '電力の逼迫'));
+    expect(memberLine(plain, 'concern:dc-power')).toBe(EXPLAIN.member.concern.replace('{reason}', '「電力の逼迫」'));
   });
 });
 
@@ -120,7 +121,7 @@ describe('議会の採決の画面（10.4）', () => {
     expect(host.querySelector('[data-testid="council-yes"]')?.textContent).toBe('5');
     expect(host.querySelector('[data-testid="council-verdict"]')?.textContent).toBe('可決（賛成 4 以上）');
     expect(host.querySelector('[data-testid="council-vote-nadamoto"]')?.textContent).toBe('反対');
-    expect(host.querySelector('[data-testid="council-line-nadamoto"]')?.textContent).toBe('雇用が少ないについて、公聴会で一言もありませんでした。住む人を置き去りにはできません');
+    expect(host.querySelector('[data-testid="council-line-nadamoto"]')?.textContent).toBe('「雇用が少ない」について、公聴会で一言もありませんでした。住む人を置き去りにはできません');
     expect(host.querySelector('[data-testid="council-persuade"]')).toBeNull();
   });
 
@@ -137,6 +138,12 @@ describe('議会の採決の画面（10.4）', () => {
     consent.getState().openCouncil('a1');
     expect(consent.getState().councilId).toBeNull();
     expect(councilModel(consent.getState().world, 'a1')).toBeNull();
+    // 議会の日を待っている同意の案件も、見込みの画面と説得を出さない
+    const waiting = storeWith(dc({ stage: 'council', hearing: undefined, exception: false, objections: [o('dc-cooling-water', 16, { issue: undefined })], opposition: 16 }));
+    waiting.getState().openCouncil('a1');
+    expect(waiting.getState().councilId).toBeNull();
+    expect(councilModel(waiting.getState().world, 'a1')).toBeNull();
+    expect(permitDetail(waiting.getState().world, 'a1')?.council).toBeNull();
     const store = storeWith(dc({ stage: 'hearing' }));
     store.getState().openHearing('a1');
     const s = store.getState();

@@ -4,7 +4,7 @@ import { APPEAL_BORDER, appealConcede, appealOf, appealSuppress, EXPIRE_TRUST, S
 import { applyOp, type Op } from './commands';
 import { CONCERN_PER_SHARE, gainsOf, judge, judgeAll, PASS_VOTES, persuade, PERSUADE, PUSHED_CONCERN, voteOf, weightOf, type Gains } from './council';
 import { closeHearing, handOptions, issuesOf, playHand, type Hand } from './hearing';
-import { STAGE_DAYS } from './permits';
+import { isConsent, STAGE_DAYS } from './permits';
 import type { Application, CouncilMember, IssueId, ObjectionState, World } from './types';
 import { stepDay } from './world';
 import { grownVillage } from './__fixtures__/cities';
@@ -176,6 +176,18 @@ describe('議員を説得する（18.2）', () => {
     expect(persuade(poor, POLITICS_RULES, H.id, 'kajiya', today(w)).problem).toBe('capital');
     const voted = days(r.world, 15);
     expect(persuade(voted, POLITICS_RULES, H.id, 'shiomi', today(voted)).problem).toBe('stage');
+  });
+
+  it('同意の案件（公聴会を経ず、反対率 20% 未満で例外でない）は採決しないので、議会の段でも説得できない。政治資本は減らない', () => {
+    const consent = { ...app([o('dc-cooling-water', 16, { issue: undefined })], { exception: false, hearing: undefined }) };
+    expect(isConsent(consent)).toBe(true);
+    expect(isConsent({ ...consent, exception: true })).toBe(false);
+    expect(isConsent({ ...consent, opposition: 20 })).toBe(false);
+    expect(isConsent({ ...consent, hearing: { heldDay: 18, attended: true } })).toBe(false);
+    const w = { ...H.world, applications: [consent] };
+    const r = persuade(w, POLITICS_RULES, consent.id, 'shiomi', today(w));
+    expect(r.problem).toBe('consent');
+    expect(r.world.politics.capital).toBe(w.politics.capital);
   });
 });
 

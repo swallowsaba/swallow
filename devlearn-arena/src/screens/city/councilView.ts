@@ -2,7 +2,7 @@ import { COUNCIL, EXPLAIN, POLITICS_RULES, REASONS } from '@/content/politics';
 import { APPEAL_BORDER, openIssues, SUPPRESS } from '@/sim/appeal';
 import { judgeAll, PASS_VOTES, PERSUADE } from '@/sim/council';
 import type { SkillValues } from '@/sim/hearing';
-import { COUNCIL_EVERY, applicationName, daysLeft, nextCouncilDay } from '@/sim/permits';
+import { COUNCIL_EVERY, applicationName, daysLeft, isConsent, nextCouncilDay } from '@/sim/permits';
 import type { Application, CouncilMember, IssueId, MemberLineKey, World } from '@/sim/types';
 import { handsModel } from './hearingView';
 import { groupName, placeOf } from './permitView';
@@ -21,7 +21,9 @@ export const ISSUE_NAMES: Record<IssueId, string> = {
 export function memberLine(member: CouncilMember, reasonKey: string): string {
   const [kind, ref = '', value = ''] = reasonKey.split(':') as [MemberLineKey, string?, string?];
   const template = member.lines?.[kind] ?? EXPLAIN.member[kind] ?? '';
-  const reason = REASONS.find((r) => r.id === ref)?.title ?? '';
+  // 理由の題は「」で囲む（「雇用が少ない」のように、題が言い切りの形でも文が続くように）
+  const title = REASONS.find((r) => r.id === ref)?.title;
+  const reason = title ? `「${title}」` : '';
   const issue = kind === 'gain' ? (ref as IssueId) : undefined;
   const gain = issue ? EXPLAIN.gains[issue].replace('{value}', Number(value).toLocaleString('ja-JP')) : '';
   return template
@@ -78,7 +80,8 @@ export function councilModel(world: World, id: string): CouncilModel | null {
     const yes = seats.filter((s) => s.yes).length;
     return { id, title, mode: 'result', seats, yes, no: seats.length - yes, verdict: vote.passed ? `可決（賛成 ${String(PASS_VOTES)} 以上）` : '否決', passed: vote.passed, daysLeft: 0, persuade: null };
   }
-  if (app.stage !== 'council') return null;
+  // 同意の案件は採決の画面を出さない（docs/ui-design.md 10.4）
+  if (app.stage !== 'council' || isConsent(app)) return null;
   const seats = judgeAll(world, app, POLITICS_RULES).flatMap((j): SeatModel[] => {
     const m = byId.get(j.memberId);
     return m ? [{ id: m.id, name: m.name, profile: m.profile, icon: m.icon, main: m.main, mainName: ISSUE_NAMES[m.main], yes: j.yes, line: memberLine(m, j.reasonKey), persuaded: j.persuaded }] : [];
