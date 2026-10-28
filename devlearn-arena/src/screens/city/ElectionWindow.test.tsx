@@ -91,6 +91,17 @@ describe('落選', () => {
     expect(host.querySelector('#election-title')?.textContent).toBe('2 期目の公約を選ぶ');
   });
 
+  it('結果の窓を送ってから一覧へ移ると、一覧は上から始まる（前の窓の送りの位置を持ち越さない）', () => {
+    const { store, host } = mount(supported(beforeElection(GROWN.world, 1), 20, 45));
+    toElection(store);
+    const before = host.querySelector('.election-body') as HTMLElement;
+    before.scrollTop = 300;
+    click(q(host, 'election-rerun'));
+    const after = host.querySelector('.election-body') as HTMLElement;
+    expect(after).not.toBe(before);
+    expect(after.scrollTop).toBe(0);
+  });
+
   it('保存の口が無ければ、新しい都市で始めるは押せない（同じ都市で再び立つ道は残る）', () => {
     const { store, host } = mount(supported(beforeElection(GROWN.world, 1), 20, 45));
     toElection(store);

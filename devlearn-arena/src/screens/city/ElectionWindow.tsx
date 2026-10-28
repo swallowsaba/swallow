@@ -27,6 +27,7 @@ export function ElectionWindow({ store, onNewCity }: { store: CityStore; onNewCi
     const choosing = !s.politics.defeated && s.politics.term.pledges.length === 0;
     return (
       <Frame
+        key="term"
         title={term && !choosing ? `${String(term.no)} 期目の任期の終わり` : `${String(s.politics.term.no)} 期目の公約を選ぶ`}
         mode="term"
         onClose={s.leave}
@@ -49,7 +50,9 @@ export function ElectionWindow({ store, onNewCity }: { store: CityStore; onNewCi
   const result = m.mode === 'result';
   const verdict = result ? (m.won ? '当選' : '落選') : m.won ? '当選の見込み' : '落選の見込み';
   return (
+    // 見込み・結果・一覧を切り替えたら、窓を作り直す（前の中身の送りの位置を持ち越さない）
     <Frame
+      key={m.mode}
       title={m.title}
       mode={m.mode}
       onClose={s.leave}
