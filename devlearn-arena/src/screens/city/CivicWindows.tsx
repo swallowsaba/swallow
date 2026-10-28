@@ -128,15 +128,6 @@ export function BudgetWindow({ store, stack, shifted }: WindowProps) {
         </div>
       </section>
       <section className="budget-section">
-        <h3 className="civic-h">財政</h3>
-        <p className={`budget-treasury${m.deficit ? ' is-deficit' : ''}`} data-testid="budget-treasury">
-          <b className="num">{num(m.treasury)}</b>
-          {m.deficit ? <span className="budget-deficit">赤字 {m.deficitWeeks} 週目（8 週続くと新聞に載る）</span> : <span className="budget-sub">今週 {signed(m.incomeTotal - m.spendTotal, 1)}</span>}
-        </p>
-        <WeeklyGraph samples={recent} series="treasury" />
-        <p className="budget-note" data-testid="budget-funds-note"><Icon name="funds" size={14} />開発資金は学習で増える。ここでは使わない（財政とは別の財布）</p>
-      </section>
-      <section className="budget-section">
         <h3 className="civic-h">税率</h3>
         <div className="tax-row">
           <input
@@ -174,6 +165,15 @@ export function BudgetWindow({ store, stack, shifted }: WindowProps) {
             </tbody>
           </table>
         ) : <p className="civic-empty">つまみを動かすと、税収の見込みと、層ごとの満足の「税」の点の増減が出る。上げると事業者の費用も増え、撤退しやすくなる</p>}
+      </section>
+      <section className="budget-section">
+        <h3 className="civic-h">財政</h3>
+        <p className={`budget-treasury${m.deficit ? ' is-deficit' : ''}`} data-testid="budget-treasury">
+          <b className="num">{num(m.treasury)}</b>
+          {m.deficit ? <span className="budget-deficit">赤字 {m.deficitWeeks} 週目（8 週続くと新聞に載る）</span> : <span className="budget-sub">今週 {signed(m.incomeTotal - m.spendTotal, 1)}</span>}
+        </p>
+        <WeeklyGraph samples={recent} series="treasury" />
+        <p className="budget-note" data-testid="budget-funds-note"><Icon name="funds" size={14} />開発資金は学習で増える。ここでは使わない（財政とは別の財布）</p>
       </section>
       <section className="budget-section" data-testid="budget-capital">
         <h3 className="civic-h">政治資本</h3>
