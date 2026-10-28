@@ -11,9 +11,15 @@
       "misconception": 0.8,
       "claim": "コンテナ施設と聞いて、鉄の箱を積んだ大型のトラックが一日中出入りする置き場になるのではと心配している。",
       "concessions": [
-        { "id": "ctr-trucks-day", "label": "機材の搬入は月に 1 度、昼の時間に限る", "mods": { "traffic": 0.5 } }
+        { "id": "ctr-trucks-day", "label": "機材の搬入は月に 1 度、昼の時間に限る", "mods": { "traffic": 0.5 } },
+        { "id": "ctr-registry", "label": "ソフトの受け渡しは全てレジストリを通してネットワークで行い、機材の入れ替えを年 1 回にまとめる", "mods": { "traffic": 0.3 }, "requires": { "domain": "ctr", "stage": 4 } }
       ],
-      "explanations": [],
+      "explanations": [
+        { "id": "ctr-not-boxes", "domain": "ctr", "stage": 1, "quality": "sound", "text": "ここで扱う「コンテナ」は、ソフトを包む入れ物の名前で、鉄の箱ではありません。運び込むのはサーバの機材だけで、ソフトはネットワークで届きます。", "why": "名前の取り違えだと分かり、トラックの列を思い浮かべていた人が笑って安心した。" },
+        { "id": "ctr-image-size", "domain": "docker", "stage": 2, "quality": "sound", "text": "ソフトを包んだイメージは、数百メガバイトほどのデータです。届けるのは回線で、トラックは使いません。", "why": "運ぶ物がデータだと分かり、道路の心配がほどけた。" },
+        { "id": "ctr-truck-count", "domain": "ctr", "stage": 3, "quality": "sound", "text": "機材の搬入は年に数回で、1 回あたりトラック 2 台です。毎月の出入りの台数を記録して公開します。", "why": "台数が数字で示され、置き場にはならないと議員も納得した。" },
+        { "id": "ctr-whale", "domain": "docker", "stage": 1, "quality": "wrong", "text": "Docker のマークに船とコンテナが描いてあるとおり、荷物を積んで運ぶ仕組みです。", "why": "マークの絵は例えで、運ぶのはデータだ。かえって鉄の箱の置き場だという誤解を強めてしまった。", "lesson": "ctr.b.01" }
+      ],
       "lessons": ["ctr.b.01", "ctr.b.03"]
     },
     {
@@ -27,9 +33,15 @@
       "misconception": 0.4,
       "claim": "いくつもの仕組みを 1 か所で動かすと聞いた。サーバが増え続け、町の電気が足りなくなるのではないか。",
       "concessions": [
-        { "id": "ctr-power-pack", "label": "1 台のサーバにコンテナを詰めて動かし、台数を増やさない", "mods": { "power": 0.6, "tech": 0.9 } }
+        { "id": "ctr-power-pack", "label": "1 台のサーバにコンテナを詰めて動かし、台数を増やさない", "mods": { "power": 0.6, "tech": 0.9 } },
+        { "id": "ctr-power-limits", "label": "全てのコンテナに CPU とメモリの上限を決め、空いた機械はまとめて電源を落とす", "mods": { "power": 0.5, "tech": 0.95 }, "requires": { "domain": "ctr", "stage": 4 } }
       ],
-      "explanations": [],
+      "explanations": [
+        { "id": "ctr-vs-vm", "domain": "ctr", "stage": 2, "quality": "sound", "text": "コンテナは仮想マシンと違い、OS を丸ごと積まずに 1 つの OS を分け合います。同じ仕事を、少ない機械と少ない電気で動かせます。", "why": "同じ機械に多く載る理由が分かり、サーバが増え続ける心配が和らいだ。" },
+        { "id": "ctr-power-measure", "domain": "ctr", "stage": 3, "quality": "sound", "text": "機械 1 台あたりに載せるコンテナの数と、使う電力を毎月測って公開します。使用率が 6 割を切った機械は、仕事を寄せてまとめて止めます。", "why": "1 台あたりの載せ方と電気を数字で約束し、技術に詳しい議員が評価した。" },
+        { "id": "ctr-isolation", "domain": "ctr", "stage": 1, "quality": "partial", "text": "コンテナどうしは隔てられているので、1 つが暴走してもほかは止まりません。", "why": "安全の話としては正しいが、電気がどれだけ要るかという心配には答えていない。", "lesson": "ctr.i.02" },
+        { "id": "ctr-virtual-free", "domain": "docker", "stage": 1, "quality": "wrong", "text": "コンテナは仮想の物なので、電気をほとんど使いません。", "why": "コンテナの中の処理も本物の機械の上で動き、電気を使う。仮想だから電気を使わないという話は通らず、かえって不信を招いた。", "lesson": "ctr.b.02" }
+      ],
       "lessons": ["ctr.b.02", "ctr.i.02"]
     }
   ]

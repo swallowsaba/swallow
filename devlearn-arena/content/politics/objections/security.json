@@ -11,9 +11,15 @@
       "misconception": 0.5,
       "claim": "24 時間の監視で、夜中も交代の人と車が出入りする。攻撃の的になって、近所まで巻き込まれるのではないかとも心配だ。",
       "concessions": [
-        { "id": "sec-shift-merge", "label": "交代を朝と夕方の 2 回にまとめ、車は敷地の奥に止める", "mods": { "traffic": 0.6 } }
+        { "id": "sec-shift-merge", "label": "交代を朝と夕方の 2 回にまとめ、車は敷地の奥に止める", "mods": { "traffic": 0.6 } },
+        { "id": "sec-auto-detect", "label": "見張りの多くを自動の検知に任せ、夜は離れた所から見て、現地の交代を 1 日 1 回にする", "mods": { "traffic": 0.4, "jobs": 0.95 }, "requires": { "domain": "sec", "stage": 4 } }
       ],
-      "explanations": [],
+      "explanations": [
+        { "id": "sec-target", "domain": "sec", "stage": 2, "quality": "sound", "text": "攻撃が狙うのは、ネットワークの向こうにあるデータと仕組みで、建物の場所ではありません。この施設があることで、近所の家が攻撃に巻き込まれることはありません。", "why": "攻撃は通りを狙う物ではないと分かり、巻き込まれる心配が和らいだ。" },
+        { "id": "sec-shift-numbers", "domain": "sec", "stage": 3, "quality": "sound", "text": "夜の交代は 1 回にまとめ、夜中に出入りした車の台数を毎月公開します。見張りの多くは、ログを自動で調べる仕組みに任せます。", "why": "夜の出入りの数を公開すると約束し、交代の様子が見えると議員も評価した。" },
+        { "id": "sec-logs", "domain": "sec", "stage": 1, "quality": "partial", "text": "全ての操作のログを取り、後から確かめられるようにします。", "why": "守り方としては正しいが、夜中の人と車の出入りには答えていない。", "lesson": "sec.a.02" },
+        { "id": "sec-hidden", "domain": "sec", "stage": 1, "quality": "wrong", "text": "施設の場所を秘密にしておけば、攻撃されることはありません。", "why": "隠すだけでは守れない。守りの考え方として逆で、かえって不信を招いた。", "lesson": "sec.b.01" }
+      ],
       "lessons": ["sec.b.01", "sec.a.03"]
     },
     {
@@ -27,9 +33,15 @@
       "misconception": 0.4,
       "claim": "高い塀と見張りの塔で囲まれ、隣の家は一日中塀の影になる。監視カメラが自分の家の方を向いていないかも気になる。",
       "concessions": [
-        { "id": "sec-wall-low", "label": "塀を低い生け垣に替え、塔は建てずに屋上のカメラで見る", "mods": { "height": -1, "tech": 0.9 } }
+        { "id": "sec-wall-low", "label": "塀を低い生け垣に替え、塔は建てずに屋上のカメラで見る", "mods": { "height": -1, "tech": 0.9 } },
+        { "id": "sec-identity-first", "label": "守りの中心を建物の塀からネットワークの認証に移し、塀と塔をやめて低い生け垣だけにする", "mods": { "height": -1, "tech": 0.98 }, "requires": { "domain": "sec", "stage": 4 } }
       ],
-      "explanations": [],
+      "explanations": [
+        { "id": "sec-wall-why", "domain": "sec", "stage": 2, "quality": "sound", "text": "守りたいのは建物の中の機械よりも、そこを流れるデータです。データは{{term:authentication}}と暗号で守るので、高い塀と塔が無くても困りません。", "why": "高い塀が守りの本体ではないと分かり、塀の影を心配していた人が話を聞く気になった。" },
+        { "id": "sec-camera-scope", "domain": "sec", "stage": 3, "quality": "sound", "text": "カメラは敷地の中だけを写す向きに付け、写る範囲の図を配ります。映像は 30 日で消し、見た人と時刻を記録して年に 1 度公開します。", "why": "写す範囲と残す期間を示したので、見られている気がしていた隣の家が落ち着いた。" },
+        { "id": "sec-wall-theft", "domain": "sec", "stage": 1, "quality": "partial", "text": "高い塀は、機械が盗まれないための物です。", "why": "塀の役目は分かったが、隣の家が一日中影になる心配には答えていない。", "lesson": "sec.b.01" },
+        { "id": "sec-wall-cyber", "domain": "sec", "stage": 1, "quality": "wrong", "text": "塀が高いほど、サイバー攻撃にも強くなります。", "why": "ネットワークを通る攻撃は、塀の高さでは防げない。的外れな答えで、かえって不信が増した。", "lesson": "sec.b.01" }
+      ],
       "lessons": ["sec.b.01"]
     }
   ]

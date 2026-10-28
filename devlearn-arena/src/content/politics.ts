@@ -3,9 +3,11 @@ import councilData from '../../content/politics/council.json';
 import explainData from '../../content/politics/explain.json';
 import namesData from '../../content/politics/names.json';
 import { FACILITY_DEFS } from '@/city/facilities';
+import { DOMAINS } from '@/city/facilityInfo';
+import type { DomainId } from '@/city/types';
 import { MOD_KEYS, type CouncilMember, type GroupId, type IssueId, type Measure, type MemberLineKey, type ModKey, type ObjectionReason, type PoliticsRules } from '@/sim/types';
 import { termsIn } from './rich';
-import { domainId } from './schema';
+import { DOMAIN_IDS, domainId } from './schema';
 
 /**
  * 市政のデータ（content/politics/。docs/content-spec.md 7 章）を読み込み、検証する。
@@ -203,6 +205,54 @@ export function validateReasons(reasons: readonly ObjectionReason[], ctx: { less
   for (const target of objectionTargets()) {
     const n = reasons.filter((r) => r.targets.includes(target)).length;
     if (n < 2) out.push(`${target}: 反対の理由が ${String(n)} つ（2 つ以上要る）`);
+  }
+  return [...out, ...validateLearning(reasons)];
+}
+
+/**
+ * 分野の推奨前提と関連（docs/curriculum.md 3.2 の辺）。IT 施設の理由の説明と技術の代案は、
+ * その施設の分野か、ここに挙げた分野で書く。trouble は全分野と関連し、lab は複数分野の組み合わせ（どの分野でもよい）
+ */
+export const DOMAIN_LINKS: Readonly<Record<DomainId, readonly DomainId[]>> = {
+  found: ['linux', 'net'],
+  linux: ['found', 'net', 'git', 'ctr'],
+  net: ['found', 'linux', 'web', 'cloud'],
+  web: ['net', 'sec', 'db', 'cicd'],
+  sec: ['web', 'found', 'linux', 'cicd', 'mon'],
+  git: ['linux', 'cicd', 'devops'],
+  cicd: ['git', 'sec', 'devops', 'docker'],
+  ctr: ['linux', 'found', 'docker', 'k8s', 'cloud'],
+  docker: ['ctr', 'k8s', 'cicd'],
+  k8s: ['ctr', 'docker', 'net', 'cloud', 'mon', 'devops'],
+  db: ['web', 'cloud', 'trouble'],
+  cloud: ['net', 'ctr', 'k8s', 'devops'],
+  mon: ['linux', 'k8s', 'trouble', 'devops'],
+  devops: ['cicd', 'mon', 'cloud', 'k8s'],
+  trouble: DOMAIN_IDS.filter((d) => d !== 'trouble'),
+  lab: DOMAIN_IDS.filter((d) => d !== 'lab'),
+};
+
+/** 技術の代案の段階（docs/learning-design.md 12.2: 段階 4〜5 は技術の代案の譲歩） */
+const TECH_STAGE = 4;
+
+/**
+ * 学ぶと答えが増えることの検証（docs/content-spec.md 6 章・docs/game-design.md 20 章）。IT 施設の理由ごとに:
+ * 説明と技術の代案の分野が、その施設の分野か推奨前提・関連の分野・`sound` の説明が段階 1〜2 に 1 つ以上と段階 3 に 1 つ以上・
+ * 技術の代案（`requires` の段階 4 以上）が 1 つ以上
+ */
+export function validateLearning(reasons: readonly ObjectionReason[]): string[] {
+  const out: string[] = [];
+  for (const r of reasons) {
+    const home = DOMAINS.filter((d) => r.targets.includes(d.facility)).map((d) => d.id);
+    if (home.length === 0) continue;
+    const allowed = new Set<DomainId>([...home, ...home.flatMap((d) => DOMAIN_LINKS[d])]);
+    for (const e of r.explanations) if (!allowed.has(e.domain)) out.push(`${r.id}: 説明 ${e.id} の分野 ${e.domain} が施設の分野にも関連の分野にも無い`);
+    const sound = r.explanations.filter((e) => e.quality === 'sound');
+    if (!sound.some((e) => e.stage <= 2)) out.push(`${r.id}: 段階 1〜2 の sound の説明が無い`);
+    if (!sound.some((e) => e.stage === 3)) out.push(`${r.id}: 段階 3 の sound の説明が無い`);
+    const tech = r.concessions.filter((c) => c.requires);
+    if (!tech.some((c) => (c.requires?.stage ?? 0) >= TECH_STAGE)) out.push(`${r.id}: 技術の代案（requires の段階 ${String(TECH_STAGE)} 以上の譲歩）が無い`);
+    for (const c of tech) if (c.requires && !allowed.has(c.requires.domain)) out.push(`${r.id}: 技術の代案 ${c.id} の分野 ${c.requires.domain} が施設の分野にも関連の分野にも無い`);
   }
   return out;
 }

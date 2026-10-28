@@ -11,9 +11,15 @@
       "misconception": 0.6,
       "claim": "家のすぐ横に鉄塔とアンテナが立ち、窓からの空がふさがれる。電波が体に悪いのではないかと心配する人も多い。",
       "concessions": [
-        { "id": "net-tower-roof", "label": "鉄塔をやめ、アンテナを局舎の屋上に低く付ける（届く範囲は狭くなる）", "mods": { "height": -1, "tech": 0.9 } }
+        { "id": "net-tower-roof", "label": "鉄塔をやめ、アンテナを局舎の屋上に低く付ける（届く範囲は狭くなる）", "mods": { "height": -1, "tech": 0.9 } },
+        { "id": "net-small-cells", "label": "大きな鉄塔をやめ、低い小型のアンテナを何か所かに分けて置く", "mods": { "height": -1, "tech": 0.98 }, "cost": { "ratio": 0.05 }, "requires": { "domain": "net", "stage": 4 } }
       ],
-      "explanations": [],
+      "explanations": [
+        { "id": "net-radio-weak", "domain": "net", "stage": 2, "quality": "sound", "text": "このアンテナが出す電波は、携帯電話や家の無線 LAN と同じ種類で、国の決めた基準より十分に弱く出します。体を温めるほどの強さはありません。", "why": "電波の種類と強さが分かり、体への心配が和らいだ。" },
+        { "id": "net-radio-measure", "domain": "net", "stage": 3, "quality": "sound", "text": "近くの家の窓辺で電波の強さを測り、国の基準の何分の 1 かを毎年公開します。塔の高さは、届く範囲の計算から決めた最低の高さにします。", "why": "窓辺で測った強さを公開すると約束し、体を心配する人も自分で確かめられると受け取った。" },
+        { "id": "net-fiber-home", "domain": "net", "stage": 1, "quality": "partial", "text": "家までは光ケーブルでつなぐので、電波はほとんど使いません。", "why": "家の回線は電波を使わないが、塔が空をふさぎ、日を陰らせるという心配には答えていない。", "lesson": "net.b.01" },
+        { "id": "net-higher-safer", "domain": "net", "stage": 1, "quality": "wrong", "text": "電波は高い所から出すほど地上に届かなくなるので、高い塔のほうが安全です。", "why": "高さと地上での強さは、そう単純には決まらない。根拠の無い言い方で、かえって不安を強めた。", "lesson": "net.b.02" }
+      ],
       "lessons": ["net.b.01", "net.b.02"]
     },
     {
@@ -27,9 +33,15 @@
       "misconception": 0.3,
       "claim": "光ケーブルを引くたびに店の前の道路を掘り返され、点検の車が路上に止まる。客が来にくくなる。",
       "concessions": [
-        { "id": "net-roadworks-duct", "label": "今ある電柱と地中の管にケーブルを通し、新しく道路を掘らない", "mods": { "traffic": 0.5 }, "cost": { "ratio": 0.1 } }
+        { "id": "net-roadworks-duct", "label": "今ある電柱と地中の管にケーブルを通し、新しく道路を掘らない", "mods": { "traffic": 0.5 }, "cost": { "ratio": 0.1 } },
+        { "id": "net-microtrench", "label": "道路の端を細く浅く切って光ケーブルを埋める工法にし、1 区画を 1 日で終える", "mods": { "traffic": 0.4 }, "requires": { "domain": "net", "stage": 4 } }
       ],
-      "explanations": [],
+      "explanations": [
+        { "id": "net-roadworks-spare", "domain": "net", "stage": 2, "quality": "sound", "text": "光ケーブルは、一度通せば両端の機器を替えるだけで速くできます。最初に予備の管も入れておけば、後から掘り返す工事はほとんど要りません。", "why": "掘り返しが何度も続くわけではないと分かり、店の人の心配が和らいだ。" },
+        { "id": "net-roadworks-schedule", "domain": "net", "stage": 3, "quality": "sound", "text": "工事は 1 区画あたり 2 日以内とし、店の休みの日に合わせます。点検の車は路上に止めずに局舎の敷地に止め、工事の日数を毎月知らせます。", "why": "工事の日数と車の止め方を約束したので、店の人が商売の段取りを立てられると喜んだ。" },
+        { "id": "net-roadworks-wifi", "domain": "net", "stage": 1, "quality": "partial", "text": "通りには無線 LAN を飛ばすので、店も便利になります。", "why": "店には得もあるが、工事で道を掘り返されるという心配には答えていない。", "lesson": "net.b.01" },
+        { "id": "net-all-wireless", "domain": "net", "stage": 1, "quality": "wrong", "text": "これからの回線は全部無線なので、ケーブルの工事はもう要りません。", "why": "無線の基地局どうしや局舎の間は、結局ケーブルでつなぐ。工事が無いと言い切って、かえって信じてもらえなかった。", "lesson": "net.i.01" }
+      ],
       "lessons": ["net.b.01", "net.i.01"]
     }
   ]

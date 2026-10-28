@@ -12,9 +12,15 @@
       "claim": "よその町の仕事まで引き受けて、一年中、夜も冷却が止まらない。夜に静かになる時間が無くなる。",
       "concessions": [
         { "id": "cloud-night-move", "label": "夜の重い処理は、ほかの地域の設備へ回して受け持つ", "mods": { "nightNoise": 0.2, "tech": 0.8 } },
-        { "id": "cloud-wall", "label": "冷却塔を地下の機械室へ移す", "mods": { "noise": 0.5 }, "cost": { "ratio": 0.25 } }
+        { "id": "cloud-wall", "label": "冷却塔を地下の機械室へ移す", "mods": { "noise": 0.5 }, "cost": { "ratio": 0.25 } },
+        { "id": "cloud-liquid", "label": "サーバを液体で直接冷やす方式に替え、屋外の冷却塔を小さくする", "mods": { "noise": 0.4, "nightNoise": 0.4 }, "cost": { "ratio": 0.1 }, "requires": { "domain": "cloud", "stage": 4 } }
       ],
-      "explanations": [],
+      "explanations": [
+        { "id": "cloud-noise-region", "domain": "cloud", "stage": 2, "quality": "sound", "text": "クラウドは、仕事を複数の地域の設備に分けて受け持てます。夜の重い処理を昼の地域の設備へ回せば、ここで夜に回す冷却は少なくなります。", "why": "夜の仕事をよそへ回せる仕組みが分かり、夜通しの音を心配していた人が少し落ち着いた。" },
+        { "id": "cloud-noise-cap", "domain": "cloud", "stage": 3, "quality": "sound", "text": "冷却の音を敷地の境で 1 時間ごとに測り、夜 10 時から朝 6 時は決めた値を超えないよう、処理の量に上限を掛けます。測った値は毎月公開します。", "why": "夜の音に上限を約束し、守る手立てまで示したので、環境を重く見る議員も評価した。" },
+        { "id": "cloud-noise-virtual", "domain": "cloud", "stage": 1, "quality": "partial", "text": "{{term:virtualization}}で、少ない機械に多くの仕事をまとめます。", "why": "機械の数は減らせるが、夜にどれだけ冷やすのか、音がどうなるのかには答えていない。", "lesson": "cloud.b.01" },
+        { "id": "cloud-noise-sky", "domain": "cloud", "stage": 1, "quality": "wrong", "text": "クラウドは空の上にあるような物で、この建物で動く処理はわずかです。", "why": "クラウドの処理は、まさにこの建物の機械で動く。言い逃れに聞こえ、かえって不信を招いた。", "lesson": "cloud.b.01" }
+      ],
       "lessons": ["cloud.b.03", "cloud.i.01"]
     },
     {
@@ -28,9 +34,15 @@
       "misconception": 0.3,
       "claim": "クラウドの建物はデータセンターを何棟も並べた物だ。島の電気の多くを一つの施設が使うことになる。",
       "concessions": [
-        { "id": "cloud-power-phase", "label": "設備は需要に合わせて段階的に入れ、最初の規模を小さくする", "mods": { "power": 0.6, "tech": 0.8 }, "cost": { "ratio": -0.15 } }
+        { "id": "cloud-power-phase", "label": "設備は需要に合わせて段階的に入れ、最初の規模を小さくする", "mods": { "power": 0.6, "tech": 0.8 }, "cost": { "ratio": -0.15 } },
+        { "id": "cloud-power-auto", "label": "使う量に合わせて機械の台数を自動で増減させ、夜の空いた時間は待機の機械を止める", "mods": { "power": 0.5, "tech": 0.95 }, "requires": { "domain": "cloud", "stage": 4 } }
       ],
-      "explanations": [],
+      "explanations": [
+        { "id": "cloud-power-share", "domain": "cloud", "stage": 2, "quality": "sound", "text": "いろいろな会社の仕事を同じ機械で順番に受け持つので、会社ごとに機械を置くより、町全体で使う電気は少なくて済みます。", "why": "まとめて使うほど無駄が減るという理屈が伝わり、電気の心配が少し和らいだ。" },
+        { "id": "cloud-power-limit", "domain": "cloud", "stage": 3, "quality": "sound", "text": "最初は 1 棟分の設備で始め、週ごとの電力の使用量と島の電気の余りを公開します。余りが 2 割を切ったら、新しい設備は入れません。", "why": "使う量と、それ以上は入れない線を示したことで、安全を重く見る議員が頷いた。" },
+        { "id": "cloud-power-green", "domain": "cloud", "stage": 1, "quality": "partial", "text": "電気は、なるべく再生可能な電源から買う契約にします。", "why": "電気の出どころは良くなるが、島に来る電気の余裕が減るという心配には答えていない。", "lesson": "cloud.i.04" },
+        { "id": "cloud-power-users", "domain": "cloud", "stage": 1, "quality": "wrong", "text": "利用者はみんな遠くにいるので、電気もその人たちの所で使われます。", "why": "利用者がどこにいても、計算するのはこの建物の機械だ。電気を使うのはここだと指摘され、かえって不信を招いた。", "lesson": "cloud.b.03" }
+      ],
       "lessons": ["cloud.b.01", "cloud.i.04"]
     },
     {
@@ -44,9 +56,15 @@
       "misconception": 0.4,
       "claim": "運用はよその町から遠隔でするので、ここで働く人はほとんどいないのではないか。",
       "concessions": [
-        { "id": "cloud-jobs-desk", "label": "利用者の相談窓口と技術者の育成の場を市内に置く", "mods": { "jobs": 1.6 }, "cost": { "ratio": 0.15 } }
+        { "id": "cloud-jobs-desk", "label": "利用者の相談窓口と技術者の育成の場を市内に置く", "mods": { "jobs": 1.6 }, "cost": { "ratio": 0.15 } },
+        { "id": "cloud-jobs-migrate", "label": "市内の会社がクラウドへ移るのを手伝う技術者の部署を置き、地元から採って育てる", "mods": { "jobs": 1.8 }, "cost": { "ratio": 0.05 }, "requires": { "domain": "cloud", "stage": 4 } }
       ],
-      "explanations": [],
+      "explanations": [
+        { "id": "cloud-jobs-users", "domain": "cloud", "stage": 2, "quality": "sound", "text": "建物の中の運用の人は少なくても、クラウドを使いこなす技術者の仕事は、使う会社の側に生まれます。市内の会社の移行を手伝う窓口を置けば、その仕事を町の人が担えます。", "why": "仕事が生まれる場所が建物の外にもあると分かり、雇用を気にする人が話を聞いた。" },
+        { "id": "cloud-jobs-number", "domain": "cloud", "stage": 3, "quality": "sound", "text": "運用・相談の窓口・設備の保守で何人を雇い、うち何人を市内から採るかを年ごとに数で約束します。届かなければ研修の枠を広げます。", "why": "人数の約束と、届かない時の手立てまで示したので、雇用を重く見る議員が評価した。" },
+        { "id": "cloud-jobs-remote", "domain": "cloud", "stage": 1, "quality": "partial", "text": "遠くからでも操作できるので、町の人も家から働けます。", "why": "働き方の幅は広がるが、この町で何人を雇うのかには答えていない。", "lesson": "cloud.b.02" },
+        { "id": "cloud-jobs-auto", "domain": "cloud", "stage": 1, "quality": "wrong", "text": "クラウドは全部自動なので、運用の人はいりません。", "why": "クラウドでも、設定を決め、壊れた機器を替え、障害に答えるのは人だ。人がいらないと言い切って、雇用の心配がかえって強まった。", "lesson": "cloud.i.03" }
+      ],
       "lessons": ["cloud.b.02", "cloud.i.03"]
     }
   ]

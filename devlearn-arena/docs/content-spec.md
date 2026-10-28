@@ -325,6 +325,9 @@ interface Mission {
 - **全ての理由に、`requires` の無い譲歩が 1 つ以上ある**（スキルが無くても通せる道。`docs/game-design.md` 20 章）。その譲歩のどれかが、理由の `measure` の元の値を下げる（騒音の理由なら `noise` か `nightNoise` か `height`）
 - 譲歩の `mods` の名前が 7.1.1 の表にある。`misconception` が 0〜0.8
 - IT 施設の理由は、その施設の分野（`docs/curriculum.md` 1 章の対応）か関連の分野の説明を持ち、`sound` の説明が段階 1〜2 に 1 つ以上と段階 3 に 1 つ以上ある（学ぶと答えが増えることを保つ）
+  - 関連の分野は、`docs/curriculum.md` 3.2 の表のその分野の「推奨前提」と「関連」（trouble は全分野、lab はどの分野でもよい）。技術の代案の `requires` の分野も同じ
+  - IT 施設の理由は、技術の代案（`requires` の段階 4 以上の譲歩）を 1 つ以上持つ（`docs/learning-design.md` 12.2 の段階 4〜5。G7）
+  - 説明の `text` と `why` を、理由どうしで使い回さない
 - `wrong` と `partial` の説明に `lesson` がある。理由の `lessons`・説明の `lesson` のレッスン ID が存在する
 - 本文に出る用語がすべて用語集にある
 - 議員がちょうど 7 人で、7 つの論点のそれぞれが、ちょうど 1 人の主な論点になっている

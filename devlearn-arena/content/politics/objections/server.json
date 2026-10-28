@@ -11,9 +11,15 @@
       "misconception": 0.4,
       "claim": "サーバは一年中、昼も夜も電気を使い続ける。島に来る電気の余裕が減り、夏の夕方に家の電気が止まるのではないか。",
       "concessions": [
-        { "id": "server-power-virtual", "label": "仮想化でサーバの台数をまとめ、使っていない機械の電源を落とす", "mods": { "power": 0.6, "tech": 0.9 } }
+        { "id": "server-power-virtual", "label": "仮想化でサーバの台数をまとめ、使っていない機械の電源を落とす", "mods": { "power": 0.6, "tech": 0.9 } },
+        { "id": "server-power-rebalance", "label": "負荷を調べて仕事を寄せ直し、使っていない機械を自動で止める仕組みを入れる", "mods": { "power": 0.45, "tech": 0.97 }, "requires": { "domain": "linux", "stage": 4 } }
       ],
-      "explanations": [],
+      "explanations": [
+        { "id": "server-idle", "domain": "found", "stage": 2, "quality": "sound", "text": "サーバの多くは、一日のほとんどを待っているだけです。{{term:virtualization}}で 1 台に仕事をまとめれば、動かす台数が減り、電気も減ります。", "why": "待っている機械が多いと分かり、まとめれば電気が減る理由が伝わった。" },
+        { "id": "server-usage", "domain": "linux", "stage": 3, "quality": "sound", "text": "全てのサーバの CPU の使用率と電力を測って公開し、1 週間の平均が 1 割を切る機械は止めるか、ほかにまとめます。", "why": "測る値と止める線を示したので、電気の心配に数字で答えたと議員も評価した。" },
+        { "id": "server-kill-idle", "domain": "linux", "stage": 1, "quality": "partial", "text": "夜は使っていないプロセスを止めます。", "why": "無駄は少し減るが、機械そのものは動き続ける。島の電気の余裕の心配には答えきれていない。", "lesson": "linux.b.08" },
+        { "id": "server-sleeps", "domain": "linux", "stage": 1, "quality": "wrong", "text": "サーバは誰も使っていない時は自動で眠るので、電気はほとんど使いません。", "why": "サーバは眠らずに待ち続けるよう作るのがふつうだ。使わないと言い切って、かえって不信を招いた。", "lesson": "found.b.03" }
+      ],
       "lessons": ["found.i.03", "linux.b.08"]
     },
     {
@@ -27,9 +33,15 @@
       "misconception": 0.4,
       "claim": "機械が自分で動くので、夜はだれもいない建物になる。地元の人が働ける場所にはならない。",
       "concessions": [
-        { "id": "server-jobs-local", "label": "保守の仕事を市内の会社に任せ、地元から運用の担当を雇う", "mods": { "jobs": 1.6 }, "cost": { "ratio": 0.1 } }
+        { "id": "server-jobs-local", "label": "保守の仕事を市内の会社に任せ、地元から運用の担当を雇う", "mods": { "jobs": 1.6 }, "cost": { "ratio": 0.1 } },
+        { "id": "server-jobs-ops", "label": "市内の会社のサーバの面倒も請け負う運用の窓口を開き、地元から採って育てる", "mods": { "jobs": 1.8 }, "cost": { "ratio": 0.05 }, "requires": { "domain": "linux", "stage": 4 } }
       ],
-      "explanations": [],
+      "explanations": [
+        { "id": "server-jobs-work", "domain": "linux", "stage": 2, "quality": "sound", "text": "サーバは置けば動き続ける物ではなく、更新・ログの確認・故障の対応に人の手が要ります。その仕事を市内の人に任せます。", "why": "機械にも人の手が要ると分かり、雇用を気にする人が耳を傾けた。" },
+        { "id": "server-jobs-number", "domain": "linux", "stage": 3, "quality": "sound", "text": "サーバ 50 台あたり 1 人の運用担当を置く目安で人数を決め、うち何人を市内から採ったかを毎年知らせます。", "why": "台数から人数を出す根拠があり、雇用を重く見る議員が評価した。" },
+        { "id": "server-jobs-remote", "domain": "linux", "stage": 1, "quality": "partial", "text": "サーバは遠くからでも操作できます。", "why": "便利さは伝わったが、それなら町の人を雇わなくてよいのでは、という心配には答えていない。", "lesson": "linux.b.01" },
+        { "id": "server-jobs-cron", "domain": "linux", "stage": 1, "quality": "wrong", "text": "決まった作業は{{term:cron}}で自動にできるので、人はいりません。", "why": "自動にできるのは決まった作業だけで、止まった時に直すのは人だ。人がいらないと言い切って、かえって雇用の心配を強めた。", "lesson": "linux.i.08" }
+      ],
       "lessons": ["linux.i.01", "linux.b.00"]
     }
   ]

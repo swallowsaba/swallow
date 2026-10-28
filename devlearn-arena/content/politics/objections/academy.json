@@ -12,9 +12,15 @@
       "claim": "朝と夕方に学生と送り迎えの車が一度に押し寄せ、家の前の細い道が通れなくなる。",
       "concessions": [
         { "id": "academy-bus", "label": "送迎のバスを出し、車での通学を認めない", "mods": { "traffic": 0.5 }, "cost": { "ratio": 0.15 } },
-        { "id": "academy-online", "label": "講義の半分を自宅から受けられる形にする（教室での実習は減る）", "mods": { "traffic": 0.6, "tech": 0.9 } }
+        { "id": "academy-online", "label": "講義の半分を自宅から受けられる形にする（教室での実習は減る）", "mods": { "traffic": 0.6, "tech": 0.9 } },
+        { "id": "academy-vlab", "label": "実習の機械を仮想化して家から使えるようにし、校舎に通うのは週 2 日にする", "mods": { "traffic": 0.4, "tech": 0.95 }, "requires": { "domain": "found", "stage": 4 } }
       ],
-      "explanations": [],
+      "explanations": [
+        { "id": "academy-remote", "domain": "linux", "stage": 2, "quality": "sound", "text": "実習の多くは、自宅の PC から {{term:ssh}} で学院のサーバに入って進められます。機械を触りに来る日が減れば、朝に集まる人と車も減ります。", "why": "学院に来なくても実習が進む仕組みが分かり、朝の道を心配していた人が少し安心した。" },
+        { "id": "academy-bandwidth", "domain": "found", "stage": 3, "quality": "sound", "text": "家から実習の画面を使うのに要る回線は、1 人あたり毎秒数メガビットです。100 人が同時に使っても学院の回線に収まると計算で示し、通う日を週 2 日に減らします。", "why": "必要な回線の量を見積もって示したので、通う日を本当に減らせると議員も納得した。" },
+        { "id": "academy-video", "domain": "found", "stage": 1, "quality": "partial", "text": "講義の動画をインターネットで配り、家でも見られるようにします。", "why": "講義は家で見られるようになるが、機械に触る実習で朝に集まる混み方には答えていない。", "lesson": "found.b.07" },
+        { "id": "academy-online-only", "domain": "found", "stage": 1, "quality": "wrong", "text": "インターネットで学ぶ学校なので、建物に人はほとんど来ません。", "why": "実習には校舎の機械と講師が要る。人が来ないと言い切ったので、朝の校門の様子を知る住民はかえって疑った。", "lesson": "found.b.07" }
+      ],
       "lessons": ["found.b.07", "found.b.01"]
     },
     {
@@ -28,9 +34,14 @@
       "misconception": 0.1,
       "claim": "3 階建ての校舎と時計塔が南に建つと、冬の午後には庭と 1 階の窓に日が当たらなくなる。",
       "concessions": [
-        { "id": "academy-low", "label": "時計塔をやめ、校舎を 1 段低くする", "mods": { "height": -1, "tech": 0.9 } }
+        { "id": "academy-low", "label": "時計塔をやめ、校舎を 1 段低くする", "mods": { "height": -1, "tech": 0.9 } },
+        { "id": "academy-basement", "label": "実習の機械室を地下に移し、校舎を 1 段低くする（機械は窓を要らない）", "mods": { "height": -1, "tech": 0.97 }, "cost": { "ratio": 0.1 }, "requires": { "domain": "found", "stage": 4 } }
       ],
-      "explanations": [],
+      "explanations": [
+        { "id": "academy-machine-room", "domain": "found", "stage": 2, "quality": "sound", "text": "3 階に予定しているのは、実習の機械を並べる部屋です。機械に窓や日の光は要らず、要るのは電気と冷たい空気なので、高さを抑えた造りにもできます。", "why": "上の階が何のための部屋かが分かり、高さを削る余地があると知った住民が話を聞く気になった。" },
+        { "id": "academy-floor-count", "domain": "found", "stage": 3, "quality": "sound", "text": "実習に使う機械は 120 台で、1 台に要る床は 1 平方メートルほどです。2 階の床で足りることを数字で示し、3 階が無くても授業が回る形にします。", "why": "要る広さを数で示したので、3 階が無くても回ると議員も納得した。" },
+        { "id": "academy-tower-time", "domain": "found", "stage": 1, "quality": "wrong", "text": "時計塔は、学院のコンピュータの時刻を合わせるのに要る物なので外せません。", "why": "コンピュータの時刻はネットワークを通して合わせられ、塔は要らない。外せない理由にならず、かえって不信を招いた。", "lesson": "found.b.01" }
+      ],
       "lessons": ["found.b.01"]
     }
   ]

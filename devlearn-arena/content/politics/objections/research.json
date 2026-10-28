@@ -11,9 +11,15 @@
       "misconception": 0.3,
       "claim": "研究所ができると、周りの土地の値が上がり、古い借家の家賃も上がる。今の暮らしのままでは住み続けられない人が出る。",
       "concessions": [
-        { "id": "research-low", "label": "建物を 1 段低くし、最初の規模を抑える", "mods": { "height": -1, "tech": 0.85 } }
+        { "id": "research-low", "label": "建物を 1 段低くし、最初の規模を抑える", "mods": { "height": -1, "tech": 0.85 } },
+        { "id": "research-cloud-compute", "label": "実験の計算はクラウドで必要な時だけ借りる形にして、研究棟を小さくし高さを 1 段抑える", "mods": { "height": -1, "tech": 0.97 }, "requires": { "domain": "cloud", "stage": 4 } }
       ],
-      "explanations": [],
+      "explanations": [
+        { "id": "research-rent-scale", "domain": "cloud", "stage": 2, "quality": "sound", "text": "計算の多くは、クラウドで必要な時だけ借ります。建物に置く機械と人は少なくて済み、周りに住む人が一度に増えることはありません。", "why": "建物と人が膨らみすぎない理由が分かり、家賃の心配が少し和らいだ。" },
+        { "id": "research-rent-watch", "domain": "lab", "stage": 3, "quality": "sound", "text": "研究所の周りの家賃と地価を、建つ前から毎年調べて公開します。1 割を超えて上がったら、研究の席を増やす前に市と相談します。", "why": "家賃と地価を建つ前から測り続けると約束し、議員も評価した。" },
+        { "id": "research-rent-share", "domain": "lab", "stage": 1, "quality": "partial", "text": "研究の成果は、町の会社にも分けます。", "why": "町の会社には得だが、周りの家賃がどうなるかには答えていない。", "lesson": "lab.i.01" },
+        { "id": "research-rent-nobody", "domain": "cloud", "stage": 1, "quality": "wrong", "text": "研究は全部クラウドでするので、研究所に人はほとんど来ません。", "why": "計算をクラウドで借りても、考えて試すのは人だ。来ないと言い切って、かえって疑われた。", "lesson": "cloud.b.02" }
+      ],
       "lessons": ["lab.a.03", "lab.i.01"]
     },
     {
@@ -27,9 +33,15 @@
       "misconception": 0.3,
       "claim": "機材と試料を運ぶトラックが昼夜を問わず出入りし、子どもの通学路を横切る。",
       "concessions": [
-        { "id": "research-trucks-day", "label": "搬入は昼の時間に限り、裏の道から入れる", "mods": { "traffic": 0.6 }, "cost": { "ratio": 0.05 } }
+        { "id": "research-trucks-day", "label": "搬入は昼の時間に限り、裏の道から入れる", "mods": { "traffic": 0.6 }, "cost": { "ratio": 0.05 } },
+        { "id": "research-remote-lab", "label": "試料の受け渡しを月 1 回にまとめ、実験の多くは離れた所から機械を動かして行う", "mods": { "traffic": 0.4, "tech": 0.98 }, "requires": { "domain": "lab", "stage": 4 } }
       ],
-      "explanations": [],
+      "explanations": [
+        { "id": "research-trucks-data", "domain": "lab", "stage": 2, "quality": "sound", "text": "ここで扱う物の多くは、計算とデータです。機材は最初に運び込めば、あとはネットワークで結果をやり取りできるので、トラックが毎日来ることはありません。", "why": "運ぶ物の多くがデータだと分かり、通学路の心配が和らいだ。" },
+        { "id": "research-trucks-log", "domain": "lab", "stage": 3, "quality": "sound", "text": "搬入のトラックの台数と時刻を記録して毎月公開します。通学の時間（7 時半〜8 時半と 15 時〜16 時）には入れない決まりにします。", "why": "台数と、通学の時間に入れない決まりを示したので、子どもを持つ親が安心した。" },
+        { "id": "research-trucks-open", "domain": "lab", "stage": 1, "quality": "partial", "text": "研究の結果はインターネットで公開します。", "why": "結果を広く使えるのは良いが、トラックが通学路を横切る心配には答えていない。", "lesson": "lab.i.01" },
+        { "id": "research-trucks-parcel", "domain": "lab", "stage": 1, "quality": "wrong", "text": "研究所の機材は小さいので、宅配の車で運べます。", "why": "大きな計算機や実験の装置は、宅配では運べない。小さく言ったことで、かえって信じてもらえなかった。", "lesson": "lab.a.03" }
+      ],
       "lessons": ["lab.a.03"]
     }
   ]

@@ -11,9 +11,15 @@
       "misconception": 0.3,
       "claim": "IT の会社が入ると給料の高い人が周りに住みたがり、家賃が上がって、古くから住む人が出ていくことになる。",
       "concessions": [
-        { "id": "dev-low", "label": "建物を 1 段低くし、入る会社の数を絞る", "mods": { "height": -1, "tech": 0.85 } }
+        { "id": "dev-low", "label": "建物を 1 段低くし、入る会社の数を絞る", "mods": { "height": -1, "tech": 0.85 } },
+        { "id": "dev-remote-first", "label": "離れた場所から開発に加われる仕組みを整え、席の数を減らして建物を 1 段低くする", "mods": { "height": -1, "tech": 0.97 }, "requires": { "domain": "git", "stage": 4 } }
       ],
-      "explanations": [],
+      "explanations": [
+        { "id": "dev-rent-remote", "domain": "git", "stage": 2, "quality": "sound", "text": "Git と{{term:pull-request}}を使えば、離れた場所にいる人どうしで同じソフトを作れます。働く人が皆この近くに住む必要は無く、周りの家を探す人が一度に押し寄せることもありません。", "why": "近くに住む人が一気に増えるわけではないと分かり、家賃の心配が少し和らいだ。" },
+        { "id": "dev-rent-count", "domain": "git", "stage": 3, "quality": "sound", "text": "社員のうち市内に住む人の割合と、周りの家賃の動きを毎年調べて公開します。家賃が 1 割を超えて上がった地区があれば、在宅の日を増やして出社の人数を絞ります。", "why": "家賃の動きを測り、上がった時の手立てまで示したので、手頃さを重く見る議員が評価した。" },
+        { "id": "dev-rent-local", "domain": "git", "stage": 1, "quality": "partial", "text": "市内の若い人を優先して雇います。", "why": "地元の人の働き口にはなるが、周りの家賃がどうなるかには答えていない。", "lesson": "git.i.03" },
+        { "id": "dev-rent-github", "domain": "git", "stage": 1, "quality": "wrong", "text": "コードは全部 GitHub に置くので、建物に人は来ません。", "why": "コードの置き場とは別に、人は机で働く。人が来ないと言い切ったので、通りの様子を知る人はかえって疑った。", "lesson": "git.i.01" }
+      ],
       "lessons": ["git.b.01", "git.i.03"]
     },
     {
@@ -27,9 +33,15 @@
       "misconception": 0.3,
       "claim": "朝の 9 時前後に、開発者の車が一斉にこの通りへ入ってくる。今でも細い道が詰まっている。",
       "concessions": [
-        { "id": "dev-remote", "label": "在宅で働く日を決め、出社は週 3 日にする", "mods": { "traffic": 0.6, "tech": 0.95 } }
+        { "id": "dev-remote", "label": "在宅で働く日を決め、出社は週 3 日にする", "mods": { "traffic": 0.6, "tech": 0.95 } },
+        { "id": "dev-async", "label": "会議を書き物とレビューでの話し合いに替え、出社は週 2 日、時刻はばらばらにする", "mods": { "traffic": 0.4, "tech": 0.97 }, "requires": { "domain": "git", "stage": 4 } }
       ],
-      "explanations": [],
+      "explanations": [
+        { "id": "dev-traffic-async", "domain": "git", "stage": 2, "quality": "sound", "text": "開発の話し合いは、{{term:pull-request}}の上で書き物でできます。全員が朝 9 時にそろわなくても仕事が進むので、出社の時刻をずらせます。", "why": "一斉に集まらなくても仕事が回る理由が分かり、朝の道を心配していた人が落ち着いた。" },
+        { "id": "dev-traffic-count", "domain": "git", "stage": 3, "quality": "sound", "text": "出社の時刻を 7 時から 11 時の間で選べるようにし、8 時台に入る車の台数を毎月数えて公開します。目標の台数を超えたら、在宅の日を増やします。", "why": "車の台数の目標と、超えた時の手立てがはっきりしていて、交通を重く見る議員が評価した。" },
+        { "id": "dev-traffic-ci", "domain": "cicd", "stage": 1, "quality": "partial", "text": "テストは機械が自動で回すので、夜も人がいなくても進みます。", "why": "機械の仕事は夜に回せるが、朝に人が一斉に来るという心配には答えていない。", "lesson": "cicd.b.01" },
+        { "id": "dev-traffic-no-meetings", "domain": "git", "stage": 1, "quality": "wrong", "text": "プルリクエストで仕事をするので、顔を合わせて集まることはもう無くなります。", "why": "書き物で済む話は増えるが、顔を合わせる日がなくなるわけではない。集まらないと言い切って、かえって疑われた。", "lesson": "git.i.03" }
+      ],
       "lessons": ["git.i.01", "git.i.03"]
     }
   ]

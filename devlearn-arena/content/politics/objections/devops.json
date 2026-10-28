@@ -11,9 +11,15 @@
       "misconception": 0.6,
       "claim": "自動化を広める本部だと聞いた。町の会社で人がしていた作業が機械に置き換わり、働き口が減るのではないか。",
       "concessions": [
-        { "id": "devops-jobs-reskill", "label": "自動化で手の空いた人が次の仕事を学べる講座を開き、受講した人を雇う", "mods": { "jobs": 1.6 }, "cost": { "ratio": 0.15 } }
+        { "id": "devops-jobs-reskill", "label": "自動化で手の空いた人が次の仕事を学べる講座を開き、受講した人を雇う", "mods": { "jobs": 1.6 }, "cost": { "ratio": 0.15 } },
+        { "id": "devops-jobs-help", "label": "町の会社の自動化を手伝う仕事を請け、手順を書ける人を地元から採って育てる", "mods": { "jobs": 1.8 }, "cost": { "ratio": 0.05 }, "requires": { "domain": "devops", "stage": 4 } }
       ],
-      "explanations": [],
+      "explanations": [
+        { "id": "devops-toil", "domain": "devops", "stage": 2, "quality": "sound", "text": "自動化するのは、毎回同じ手順を手で繰り返す作業です。空いた時間は仕組みを良くする仕事に回ります。DevOps は人を減らす話ではなく、同じ人で速く確かに届ける話です。", "why": "人を減らすための本部ではないと分かり、働き口の心配が和らいだ。" },
+        { "id": "devops-jobs-measure", "domain": "devops", "stage": 3, "quality": "sound", "text": "自動化した作業の時間と、その分で始めた仕事の数を、町の会社ごとに毎年まとめて公開します。自動化の後に人を減らした会社には、講座の枠を先に回します。", "why": "置き換わった仕事と新しく生まれた仕事を数で比べると約束し、議員も評価した。" },
+        { "id": "devops-iac", "domain": "devops", "stage": 1, "quality": "partial", "text": "設定は全てコードに書いて、誰でも同じ物を作れるようにします。", "why": "やり方としては正しいが、町の会社の働き口がどうなるかには答えていない。", "lesson": "devops.i.01" },
+        { "id": "devops-no-ops", "domain": "devops", "stage": 1, "quality": "wrong", "text": "DevOps を入れれば運用の担当はいらなくなるので、その分の給料を浮かせられます。", "why": "DevOps は開発と運用が一緒に働く形で、運用の人をなくす話ではない。人を減らす話にしてしまい、働き口の心配をかえって強めた。", "lesson": "devops.b.01" }
+      ],
       "lessons": ["devops.b.01", "devops.b.02"]
     },
     {
@@ -27,9 +33,15 @@
       "misconception": 0.2,
       "claim": "中層の棟と、ほかの施設へ渡る連絡橋が、低い家並みの上に長い影を落とす。冬は昼でも庭に日が当たらない。",
       "concessions": [
-        { "id": "devops-low", "label": "棟を 1 階低くし、連絡橋は地下の通路に替える", "mods": { "height": -1, "tech": 0.9 }, "cost": { "ratio": 0.1 } }
+        { "id": "devops-low", "label": "棟を 1 階低くし、連絡橋は地下の通路に替える", "mods": { "height": -1, "tech": 0.9 }, "cost": { "ratio": 0.1 } },
+        { "id": "devops-fiber-link", "label": "棟どうしは地中の光回線で結び、連絡橋をやめて棟を 1 段低くする", "mods": { "height": -1, "tech": 0.98 }, "requires": { "domain": "devops", "stage": 4 } }
       ],
-      "explanations": [],
+      "explanations": [
+        { "id": "devops-bridge-why", "domain": "devops", "stage": 2, "quality": "sound", "text": "連絡橋は、開発と運用の人が行き来するための物です。毎日の連携は共通の画面と書き物で済むので、橋を地下の通路に替えても仕事は回ります。", "why": "橋が無くても連携できると分かり、影を落とす橋を残す理由が無いと住民も納得した。" },
+        { "id": "devops-shadow-table", "domain": "devops", "stage": 3, "quality": "sound", "text": "建物の形のデータから、冬至の日に影がかかる家と時間を表にします。2 時間を超えてかかる家が出ないよう、階の数を決めます。", "why": "影のかかる家と時間を表で示したので、日照を心配する家も自分の家を確かめられた。" },
+        { "id": "devops-dashboard", "domain": "mon", "stage": 1, "quality": "partial", "text": "運用の様子は大きな画面で、どの棟からでも見られるようにします。", "why": "連携の仕方は分かったが、棟の高さと影の話には答えていない。", "lesson": "mon.i.02" },
+        { "id": "devops-same-room", "domain": "devops", "stage": 1, "quality": "wrong", "text": "開発と運用は同じ部屋にいないと DevOps にならないので、橋は外せません。", "why": "DevOps は部屋を一緒にすることではなく、仕事の流れをつなぐことだ。外せない理由にならず、かえって不信を招いた。", "lesson": "devops.b.01" }
+      ],
       "lessons": ["devops.b.01"]
     }
   ]

@@ -11,9 +11,15 @@
       "misconception": 0.4,
       "claim": "一晩中、画面を見張る人が交代で出入りし、深夜にも車のドアの音とヘッドライトが寝室に入ってくる。",
       "concessions": [
-        { "id": "mon-shift-merge", "label": "交代を 1 日 2 回にまとめ、夜は少ない人数で見る", "mods": { "traffic": 0.6, "jobs": 0.9 } }
+        { "id": "mon-shift-merge", "label": "交代を 1 日 2 回にまとめ、夜は少ない人数で見る", "mods": { "traffic": 0.6, "jobs": 0.9 } },
+        { "id": "mon-alert-tuning", "label": "アラートを鳴るべき時だけ鳴るよう作り直し、夜は 1 人が家で待機する形にする", "mods": { "traffic": 0.4, "jobs": 0.95 }, "requires": { "domain": "mon", "stage": 4 } }
       ],
-      "explanations": [],
+      "explanations": [
+        { "id": "mon-alert-night", "domain": "mon", "stage": 2, "quality": "sound", "text": "画面を人が一晩中見張らなくても、{{term:alert}}を決めておけば、異常の時だけ知らせが届きます。夜の見張りは少ない人数で足ります。", "why": "一晩中人が出入りするわけではないと分かり、夜の車を心配していた人が落ち着いた。" },
+        { "id": "mon-shift-numbers", "domain": "mon", "stage": 3, "quality": "sound", "text": "夜に鳴ったアラートの数と、そのうち人が動く必要があった数を毎月公開します。動く必要の無いアラートは減らし、夜の交代を 1 回にします。", "why": "夜に人が動く回数を数で減らすと約束し、運用を知る議員が評価した。" },
+        { "id": "mon-big-screen", "domain": "mon", "stage": 1, "quality": "partial", "text": "見張りの画面を大きく分かりやすくして、少ない人で見られるようにします。", "why": "見る人の負担は減るが、夜中の交代で人と車が出入りする心配には答えていない。", "lesson": "mon.i.02" },
+        { "id": "mon-all-alerts", "domain": "mon", "stage": 1, "quality": "wrong", "text": "どんな小さな変化でもアラートを鳴らすので、夜も安心して見張れます。", "why": "鳴りすぎるアラートは、かえって夜中の呼び出しと出入りを増やす。逆の答えで、不信が増した。", "lesson": "mon.b.04" }
+      ],
       "lessons": ["mon.b.01", "mon.b.04"]
     },
     {
@@ -27,9 +33,15 @@
       "misconception": 0.4,
       "claim": "壁一面の画面と、止まらないための予備の電源で、昼も夜も電気を使い続ける。島の電気が足りない日に、家より先に回されるのではないか。",
       "concessions": [
-        { "id": "mon-power-save", "label": "誰も見ていない画面は消し、集めるデータを大事な物に絞って機材を減らす", "mods": { "power": 0.6, "tech": 0.9 } }
+        { "id": "mon-power-save", "label": "誰も見ていない画面は消し、集めるデータを大事な物に絞って機材を減らす", "mods": { "power": 0.6, "tech": 0.9 } },
+        { "id": "mon-retention", "label": "データを残す期間と細かさを決め直し、古い物はまとめて小さくして機材を半分にする", "mods": { "power": 0.5, "tech": 0.97 }, "requires": { "domain": "mon", "stage": 4 } }
       ],
-      "explanations": [],
+      "explanations": [
+        { "id": "mon-power-sample", "domain": "mon", "stage": 2, "quality": "sound", "text": "{{term:metrics}}は、全てを細かく取らなくても、間隔を決めて取れば様子は十分に分かります。集める量を絞れば、置く機械も使う電気も減ります。", "why": "集める量と電気がつながっていると分かり、電気の心配が少し和らいだ。" },
+        { "id": "mon-power-budget", "domain": "mon", "stage": 3, "quality": "sound", "text": "集めるデータの量と、機材が使う電力を毎月測って公開します。量が 1 年で 2 倍を超えないよう、残す期間を決めます。", "why": "集める量と電気に上限を決めると約束し、安全を重く見る議員が評価した。" },
+        { "id": "mon-ups", "domain": "mon", "stage": 1, "quality": "partial", "text": "予備の電源は、停電した時だけ使います。", "why": "予備の電源の使い方は分かったが、ふだん昼も夜も使う電気の量には答えていない。", "lesson": "mon.b.01" },
+        { "id": "mon-priority", "domain": "mon", "stage": 1, "quality": "wrong", "text": "監視は町を守るための物なので、電気が足りない日も、家より先に回すのが当然です。", "why": "監視が大事でも、家の電気を後回しにする理由にはならない。住民の心配をそのまま認めてしまい、かえって反発を買った。", "lesson": "mon.b.01" }
+      ],
       "lessons": ["mon.b.01"]
     }
   ]

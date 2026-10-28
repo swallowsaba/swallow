@@ -1,12 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import { ENTRIES } from './catalog';
 import { TERMS } from './glossary';
-import { COUNCIL, EXPLAIN, lowersMeasure, MEMBER_KEYS, objectionTargets, POLITICS_RULES, REASONS, validateCouncil, validateReasons } from './politics';
+import { COUNCIL, DOMAIN_LINKS, EXPLAIN, lowersMeasure, MEMBER_KEYS, objectionTargets, POLITICS_RULES, REASONS, validateCouncil, validateLearning, validateReasons } from './politics';
 import type { ObjectionReason } from '@/sim/types';
 
 /**
  * 市政のデータの検証（docs/content-spec.md 6 章の市政の項目）。
- * 反対の理由と譲歩（G4）。説明と技術の代案の揃い方は G7 で足す。
+ * 反対の理由と譲歩（G4）。説明と技術の代案の揃い方（G7）。
  */
 
 const ctx = { lessons: new Set(ENTRIES.map((e) => e.id)), terms: new Set(TERMS.map((t) => t.id)) };
@@ -29,6 +29,11 @@ describe('反対の理由のデータ（content/politics/objections/。7.1）', 
   it('同じ文言の言い分を使い回さない', () => {
     const claims = REASONS.map((r) => r.claim);
     expect(new Set(claims).size).toBe(claims.length);
+    // 説明の文と、住民と議員の受け取り方の 1 行も
+    for (const key of ['text', 'why'] as const) {
+      const lines = REASONS.flatMap((r) => r.explanations.map((e) => e[key]));
+      expect(new Set(lines).size, key).toBe(lines.length);
+    }
   });
 
   it('検証は誤りを見つける: requires の無い譲歩が無い・譲歩が元の値を下げない・理由が 1 つだけの種類', () => {
@@ -39,6 +44,28 @@ describe('反対の理由のデータ（content/politics/objections/。7.1）', 
     expect(problems).toContain('x-1: requires の無い譲歩が無い（スキルが無くても通せる道が要る）');
     expect(problems).toContain('x-2: requires の無い譲歩のどれも、強さの元の値（noise）を下げない');
     expect(validateReasons(REASONS.filter((r) => r.id !== 'server-jobs'), ctx)).toContain('server: 反対の理由が 1 つ（2 つ以上要る）');
+  });
+
+  it('学ぶと答えが増える（G7）: IT 施設の理由は、施設か関連の分野の sound の説明を段階 1〜2 と 3 に持ち、技術の代案（段階 4 以上）を持つ', () => {
+    const base = REASONS.find((r) => r.id === 'dc-night-noise') as ObjectionReason;
+    const sound = base.explanations.filter((e) => e.quality === 'sound');
+    const noBasic: ObjectionReason = { ...base, id: 'y-1', explanations: sound.filter((e) => e.stage === 3) };
+    const noNumbers: ObjectionReason = { ...base, id: 'y-2', explanations: sound.filter((e) => e.stage <= 2) };
+    const noTech: ObjectionReason = { ...base, id: 'y-3', concessions: base.concessions.filter((c) => !c.requires) };
+    const farDomain: ObjectionReason = { ...base, id: 'y-4', explanations: [...base.explanations, { id: 'y-git', domain: 'git', stage: 1, quality: 'sound', text: 'x', why: 'x' }] };
+    const farTech: ObjectionReason = { ...base, id: 'y-5', concessions: [...base.concessions, { id: 'y-tech', label: 'x', mods: { noise: 0.5 }, requires: { domain: 'git', stage: 4 } }] };
+    const problems = validateLearning([noBasic, noNumbers, noTech, farDomain, farTech]);
+    expect(problems).toEqual([
+      'y-1: 段階 1〜2 の sound の説明が無い',
+      'y-2: 段階 3 の sound の説明が無い',
+      'y-3: 技術の代案（requires の段階 4 以上の譲歩）が無い',
+      'y-4: 説明 y-git の分野 git が施設の分野にも関連の分野にも無い',
+      'y-5: 技術の代案 y-tech の分野 git が施設の分野にも関連の分野にも無い',
+    ]);
+    // 用途地域の変更（IT 施設でない）の理由には求めない
+    expect(validateLearning(REASONS.filter((r) => r.targets.some((t) => t.startsWith('rezone:'))))).toEqual([]);
+    // 関連の分野は docs/curriculum.md 3.2 の推奨前提と関連（データセンター = db に、cloud・web・trouble）
+    expect(DOMAIN_LINKS.db).toEqual(['web', 'cloud', 'trouble']);
   });
 
   it('強さの元の値を下げる譲歩の対応（7.1.1）: 騒音は noise・nightNoise・height、費用は費用を下げて規模も小さくする', () => {

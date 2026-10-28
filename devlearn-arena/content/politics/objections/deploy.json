@@ -11,9 +11,15 @@
       "misconception": 0.4,
       "claim": "ソフトを組み立てて配るのは全部自動で、建物の割に人がいらないと聞いた。町の仕事は増えない。",
       "concessions": [
-        { "id": "deploy-jobs-train", "label": "パイプラインを作る技術者を市内で募集し、研修の場を置く", "mods": { "jobs": 1.6 }, "cost": { "ratio": 0.15 } }
+        { "id": "deploy-jobs-train", "label": "パイプラインを作る技術者を市内で募集し、研修の場を置く", "mods": { "jobs": 1.6 }, "cost": { "ratio": 0.15 } },
+        { "id": "deploy-jobs-platform", "label": "市内の会社のパイプラインを作って預かる仕事を請け、地元から技術者を雇って育てる", "mods": { "jobs": 1.8 }, "cost": { "ratio": 0.05 }, "requires": { "domain": "cicd", "stage": 4 } }
       ],
-      "explanations": [],
+      "explanations": [
+        { "id": "deploy-jobs-people", "domain": "cicd", "stage": 2, "quality": "sound", "text": "自動になるのは同じ作業の繰り返しです。{{term:pipeline}}を設計し、失敗を直し、品質の決まりを作るのは人で、その仕事をここで担います。", "why": "自動化の後にも人の仕事が残ると分かり、雇用を気にする人が耳を傾けた。" },
+        { "id": "deploy-jobs-count", "domain": "cicd", "stage": 3, "quality": "sound", "text": "パイプラインの設計と保守で何人、テストの仕組みで何人を雇うかを数で示し、市内から採った人数を毎年知らせます。", "why": "どの仕事に何人かを示したので、雇用を気にする議員も数字で確かめられた。" },
+        { "id": "deploy-jobs-faster", "domain": "cicd", "stage": 1, "quality": "partial", "text": "配るのが速くなるので、町の会社の仕事がはかどります。", "why": "町の会社には得だが、この建物で何人が働くのかには答えていない。", "lesson": "cicd.b.01" },
+        { "id": "deploy-jobs-none", "domain": "cicd", "stage": 1, "quality": "wrong", "text": "パイプラインは一度作れば、あとは人が何もしなくても動き続けます。", "why": "パイプラインは、テストが落ちれば直し、道具が変われば書き換える。人がいらないと言い切って、かえって雇用の心配を強めた。", "lesson": "cicd.b.02" }
+      ],
       "lessons": ["cicd.b.01", "cicd.b.02"]
     },
     {
@@ -27,9 +33,15 @@
       "misconception": 0.4,
       "claim": "本番の更新は利用の少ない夜中にするものだと聞く。夜中に人と車が集まり、作業が長引けば明け方まで続く。",
       "concessions": [
-        { "id": "deploy-day", "label": "更新は昼の時間に、小さく分けて少しずつ出す", "mods": { "traffic": 0.6 } }
+        { "id": "deploy-day", "label": "更新は昼の時間に、小さく分けて少しずつ出す", "mods": { "traffic": 0.6 } },
+        { "id": "deploy-canary", "label": "新しい版をまず一部の利用者にだけ出して確かめ、昼の時間に少しずつ切り替える", "mods": { "traffic": 0.4 }, "requires": { "domain": "cicd", "stage": 4 } }
       ],
-      "explanations": [],
+      "explanations": [
+        { "id": "deploy-small", "domain": "cicd", "stage": 2, "quality": "sound", "text": "変更を小さく分けて{{term:pipeline}}で自動に確かめてから出せば、一度に出す量が小さく、問題があってもすぐ戻せます。夜中に人を集めなくても、昼に出せます。", "why": "夜中に集まらなくても更新できる理由が分かり、夜の車を心配していた人が落ち着いた。" },
+        { "id": "deploy-hours", "domain": "cicd", "stage": 3, "quality": "sound", "text": "本番への更新は平日の 10 時から 16 時に限ります。夜に作業した回数と人数を毎月公開し、戻す手順は 5 分以内に終わる形で用意します。", "why": "作業の時間と、戻すまでの時間を約束したので、夜を心配する住民も議員も安心した。" },
+        { "id": "deploy-night-auto", "domain": "cicd", "stage": 1, "quality": "partial", "text": "夜中の更新は自動にして、人は家から見守ります。", "why": "集まる人は減るが、夜中に更新すること自体は変わらず、止まった時に駆けつける心配が残る。", "lesson": "cicd.b.05" },
+        { "id": "deploy-never-fails", "domain": "cicd", "stage": 1, "quality": "wrong", "text": "テストを通った物しか出さないので、更新で問題が起きることはありません。", "why": "テストは全ての問題を見つけられるわけではない。起きないと言い切ったことで、夜中に駆けつける場面を心配する人がかえって増えた。", "lesson": "cicd.b.03" }
+      ],
       "lessons": ["cicd.b.05", "cicd.a.01"]
     }
   ]

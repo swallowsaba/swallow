@@ -11,9 +11,15 @@
       "misconception": 0.3,
       "claim": "発表会や見学で人が集まり、夜まで車と人の出入りが続く。静かな住宅の通りが、催しの会場の裏口になる。",
       "concessions": [
-        { "id": "web-crowd-day", "label": "催しは昼の時間に限り、来る人には公共の交通を案内する", "mods": { "traffic": 0.6 } }
+        { "id": "web-crowd-day", "label": "催しは昼の時間に限り、来る人には公共の交通を案内する", "mods": { "traffic": 0.6 } },
+        { "id": "web-stream-first", "label": "発表会はネットで配信し、会場に来るのは定員を決めた予約の人だけにする", "mods": { "traffic": 0.4, "tech": 0.98 }, "requires": { "domain": "web", "stage": 4 } }
       ],
-      "explanations": [],
+      "explanations": [
+        { "id": "web-stream", "domain": "web", "stage": 2, "quality": "sound", "text": "発表会の多くは、ネットで中継して家から見てもらえます。会場の席を予約の分だけにすれば、通りに集まる人は限られます。", "why": "人が押し寄せずに済む理由が分かり、通りの心配が和らいだ。" },
+        { "id": "web-crowd-numbers", "domain": "web", "stage": 3, "quality": "sound", "text": "催しの来場は予約の人数で上限を決め、夜 8 時までに閉めます。来た人の数と終わった時刻を毎回公開します。", "why": "人数の上限と閉める時刻を約束し、夜の通りを心配する住民が安心した。" },
+        { "id": "web-crowd-cache", "domain": "web", "stage": 1, "quality": "partial", "text": "ページは{{term:cache}}を使って速く届けます。", "why": "ページは速くなるが、会場に人が集まる心配には答えていない。", "lesson": "web.i.04" },
+        { "id": "web-nobody-comes", "domain": "web", "stage": 1, "quality": "wrong", "text": "Web の施設はインターネットの中で仕事をするので、建物に人は来ません。", "why": "Web を作るのも、発表会を開くのも人だ。人が来ないと言い切って、かえって疑われた。", "lesson": "web.b.07" }
+      ],
       "lessons": ["web.b.07", "web.b.02"]
     },
     {
@@ -27,9 +33,15 @@
       "misconception": 0.3,
       "claim": "ガラス張りのビルが建つと通りの土地の値が上がり、昔からの小さな店が家賃を払えなくなる。",
       "concessions": [
-        { "id": "web-low", "label": "低層に抑え、1 階に小さな店が入れる区画を残す", "mods": { "height": -1, "tech": 0.9 } }
+        { "id": "web-low", "label": "低層に抑え、1 階に小さな店が入れる区画を残す", "mods": { "height": -1, "tech": 0.9 } },
+        { "id": "web-shared-desks", "label": "席を予約して使う共用の仕事場にして建物を低く抑え、1 階は地元の店に安く貸す", "mods": { "height": -1, "tech": 0.97 }, "requires": { "domain": "web", "stage": 4 } }
       ],
-      "explanations": [],
+      "explanations": [
+        { "id": "web-rent-small", "domain": "web", "stage": 2, "quality": "sound", "text": "Web の仕事は、パソコンと回線があればできるので、大きなビルでなくても足ります。小さな建物で始めれば、通りの土地の値を急に押し上げることはありません。", "why": "大きな建物が要らない理由が分かり、家賃の心配が少し和らいだ。" },
+        { "id": "web-rent-measure", "domain": "web", "stage": 3, "quality": "sound", "text": "通りの店の家賃と地価を毎年調べて公開します。1 割を超えて上がったら、1 階の店の区画の貸し賃を据え置きます。", "why": "測る値と、上がった時の約束を示したので、通りの店の人も議員も評価した。" },
+        { "id": "web-rent-shop", "domain": "web", "stage": 1, "quality": "partial", "text": "通りの店がネットで売れるように、ページ作りを手伝います。", "why": "店の売り上げには役立つが、家賃が上がるという心配には答えていない。", "lesson": "web.b.01" },
+        { "id": "web-rent-servers", "domain": "web", "stage": 1, "quality": "wrong", "text": "Web の会社はサーバを借りるだけなので、土地の値には関わりません。", "why": "人が働く建物が建てば、通りの土地の値は動く。関わらないと言い切って、かえって不信を招いた。", "lesson": "web.b.07" }
+      ],
       "lessons": ["web.b.07"]
     }
   ]

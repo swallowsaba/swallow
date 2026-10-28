@@ -12,9 +12,15 @@
       "claim": "何十台もの {{term:k8s-node}} が昼も夜も動き、屋上の排熱の装置が一晩中うなる。夜に処理の量が減っても、機械は止めないと聞いた。",
       "concessions": [
         { "id": "cluster-night-scale", "label": "夜は動かす機械の台数を減らし、使わない機械は電源を落とす", "mods": { "nightNoise": 0.3, "power": 0.85, "tech": 0.85 } },
-        { "id": "cluster-wall", "label": "排熱の装置を敷地の奥へ移し、防音の壁で囲う", "mods": { "noise": 0.5 }, "cost": { "ratio": 0.2 } }
+        { "id": "cluster-wall", "label": "排熱の装置を敷地の奥へ移し、防音の壁で囲う", "mods": { "noise": 0.5 }, "cost": { "ratio": 0.2 } },
+        { "id": "cluster-pack", "label": "Pod の置き場所を夜ごとにまとめ直し、空いた Node の電源を落として排熱を減らす", "mods": { "nightNoise": 0.25, "power": 0.8, "tech": 0.97 }, "requires": { "domain": "k8s", "stage": 4 } }
       ],
-      "explanations": [],
+      "explanations": [
+        { "id": "cluster-scale-down", "domain": "k8s", "stage": 2, "quality": "sound", "text": "Kubernetes は、処理が減れば動かす {{term:pod}} の数を減らせます。夜は空いた {{term:k8s-node}} から仕事を寄せて止めれば、回す送風機も減ります。", "why": "夜に機械を減らせる仕組みが分かり、一晩中の音を心配していた人が少し落ち着いた。" },
+        { "id": "cluster-night-target", "domain": "k8s", "stage": 3, "quality": "sound", "text": "夜 10 時から朝 6 時は、動かす Node の数の上限を昼の半分に決め、敷地の境の音を毎晩測って公開します。", "why": "夜の台数の上限と、音の測り方が具体的で、住民の側も確かめられると受け取った。" },
+        { "id": "cluster-limits", "domain": "k8s", "stage": 1, "quality": "partial", "text": "{{term:pod}} ごとに、使える CPU とメモリの上限を決めます。", "why": "1 つの処理が使いすぎることは防げるが、夜に機械を止めるかどうか、音がどうなるかには答えていない。", "lesson": "k8s.i.07" },
+        { "id": "cluster-selfheal", "domain": "k8s", "stage": 1, "quality": "wrong", "text": "Kubernetes は自分で直る仕組みなので、機械が熱くなることはありません。", "why": "自分で直るのは、止まった Pod を立て直す働きのことで、熱や音とは関係が無い。的外れな答えで、かえって不信が増した。", "lesson": "k8s.b.03" }
+      ],
       "lessons": ["k8s.b.03", "k8s.i.06"]
     },
     {
@@ -28,9 +34,15 @@
       "misconception": 0.3,
       "claim": "台数を自動で増やす仕組みだと聞いた。処理が増えるたびに電気の使う量が勝手に増え、町の電気が先に足りなくなる。",
       "concessions": [
-        { "id": "cluster-power-cap", "label": "自動で増やす台数に上限を決め、電気の余りを見て増やす", "mods": { "power": 0.6, "tech": 0.85 } }
+        { "id": "cluster-power-cap", "label": "自動で増やす台数に上限を決め、電気の余りを見て増やす", "mods": { "power": 0.6, "tech": 0.85 } },
+        { "id": "cluster-power-requests", "label": "全ての処理に使う量の見積もりと上限を書かせ、増やせる台数を電気の余りから決める", "mods": { "power": 0.5, "tech": 0.95 }, "requires": { "domain": "k8s", "stage": 4 } }
       ],
-      "explanations": [],
+      "explanations": [
+        { "id": "cluster-hpa-max", "domain": "k8s", "stage": 2, "quality": "sound", "text": "自動で増やす仕組み（{{term:hpa}}）には、増やせる数の上限を書けます。上限を超えて勝手に増え続けることはありません。", "why": "台数が際限なく増えるわけではないと分かり、電気の心配が少し和らいだ。" },
+        { "id": "cluster-power-budget", "domain": "k8s", "stage": 3, "quality": "sound", "text": "{{term:k8s-requests}} の合計から、最大で使う電力を計算して公開します。島の電気の余りが 2 割を切った日は、増やせる数の上限を下げます。", "why": "最大の電力を計算で出し、下げる決まりも示したので、議員の見る目が変わった。" },
+        { "id": "cluster-power-light", "domain": "ctr", "stage": 1, "quality": "partial", "text": "コンテナは仮想マシンより軽いので、同じ機械で多くの処理が動きます。", "why": "1 台あたりの効率は良くなるが、台数が増えた時の電気の使い方には答えていない。", "lesson": "ctr.b.02" },
+        { "id": "cluster-power-always-less", "domain": "k8s", "stage": 1, "quality": "wrong", "text": "Kubernetes は台数を減らすための仕組みなので、電気は今より必ず減ります。", "why": "Kubernetes で台数が減るとは限らず、処理が増えれば台数も増える。必ず減ると言い切って、かえって不信を招いた。", "lesson": "k8s.b.01" }
+      ],
       "lessons": ["k8s.i.06", "k8s.i.07"]
     }
   ]

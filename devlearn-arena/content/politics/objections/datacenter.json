@@ -12,7 +12,8 @@
       "claim": "サーバを冷やす送風機が夜通し回り、窓を閉めても低いうなりが寝室まで届く。夜中の集計処理の時間ほど音が大きくなる。",
       "concessions": [
         { "id": "dc-noise-night", "label": "夜間（22 時〜6 時）は重い集計処理を止め、送風機を低速で回す", "mods": { "nightNoise": 0, "tech": 0.8 } },
-        { "id": "dc-noise-wall", "label": "屋外の送風機を建物の中へ移し、防音の壁で囲う", "mods": { "noise": 0.5 }, "cost": { "ratio": 0.2 } }
+        { "id": "dc-noise-wall", "label": "屋外の送風機を建物の中へ移し、防音の壁で囲う", "mods": { "noise": 0.5 }, "cost": { "ratio": 0.2 } },
+        { "id": "dc-noise-liquid", "label": "サーバを液体で直接冷やす方式に替え、屋外の送風機を小さくする", "mods": { "noise": 0.4, "nightNoise": 0.3 }, "cost": { "ratio": 0.1 }, "requires": { "domain": "cloud", "stage": 4 } }
       ],
       "explanations": [
         { "id": "dc-noise-batch", "domain": "db", "stage": 2, "quality": "sound", "text": "夜に音が大きくなるのは、夜中にまとめて流す集計の処理で機械が熱を出し、送風機が速く回るからです。重い集計を昼に分ければ、夜の音の山は低くなります。", "why": "音の出どころと、なぜ減らせるのかが分かり、寝室に届く音を心配していた人が少し落ち着いた。" },
@@ -34,7 +35,8 @@
       "claim": "サーバと冷却で、この町の家を全部合わせたほどの電気を使う。島に来る電気の余裕が無くなり、夏の夕方に停電するのではないか。",
       "concessions": [
         { "id": "dc-power-trim", "label": "使っていないサーバの電源を落とし、古いデータを圧縮して台数を減らす", "mods": { "power": 0.6, "tech": 0.85 } },
-        { "id": "dc-power-small", "label": "最初は半分の区画だけを使い、残りは電気が足りてから入れる", "mods": { "power": 0.5, "tech": 0.7, "jobs": 0.8 }, "cost": { "ratio": -0.2 } }
+        { "id": "dc-power-small", "label": "最初は半分の区画だけを使い、残りは電気が足りてから入れる", "mods": { "power": 0.5, "tech": 0.7, "jobs": 0.8 }, "cost": { "ratio": -0.2 } },
+        { "id": "dc-power-scale", "label": "使う量に合わせて動かす台数を自動で増減させ、夜の空いた時間は待機の機械の電源を落とす", "mods": { "power": 0.5, "tech": 0.95 }, "requires": { "domain": "cloud", "stage": 4 } }
       ],
       "explanations": [
         { "id": "dc-power-virt", "domain": "cloud", "stage": 2, "quality": "sound", "text": "使っていない時間の多いサーバを、{{term:virtualization}}で少ない台数にまとめて動かします。台数が減れば、使う電気も冷やす電気も減ります。", "why": "台数を減らせる理由が具体的で、電気が足りなくなる心配が和らいだ。" },
@@ -55,7 +57,8 @@
       "misconception": 0.3,
       "claim": "工場の何倍もの敷地を使うのに、中で働くのは交代の運用担当が数人だけだ。同じ土地に店や事務所が来れば、もっと多くの人が働けた。",
       "concessions": [
-        { "id": "dc-jobs-local", "label": "保守と運用の窓口を市内に置き、地元から人を雇って育てる", "mods": { "jobs": 1.6 }, "cost": { "ratio": 0.15 } }
+        { "id": "dc-jobs-local", "label": "保守と運用の窓口を市内に置き、地元から人を雇って育てる", "mods": { "jobs": 1.6 }, "cost": { "ratio": 0.15 } },
+        { "id": "dc-jobs-dba", "label": "市内の会社のデータベースの運用を請け負う部署を置き、地元から採って育てる", "mods": { "jobs": 1.8 }, "cost": { "ratio": 0.05 }, "requires": { "domain": "db", "stage": 4 } }
       ],
       "explanations": [
         { "id": "dc-jobs-around", "domain": "db", "stage": 2, "quality": "sound", "text": "建物の中で働く人は少なくても、ここに置くデータを使う会社が近くに集まります。データベースの管理や機器の保守の仕事も、市内の会社に出せます。", "why": "建物の外に生まれる仕事の道筋が分かり、議員も耳を傾けた。" },
@@ -74,7 +77,8 @@
       "misconception": 0.6,
       "claim": "サーバを冷やすのに大量の水を使い、川の水が減るのではないか。夏の渇水の時期にも止めずに使い続けるはずだ。",
       "concessions": [
-        { "id": "dc-water-closed", "label": "冷却水を閉じた配管で回し、補給には屋根にためた雨水を使う", "mods": { "coolingWater": 0.3 }, "cost": { "ratio": 0.2 } }
+        { "id": "dc-water-closed", "label": "冷却水を閉じた配管で回し、補給には屋根にためた雨水を使う", "mods": { "coolingWater": 0.3 }, "cost": { "ratio": 0.2 } },
+        { "id": "dc-water-air", "label": "外の空気で冷やす方式に切り替え、水を使うのは真夏の数日だけにする", "mods": { "coolingWater": 0.1, "tech": 0.95 }, "requires": { "domain": "cloud", "stage": 4 } }
       ],
       "explanations": [
         { "id": "dc-water-loop", "domain": "cloud", "stage": 2, "quality": "sound", "text": "冷やす水は配管の中を回り続けます。使い切るのは蒸発する分だけで、川の水を流し捨てることはありません。", "why": "水を使い捨てると思っていた人の心配が和らいだ。" },

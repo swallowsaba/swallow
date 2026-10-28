@@ -11,9 +11,15 @@
       "misconception": 0.6,
       "claim": "障害が起きるたびに、夜中でも人が車で駆けつけて集まる。いつ騒がしくなるか分からず落ち着かない。",
       "concessions": [
-        { "id": "inc-remote", "label": "離れた所から調べて直せる手順を整え、集まる人数を絞る", "mods": { "traffic": 0.5, "jobs": 0.9 } }
+        { "id": "inc-remote", "label": "離れた所から調べて直せる手順を整え、集まる人数を絞る", "mods": { "traffic": 0.5, "jobs": 0.9 } },
+        { "id": "inc-auto-runbook", "label": "よくある障害は手順書どおりに自動で直す仕組みを入れ、夜に呼ぶのは 1 人だけにする", "mods": { "traffic": 0.3, "jobs": 0.95 }, "requires": { "domain": "trouble", "stage": 4 } }
       ],
-      "explanations": [],
+      "explanations": [
+        { "id": "inc-remote-first", "domain": "trouble", "stage": 2, "quality": "sound", "text": "障害の多くは、ログとメトリクスを離れた所から見て原因を絞れます。現地へ行くのは、機器を替える時だけです。", "why": "夜中に必ず人が集まるわけではないと分かり、近所の心配が和らいだ。" },
+        { "id": "inc-oncall-count", "domain": "trouble", "stage": 3, "quality": "sound", "text": "夜中に現地へ来た回数と人数を毎月公開します。直すまでの時間の目標を決め、離れた所から直せた割合も示します。", "why": "駆けつけの回数を公開すると約束し、夜を心配する住民が様子を見る気になった。" },
+        { "id": "inc-runbook", "domain": "mon", "stage": 1, "quality": "partial", "text": "障害の時の{{term:runbook}}を用意して、慌てずに動けるようにします。", "why": "対応は落ち着くが、夜中に人と車が集まるかどうかには答えていない。", "lesson": "mon.i.03" },
+        { "id": "inc-never", "domain": "trouble", "stage": 1, "quality": "wrong", "text": "対応の本部ができれば障害そのものが起きなくなるので、駆けつけもありません。", "why": "障害は無くならない。起きた時に速く直すための本部だ。無くなると言い切ったことで、かえって信じてもらえなかった。", "lesson": "trouble.b.01" }
+      ],
       "lessons": ["trouble.b.01", "trouble.i.01"]
     },
     {
@@ -27,9 +33,14 @@
       "misconception": 0.3,
       "claim": "指令塔とアンテナの柱が、すぐ裏の家の窓の前に立つ。日が陰るうえ、いつも見下ろされているようで落ち着かない。",
       "concessions": [
-        { "id": "inc-tower-low", "label": "指令塔は建てず、アンテナは屋上の低い柱にまとめる", "mods": { "height": -1, "tech": 0.9 } }
+        { "id": "inc-tower-low", "label": "指令塔は建てず、アンテナは屋上の低い柱にまとめる", "mods": { "height": -1, "tech": 0.9 } },
+        { "id": "inc-tower-fiber", "label": "指令の通信は地中の光回線で結び、アンテナは非常用の低い 1 本だけにする", "mods": { "height": -1, "tech": 0.97 }, "requires": { "domain": "net", "stage": 4 } }
       ],
-      "explanations": [],
+      "explanations": [
+        { "id": "inc-tower-why", "domain": "net", "stage": 2, "quality": "sound", "text": "高い柱が要るのは、無線で遠くと結ぶ時です。ふだんの連絡は地中の回線で足り、アンテナは非常時の予備なので、高くしなくて済みます。", "why": "高い塔が要らない理由が分かり、窓の前を心配していた人が話を聞く気になった。" },
+        { "id": "inc-tower-height", "domain": "net", "stage": 3, "quality": "sound", "text": "非常用の無線が届く範囲を計算すると、屋上から 5 メートルの柱で市内の全部に届きます。柱の高さと影の長さを図にして配ります。", "why": "要る高さを計算で示したので、塔は低くできると議員も納得した。" },
+        { "id": "inc-tower-watch", "domain": "trouble", "stage": 1, "quality": "wrong", "text": "塔の上から町を見張って、障害を見つけるために要ります。", "why": "システムの障害は町を見て見つける物ではなく、ログと監視の数字から見つける。見下ろされる心配をかえって強めた。", "lesson": "trouble.b.01" }
+      ],
       "lessons": ["trouble.b.01"]
     }
   ]
