@@ -42,7 +42,7 @@ import './CityScreen.css';
  * 都市画面（docs/ui-design.md 3 章）。全画面の都市ビューに、上の帯と建設メニューを小さく重ねる。
  * 学習者が道路を引き、区画を塗り、施設と公園を置く。区画の建物は自動で建ち、育つ（docs/decisions.md D-03）。
  */
-export function CityScreen({ session, active = true, covered = false, current, disabled = [], onEntry, onLesson, onLibrary, onMission }: {
+export function CityScreen({ session, active = true, covered = false, current, disabled = [], onEntry, onLesson, onCard, onLibrary, onMission }: {
   session: Session;
   active?: boolean;
   /** 不透明な画面（レッスン・ミッションの実戦）が都市を覆っている。その間は都市を描かない */
@@ -54,6 +54,8 @@ export function CityScreen({ session, active = true, covered = false, current, d
   onEntry?: (id: EntryId) => void;
   /** 情報パネルの「ここで学ぶ」からレッスンを始める */
   onLesson?: (id: string) => void;
+  /** 公聴会の「この論点を学ぶ」から、そのレッスンの入口の札を開く（公聴会は待つ。docs/learning-design.md 12.3） */
+  onCard?: (id: string) => void;
   /** 情報パネルから学習ライブラリを、施設の分野に絞って開く */
   onLibrary?: (domain: DomainId | null) => void;
   /** 情報パネルとおすすめの欄から、ミッションを開く */
@@ -286,7 +288,7 @@ export function CityScreen({ session, active = true, covered = false, current, d
             windows={state.windows.length}
             {...(state.notice?.permitId ? { onOpen: () => openNotice(state.notice) } : {})}
           />
-          {onLesson ? <RecommendPanel progress={session.progress} onLesson={onLesson} {...(onMission ? { onMission } : {})} /> : null}
+          {onLesson ? <RecommendPanel progress={session.progress} city={store} onLesson={onLesson} {...(onMission ? { onMission } : {})} /> : null}
           <InfoPanel
             model={panel}
             onClose={() => state.select(null)}
@@ -310,7 +312,7 @@ export function CityScreen({ session, active = true, covered = false, current, d
             if (id === 'appeal') return <AppealWindow key={id} store={store} stack={i} shifted={panel !== null} skills={skillValues} />;
             return <PermitDetailWindow key={id} store={store} stack={i} shifted={panel !== null} skills={skillValues} />;
           })}
-          <HearingWindow store={store} skills={skillValues} />
+          <HearingWindow store={store} skills={skillValues} {...(onCard ? { onLearn: onCard } : {})} />
           <CouncilWindow store={store} />
           <HeatHover store={store} canvas={canvasRef} renderer={rendererRef} />
           <BuildMenu state={state} landmarks={landmarks} />

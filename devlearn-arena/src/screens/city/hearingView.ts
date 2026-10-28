@@ -2,7 +2,7 @@ import { DOMAINS } from '@/city/facilityInfo';
 import type { DomainId } from '@/city/types';
 import { POLITICS_RULES, REASONS } from '@/content/politics';
 import { DIFFICULTY_NAMES, lessonMeta } from '@/game/lessons';
-import { SKILL_STAGE_NAMES, type SkillStage } from '@/game/skill';
+import { SKILL_STAGE_NAMES, skillStageOf, type SkillStage } from '@/game/skill';
 import { handOptions, issuesOf, type HandOptions, type SkillValues } from '@/sim/hearing';
 import { applicationName } from '@/sim/permits';
 import type { Application, Concession, ModKey, ObjectionReason, ObjectionState, World } from '@/sim/types';
@@ -94,8 +94,10 @@ export interface HandsModel {
   title: string;
   concessions: { id: string; label: string; effects: string[]; cost: number; ok: boolean; why?: string; tech?: string; loss?: string }[];
   explanations: { id: string; text: string }[];
-  /** 伏せた候補（「データベース 中級で出せる説明が 1 つある」） */
+  /** 伏せた候補（「データベース 中級で出せる説明が 1 つある」「データベース 上級で出せる技術の代案が 1 つある」） */
   hidden: string[];
+  /** この論点を学べるレッスン（理由の lessons の順。押すと入口の札。docs/learning-design.md 12.3） */
+  learn: { id: string; title: string; level: string }[];
   push: { cost: number; ok: boolean; groups: string };
   /** 出した手（出した後は手を出せない） */
   used: boolean;
@@ -122,7 +124,14 @@ export function handsModel(world: World, app: Application, reasonId: string, ski
       ...(c.concession.loss ? { loss: c.concession.loss } : {}),
     })),
     explanations: opt.explanations.map((e) => ({ id: e.id, text: e.text })),
-    hidden: opt.hidden.map((h) => `${domainName(h.domain)} ${SKILL_STAGE_NAMES[h.stage as SkillStage]}で出せる説明が ${String(h.count)} つある`),
+    hidden: [
+      ...opt.hidden.map((h) => `${domainName(h.domain)} ${SKILL_STAGE_NAMES[h.stage as SkillStage]}で出せる説明が ${String(h.count)} つある`),
+      ...opt.hiddenTech.map((h) => `${domainName(h.domain)} ${SKILL_STAGE_NAMES[h.stage as SkillStage]}で出せる技術の代案が ${String(h.count)} つある`),
+    ],
+    learn: r.lessons.flatMap((id) => {
+      const meta = lessonMeta(id);
+      return meta ? [{ id, title: meta.title, level: DIFFICULTY_NAMES[meta.difficulty] }] : [];
+    }),
     push: { cost: opt.push.cost, ok: opt.push.ok, groups: groupName(o, world) },
     used: o.hand !== undefined,
     chosen: o.hand ? (o.hand.kind === 'concede' ? o.hand.concessionId : o.hand.kind === 'explain' ? o.hand.explanationId : 'push') : null,
@@ -144,17 +153,66 @@ export function reactionText(before: Application, after: Application, reasonId: 
 
 /**
  * 説明の後に示す、学べるレッスン（17.2「誤りなら、なぜ誤りかと、学べるレッスンを示す」）。
- * データの `lesson` を持つ説明（誤りと一部）だけ。確かな説明には添えない
+ * データの `lesson` を持つ説明（誤りと一部）だけ。確かな説明には添えない。押すと入口の札（G7）
  */
-export function reactionLesson(after: Application, reasonId: string): string | null {
+export function reactionLesson(after: Application, reasonId: string): { id: string; title: string } | null {
   const h = after.objections.find((x) => x.reasonId === reasonId)?.hand;
   if (h?.kind !== 'explain') return null;
   const id = REASONS.find((x) => x.id === reasonId)?.explanations.find((e) => e.id === h.explanationId)?.lesson;
   const meta = id ? lessonMeta(id) : null;
-  return meta ? `${meta.title}（${DIFFICULTY_NAMES[meta.difficulty]}）` : null;
+  return id && meta ? { id, title: `${meta.title}（${DIFFICULTY_NAMES[meta.difficulty]}）` } : null;
 }
 
 /** 窓の題（「データセンター（東町）の公聴会」） */
 export function hearingTitle(m: Pick<HearingModel, 'name' | 'place'>): string {
   return `${m.name}${m.place ? `（${m.place}）` : ''}の公聴会`;
+}
+
+/**
+ * スキル段階が上がって都市へ戻った時に添える 1 行（docs/learning-design.md 12.3「新しく出せるようになった説明の論点を添える」）。
+ * 反対の受付と公聴会の段の申請の、まだ手を出していない論点のうち、上がった段階で新しく出せる説明か技術の代案がある物を、申請ごとに 1 行で言う
+ */
+export function newAnswerNotes(world: World, before: SkillValues, after: SkillValues): string[] {
+  const stage = (skills: SkillValues, d: DomainId): number => skillStageOf(skills[d] ?? 0);
+  const fresh = (x: { domain: DomainId; stage: number }): boolean => stage(before, x.domain) < x.stage && x.stage <= stage(after, x.domain);
+  return world.applications.flatMap((app) => {
+    if (app.stage !== 'objection' && app.stage !== 'hearing') return [];
+    const explain: string[] = [];
+    const tech: string[] = [];
+    const domains = new Set<DomainId>();
+    for (const o of issuesOf(app)) {
+      const r = REASONS.find((x) => x.id === o.reasonId);
+      if (!r || o.hand) continue;
+      const e = r.explanations.filter(fresh);
+      const t = r.concessions.flatMap((c) => (c.requires && fresh(c.requires) ? [c.requires] : []));
+      if (e.length > 0) explain.push(`「${r.title}」`);
+      else if (t.length > 0) tech.push(`「${r.title}」`);
+      for (const x of [...e, ...t]) domains.add(x.domain);
+    }
+    if (domains.size === 0) return [];
+    const where = `${applicationName(app, world.city)}${placeOf(app, world) ? `（${placeOf(app, world)}）` : ''}の公聴会で`;
+    const what = [
+      ...(explain.length > 0 ? [`${explain.join('')}に新しい説明`] : []),
+      ...(tech.length > 0 ? [`${tech.join('')}に技術の代案`] : []),
+    ].join('、');
+    return [`${[...domains].map(domainName).join('・')}の段階が上がり、${where}${what}を出せる`];
+  });
+}
+
+/**
+ * おすすめの欄に並べる、公聴会を待つ論点のレッスン（1 つまで。docs/learning-design.md 12.3）。
+ * 反対の受付と公聴会の段の申請の、まだ手を出していない論点を割合の大きい順に見て、その理由の lessons のうち未修了の最初の物
+ */
+export function hearingLesson(world: World, done: (lessonId: string) => boolean): { lessonId: string; title: string; why: string } | null {
+  const rows = world.applications
+    .filter((a) => a.stage === 'objection' || a.stage === 'hearing')
+    .flatMap((a) => issuesOf(a).filter((o) => !o.hand).map((o) => ({ a, o })))
+    .sort((x, y) => y.o.share - x.o.share);
+  for (const { a, o } of rows) {
+    const r = REASONS.find((x) => x.id === o.reasonId);
+    const id = r?.lessons.find((l) => !done(l) && lessonMeta(l));
+    const meta = id ? lessonMeta(id) : null;
+    if (r && id && meta) return { lessonId: id, title: meta.title, why: `審議中の${applicationName(a, world.city)}の論点: ${r.title}` };
+  }
+  return null;
 }

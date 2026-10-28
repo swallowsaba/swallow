@@ -85,7 +85,8 @@
 .recommend-item.is-review {
   border-left-color: var(--info);
 }
-.recommend-item.is-mission {
+.recommend-item.is-mission,
+.recommend-item.is-civic {
   border-left-color: var(--gold);
 }
 .recommend-mark {

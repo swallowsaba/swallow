@@ -13,7 +13,7 @@ import './HearingWindow.css';
  * 左: 論点の列（理由の名前・割合・反対する集団・出した手と結果）。右: 選んだ論点の、出せる手の 3 種類を横に並べる。
  * 下: 「公聴会を終える」。スキルが無い時も、譲歩と押し切るは必ず出る
  */
-export function HearingWindow({ store, skills }: { store: CityStore; skills: SkillValues }) {
+export function HearingWindow({ store, skills, onLearn }: { store: CityStore; skills: SkillValues; onLearn?: (lessonId: string) => void }) {
   const s = useStore(store, useShallow((x) => ({
     id: x.hearingId, apps: x.world.applications, capital: x.world.politics.capital, reaction: x.reaction,
     leave: x.leaveHearing, end: x.endHearing, play: x.playHand,
@@ -76,7 +76,11 @@ export function HearingWindow({ store, skills }: { store: CityStore; skills: Ski
               {s.reaction?.reasonId === current.reasonId ? (
                 <p className="hearing-reaction" data-testid="hearing-reaction">
                   {s.reaction.text}
-                  {s.reaction.lesson ? <span className="hearing-reaction-lesson" data-testid="hearing-reaction-lesson"><Icon name="learn" size={12} />学べるレッスン: {s.reaction.lesson}</span> : null}
+                  {s.reaction.lesson ? (
+                    <button type="button" className="hearing-reaction-lesson" data-testid="hearing-reaction-lesson" onClick={() => s.reaction?.lesson && onLearn?.(s.reaction.lesson.id)} title="このレッスンの入口へ（公聴会は待つ）">
+                      <Icon name="learn" size={12} />学べるレッスン: {s.reaction.lesson.title}
+                    </button>
+                  ) : null}
                 </p>
               ) : null}
               <div className={`hearing-hands${hands.used ? ' is-used' : ''}`}>
@@ -118,6 +122,22 @@ export function HearingWindow({ store, skills }: { store: CityStore; skills: Ski
                     <ul className="hearing-hidden" data-testid="hearing-hidden">
                       {hands.hidden.map((h) => <li key={h}><Icon name="learn" size={12} />{h}</li>)}
                     </ul>
+                  ) : null}
+                  {hands.learn.length > 0 ? (
+                    <div className="hearing-learn" data-testid="hearing-learn">
+                      <h4 className="hearing-learn-title">この論点を学ぶ</h4>
+                      <ul className="hearing-learn-list">
+                        {hands.learn.map((l) => (
+                          <li key={l.id}>
+                            <button type="button" className="hearing-learn-item" data-lesson={l.id} onClick={() => onLearn?.(l.id)} title={`「${l.title}」の入口へ（公聴会は待つ）`}>
+                              <Icon name="learn" size={12} />
+                              <span className="hearing-learn-name">{l.title}</span>
+                              <span className="hearing-learn-level">{l.level}</span>
+                            </button>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
                   ) : null}
                 </section>
                 <section className="hearing-hand" aria-label="押し切る">

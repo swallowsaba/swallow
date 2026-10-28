@@ -203,8 +203,19 @@
   align-items: center;
   gap: 4px;
   margin-top: 4px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  font: inherit;
   font-size: var(--fs-12);
   color: var(--hud-text-sub);
+  text-align: left;
+  cursor: pointer;
+}
+.hearing-reaction-lesson:hover,
+.hearing-reaction-lesson:focus-visible {
+  color: var(--gold);
+  outline: none;
 }
 .hearing-hands {
   display: grid;
@@ -309,6 +320,57 @@
 .hearing-reaction-lesson svg {
   flex: none;
   margin-top: 2px;
+}
+/* この論点を学ぶ（押すと入口の札。公聴会は待つ） */
+.hearing-learn {
+  margin-top: 10px;
+  padding-top: 8px;
+  border-top: 1px solid var(--hud-line);
+}
+.hearing-learn-title {
+  margin: 0 0 4px;
+  font-size: var(--fs-12);
+  font-weight: 700;
+  color: var(--gold);
+}
+.hearing-learn-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.hearing-learn-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 4px;
+  width: 100%;
+  padding: 3px 0;
+  border: 0;
+  background: transparent;
+  font: inherit;
+  font-size: var(--fs-12);
+  color: var(--hud-text);
+  text-align: left;
+  cursor: pointer;
+}
+.hearing-learn-item svg {
+  flex: none;
+  margin-top: 2px;
+  color: var(--gold);
+}
+.hearing-learn-item:hover .hearing-learn-name,
+.hearing-learn-item:focus-visible .hearing-learn-name {
+  color: var(--gold);
+}
+.hearing-learn-item:focus-visible {
+  outline: none;
+}
+.hearing-learn-name {
+  flex: 1;
+  min-width: 0;
+}
+.hearing-learn-level {
+  flex: none;
+  color: var(--hud-text-sub);
 }
 
 .hearing-foot {

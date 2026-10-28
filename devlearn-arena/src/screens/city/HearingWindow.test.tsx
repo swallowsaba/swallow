@@ -4,7 +4,8 @@ import { afterEach, describe, expect, it } from 'vitest';
 import type { Application } from '@/sim/types';
 import { createCityStore } from './cityStore';
 import { HearingWindow } from './HearingWindow';
-import { hearingModel, modsText } from './hearingView';
+import { hearingModel, modsText, newAnswerNotes } from './hearingView';
+import { placeOf } from './permitView';
 import { PermitDetailWindow } from './PermitWindows';
 
 /**
@@ -107,6 +108,71 @@ describe('公聴会の窓（10.3）', () => {
     const ok = mount(<HearingWindow store={other} skills={{ db: 50 }} />);
     act(() => (ok.querySelector('[data-explanation="dc-jobs-number"]') as HTMLButtonElement).click());
     expect(ok.querySelector('[data-testid="hearing-reaction-lesson"]')).toBeNull();
+  });
+
+  it('G7: 論点ごとに「この論点を学ぶ」。押すとそのレッスンの入口の札へ行き、公聴会の窓は開いたまま待つ', () => {
+    const store = storeWith(dc());
+    store.getState().openHearing('a1');
+    const learned: string[] = [];
+    const host = mount(<HearingWindow store={store} skills={{}} onLearn={(id) => learned.push(id)} />);
+    // 雇用が少ない（dc-jobs）の学べるレッスンは、データの lessons の順
+    const rows = [...host.querySelectorAll('[data-testid="hearing-learn"] [data-lesson]')];
+    expect(rows.map((b) => b.getAttribute('data-lesson'))).toEqual(['db.b.01', 'db.a.02']);
+    expect(rows[0]?.textContent).toContain('データベースとは');
+    expect(rows[0]?.textContent).toContain('初級');
+    act(() => (rows[0] as HTMLButtonElement).click());
+    expect(learned).toEqual(['db.b.01']);
+    // 学びに行っても公聴会は終わらず、時間は止まったまま
+    expect(store.getState().hearingId).toBe('a1');
+    expect(store.getState().holds).toContain('window');
+    // 論点を変えると、その論点のレッスン
+    act(() => (host.querySelector('.hearing-issue[data-reason="dc-power"]') as HTMLButtonElement).click());
+    expect([...host.querySelectorAll('[data-testid="hearing-learn"] [data-lesson]')].map((b) => b.getAttribute('data-lesson'))).toEqual(['db.b.01', 'cloud.b.03']);
+  });
+
+  it('G7: 誤った説明の後の「学べるレッスン」も、押すと入口の札へ行ける', () => {
+    const store = storeWith(dc());
+    store.getState().openHearing('a1');
+    const learned: string[] = [];
+    const host = mount(<HearingWindow store={store} skills={{ cloud: 10 }} onLearn={(id) => learned.push(id)} />);
+    act(() => (host.querySelector('.hearing-issue[data-reason="dc-power"]') as HTMLButtonElement).click());
+    act(() => (host.querySelector('[data-explanation="dc-power-cloud"]') as HTMLButtonElement).click());
+    act(() => (host.querySelector('[data-testid="hearing-reaction-lesson"]') as HTMLButtonElement).click());
+    expect(learned).toEqual(['cloud.b.01']);
+  });
+
+  it('G7: スキル段階が上がって戻ると、公聴会を待つ論点に新しく出せる説明を知らせに添える（docs/learning-design.md 12.3）', () => {
+    const store = storeWith(dc());
+    const world = store.getState().world;
+    // データベース 0 → 初級（30）: 雇用が少ない（db 段階 1・2）に新しい説明。電力の逼迫にも db 1 の説明がある
+    expect(newAnswerNotes(world, {}, { db: 30 })).toEqual(['データベースの段階が上がり、データセンター（' + placeOf(dc(), world) + '）の公聴会で「雇用が少ない」「電力の逼迫」に新しい説明を出せる']);
+    // 段階が変わらなければ何も添えない。論点に入らない理由（夜間の騒音 2%）は数えない
+    expect(newAnswerNotes(world, { db: 12 }, { db: 18 })).toEqual([]);
+    // 上級に届くと、技術の代案も
+    expect(newAnswerNotes(world, { db: 50 }, { db: 70 })).toEqual(['データベースの段階が上がり、データセンター（' + placeOf(dc(), world) + '）の公聴会で「雇用が少ない」に技術の代案を出せる']);
+    // 手を出した論点と、公聴会を終えた申請は数えない
+    const answered = storeWith(dc({ objections: objections.map((o) => (o.reasonId === 'dc-jobs' ? { ...o, hand: { kind: 'push' as const, capital: 8, day: 21 } } : o)) })).getState().world;
+    expect(newAnswerNotes(answered, {}, { db: 30 })[0]).toContain('「電力の逼迫」に新しい説明');
+    expect(newAnswerNotes(answered, {}, { db: 30 })[0]).not.toContain('雇用');
+    expect(newAnswerNotes(storeWith(dc({ stage: 'council' })).getState().world, {}, { db: 30 })).toEqual([]);
+    // 都市へ戻った時の知らせに出る
+    store.getState().leave({});
+    store.getState().welcomeBack({ db: 30 }, [], 0);
+    const shown = [store.getState().notice?.text, ...store.getState().queue.map((q) => (typeof q === 'string' ? q : q.text))];
+    expect(shown.some((t) => t?.includes('「雇用が少ない」「電力の逼迫」に新しい説明を出せる'))).toBe(true);
+  });
+
+  it('G7: まだ出せない技術の代案は、分野と段階だけを伏せて示す。段階 4 で譲歩の列に印付きで並ぶ', () => {
+    const store = storeWith(dc());
+    store.getState().openHearing('a1');
+    const host = mount(<HearingWindow store={store} skills={{}} />);
+    expect(host.querySelector('[data-testid="hearing-hidden"]')?.textContent).toContain('データベース 上級で出せる技術の代案が 1 つある');
+    expect(host.querySelector('[data-concession="dc-jobs-dba"]')).toBeNull();
+    const skilled = storeWith(dc());
+    skilled.getState().openHearing('a1');
+    const later = mount(<HearingWindow store={skilled} skills={{ db: 70 }} />);
+    expect(later.querySelector('[data-concession="dc-jobs-dba"] .hearing-tech')?.textContent).toBe('データベース 上級の技術の代案');
+    expect(later.querySelector('[data-testid="hearing-hidden"]')?.textContent ?? '').not.toContain('技術の代案');
   });
 
   it('「公聴会を終える」で議会の採決の段へ進み、窓が閉じ、時間が動く', () => {

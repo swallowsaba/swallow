@@ -104,6 +104,7 @@ export function App({ session: given, saves }: { session?: Session; saves?: Save
           if (r) go(r);
         }}
         onLesson={startLesson}
+        onCard={(id) => go({ name: 'learn', view: 'list', lessonId: id })}
         onLibrary={(domain) => go(domain ? { name: 'learn', view: 'list', domain } : { name: 'learn', view: 'list' })}
         onMission={(id) => go({ name: 'missions', missionId: id })}
       />

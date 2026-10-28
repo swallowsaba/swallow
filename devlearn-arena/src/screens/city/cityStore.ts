@@ -12,7 +12,7 @@ import { checkUpgrade } from '@/city/upgrade';
 import { EXPLAIN, NAME_PARTS, POLITICS_RULES } from '@/content/politics';
 import { explainApproval } from '@/sim/explain';
 import type { Hand } from '@/sim/hearing';
-import { reactionLesson, reactionText } from './hearingView';
+import { newAnswerNotes, reactionLesson, reactionText } from './hearingView';
 import { groupName } from './permitView';
 import { applicationName, daysLeft, daysToComplete, isConsent, isReviewing } from '@/sim/permits';
 import type { HeatFields, HeatKind } from '@/sim/heat';
@@ -105,7 +105,7 @@ export interface CityGameState {
   /** 異議申し立ての小さな窓に出している申請（docs/ui-design.md 10.5） */
   appealId: string | null;
   /** 最後に出した手の、住民と議員の受け取り方の 1 行 */
-  reaction: { reasonId: string; text: string; lesson: string | null } | null;
+  reaction: { reasonId: string; text: string; lesson: { id: string; title: string } | null } | null;
   /** 学習に出た時の都市とスキル（戻った時に変化を比べる） */
   away: Snapshot | null;
   /** 変化のあった場所（カメラを寄せ、光の輪で示す）。seq が変わるたびに寄せる */
@@ -351,7 +351,9 @@ export function createCityStore(seed?: number, initial?: City, options: CityStor
           notice: null,
           queue: [],
         });
-        for (const text of [...changes.slice(0, 2).map((c) => c.text), ...after]) get().notify(text, now);
+        // スキル段階が上がっていれば、公聴会を待つ論点に新しく出せる説明を添える（docs/learning-design.md 12.3）
+        const answers = newAnswerNotes(s.world, s.away.skills, skills);
+        for (const text of [...changes.slice(0, 2).map((c) => c.text), ...answers, ...after]) get().notify(text, now);
         return changes;
       },
       upgrade: (facilityId, skills, now) => {

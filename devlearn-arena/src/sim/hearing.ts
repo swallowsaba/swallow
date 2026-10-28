@@ -61,7 +61,21 @@ export interface HandOptions {
   explanations: Explanation[];
   /** 出せない段階の説明の数（分野と段階ごと。「データベース 初級で出せる説明が 1 つある」） */
   hidden: { domain: DomainId; stage: number; count: number }[];
+  /** まだ出せない技術の代案の数（分野と段階ごと。「クラウド 上級で出せる技術の代案が 1 つある」） */
+  hiddenTech: { domain: DomainId; stage: number; count: number }[];
   push: { cost: number; ok: boolean };
+}
+
+/** 出せない候補を、分野と段階ごとに数える（段階の低い順） */
+function countHidden(items: readonly { domain: DomainId; stage: number }[]): { domain: DomainId; stage: number; count: number }[] {
+  const map = new Map<string, { domain: DomainId; stage: number; count: number }>();
+  for (const x of items) {
+    const key = `${x.domain}:${String(x.stage)}`;
+    const h = map.get(key) ?? { domain: x.domain, stage: x.stage, count: 0 };
+    h.count += 1;
+    map.set(key, h);
+  }
+  return [...map.values()].sort((a, b) => a.stage - b.stage || a.domain.localeCompare(b.domain));
 }
 
 export function handOptions(world: World, app: Application, reasonId: string, skills: SkillValues, rules: PoliticsRules): HandOptions | null {
@@ -77,20 +91,13 @@ export function handOptions(world: World, app: Application, reasonId: string, sk
     const ok = cost <= 0 || wallet - pending >= cost;
     return [{ concession: c, cost, ok, ...(ok ? {} : { why: 'funds' as const }) }];
   });
-  const can = (e: Explanation): boolean => stageOfSkill(skills[e.domain] ?? 0) >= e.stage;
-  const hiddenMap = new Map<string, { domain: DomainId; stage: number; count: number }>();
-  for (const e of reason.explanations) {
-    if (can(e)) continue;
-    const key = `${e.domain}:${String(e.stage)}`;
-    const h = hiddenMap.get(key) ?? { domain: e.domain, stage: e.stage, count: 0 };
-    h.count += 1;
-    hiddenMap.set(key, h);
-  }
+  const can = (e: { domain: DomainId; stage: number }): boolean => stageOfSkill(skills[e.domain] ?? 0) >= e.stage;
   const cost = pushCost(o.share);
   return {
     concessions,
     explanations: reason.explanations.filter(can),
-    hidden: [...hiddenMap.values()].sort((a, b) => a.stage - b.stage || a.domain.localeCompare(b.domain)),
+    hidden: countHidden(reason.explanations.filter((e) => !can(e))),
+    hiddenTech: countHidden(reason.concessions.flatMap((c) => (c.requires && !can(c.requires) ? [c.requires] : []))),
     push: { cost, ok: world.politics.capital >= cost },
   };
 }

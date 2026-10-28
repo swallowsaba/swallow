@@ -71,6 +71,18 @@ describe('論点と手の並び（17 章・docs/ui-design.md 10.3）', () => {
     expect(handOptions(HEARING.world, app, 'dc-power', { db: 30, cloud: 30 }, POLITICS_RULES)?.hidden).toEqual([{ domain: 'db', stage: 3, count: 1 }]);
   });
 
+  it('技術の代案（requires）は段階 4 で並び、それまでは分野と段階だけを伏せて示す（20 章「どの段階で何が出せるかを論点の窓で示す」）', () => {
+    const app = appOf(HEARING.world, HEARING.id);
+    const at = (skills: SkillValues) => handOptions(HEARING.world, app, 'dc-power', skills, POLITICS_RULES);
+    const tech = (skills: SkillValues): string[] => at(skills)?.concessions.filter((c) => c.concession.requires).map((c) => c.concession.id) ?? [];
+    expect(tech({ cloud: 50 })).toEqual([]);
+    expect(at({ cloud: 50 })?.hiddenTech).toEqual([{ domain: 'cloud', stage: 4, count: 1 }]);
+    expect(tech({ cloud: 70 })).toEqual(['dc-power-scale']);
+    expect(at({ cloud: 70 })?.hiddenTech).toEqual([]);
+    // スキル 0 でも、requires の無い譲歩は並ぶ
+    expect(at({})?.concessions.map((c) => c.concession.id)).toEqual(['dc-power-trim', 'dc-power-small']);
+  });
+
   it('押し切るの政治資本: 割合 10% ごとに 2（最小 2・最大 8）', () => {
     expect([1, 10, 10.1, 25, 40, 75].map(pushCost)).toEqual([2, 2, 4, 6, 8, 8]);
   });
