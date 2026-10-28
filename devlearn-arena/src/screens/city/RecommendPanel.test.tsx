@@ -100,7 +100,8 @@ describe('おすすめの欄の、公聴会を待つ論点のレッスン（G7�
     expect(civic).toHaveLength(1);
     // 雇用が少ない（40%）が一番大きい。その理由の最初のレッスン
     expect(civic[0]?.dataset.lesson).toBe('db.b.01');
-    expect(civic[0]?.textContent).toContain('審議中のデータセンターの論点: 雇用が少ない');
+    expect(civic[0]?.querySelector('.recommend-mark')?.textContent).toBe('審議');
+    expect(civic[0]?.querySelector('.recommend-why')?.textContent).toBe('データセンターの「雇用が少ない」');
     expect(host.querySelectorAll('.recommend-item')).toHaveLength(3);
     expect(host.querySelectorAll('.recommend-item[data-reason]').length).toBe(2);
     act(() => civic[0]?.click());

@@ -203,6 +203,8 @@ export function newAnswerNotes(world: World, before: SkillValues, after: SkillVa
  * おすすめの欄に並べる、公聴会を待つ論点のレッスン（1 つまで。docs/learning-design.md 12.3）。
  * 反対の受付と公聴会の段の申請の、まだ手を出していない論点を割合の大きい順に見て、その理由の lessons のうち未修了の最初の物
  */
+const WHY_CHARS = 18;
+
 export function hearingLesson(world: World, done: (lessonId: string) => boolean): { lessonId: string; title: string; why: string } | null {
   const rows = world.applications
     .filter((a) => a.stage === 'objection' || a.stage === 'hearing')
@@ -212,7 +214,10 @@ export function hearingLesson(world: World, done: (lessonId: string) => boolean)
     const r = REASONS.find((x) => x.id === o.reasonId);
     const id = r?.lessons.find((l) => !done(l) && lessonMeta(l));
     const meta = id ? lessonMeta(id) : null;
-    if (r && id && meta) return { lessonId: id, title: meta.title, why: `審議中の${applicationName(a, world.city)}の論点: ${r.title}` };
+    if (!r || !id || !meta) continue;
+    // おすすめの欄の 1 行（幅 300 で 1 行に収まる長さ。長い時は申請の名前を省く）
+    const full = `${applicationName(a, world.city)}の「${r.title}」`;
+    return { lessonId: id, title: meta.title, why: full.length <= WHY_CHARS ? full : `審議中の「${r.title}」` };
   }
   return null;
 }
