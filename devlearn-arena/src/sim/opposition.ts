@@ -313,8 +313,8 @@ export function oppositionOf(world: World, terrain: Terrain, app: Application, r
   const ctx: Ctx = {
     world, terrain, app, rules, site,
     homesIn: (r) => homes.filter((h) => h.d <= r),
-    before: () => (beforeView ??= previewOf(world, terrain)),
-    after: () => (afterView ??= previewOf({ ...world, city: completedCity(city, app) }, terrain)),
+    before: () => (beforeView ??= previewOf(world, terrain, rules)),
+    after: () => (afterView ??= previewOf({ ...world, city: completedCity(city, app) }, terrain, rules)),
   };
   // 説明の手は、理由の懸念の重みを変える（強さは変えない）
   const handOf = (id: string): ObjectionState['hand'] => app.objections.find((o) => o.reasonId === id)?.hand;

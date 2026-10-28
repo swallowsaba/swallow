@@ -9,6 +9,7 @@ import { appealConcede, appealSuppress } from './appeal';
 import { persuade } from './council';
 import { choosePledges, creditMission, noteLearning, rerun } from './election';
 import { setTaxRate } from './budget';
+import { handlePetition, type PetitionChoice } from './petitions';
 import { closeHearing, playHand, type Hand } from './hearing';
 import { NO_RULES, type Application, type PoliticsRules, type World } from './types';
 
@@ -47,7 +48,9 @@ export type Op =
   /** 学習の進み（修了したレッスンの数と分野ごとの段階）。任期の終わりの一覧に使うだけで、市政の条件には使わない */
   | { kind: 'learning'; lessonsDone: number; stages: Partial<Record<DomainId, number>> }
   /** 税率を決める（5〜20%。次の週から効く。docs/game-design.md 22.2） */
-  | { kind: 'taxRate'; rate: number };
+  | { kind: 'taxRate'; rate: number }
+  /** 請願を扱う（受理・拒否・保留。docs/game-design.md 22.1） */
+  | { kind: 'petition'; inboxId: string; choice: PetitionChoice };
 
 export interface Command {
   /** 出した順の番号（画面が付ける。模擬が当てた所までを返す） */
@@ -137,6 +140,8 @@ export function applyOp(world: World, op: Op, terrain: Terrain, rules: PoliticsR
       return noteLearning(world, op.lessonsDone, op.stages);
     case 'taxRate':
       return setTaxRate(world, op.rate);
+    case 'petition':
+      return handlePetition(world, terrain, rules, op.inboxId, op.choice);
   }
 }
 

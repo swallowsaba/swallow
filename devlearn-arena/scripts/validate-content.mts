@@ -10,7 +10,7 @@ import { parseDesign } from '../src/content/curriculum';
 import { ERROR_GUIDES, TERMS } from '../src/content/glossary';
 import { loadAllLessons } from '../src/content/lessons';
 import { MISSIONS } from '../src/content/missions';
-import { COUNCIL, PLEDGES, REASONS, validateCouncil, validatePledges, validateReasons } from '../src/content/politics';
+import { COUNCIL, PETITIONS, PLEDGES, REASONS, validateCouncil, validatePetitions, validatePledges, validateReasons } from '../src/content/politics';
 import { DOMAIN_IDS } from '../src/content/schema';
 import { validateFigure, validateGlossary, validateLesson, validateMission } from '../src/content/validate';
 import { replaySqlAnswers } from '../src/learning/practice';
@@ -44,9 +44,10 @@ for (const [id, svg] of figures) problems.push(...validateFigure(svg, colors, FO
 problems.push(...validateReasons(REASONS, { lessons: new Set(ENTRIES.map((e) => e.id)), terms: new Set(TERMS.map((t) => t.id)) }).map((p) => `反対の理由: ${p}`));
 problems.push(...validateCouncil(COUNCIL).map((p) => `議員: ${p}`));
 problems.push(...validatePledges(PLEDGES).map((p) => `公約: ${p}`));
+problems.push(...validatePetitions(PETITIONS).map((p) => `請願: ${p}`));
 
 if (problems.length > 0) {
   console.error(`コンテンツの検証に失敗した（${String(problems.length)} 件）:\n${problems.map((p) => `  - ${p}`).join('\n')}`);
   process.exit(1);
 }
-console.log(`コンテンツの検証: 目録 ${String(ENTRIES.length)} 本・レッスン・ミッション ${String(MISSIONS.length)} 本・用語 ${String(TERMS.length)}・図 ${String(figures.size)}・反対の理由 ${String(REASONS.length)}・公約 ${String(PLEDGES.length)} に問題なし`);
+console.log(`コンテンツの検証: 目録 ${String(ENTRIES.length)} 本・レッスン・ミッション ${String(MISSIONS.length)} 本・用語 ${String(TERMS.length)}・図 ${String(figures.size)}・反対の理由 ${String(REASONS.length)}・公約 ${String(PLEDGES.length)}・請願 ${String(PETITIONS.length)} に問題なし`);

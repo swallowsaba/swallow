@@ -86,7 +86,8 @@ const slotsOf = (e: Employer): number => e.slots[0] + e.slots[1] + e.slots[2];
  * - 工場・倉庫: 道路網の大きさ × 0.5 × 2.2 を、工場の働き口で分ける
  * homeSpending: 道路のマス → そこに面する住宅の住民の買い物の量
  */
-export function salesOf(space: Space, employers: readonly Employer[], homeSpending: Map<number, number>, techPower: number, population: number, taxRate: number): Sales {
+/** noiseLimit: 工業の建物 ID → 騒音の倍率。受理した請願で騒音を抑えた工場は、売上も同じ割合で下がる（docs/content-spec.md 7.3） */
+export function salesOf(space: Space, employers: readonly Employer[], homeSpending: Map<number, number>, techPower: number, population: number, taxRate: number, noiseLimit?: ReadonlyMap<string, number>): Sales {
   const revenue = new Map<string, number>();
   const cost = new Map<string, number>();
   const taxFactor = 1 + (taxRate - 10) * TAX_COST;
@@ -123,7 +124,7 @@ export function salesOf(space: Space, employers: readonly Employer[], homeSpendi
       }
       revenue.set(e.id, r);
     } else if (e.kind === 'factory') {
-      revenue.set(e.id, factorySlots > 0 ? (factoryPool * slots) / factorySlots : 0);
+      revenue.set(e.id, (factorySlots > 0 ? (factoryPool * slots) / factorySlots : 0) * (noiseLimit?.get(e.id) ?? 1));
     }
   }
   return { revenue, cost };

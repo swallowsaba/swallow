@@ -9,13 +9,14 @@ import {
   workersOf, type FactorId,
 } from './layers';
 import { networkOf, type Network } from './network';
+import { petitionModsOf, type PetitionMods } from './petitionMods';
 import {
   AFFORD_POINTS, BURDEN_LEAVE, BURDEN_LIVABLE, COMMUTE_POINTS, GREEN_POINTS, JOBS_POINTS, LEAVE_RATE, NOISE_POINTS, PEOPLE_PER_UNIT, piecewise,
   RENT_FACTOR, RENT_TYPE, RENT_YEN_PER_VALUE, SPENDING_RATE, SUPPORT_EASE, TAX_BUSINESS, TAX_RESIDENT, taxPoints, TRUST_WEEKLY_KEEP,
   WEEKS_PER_TERM,
 } from './rules';
 import { DISTRICT_COUNT, spaceOf, type Space } from './space';
-import type { Cause, SimHistory, WeeklyBreakdown, WeeklySample, World } from './types';
+import { NO_RULES, type Cause, type PoliticsRules, type SimHistory, type WeeklyBreakdown, type WeeklySample, type World } from './types';
 
 /**
  * 毎週の計算（docs/game-design.md 13 章。週の終わり）:
@@ -96,9 +97,11 @@ function partsOf(parts: Record<string, number[][]>, d: number): number[][] {
 
 /** 1 週分を計算する。init は版 4 への移行と新しい都市の始め（支持を目標の値で埋め、引っ越し・成長をしない） */
 /** 週の計算の前半（1〜4: 事業者と雇い手 → 働く人と仕事 → 雇用と通勤 → 騒音・公園・地価） */
-function firstHalf(world: World, terrain: Terrain, week: number) {
+function firstHalf(world: World, terrain: Terrain, week: number, rules: PoliticsRules) {
   const { sim, city } = world;
   const space = spaceOf(city, terrain);
+  // 受理した請願の中身（家賃の補助・騒音の制限・バス。22.1）
+  const mods = petitionModsOf(world, space, rules, week);
 
   // 1. 事業者と雇い手
   const synced = employersOf(space, sim.businesses, sim.vacant, week);
@@ -133,32 +136,38 @@ function firstHalf(world: World, terrain: Terrain, week: number) {
     }
     trafficWeight = weighted.map((v, d) => ((sum[d] as number) > 0 ? v / (sum[d] as number) : 1));
   }
-  const commute = commuteOf(space, net, workers, jobs, trafficWeight);
+  const commute = commuteOf(space, net, workers, jobs, trafficWeight, mods.bus);
 
   // 4. 騒音・公園・地価
-  const field = landFieldOf(space, commute.minutes);
-  return { space, synced, employers, households, workers, jobs, net, commute, field };
+  const field = landFieldOf(space, commute.minutes, mods.noise);
+  return { space, synced, employers, households, workers, jobs, net, commute, field, mods };
 }
 
 /** 申請の見込み（docs/game-design.md 16.2）に使う、週の計算の途中の値（騒音・通勤の混み具合・家賃）。世界は変えない */
 export type PreviewView = Pick<WeekView, 'space' | 'commute' | 'field' | 'rent'>;
 
-export function previewOf(world: World, terrain: Terrain): PreviewView {
-  const { space, commute, field } = firstHalf(world, terrain, world.sim.week);
+export function previewOf(world: World, terrain: Terrain, rules: PoliticsRules = NO_RULES): PreviewView {
+  const { space, commute, field, mods } = firstHalf(world, terrain, world.sim.week, rules);
   const rent = new Map<string, { rent: number; burden: number[] }>();
   for (const zb of space.residential) {
     const r = rentOf(field.land[zb.cell] as number, zb.building.level, world.sim.rentFactor);
-    rent.set(zb.building.id, { rent: r, burden: LAYERS.map((l) => r / incomeYenOf(l)) });
+    rent.set(zb.building.id, { rent: r, burden: burdenOf(r, zb.district, mods) });
   }
   return { space, commute, field, rent };
 }
 
-export function weekStep(world: World, terrain: Terrain, init = false): { world: World; view: WeekView } {
+/** 層ごとの家賃の負担（家賃 ÷ 月の収入）。家賃の補助を受けている地区の層は、補助の分を引いた家賃で */
+function burdenOf(rent: number, district: number, mods: PetitionMods): number[] {
+  const sub = mods.rent.get(district);
+  return LAYERS.map((l) => (sub && sub.layers.includes(l) ? rent * (1 - sub.ratio) : rent) / incomeYenOf(l));
+}
+
+export function weekStep(world: World, terrain: Terrain, init = false, rules: PoliticsRules = NO_RULES): { world: World; view: WeekView } {
   const { sim, budget } = world;
   let city: City = world.city;
   const week = init ? sim.week : sim.week + 1;
   const taxRate = budget.taxRate;
-  const { space, synced, employers, households, workers, jobs, net, commute, field } = firstHalf(world, terrain, week);
+  const { space, synced, employers, households, workers, jobs, net, commute, field, mods } = firstHalf(world, terrain, week, rules);
   const anyJobs = jobs.some((j) => j > 0);
 
   // 5〜6. 家賃と負担、要因の点（建物 × 層）
@@ -169,7 +178,7 @@ export function weekStep(world: World, terrain: Terrain, init = false): { world:
     const b = zb.building;
     const land = field.land[zb.cell] as number;
     const r = rentOf(land, b.level, sim.rentFactor);
-    const burden = LAYERS.map((l) => r / incomeYenOf(l));
+    const burden = burdenOf(r, zb.district, mods);
     rent.set(b.id, { rent: r, burden });
     const noise = noisePoints(field.noise[zb.cell] as number);
     const green = parkAt(field, b.cell.x, b.cell.y).value * GREEN_POINTS;
@@ -359,7 +368,7 @@ export function weekStep(world: World, terrain: Terrain, init = false): { world:
     }
     if (s > 0) spending.set(zb.front, (spending.get(zb.front) ?? 0) + s);
   }
-  const sales = salesOf(space, employers, spending, city.techPower, population, taxRate);
+  const sales = salesOf(space, employers, spending, city.techPower, population, taxRate, mods.noise);
   let businesses = synced.businesses;
   let vacant = synced.vacant;
   if (!init) {

@@ -62,7 +62,7 @@ export class SimRunner {
     this.seq = seq;
     this.sent = {};
     // 読み込んだ都市のヒートマップは、今の状態から 1 週分の途中の値を計算して作る（世界は変えない）
-    this.heat = heatOf(world, weekStep(world, terrainOf(world.city.seed), true).view);
+    this.heat = heatOf(world, weekStep(world, terrainOf(world.city.seed), true, this.rules).view);
   }
 
   apply(cmd: Command): void {

@@ -2,6 +2,7 @@ import { z } from 'zod';
 import councilData from '../../content/politics/council.json';
 import explainData from '../../content/politics/explain.json';
 import namesData from '../../content/politics/names.json';
+import petitionsData from '../../content/politics/petitions.json';
 import pledgesData from '../../content/politics/pledges.json';
 import { FACILITY_DEFS } from '@/city/facilities';
 import { DOMAINS } from '@/city/facilityInfo';
@@ -9,7 +10,9 @@ import type { DomainId } from '@/city/types';
 import { parseCondition } from '@/sim/conditions';
 import { COUNTED_WORDS } from '@/sim/election';
 import { LAYER_COUNT } from '@/sim/layers';
-import { MOD_KEYS, type CouncilMember, type GroupId, type IssueId, type Measure, type MemberLineKey, type ModKey, type ObjectionReason, type Pledge, type PoliticsRules } from '@/sim/types';
+import { needsApplication } from '@/sim/permits';
+import { PETITION_WORDS } from '@/sim/petitions';
+import { MOD_KEYS, type CouncilMember, type Petition, type GroupId, type IssueId, type Measure, type MemberLineKey, type ModKey, type ObjectionReason, type Pledge, type PoliticsRules } from '@/sim/types';
 import { termsIn } from './rich';
 import { DOMAIN_IDS, domainId } from './schema';
 
@@ -182,11 +185,79 @@ export function validatePledges(pledges: readonly Pledge[]): string[] {
   return out;
 }
 
-/** 模擬に渡す市政のデータ（理由と議員と、施設の電力・性質と、公約） */
+/* ---------- 請願（7.3） ---------- */
+
+const facilityType = z.enum(Object.keys(FACILITY_DEFS) as [keyof typeof FACILITY_DEFS, ...(keyof typeof FACILITY_DEFS)[]]);
+const share = z.number().gt(0).lt(1);
+const weeks = z.number().int().min(1).max(52);
+
+export const petitionSchema = z.object({
+  petitions: z.array(z.object({
+    id: z.string().regex(/^[a-z0-9-]+$/),
+    title: text,
+    text,
+    group: z.enum(GROUPS),
+    layers: z.array(z.number().int()).min(1).optional(),
+    when: text,
+    priority: z.number().int().min(1).max(9),
+    accept: z.object({
+      effect: z.discriminatedUnion('kind', [
+        z.object({ kind: z.literal('rent-subsidy'), ratio: share, weeks }).strict(),
+        z.object({ kind: z.literal('build'), type: facilityType }).strict(),
+        z.object({ kind: z.literal('power-cap'), mw: z.number().gt(0) }).strict(),
+        z.object({ kind: z.literal('noise-limit'), factor: share, weeks }).strict(),
+        z.object({ kind: z.literal('bus'), traffic: share, weeks }).strict(),
+      ]),
+      cost: z.object({ treasury: z.number().min(0).optional(), weekly: z.number().min(0).optional(), weeks: weeks.optional() }).strict().optional(),
+      why: text,
+    }).strict(),
+    reject: z.object({ why: text }).strict(),
+  }).strict()),
+}).strict();
+
+export const PETITIONS: readonly Petition[] = petitionSchema.parse(petitionsData).petitions;
+
+/**
+ * 請願の検証（docs/content-spec.md 6 章）: when が 7.7 の式として読め、今の模擬が数えている語だけ（start の語は公約だけ）・
+ * 層の番号が 0〜11 で重ならない・続く中身と毎週の費用は週の数を持つ・建てる種類は申請の要らない物（申請の要る公共サービスは G10 で足す）・
+ * 文（要望・受理・拒否）を請願どうしで使い回さない・ID が重ならない
+ */
+export function validatePetitions(petitions: readonly Petition[]): string[] {
+  const out: string[] = [];
+  const words = new Set<string>(PETITION_WORDS);
+  const ids = new Set<string>();
+  const seen = new Map<string, string>();
+  for (const p of petitions) {
+    if (ids.has(p.id)) out.push(`${p.id}: 請願の ID が重なる`);
+    ids.add(p.id);
+    const clauses = parseCondition(p.when);
+    if (!clauses) out.push(`${p.id}: when が式として読めない（${p.when}）`);
+    for (const c of clauses ?? []) {
+      if ('start' in c) out.push(`${p.id}: start の語は公約だけ（${c.start}）`);
+      const w = c.word.replace(/^any:/, '');
+      if (!words.has(w)) out.push(`${p.id}: ${w} は今の模擬が数えていない語`);
+    }
+    if (p.layers && (new Set(p.layers).size !== p.layers.length || p.layers.some((l) => l < 0 || l >= LAYER_COUNT))) out.push(`${p.id}: 層の番号が 0〜11 で重ならない形でない`);
+    const e = p.accept.effect;
+    if (e.kind === 'build' && needsApplication(e.type)) out.push(`${p.id}: ${e.type} は申請の要る種類（建てる請願は、申請の要らない種類だけ）`);
+    if (e.kind === 'build' && clauses && !clauses.some((c) => c.word.startsWith('any:'))) out.push(`${p.id}: 建てる請願は、届く地区を決める any: の語が要る`);
+    if ((e.kind === 'rent-subsidy' || e.kind === 'noise-limit' || e.kind === 'bus') && clauses && !clauses.some((c) => c.word.startsWith('any:'))) out.push(`${p.id}: 地区に効く中身は、届く地区を決める any: の語が要る`);
+    if ((p.accept.cost?.weekly ?? 0) > 0 && p.accept.cost?.weeks === undefined && !('weeks' in e)) out.push(`${p.id}: 毎週の費用に週の数が無い`);
+    for (const t of [p.text, p.accept.why, p.reject.why]) {
+      const other = seen.get(t);
+      if (other) out.push(`${p.id}: 文が ${other} と同じ（${t.slice(0, 20)}…）`);
+      seen.set(t, p.id);
+    }
+  }
+  return out;
+}
+
+/** 模擬に渡す市政のデータ（理由と議員と、施設の電力・性質と、公約と請願） */
 export const POLITICS_RULES: PoliticsRules = {
   reasons: REASONS,
   council: COUNCIL,
   pledges: PLEDGES,
+  petitions: PETITIONS,
   facilities: Object.fromEntries(Object.values(FACILITY_DEFS).filter((d) => d.powerMW !== undefined || d.traits).map((d) => [d.type, {
     ...(d.powerMW !== undefined ? { powerMW: d.powerMW } : {}),
     ...(d.traits ? { traits: d.traits } : {}),

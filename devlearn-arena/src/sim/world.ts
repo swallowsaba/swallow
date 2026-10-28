@@ -8,6 +8,7 @@ import { LAYER_COUNT, LAYER_SHARE, MEAN_HOUSEHOLD_SIZE } from './layers';
 import { DAYS_PER_WEEK, EXTERNAL_POWER_CAP, INITIAL_TAX_RATE, INITIAL_TREASURY } from './rules';
 import { START_CAPITAL, stepPolitics } from './election';
 import { settleWeek } from './budget';
+import { petitionSpend, stepPetitions } from './petitions';
 import { DISTRICT_COUNT, landingOf, spaceOf } from './space';
 import { NO_RULES, type Difficulty, type Politics, type PoliticsRules, type SimState, type World } from './types';
 import { stepApplications } from './permits';
@@ -160,9 +161,11 @@ export function stepDayView(world: World, terrain: Terrain, rules: PoliticsRules
     simPopulation: true,
   });
   const next: World = { ...permitted, city };
-  const weekly = day % DAYS_PER_WEEK === 0 ? weekStep(next, terrain) : null;
-  // 週の終わりの払い（税収から支出を引いて財政に。待っている税率は次の週から。docs/game-design.md 22.2）
-  const stepped = weekly ? { world: settleWeek(weekly.world, rules), view: weekly.view } : { world: next, view: null };
+  const weekly = day % DAYS_PER_WEEK === 0 ? weekStep(next, terrain, false, rules) : null;
+  // 週の終わりの払い（税収から支出を引いて財政に。待っている税率は次の週から。docs/game-design.md 22.2）と、請願（期限・届く。22.1）
+  const stepped = weekly
+    ? { world: stepPetitions(settleWeek(weekly.world, rules, petitionSpend(weekly.world, rules, weekly.world.sim.week)), terrain, weekly.view, rules), view: weekly.view }
+    : { world: next, view: null };
   // 市政（週の終わりの公約と支持率の上昇・選挙の日。docs/game-design.md 21 章）
   return { world: stepPolitics(stepped.world, day, rules), view: stepped.view };
 }

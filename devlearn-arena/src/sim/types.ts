@@ -199,9 +199,59 @@ export interface PoliticsRules {
   facilities: Partial<Record<FacilityType, { powerMW?: number; traits?: Partial<Record<ModKey, number>> }>>;
   /** 公約の候補（docs/content-spec.md 7.4。docs/game-design.md 21.4） */
   pledges?: readonly Pledge[];
+  /** 請願の候補（docs/content-spec.md 7.3。docs/game-design.md 22.1） */
+  petitions?: readonly Petition[];
+  /** 新聞の名前と型の文（docs/content-spec.md 7.5。docs/game-design.md 22.3） */
+  news?: NewsRules;
 }
 
 export const NO_RULES: PoliticsRules = { reasons: [], council: [], facilities: {}, pledges: [] };
+
+/** 請願の受理の中身（docs/content-spec.md 7.3）。模擬に実際に効く */
+export type PetitionEffect =
+  /** 届いた地区の、送った層の家賃を ratio だけ下げる */
+  | { kind: 'rent-subsidy'; ratio: number; weeks: number }
+  /** 届いた地区の空き地に、その種類を建てる（申請の要らない種類はそのまま置く。費用は財政） */
+  | { kind: 'build'; type: FacilityType }
+  /** 外からの電気の上限を足す */
+  | { kind: 'power-cap'; mw: number }
+  /** 届いた地区に届く工業の騒音の倍率（その間、その工場の売上も同じ割合で下がる） */
+  | { kind: 'noise-limit'; factor: number; weeks: number }
+  /** 届いた地区から通う人の通勤の時間の倍率 */
+  | { kind: 'bus'; traffic: number; weeks: number };
+
+/** 請願（docs/content-spec.md 7.3）。content/politics/petitions.json のデータ */
+export interface Petition {
+  id: string;
+  title: string;
+  text: string;
+  group: GroupId;
+  /** 送ってくる層（層の番号）。その層の住む地区にだけ届く */
+  layers?: number[];
+  /** 届く条件（7.7 の式。any: の語は、どこかの地区で満たす） */
+  when: string;
+  priority: number;
+  accept: {
+    effect: PetitionEffect;
+    cost?: { treasury?: number; weekly?: number; weeks?: number };
+    why: string;
+  };
+  reject: { why: string };
+}
+
+/** 新聞の型の文（docs/content-spec.md 7.5） */
+export interface NewsTemplate {
+  kind: NewsKind;
+  variant?: string;
+  headline: string;
+  body: string;
+}
+
+export interface NewsRules {
+  /** 新聞の名前（「市民新報」） */
+  title: string;
+  templates: readonly NewsTemplate[];
+}
 
 /** 公約（docs/content-spec.md 7.4） */
 export interface Pledge {

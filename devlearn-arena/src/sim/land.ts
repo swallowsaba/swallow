@@ -44,12 +44,13 @@ function noiseFactor(mods: Record<string, number> | undefined, night = false): n
   return (mods?.noise ?? 1) * (night ? (mods?.nightNoise ?? 1) : 1);
 }
 
-export function noiseSourcesOf(space: Space): NoiseSource[] {
+/** limit: 工業の建物 ID → 騒音の倍率（受理した請願の騒音の制限。docs/content-spec.md 7.3） */
+export function noiseSourcesOf(space: Space, limit?: ReadonlyMap<string, number>): NoiseSource[] {
   const out: NoiseSource[] = [];
   for (const w of space.workplaces) {
     const b = w.building;
     const at = { x: b.cell.x + 0.5, y: b.cell.y + 0.5 };
-    const k = noiseFactor(space.zoneMods.get(w.zoneId));
+    const k = noiseFactor(space.zoneMods.get(w.zoneId)) * (w.kind === 'industrial' ? (limit?.get(b.id) ?? 1) : 1);
     if (k <= 0) continue;
     if (w.kind === 'industrial') out.push({ kind: 'building', id: b.id, at, value: b.level * NOISE.industrialPerLevel * k, radius: NOISE.industrialRadius });
     else if (w.kind === 'commercial') out.push({ kind: 'building', id: b.id, at, value: NOISE.commercial * k, radius: NOISE.commercialRadius });
@@ -213,8 +214,8 @@ export function noiseTermsAt(field: Pick<LandField, 'noise' | 'noiseByDistrict'>
 }
 
 /** 騒音・公園の行き届き・地価を、全てのマスで計算する */
-export function landFieldOf(space: Space, commute: Float32Array): LandField {
-  const noiseSources = noiseSourcesOf(space);
+export function landFieldOf(space: Space, commute: Float32Array, noiseLimit?: ReadonlyMap<string, number>): LandField {
+  const noiseSources = noiseSourcesOf(space, noiseLimit);
   const { noise, byDistrict } = stampNoise(noiseSources);
   const { cover, src } = parkCoverage(space);
   const field = { noise, noiseByDistrict: byDistrict, parkRoad: cover, parkRoadSrc: src };

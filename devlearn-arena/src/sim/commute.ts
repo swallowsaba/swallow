@@ -32,8 +32,9 @@ export interface Commute {
 /**
  * workers・jobs: [地区 × 3 + 帯] の働く人と仕事の数
  * trafficWeight: [地区] 行き先の地区の、道路に出る流れの倍率（譲歩の traffic。駐車場を増やす・送迎の車を出す。無ければ 1）
+ * bus: [地区] 住む地区から通う人の通勤の時間の倍率（受理した請願のバス。docs/content-spec.md 7.3。無ければ 1）
  */
-export function commuteOf(space: Space, net: Network, workers: Float64Array, jobs: Float64Array, trafficWeight?: Float64Array): Commute {
+export function commuteOf(space: Space, net: Network, workers: Float64Array, jobs: Float64Array, trafficWeight?: Float64Array, bus?: Float64Array): Commute {
   const n = DISTRICT_COUNT;
   const needWork = Float64Array.from(workers);
   const openJobs = Float64Array.from(jobs);
@@ -90,8 +91,9 @@ export function commuteOf(space: Space, net: Network, workers: Float64Array, job
   const minutes = new Float32Array(n).fill(Infinity);
   const anyJobs = jobs.some((j) => j > 0);
   for (let d = 0; d < n; d += 1) {
+    const k = bus ? (bus[d] as number) : 1;
     if ((people[d] as number) > 0) {
-      minutes[d] = (sum[d] as number) / (people[d] as number);
+      minutes[d] = ((sum[d] as number) / (people[d] as number)) * k;
       continue;
     }
     if (!anyJobs) continue;
@@ -101,7 +103,7 @@ export function commuteOf(space: Space, net: Network, workers: Float64Array, job
       const t = net.minutes[d * n + to] as number;
       if (t < best && ((jobs[to * 3] as number) + (jobs[to * 3 + 1] as number) + (jobs[to * 3 + 2] as number)) > 0) best = t;
     }
-    minutes[d] = best;
+    minutes[d] = best * k;
   }
   const fill = new Float64Array(n * 3);
   const unemployment = new Float64Array(n * 3);

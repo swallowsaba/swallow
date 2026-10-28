@@ -103,7 +103,7 @@ export function handOptions(world: World, app: Application, reasonId: string, sk
 }
 
 /** 層の信頼を動かす（−15〜+15） */
-function moveTrust(trust: readonly number[], layers: readonly number[] | undefined, delta: number): number[] {
+export function moveTrust(trust: readonly number[], layers: readonly number[] | undefined, delta: number): number[] {
   const next = [...trust];
   for (const l of layers ?? []) next[l] = Math.max(-TRUST_LIMIT, Math.min(TRUST_LIMIT, (next[l] ?? 0) + delta));
   return next;
