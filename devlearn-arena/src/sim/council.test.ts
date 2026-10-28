@@ -81,6 +81,14 @@ describe('議員の点（18.2）を表で固定する', () => {
     const few = judgeAll(light, app([o('dc-jobs', 6), o('dc-power', 4)]), POLITICS_RULES).filter((j) => j.yes).length;
     expect(few).toBeGreaterThan(many);
     expect(g.values.jobs).toBe(6);
+    // 境: 賛成 3 は否決、賛成 4 は可決（姿勢で賛否を決めた 7 人）
+    const split = (n: number) => ({ ...POLITICS_RULES, council: COUNCIL.map((m, i) => ({ ...m, stance: i < n ? 100 : -100 })) });
+    const three = voteOf(light, app(BASE), split(3), 28);
+    const four = voteOf(light, app(BASE), split(4), 28);
+    expect(three.members.filter((m) => m.yes)).toHaveLength(3);
+    expect(three.passed).toBe(false);
+    expect(four.members.filter((m) => m.yes)).toHaveLength(4);
+    expect(four.passed).toBe(true);
   });
 });
 
