@@ -15,7 +15,7 @@ import { runLesson } from '../tools/scenarios/domain.mjs';
  * 学習との接続（G7。docs/acceptance-criteria.md S1〜S3）:
  *   公聴会の「この論点を学ぶ」→ 入口の札 → 7 段 → 都市へ戻ると同じ公聴会の窓に新しい説明の候補が並ぶ（レッスンの間は時間が止まる）
  *   スキル 0 のまま、譲歩と政治資本だけで申請が可決して建つ。申請中にも学べる
- *   赤字（G9）と停電（G10）は、その仕組みを作る Phase で、同じ形の E2E を足す
+ *   赤字（G9）は e2e/budget.spec.ts。停電（G10）は、その仕組みを作る Phase で、同じ形の E2E を足す
  */
 
 type Store = {
