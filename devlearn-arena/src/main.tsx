@@ -6,7 +6,7 @@ import { sqlConfig } from './engines/db/check';
 import { cityCssVariables, cssVariables } from './ui/tokens';
 import { openSession, startAutosave } from './save/autosave';
 import { idbBackend } from './save/idb';
-import { freshSave } from './save/manage';
+import { freshSave, newCitySave } from './save/manage';
 import type { SaveControls } from './screens/settings/SettingsScreen';
 import { nowIso } from './screens/clock';
 import { useSaveStatus } from './screens/saveStatus';
@@ -72,6 +72,7 @@ void openSession(backend, { now: nowIso, newId: () => crypto.randomUUID() }).the
   const saves: SaveControls = {
     snapshot: saver.snapshot,
     fresh: () => freshSave({ id: crypto.randomUUID(), now: nowIso(), settings: opened.session.settings.getState().settings }),
+    newCity: () => newCitySave(saver.snapshot(), nowIso()),
     replace: async (data, message) => {
       await saver.replace(data);
       putAfterReopen(message);

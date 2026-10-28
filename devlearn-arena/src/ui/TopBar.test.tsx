@@ -105,3 +105,33 @@ describe('市政の入口と数の印・引き出し（docs/ui-design.md 3.1）'
     expect(host.querySelector('[data-testid="civic-drawer"]')).toBeNull();
   });
 });
+
+describe('上の帯の政治資本と任期の残り（docs/ui-design.md 3.1・docs/development-plan.md G8）', () => {
+  function mountPolitics(term: { weeksLeft: number; defeated: boolean }) {
+    const host = document.createElement('div');
+    document.body.append(host);
+    const root = createRoot(host);
+    roots.push(root);
+    const onOpen = vi.fn();
+    act(() => root.render(<TopBar cityName="みなと市" funds={1500} xp={0} rankName="見習い" population={120} stageName="村" capital={12} term={{ ...term, onOpen }} />));
+    return { host, onOpen };
+  }
+
+  it('政治資本は数字で、任期の残りは「選挙まで 38 週」。押すと選挙の見込みを開く', () => {
+    const { host, onOpen } = mountPolitics({ weeksLeft: 38, defeated: false });
+    expect(host.querySelector('[data-testid="topbar-capital"]')?.textContent).toBe('政治資本12');
+    const term = host.querySelector('[data-testid="topbar-term"]') as HTMLButtonElement;
+    expect(term.textContent).toBe('選挙まで38週');
+    act(() => term.click());
+    expect(onOpen).toHaveBeenCalledTimes(1);
+  });
+
+  it('落選して道を選ぶ前は「落選」と出し、押すと結果を開く（呼ぶ側が結果を選ぶ）', () => {
+    const { host, onOpen } = mountPolitics({ weeksLeft: 0, defeated: true });
+    const term = host.querySelector('[data-testid="topbar-term"]') as HTMLButtonElement;
+    expect(term.textContent).toBe('任期落選');
+    expect(term.title).toContain('学習の記録は消えない');
+    act(() => term.click());
+    expect(onOpen).toHaveBeenCalledTimes(1);
+  });
+});

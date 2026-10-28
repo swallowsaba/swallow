@@ -3,7 +3,7 @@ import { terrainOf } from '@/sim/runner';
 import { newWorld } from '@/sim/world';
 import { emptyProgress } from '@/game/progress';
 import { readFailureText, readSave, type ReadOptions } from './migrations';
-import { exportFileName, newPlayer, toSaveData } from './saveData';
+import { exportFileName, fromSaveData, newPlayer, toSaveData } from './saveData';
 import type { SaveData, Settings } from './schema';
 
 /**
@@ -55,6 +55,19 @@ export function checkImport(text: string, options?: ReadOptions): ImportCheck {
   };
   if (read.migratedFrom !== undefined) summary.migratedFrom = read.migratedFrom;
   return { ok: true, data, summary };
+}
+
+/** 次の島の seed（今の島から決める。乱数を使わない） */
+export const nextIslandSeed = (seed: number): number => (Math.imul(seed, 1664525) + 1013904223) >>> 0;
+
+/**
+ * 落選の後に新しい都市で始める時の保存データ（docs/game-design.md 21.2）: 新しい島で、村から・開発資金 1,500・1 期目（始め方は「ふつう」。選ぶのは G11）。
+ * 学習の記録（XP・スキル・レッスンの進み・ミッション・途中の実戦）・市長・設定は、そのまま写す
+ */
+export function newCitySave(current: SaveData, now: string): SaveData {
+  const parts = fromSaveData(current);
+  const seed = nextIslandSeed(current.city.seed);
+  return toSaveData({ ...parts, world: newWorld(terrainOf(seed), NAME_PARTS, seed) }, now, now.slice(0, 10));
 }
 
 /** 最初からやり直す時の保存データ: 新しい都市・空の学習の記録・新しい市長。設定は今のまま残す */

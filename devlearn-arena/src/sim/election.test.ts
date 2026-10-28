@@ -6,6 +6,7 @@ import {
 } from './election';
 import { LAYER_COUNT } from './layers';
 import type { Application, Pledge, PoliticsRules, World } from './types';
+import { SimRunner } from './runner';
 import { stepDay } from './world';
 import { grownVillage } from './__fixtures__/cities';
 
@@ -105,6 +106,15 @@ describe('任期と選挙の日（21.1）', () => {
     expect(last?.causes?.map((c) => c.layer)).toEqual(worst);
     // 選ぶまで、日は進まない
     expect(days(after, 5, RULES)).toBe(after);
+    // Worker の模擬も、進めてと言われても止まったまま返る（日が進まないので、待ち続けない）
+    const runner = new SimRunner(after);
+    runner.load(after, 0, RULES);
+    runner.advance(today(after) + 5);
+    expect(runner.current).toBe(after);
+    // 再び立つと、また進む
+    runner.apply({ seq: 1, day: today(after), op: { kind: 'rerun' } });
+    runner.advance(today(after) + 2);
+    expect(today(runner.current)).toBe(today(after) + 2);
   });
 
   it('敗因の要因は、その層の点を下げた要因（内訳の [要因][層]）を大きい順。決定は、その要因を下げた原因の ID', () => {

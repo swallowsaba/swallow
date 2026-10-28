@@ -88,6 +88,16 @@ export function App({ session: given, saves }: { session?: Session; saves?: Save
   }, [route.name, session]);
 
   const toCity = useCallback((): void => go({ name: 'city' }), []);
+  /** 落選の後、新しい島で都市を始める（学習の記録はそのまま。保存データを置き換えて開き直す） */
+  const newCity = useMemo(() => {
+    const make = saves?.newCity;
+    if (!saves || !make) return undefined;
+    return (): void => {
+      saves.replace(make(), '新しい島で、新しい都市を始めた。学習の記録（XP・スキル・レッスン・ミッション）はそのまま').catch(() => {
+        session.city.getState().notify('新しい都市を保存できなかった。今の都市はそのまま残っている', performance.now());
+      });
+    };
+  }, [saves, session]);
   /** レッスンを始める（レッスン画面へ）。どのレッスンも、前提に関係なく始められる */
   const startLesson = useCallback((id: string): void => go({ name: 'lesson', lessonId: id }), []);
 
@@ -107,6 +117,7 @@ export function App({ session: given, saves }: { session?: Session; saves?: Save
         onCard={(id) => go({ name: 'learn', view: 'list', lessonId: id })}
         onLibrary={(domain) => go(domain ? { name: 'learn', view: 'list', domain } : { name: 'learn', view: 'list' })}
         onMission={(id) => go({ name: 'missions', missionId: id })}
+        {...(newCity ? { onNewCity: newCity } : {})}
       />
       {route.name === 'growth' ? <GrowthScreen session={session} onClose={toCity} /> : null}
       {route.name === 'settings' && saves ? <SettingsScreen session={session} saves={saves} onClose={toCity} /> : null}

@@ -31,6 +31,9 @@ import { PermitDetailWindow, PermitListWindow } from './PermitWindows';
 import { AppealWindow } from './AppealWindow';
 import { CouncilWindow } from './CouncilWindow';
 import { HearingWindow } from './HearingWindow';
+import { ElectionWindow } from './ElectionWindow';
+import { electionDayOf } from '@/sim/election';
+import { DAYS_PER_WEEK } from '@/sim/rules';
 import { mayorCount, sitesOf } from './permitView';
 import type { World } from '@/sim/types';
 import type { Session } from '../session';
@@ -42,7 +45,7 @@ import './CityScreen.css';
  * 都市画面（docs/ui-design.md 3 章）。全画面の都市ビューに、上の帯と建設メニューを小さく重ねる。
  * 学習者が道路を引き、区画を塗り、施設と公園を置く。区画の建物は自動で建ち、育つ（docs/decisions.md D-03）。
  */
-export function CityScreen({ session, active = true, covered = false, current, disabled = [], onEntry, onLesson, onCard, onLibrary, onMission }: {
+export function CityScreen({ session, active = true, covered = false, current, disabled = [], onEntry, onLesson, onCard, onLibrary, onMission, onNewCity }: {
   session: Session;
   active?: boolean;
   /** 不透明な画面（レッスン・ミッションの実戦）が都市を覆っている。その間は都市を描かない */
@@ -60,6 +63,8 @@ export function CityScreen({ session, active = true, covered = false, current, d
   onLibrary?: (domain: DomainId | null) => void;
   /** 情報パネルとおすすめの欄から、ミッションを開く */
   onMission?: (id: string) => void;
+  /** 落選の後、新しい都市で始める（学習の記録はそのまま。docs/game-design.md 21.2） */
+  onNewCity?: () => void;
 }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const rendererRef = useRef<CityRenderer | null>(null);
@@ -85,7 +90,16 @@ export function CityScreen({ session, active = true, covered = false, current, d
     approvalDelta: approvalDeltaOf(s.world.history.breakdown),
     windows: s.windows, toggleWindow: s.toggleWindow, openWindow: s.openWindow, heat: s.heat,
     mayor: mayorCount(s.world), openPermit: s.openPermit,
+    capital: s.world.politics.capital, defeated: s.world.politics.defeated === true,
+    weeksLeft: Math.max(0, Math.ceil((electionDayOf(s.world.politics.term) - Math.floor(s.world.city.day)) / DAYS_PER_WEEK)),
+    openElection: s.openElection,
   })));
+  // 公約を選んでいない任期なら、公約を選ぶ窓を出す（初回の操作説明の後。移行した都市の 1 期目も。docs/data-model.md 12 章）
+  const introSeen = useStore(session.player, (p) => p.player.introSeen);
+  const noPledges = useStore(store, (s) => s.world.politics.term.pledges.length === 0);
+  useEffect(() => {
+    if (active && !covered && introSeen && noPledges) store.getState().askPledges();
+  }, [store, active, covered, introSeen, noPledges]);
   // 受け取ったが、まだ置いていない記念碑（建設メニューの公園の引き出しに並ぶ）
   const facilities = useStore(store, (s) => s.city.facilities);
   const landmarks = useMemo(() => unplacedLandmarks(progress, facilities), [progress, facilities]);
@@ -233,6 +247,12 @@ export function CityScreen({ session, active = true, covered = false, current, d
   // 市政の知らせを押すと、その知らせの窓を開く（採決の結果・異議申し立て・申請の詳細）
   const openNotice = useCallback((n: CityGameState['notice']) => {
     const s = store.getState();
+    if (n?.window === 'election') {
+      // 選挙の結果の知らせ（落選の後・選挙の週）は結果を、それ以外（8 週前・公約）は見込みを開く
+      const last = s.world.politics.pastTerms.at(-1);
+      s.openElection(s.world.politics.defeated || (last && last.endDay >= Math.floor(s.world.city.day) - DAYS_PER_WEEK) ? 'result' : 'preview');
+      return;
+    }
     if (!n?.permitId) return;
     if (n.window === 'council') s.openCouncil(n.permitId);
     else if (n.window === 'appeal') s.openAppeal(n.permitId);
@@ -256,6 +276,8 @@ export function CityScreen({ session, active = true, covered = false, current, d
         approval={state.approval}
         approvalDelta={state.approvalDelta}
         onApproval={() => state.openWindow('view')}
+        capital={state.capital}
+        term={{ weeksLeft: state.weeksLeft, defeated: state.defeated, onOpen: () => state.openElection(state.defeated ? 'result' : 'preview') }}
         funds={state.funds}
         xp={xp}
         rankName={RANK_NAMES[rankOf(xp)]}
@@ -286,7 +308,7 @@ export function CityScreen({ session, active = true, covered = false, current, d
             paused={state.paused}
             shifted={panel !== null}
             windows={state.windows.length}
-            {...(state.notice?.permitId ? { onOpen: () => openNotice(state.notice) } : {})}
+            {...(state.notice?.permitId || state.notice?.window ? { onOpen: () => openNotice(state.notice) } : {})}
           />
           {onLesson ? <RecommendPanel progress={session.progress} city={store} onLesson={onLesson} {...(onMission ? { onMission } : {})} /> : null}
           <InfoPanel
@@ -314,6 +336,7 @@ export function CityScreen({ session, active = true, covered = false, current, d
           })}
           <HearingWindow store={store} skills={skillValues} {...(onCard ? { onLearn: onCard } : {})} />
           <CouncilWindow store={store} />
+          <ElectionWindow store={store} {...(onNewCity ? { onNewCity } : {})} />
           <HeatHover store={store} canvas={canvasRef} renderer={rendererRef} />
           <BuildMenu state={state} landmarks={landmarks} />
           <PlacementHint hint={state.confirm ? null : state.hint} />

@@ -75,6 +75,8 @@ export class SimRunner {
     const terrain = terrainOf(this.world.city.seed);
     while (Math.floor(this.world.city.day) < day) {
       const r = stepDayView(this.world, terrain, this.rules);
+      // 落選して道を選ぶまでは日が進まない（docs/game-design.md 21.2）。待ち続けずに返す
+      if (r.world === this.world) break;
       this.world = r.world;
       if (r.view) this.heat = heatOf(this.world, r.view);
     }

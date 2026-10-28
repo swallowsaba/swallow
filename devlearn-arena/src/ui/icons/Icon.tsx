@@ -8,7 +8,8 @@ export type IconName =
   | 'graph' | 'list' | 'search' | 'close' | 'start' | 'check' | 'hint' | 'terminal' | 'upgrade' | 'down' | 'database'
   | 'export' | 'import' | 'restart' | 'save' | 'calendar' | 'approval' | 'speed1' | 'speed2' | 'speed3'
   | 'up' | 'heat' | 'collapse' | 'civic' | 'permit' | 'pin'
-  | 'issue-afford' | 'issue-environment' | 'issue-jobs' | 'issue-finance' | 'issue-safety' | 'issue-traffic' | 'issue-tech' | 'vote';
+  | 'issue-afford' | 'issue-environment' | 'issue-jobs' | 'issue-finance' | 'issue-safety' | 'issue-traffic' | 'issue-tech' | 'vote'
+  | 'capital' | 'term';
 
 const PATHS: Record<IconName, string> = {
   // 開いた本
@@ -115,6 +116,10 @@ const PATHS: Record<IconName, string> = {
   'issue-tech': 'M8 8h8v8H8Z M10 4.5V8 M14 4.5V8 M10 16v3.5 M14 16v3.5 M4.5 10H8 M4.5 14H8 M16 10h3.5 M16 14h3.5 M10.5 10.5h3v3h-3Z',
   // 採決（投票箱と札）
   vote: 'M4.5 12.5h15V20h-15Z M8 12.5 9.5 5h5l1.5 7.5 M10.5 8.5h3 M4.5 16h15',
+  // 政治資本（市長の印。柄の付いた判と、押した跡）
+  capital: 'M10 3.5h4v4.2c0 .8 2.5 1.3 2.5 3.3H7.5c0-2 2.5-2.5 2.5-3.3Z M6 11h12v3H6Z M7.5 18h9 M5 20.5h14',
+  // 任期（砂時計）
+  term: 'M6.5 3.5h11 M6.5 20.5h11 M8 3.5c0 4.6 4 5.4 4 8.5s-4 3.9-4 8.5 M16 3.5c0 4.6-4 5.4-4 8.5s4 3.9 4 8.5 M10 18.5h4',
 };
 
 export function Icon({ name, size = 20 }: { name: IconName; size?: number }) {

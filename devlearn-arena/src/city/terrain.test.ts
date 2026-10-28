@@ -11,12 +11,16 @@ describe('地形', () => {
     expect(generateTerrain(7).coast).not.toEqual(terrain.coast);
   });
 
-  it('初めに使える中央の 24×24 は、全て平らな陸で、川も丘も無い', () => {
-    for (let y = START_AREA.y; y < START_AREA.y + START_AREA.h; y += 1) {
-      for (let x = START_AREA.x; x < START_AREA.x + START_AREA.w; x += 1) {
-        const p = { x: x + 0.5, y: y + 0.5 };
-        expect(isLand(terrain, p), `(${String(x)}, ${String(y)})`).toBe(true);
-        expect(heightLevel(terrain, p)).toBe(0);
+  it('初めに使える中央の 24×24 は、全て平らな陸で、川も丘も無い（どの seed の島でも。落選の後の新しい島も）', () => {
+    for (const seed of [20261002, 7, 1, 0xffffffff, 1875050081, 1915323468, 2125263675]) {
+      const t = generateTerrain(seed);
+      for (let y = START_AREA.y; y < START_AREA.y + START_AREA.h; y += 1) {
+        for (let x = START_AREA.x; x < START_AREA.x + START_AREA.w; x += 1) {
+          const p = { x: x + 0.5, y: y + 0.5 };
+          expect(isLand(t, p), `${String(seed)} (${String(x)}, ${String(y)})`).toBe(true);
+          expect(heightLevel(t, p)).toBe(0);
+          expect(inRiver(t, p)).toBe(false);
+        }
       }
     }
   });

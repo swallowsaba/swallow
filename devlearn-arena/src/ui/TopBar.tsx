@@ -4,7 +4,7 @@ import './TopBar.css';
 
 /**
  * 上の帯（docs/ui-design.md 3 章・3.1）。高さ 48。
- * 都市名・日付と速さ・開発資金・支持率・XP・都市規模・発展段階と、画面への入口（学ぶ・ミッション・用語・設定。XP を押すと成長画面）。
+ * 都市名・日付と速さ・開発資金・支持率・政治資本・任期の残り・XP・都市規模・発展段階と、画面への入口（学ぶ・ミッション・用語・設定。XP を押すと成長画面）。
  * 1600 未満の幅では、数字の見出しを記号にし、名前は指した時の小窓（title）で出す。数字は削らない
  */
 export interface TopBarProps {
@@ -17,6 +17,10 @@ export interface TopBarProps {
   approvalDelta?: number | null;
   /** 支持率を押すと、表示切替の窓の説明を開く（docs/ui-design.md 3.1） */
   onApproval?: () => void;
+  /** 政治資本（docs/game-design.md 21.5）。無ければ出さない */
+  capital?: number;
+  /** 任期の残り（「選挙まで 38 週」）。押すと選挙の見込み（docs/ui-design.md 3.1・10.6）。無ければ出さない */
+  term?: TopBarTerm;
   funds: number;
   xp: number;
   /** エンジニア段階の名前（docs/game-design.md 9 章） */
@@ -117,6 +121,14 @@ function Civic({ civic }: { civic: TopBarCivic }) {
 }
 
 export type EntryId = 'learn' | 'graph' | 'mission' | 'glossary' | 'settings' | 'growth';
+
+export interface TopBarTerm {
+  /** 選挙までの週 */
+  weeksLeft: number;
+  /** 落選して、次の道を選ぶ前 */
+  defeated: boolean;
+  onOpen: () => void;
+}
 
 export interface TopBarClock {
   year: number;
@@ -229,6 +241,28 @@ function Approval({ value, delta, onOpen }: { value: number | null; delta: numbe
   );
 }
 
+/** 任期の残り。押すと選挙の見込み（落選の後は結果と 2 つの道） */
+function Term({ term }: { term: TopBarTerm }) {
+  return (
+    <button
+      type="button"
+      className="topbar-stat is-entry"
+      data-testid="topbar-term"
+      title={term.defeated ? '落選した。押すと、選挙の結果と次の道（学習の記録は消えない）' : `選挙まで ${String(term.weeksLeft)} 週。押すと、今の見込み（層ごとの支持と投票率・公約）`}
+      onClick={term.onOpen}
+    >
+      <span className="topbar-stat-icon"><Icon name="term" size={18} /></span>
+      <span className="topbar-stat-text">
+        <span className="topbar-stat-label">{term.defeated ? '任期' : '選挙まで'}</span>
+        <span className="topbar-stat-value num">
+          {term.defeated ? '落選' : String(term.weeksLeft)}
+          {term.defeated ? null : <span className="topbar-stat-unit">週</span>}
+        </span>
+      </span>
+    </button>
+  );
+}
+
 export function TopBar(props: TopBarProps) {
   const disabled = new Set(props.disabled ?? []);
   return (
@@ -241,6 +275,8 @@ export function TopBar(props: TopBarProps) {
         {props.clock ? <Clock clock={props.clock} /> : null}
         <Stat icon="funds" label="開発資金" value={format(props.funds)} unit="資金" />
         {props.approval !== undefined ? <Approval value={props.approval} delta={props.approvalDelta ?? null} {...(props.onApproval ? { onOpen: props.onApproval } : {})} /> : null}
+        {props.capital !== undefined ? <Stat icon="capital" label="政治資本" value={String(props.capital)} testId="topbar-capital" /> : null}
+        {props.term ? <Term term={props.term} /> : null}
         <button
           type="button"
           className={`topbar-stat is-entry${props.current === 'growth' ? ' is-current' : ''}`}

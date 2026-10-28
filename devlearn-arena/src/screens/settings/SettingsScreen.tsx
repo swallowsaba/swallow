@@ -23,6 +23,8 @@ export interface SaveControls {
   replace: (data: SaveData, message: string) => Promise<void>;
   /** 最初からやり直す時の保存データ */
   fresh: () => SaveData;
+  /** 落選の後に新しい都市で始める時の保存データ（学習の記録はそのまま。docs/game-design.md 21.2） */
+  newCity?: () => SaveData;
   /** ファイルとして端末に保存する */
   download: (file: ExportFile) => void;
 }

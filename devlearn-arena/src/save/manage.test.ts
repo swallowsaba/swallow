@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { newCity } from '@/city/newCity';
 import { emptyProgress } from '@/game/progress';
 import { openSession, startAutosave, type SaveBackend } from './autosave';
-import { checkImport, exportFile, freshSave } from './manage';
+import { checkImport, exportFile, freshSave, newCitySave } from './manage';
 import { MIGRATIONS, readSave, type Migration } from './migrations';
 import { DEFAULT_SETTINGS, SAVE_VERSION } from './schema';
 
@@ -170,5 +170,35 @@ describe('最初からやり直す', () => {
     expect(read.ok && read.data.player.id).toBe('p-1');
     expect(read.ok && Object.keys(read.data.lessons)).toContain('net.b.02');
     saver.stop();
+  });
+});
+
+describe('落選の後の 2 つの道（docs/game-design.md 21.2）', () => {
+  it('新しい都市で始める: 新しい島で、村から・開発資金 1,500・1 期目。学習の記録（XP・スキル・レッスン・ミッション）・市長・設定はそのまま', async () => {
+    const { backend, opened, saver } = await playedSession();
+    opened.session.progress.getState().learn([{ kind: 'mission', missionId: 'container-run', xp: 100, at: AT }]);
+    await saver.flush();
+    const before = saver.snapshot();
+    const lost = { ...before, politics: { ...before.politics, defeated: true as const, term: { ...before.politics.term, no: 3 } } };
+    const next = newCitySave(lost, AT);
+    await saver.replace(next);
+    const reopened = await openSession(backend, { now, newId: () => 'p-x' });
+    const s = reopened.session;
+    // 学習の記録は変わらない
+    expect(s.progress.getState().progress).toEqual(opened.session.progress.getState().progress);
+    expect(s.progress.getState().practiceSessions).toEqual(opened.session.progress.getState().practiceSessions);
+    expect(s.player.getState().player).toEqual(opened.session.player.getState().player);
+    expect(next.player.skills).toEqual(before.player.skills);
+    // 都市は新しい島の村から
+    const city = s.city.getState().world.city;
+    expect(city.seed).not.toBe(before.city.seed);
+    expect(city).toEqual(newCity(city.seed));
+    expect(city.funds).toBe(1500);
+    const politics = s.city.getState().world.politics;
+    expect(politics.defeated).toBeUndefined();
+    expect(politics.term.no).toBe(1);
+    expect(politics.capital).toBe(10);
+    // 同じ都市からは、同じ次の島（乱数で決めない）
+    expect(newCitySave(lost, AT).city.seed).toBe(next.city.seed);
   });
 });

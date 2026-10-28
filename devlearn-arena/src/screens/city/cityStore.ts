@@ -17,8 +17,9 @@ import { groupName } from './permitView';
 import { applicationName, daysLeft, daysToComplete, isConsent, isReviewing } from '@/sim/permits';
 import type { HeatFields, HeatKind } from '@/sim/heat';
 import { applyOp, type Command, type Op } from '@/sim/commands';
+import { electionDayOf, electionOf, WARN_DAYS } from '@/sim/election';
 import { workerHost, type SimHost } from '@/sim/host';
-import { SECONDS_PER_DAY, type Speed } from '@/sim/rules';
+import { dateOf, SECONDS_PER_DAY, type Speed } from '@/sim/rules';
 import { terrainOf, type StateMessage } from '@/sim/runner';
 import type { Application, World } from '@/sim/types';
 import { newWorld, withCity, worldFromCity } from '@/sim/world';
@@ -47,13 +48,16 @@ export type ViewKind = OverlayKind | HeatKind;
 /** 都市の上に重ねる小さな窓（docs/ui-design.md 10.0）。表示切替・許認可の一覧・申請 1 件の詳細 */
 export type SmallWindowId = 'view' | 'permits' | 'permit' | 'appeal';
 
-/** 知らせを押した時に開く窓（既定は申請の詳細） */
-export type NoticeWindow = 'permit' | 'council' | 'appeal';
+/** 知らせを押した時に開く窓（既定は申請の詳細。選挙は申請を持たない） */
+export type NoticeWindow = 'permit' | 'council' | 'appeal' | 'election';
+
+/** 選挙の大きな窓に出す物（docs/ui-design.md 10.6・10.7）: 今の見込み・選挙の結果・任期の終わりの一覧と公約を選ぶ */
+export type ElectionView = 'preview' | 'result' | 'term';
 /** 同時に開ける小さな窓の数 */
 export const MAX_SMALL_WINDOWS = 3;
 
-/** 時間を止めている理由（docs/game-design.md 13.1: 都市画面が前に出ていない間・窓が隠れている間・大きな窓の間） */
-export type HoldReason = 'screen' | 'hidden' | 'window';
+/** 時間を止めている理由（docs/game-design.md 13.1: 都市画面が前に出ていない間・窓が隠れている間・大きな窓の間。21.2: 落選して道を選ぶまで） */
+export type HoldReason = 'screen' | 'hidden' | 'window' | 'defeat';
 
 /** カーソルの横に出す、置けるか・費用・理由 */
 export interface Hint {
@@ -104,6 +108,10 @@ export interface CityGameState {
   councilId: string | null;
   /** 異議申し立ての小さな窓に出している申請（docs/ui-design.md 10.5） */
   appealId: string | null;
+  /** 選挙の大きな窓に出している物（開いている間、都市の時間は止まる） */
+  election: ElectionView | null;
+  /** 公約を選ぶ窓を自分から出した任期（閉じたら、その任期はもう自分からは出さない） */
+  pledgeAsked: number;
   /** 最後に出した手の、住民と議員の受け取り方の 1 行 */
   reaction: { reasonId: string; text: string; lesson: { id: string; title: string } | null } | null;
   /** 学習に出た時の都市とスキル（戻った時に変化を比べる） */
@@ -172,6 +180,15 @@ export interface CityGameState {
   appealConcede: (applicationId: string, reasonId: string, concessionId: string, skills: SkillValues, now: number) => boolean;
   /** 政治資本 4 で申し立てを抑える */
   appealSuppress: (applicationId: string, now: number) => boolean;
+  /** 選挙の窓を開く（大きな窓は 1 つまで。時間を止める）。結果は選挙の後だけ */
+  openElection: (view: ElectionView) => void;
+  leaveElection: () => void;
+  /** 公約を選んでいない任期なら、公約を選ぶ窓を出す（任期の初めに 1 度。移行した都市の 1 期目も。docs/data-model.md 12 章） */
+  askPledges: () => void;
+  /** 公約を 2 つ選ぶ（任期の初めに 1 度。docs/game-design.md 21.4）。選べたら窓を閉じて知らせる */
+  choosePledges: (ids: readonly string[], now: number) => boolean;
+  /** 落選の後、同じ都市で再び立つ（21.2）。任期の一覧と、次の任期の公約を選ぶ窓へ */
+  rerun: (now: number) => void;
   /** その場所へカメラを寄せ、光の輪で示す（説明・記事・請願を押した時） */
   focusAt: (at: { x: number; y: number }, size?: { x: number; y: number }) => void;
   setOverlay: (overlay: ViewKind | null) => void;
@@ -183,8 +200,8 @@ export interface CityGameState {
   stop: () => void;
 }
 
-/** 待っている知らせ（市政の知らせは、押すと開く申請を持つ） */
-export type QueuedNotice = string | { text: string; permitId: string; window?: NoticeWindow };
+/** 待っている知らせ（市政の知らせは、押すと開く申請か窓を持つ） */
+export type QueuedNotice = string | { text: string; permitId?: string; window?: NoticeWindow };
 
 /** 1 つの知らせを出しておく時間（docs/ui-design.md 3 章: 3 秒で消える） */
 export const NOTICE_MS = 3000;
@@ -229,6 +246,8 @@ export function createCityStore(seed?: number, initial?: City, options: CityStor
     host.listen((m: StateMessage) => {
       const before = base.history.breakdown.at(-1)?.week;
       const prevApps = base.applications;
+      const prevPolitics = base.politics;
+      const prevDay = Math.floor(base.city.day);
       base = { ...base, ...m.patch };
       acked = Math.max(acked, m.day);
       pending = pending.filter((c) => c.seq > m.seq);
@@ -237,6 +256,12 @@ export function createCityStore(seed?: number, initial?: City, options: CityStor
       // 申請の段階が進んだら知らせる（押すと申請の詳細。docs/ui-design.md 3 章）
       if (base.applications !== prevApps) {
         for (const n of stageNotices(prevApps, base)) get().notify(n.text, performance.now(), n.permitId, n.window);
+      }
+      // 選挙（docs/game-design.md 21.1）: 8 週前に知らせ、選挙の日に結果の窓を開く。落選したら道を選ぶまで時間を止める
+      for (const n of electionNotices(prevPolitics, prevDay, base)) get().notify(n, performance.now(), undefined, 'election');
+      if (base.politics !== prevPolitics) {
+        if (base.politics.pastTerms.length > prevPolitics.pastTerms.length) get().openElection('result');
+        get().hold('defeat', base.politics.defeated === true);
       }
       // 支持率が 4 週で 3 以上動いたら、説明の 1 行目を知らせにも出す（docs/ui-design.md 11.3）
       const last = base.history.breakdown.at(-1);
@@ -255,6 +280,7 @@ export function createCityStore(seed?: number, initial?: City, options: CityStor
       requested = Math.floor(clock);
       acked = requested;
       set({ world: w, city: w.city });
+      get().hold('defeat', w.politics.defeated === true);
       host.post({ type: 'load', world: w, seq, rules: POLITICS_RULES });
     };
     return {
@@ -263,7 +289,7 @@ export function createCityStore(seed?: number, initial?: City, options: CityStor
       terrain,
       paused: false,
       speed: 1,
-      holds: [],
+      holds: startWorld.politics.defeated ? ['defeat'] : [],
       tool: { kind: 'none' },
       menu: null,
       rotation: 0,
@@ -279,6 +305,8 @@ export function createCityStore(seed?: number, initial?: City, options: CityStor
       hearingId: null,
       councilId: null,
       appealId: null,
+      election: null,
+      pledgeAsked: 0,
       reaction: null,
       away: null,
       focus: null,
@@ -324,8 +352,8 @@ export function createCityStore(seed?: number, initial?: City, options: CityStor
       askDemolish: (confirm) => set({ confirm }),
       notify: (text, now, permitId, window) => {
         const s = get();
-        const link = permitId ? { permitId, ...(window ? { window } : {}) } : {};
-        if (s.notice && now < s.notice.until) set({ queue: [...s.queue, permitId ? { text, permitId, ...(window ? { window } : {}) } : text] });
+        const link = { ...(permitId ? { permitId } : {}), ...(window ? { window } : {}) };
+        if (s.notice && now < s.notice.until) set({ queue: [...s.queue, permitId || window ? { text, ...link } : text] });
         else set({ notice: { text, until: now + NOTICE_MS, ...link } });
       },
       expireNotice: (now) => {
@@ -386,7 +414,7 @@ export function createCityStore(seed?: number, initial?: City, options: CityStor
       openHearing: (id) => {
         const app = get().world.applications.find((a) => a.id === id);
         if (app?.stage !== 'hearing') return;
-        set({ hearingId: id, councilId: null, reaction: null });
+        set({ hearingId: id, councilId: null, election: null, reaction: null });
         get().hold('window', true);
       },
       leaveHearing: () => {
@@ -412,7 +440,7 @@ export function createCityStore(seed?: number, initial?: City, options: CityStor
       openCouncil: (id) => {
         const app = get().world.applications.find((a) => a.id === id);
         if (!app || !((app.stage === 'council' && !isConsent(app)) || (app.vote && !app.vote.consent))) return;
-        set({ councilId: id, hearingId: null, reaction: null });
+        set({ councilId: id, hearingId: null, election: null, reaction: null });
         get().hold('window', true);
       },
       leaveCouncil: () => {
@@ -441,6 +469,43 @@ export function createCityStore(seed?: number, initial?: City, options: CityStor
         const ok = get().world.applications.find((a) => a.id === applicationId)?.appeal?.resolved === 'capital';
         if (ok) get().notify('政治資本を使って申し立てを抑えた。申し立てた人たちの市政への信頼が下がった', now, applicationId);
         return ok;
+      },
+      openElection: (view) => {
+        if (view === 'result' && get().world.politics.pastTerms.length === 0) return;
+        set({ election: view, hearingId: null, councilId: null, reaction: null });
+        get().hold('window', true);
+      },
+      leaveElection: () => {
+        set({ election: null });
+        get().hold('window', false);
+      },
+      askPledges: () => {
+        const s = get();
+        const p = s.world.politics;
+        if (p.defeated || p.term.pledges.length > 0 || s.pledgeAsked === p.term.no || s.election || s.hearingId || s.councilId) return;
+        set({ pledgeAsked: p.term.no });
+        get().openElection('term');
+      },
+      choosePledges: (ids, now) => {
+        if (get().world.politics.term.pledges.length > 0) return false;
+        get().dispatch({ kind: 'pledges', ids: [...ids] });
+        const chosen = get().world.politics.term.pledges;
+        if (chosen.length === 0) return false;
+        const titles = chosen.map((p) => POLITICS_RULES.pledges?.find((x) => x.id === p.pledgeId)?.title ?? p.pledgeId);
+        get().leaveElection();
+        get().notify(`${String(get().world.politics.term.no)} 期目の公約を立てた: 「${titles.join('」「')}」。果たすと政治資本 +5`, now, undefined, 'election');
+        return true;
+      },
+      rerun: (now) => {
+        const before = get().world;
+        if (!before.politics.defeated) return;
+        const withdrawn = before.applications.filter(isReviewing);
+        get().dispatch({ kind: 'rerun' });
+        if (get().world.politics.defeated) return;
+        get().hold('defeat', false);
+        set({ pledgeAsked: get().world.politics.term.no });
+        get().openElection('term');
+        get().notify(`同じ都市で、${String(get().world.politics.term.no)} 期目に再び立った。政治資本は ${String(get().world.politics.capital)} に戻った${withdrawn.length > 0 ? `。審議中の申請 ${String(withdrawn.length)} 件は取り下げ、費用は戻った` : ''}`, now);
       },
       withdraw: (id, now) => {
         const app = get().world.applications.find((a) => a.id === id);
@@ -495,6 +560,27 @@ export function stageNotices(before: readonly Application[], after: World): { te
     else if (a.stage === 'done') out.push({ text: `${name}が完成した`, permitId: a.id });
     else if (a.stage === 'rejected' && voted) out.push({ text: `${name}の申請を議会が否決した${count}。取り分けた費用は戻った`, permitId: a.id, window: 'council' });
     else if (a.stage === 'rejected') out.push({ text: `${name}の申請が否決された。取り分けた費用は戻った`, permitId: a.id });
+  }
+  return out;
+}
+
+/**
+ * 選挙の知らせ（docs/game-design.md 21.1）: 選挙の 8 週前（今の見込みの得票率を添える）と、選挙の日の結果。
+ * 押すと選挙の窓（見込みか結果）が開く
+ */
+export function electionNotices(before: World['politics'], prevDay: number, after: World): string[] {
+  const out: string[] = [];
+  const day = Math.floor(after.city.day);
+  const term = after.politics.term;
+  const warn = electionDayOf(term) - WARN_DAYS;
+  if (term.no === before.term.no && prevDay < warn && day >= warn) {
+    const e = electionOf(after);
+    const { year, week } = dateOf(electionDayOf(term));
+    out.push(`選挙まで 8 週（${String(year)} 年目 ${String(week)} 週）。今の見込みは得票率 ${String(Math.round(e.voteShare))}%。押すと層ごとの見込み`);
+  }
+  if (after.politics.pastTerms.length > before.pastTerms.length) {
+    const t = after.politics.pastTerms.at(-1);
+    if (t) out.push(`${String(t.no)} 期目の選挙: 得票率 ${String(Math.round(t.voteShare))}%で${t.won ? '当選した' : '落選した'}。押すと結果`);
   }
   return out;
 }
