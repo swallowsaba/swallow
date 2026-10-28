@@ -158,7 +158,7 @@ export function BudgetWindow({ store, stack, shifted }: WindowProps) {
                   {[0, 1, 2].map((b) => {
                     const l = ai * 3 + b;
                     const v = preview.points[l] ?? 0;
-                    return <td key={b} className={v > 0 ? 'is-up' : v < 0 ? 'is-down' : ''} title={`${layerName(l)}の満足の「税」の点`}>{signed(v, 1)}</td>;
+                    return <td key={b} title={`${layerName(l)}の満足の「税」の点`}><span className={v > 0 ? 'is-up' : v < 0 ? 'is-down' : ''}>{signed(v, 1)}</span></td>;
                   })}
                 </tr>
               ))}
