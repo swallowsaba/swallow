@@ -153,4 +153,28 @@ export default async function permitG8(page, shot) {
   await page.waitForSelector('[data-testid="election-summary"]');
   await page.waitForTimeout(300);
   await shot(`g8-term${tag}`);
+
+  // fps: 選挙の窓を開いたまま・閉じて 3 倍の速さ（毎フレーム描き直させて 2 秒）
+  console.log('fps（選挙の窓）', await fps(page));
+  await page.keyboard.press('Escape');
+  await page.evaluate(() => window.__cityStore.getState().setSpeed(3));
+  console.log('fps（窓を閉じて 3 倍）', await fps(page));
+}
+
+async function fps(page) {
+  return page.evaluate(async () => {
+    window.__city.setContinuous(true);
+    const t0 = performance.now();
+    let n = 0;
+    await new Promise((resolve) => {
+      const step = () => {
+        n += 1;
+        if (performance.now() - t0 < 2000) requestAnimationFrame(step);
+        else resolve();
+      };
+      requestAnimationFrame(step);
+    });
+    window.__city.setContinuous(false);
+    return Math.round((n / ((performance.now() - t0) / 1000)) * 10) / 10;
+  });
 }
