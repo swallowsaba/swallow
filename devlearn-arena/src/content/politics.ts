@@ -2,6 +2,7 @@ import { z } from 'zod';
 import councilData from '../../content/politics/council.json';
 import explainData from '../../content/politics/explain.json';
 import namesData from '../../content/politics/names.json';
+import newsData from '../../content/politics/news.json';
 import petitionsData from '../../content/politics/petitions.json';
 import pledgesData from '../../content/politics/pledges.json';
 import { FACILITY_DEFS } from '@/city/facilities';
@@ -11,8 +12,9 @@ import { parseCondition } from '@/sim/conditions';
 import { COUNTED_WORDS } from '@/sim/election';
 import { LAYER_COUNT } from '@/sim/layers';
 import { needsApplication } from '@/sim/permits';
+import { NEWS_SLOTS, slotsOf } from '@/sim/news';
 import { PETITION_WORDS } from '@/sim/petitions';
-import { MOD_KEYS, type CouncilMember, type Petition, type GroupId, type IssueId, type Measure, type MemberLineKey, type ModKey, type ObjectionReason, type Pledge, type PoliticsRules } from '@/sim/types';
+import { MOD_KEYS, type CouncilMember, type NewsKind, type NewsRules, type Petition, type GroupId, type IssueId, type Measure, type MemberLineKey, type ModKey, type ObjectionReason, type Pledge, type PoliticsRules } from '@/sim/types';
 import { termsIn } from './rich';
 import { DOMAIN_IDS, domainId } from './schema';
 
@@ -252,12 +254,60 @@ export function validatePetitions(petitions: readonly Petition[]): string[] {
   return out;
 }
 
-/** 模擬に渡す市政のデータ（理由と議員と、施設の電力・性質と、公約と請願） */
+/* ---------- 新聞の型の文（7.5） ---------- */
+
+const NEWS_KINDS = ['application', 'approved', 'rejected', 'appeal', 'completed', 'election', 'term-end', 'closure', 'outage', 'tax', 'petition', 'mission', 'reward', 'scandal', 'start'] as const satisfies readonly NewsKind[];
+
+export const newsSchema = z.object({
+  title: text,
+  templates: z.array(z.object({
+    kind: z.enum(NEWS_KINDS),
+    variant: z.string().min(1).optional(),
+    headline: text,
+    body: text,
+  }).strict()),
+}).strict();
+
+export const NEWS: NewsRules = newsSchema.parse(newsData);
+
+/**
+ * 新聞の型の文の検証（docs/content-spec.md 6 章・7.5）: 記事になる種類と場合分けのそれぞれに型の文がある・
+ * 書いた差し込み名が、その種類で入る物・見出しと本文を使い回さない・本文は 2〜3 文
+ */
+export function validateNews(news: NewsRules): string[] {
+  const out: string[] = [];
+  const seen = new Set<string>();
+  for (const t of news.templates) {
+    const key = t.variant ? `${t.kind}:${t.variant}` : t.kind;
+    const slots = slotsOf(t.kind, t.variant);
+    if (!slots) {
+      out.push(`${key}: 今の模擬が記事にしない種類（停電は G10・褒賞は G11 で足す）`);
+      continue;
+    }
+    for (const name of `${t.headline}${t.body}`.match(/\{[a-z]+\}/g) ?? []) {
+      if (!(slots as readonly string[]).includes(name.slice(1, -1))) out.push(`${key}: ${name} はこの種類に入らない差し込み名`);
+    }
+    for (const s of [t.headline, t.body]) {
+      if (seen.has(s)) out.push(`${key}: 文を使い回している（${s.slice(0, 20)}…）`);
+      seen.add(s);
+    }
+    const sentences = t.body.split('。').filter((x) => x.trim() !== '').length;
+    if (sentences < 2 || sentences > 3) out.push(`${key}: 本文が ${String(sentences)} 文（2〜3 文）`);
+  }
+  for (const key of Object.keys(NEWS_SLOTS)) {
+    const [kind, variant] = key.split(':');
+    if (!news.templates.some((t) => t.kind === kind && t.variant === variant)) out.push(`${key}: 型の文が無い`);
+  }
+  return out;
+}
+
+/** 模擬に渡す市政のデータ（理由と議員と、施設の電力・性質と、公約と請願と新聞） */
 export const POLITICS_RULES: PoliticsRules = {
   reasons: REASONS,
   council: COUNCIL,
   pledges: PLEDGES,
   petitions: PETITIONS,
+  news: NEWS,
   facilities: Object.fromEntries(Object.values(FACILITY_DEFS).filter((d) => d.powerMW !== undefined || d.traits).map((d) => [d.type, {
     ...(d.powerMW !== undefined ? { powerMW: d.powerMW } : {}),
     ...(d.traits ? { traits: d.traits } : {}),

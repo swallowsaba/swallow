@@ -1,4 +1,4 @@
-import { cellKey, facilityCells } from '@/city/cells';
+import { cellKey, facilityCells, occupancyOf } from '@/city/cells';
 import { FACILITY_DEFS } from '@/city/facilities';
 import { checkFacility, placeFacility } from '@/city/place';
 import type { Terrain } from '@/city/terrain';
@@ -192,7 +192,7 @@ export function candidatesOf(world: World, terrain: Terrain, values: PlaceValues
     hits.sort((a, b) => (upward(first) ? b.v - a.v : a.v - b.v) || a.d - b.d);
     const effect = p.accept.effect;
     const best = effect.kind === 'build'
-      ? hits.find((h) => buildSiteOf(world, terrain, effect.type, h.d, homesCenter(world, h.d, p.layers ?? [])) !== null)
+      ? hits.find((h) => buildSiteOf(world, terrain, effect.type, h.d) !== null)
       : hits[0];
     if (best) out.push({ petitionId: p.id, district: best.d, ...(best.layer !== undefined ? { layer: best.layer } : {}), value: best.v, priority: p.priority });
   }
@@ -255,23 +255,36 @@ export function stepPetitions(world: World, terrain: Terrain, view: Parameters<t
 export type PetitionChoice = 'accept' | 'reject' | 'hold';
 export type PetitionProblem = 'no-site';
 
-/** 地区の中で、建てる物を置ける場所（送った層の世帯の多い建物に近い順。同じなら番号の小さいマス） */
-export function buildSiteOf(world: World, terrain: Terrain, type: Parameters<typeof checkFacility>[2], district: number, near?: Point): Point | null {
+/**
+ * 地区の中で、建てる物を置ける場所（near の点に近い順。同じなら番号の小さいマス）。
+ * near は、置ける場所が 1 つでもある時だけ呼ぶ（届くかを確かめる時は、場所の有る無しだけを見る）
+ */
+export function buildSiteOf(world: World, terrain: Terrain, type: Parameters<typeof checkFacility>[2], district: number, near?: () => Point | undefined): Point | null {
   const x0 = (district % DISTRICTS_PER_SIDE) * DISTRICT_SIZE;
   const y0 = Math.floor(district / DISTRICTS_PER_SIDE) * DISTRICT_SIZE;
-  const center = near ?? { x: x0 + DISTRICT_SIZE / 2, y: y0 + DISTRICT_SIZE / 2 };
   const sites = occupiedSites(world);
+  const occ = occupancyOf(world.city);
+  const taken = (x: number, y: number): boolean => {
+    const k = cellKey(x, y);
+    return occ.roads.has(k) || occ.zones.has(k) || occ.buildings.has(k) || occ.facilities.has(k) || sites.has(k);
+  };
   // 財布は財政なので、置ける場所の判定では開発資金を見ない
   const city = { ...world.city, funds: Number.MAX_SAFE_INTEGER };
-  let best: { at: Point; d: number } | null = null;
+  const ok: Point[] = [];
   for (let y = y0; y < y0 + DISTRICT_SIZE; y += 1) {
     for (let x = x0; x < x0 + DISTRICT_SIZE; x += 1) {
       const origin = { x, y };
-      if (!checkFacility(city, terrain, type, origin, 0).ok) continue;
-      if (facilityCells({ type, origin, rotation: 0 }).some((c) => sites.has(cellKey(c.x, c.y)))) continue;
-      const d = Math.hypot(x + 0.5 - center.x, y + 0.5 - center.y);
-      if (!best || d < best.d) best = { at: origin, d };
+      // 埋まったマスを先に除く（込んだ都市では、ほとんどの場所がここで外れる）
+      if (facilityCells({ type, origin, rotation: 0 }).some((c) => taken(c.x, c.y))) continue;
+      if (checkFacility(city, terrain, type, origin, 0).ok) ok.push(origin);
     }
+  }
+  if (ok.length === 0) return null;
+  const center = near?.() ?? { x: x0 + DISTRICT_SIZE / 2, y: y0 + DISTRICT_SIZE / 2 };
+  let best: { at: Point; d: number } | null = null;
+  for (const at of ok) {
+    const d = Math.hypot(at.x + 0.5 - center.x, at.y + 0.5 - center.y);
+    if (!best || d < best.d) best = { at, d };
   }
   return best?.at ?? null;
 }
@@ -301,8 +314,7 @@ export function petitionProblems(world: World, terrain: Terrain, rules: Pick<Pol
   const p = entry ? rules.petitions?.find((x) => x.id === entry.petitionId) : undefined;
   if (!entry || !p || p.accept.effect.kind !== 'build') return [];
   if (entry.district === undefined) return ['no-site'];
-  const near = homesCenter(world, entry.district, p.layers ?? []);
-  return buildSiteOf(world, terrain, p.accept.effect.type, entry.district, near) ? [] : ['no-site'];
+  return buildSiteOf(world, terrain, p.accept.effect.type, entry.district) ? [] : ['no-site'];
 }
 
 /** 受理した時に財政から払う額（1 度に払う額と、毎週の額 × 週の数） */
@@ -335,7 +347,8 @@ export function handlePetition(world: World, terrain: Terrain, rules: Pick<Polit
   let sim = { ...world.sim, trust: moveTrust(world.sim.trust, layers, PETITION_TRUST.accept) };
   let effects = world.petitions.effects;
   if (e.kind === 'build' && entry.district !== undefined) {
-    const at = buildSiteOf(world, terrain, e.type, entry.district, homesCenter(world, entry.district, p.layers ?? []));
+    const district = entry.district;
+    const at = buildSiteOf(world, terrain, e.type, district, () => homesCenter(world, district, p.layers ?? []));
     if (at) {
       const check = checkFacility({ ...city, funds: Number.MAX_SAFE_INTEGER }, terrain, e.type, at, 0);
       // 財政から払うので、開発資金は変えない

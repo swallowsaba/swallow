@@ -8,6 +8,7 @@ import { LAYER_COUNT, LAYER_SHARE, MEAN_HOUSEHOLD_SIZE } from './layers';
 import { DAYS_PER_WEEK, EXTERNAL_POWER_CAP, INITIAL_TAX_RATE, INITIAL_TREASURY } from './rules';
 import { START_CAPITAL, stepPolitics } from './election';
 import { settleWeek } from './budget';
+import { withNews } from './news';
 import { petitionSpend, stepPetitions } from './petitions';
 import { DISTRICT_COUNT, landingOf, spaceOf } from './space';
 import { NO_RULES, type Difficulty, type Politics, type PoliticsRules, type SimState, type World } from './types';
@@ -166,6 +167,6 @@ export function stepDayView(world: World, terrain: Terrain, rules: PoliticsRules
   const stepped = weekly
     ? { world: stepPetitions(settleWeek(weekly.world, rules, petitionSpend(weekly.world, rules, weekly.world.sim.week)), terrain, weekly.view, rules), view: weekly.view }
     : { world: next, view: null };
-  // 市政（週の終わりの公約と支持率の上昇・選挙の日。docs/game-design.md 21 章）
-  return { world: stepPolitics(stepped.world, day, rules), view: stepped.view };
+  // 市政（週の終わりの公約と支持率の上昇・選挙の日。docs/game-design.md 21 章）。この日の出来事を新聞の記事に（22.3）
+  return { world: withNews(world, stepPolitics(stepped.world, day, rules), rules), view: stepped.view };
 }

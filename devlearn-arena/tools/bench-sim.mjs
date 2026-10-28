@@ -59,6 +59,19 @@ console.log(`1 日（週の終わりでない日）: 平均 ${meanDay.toFixed(3)
 console.log(`1 週（毎週の計算）: 平均 ${meanWeek.toFixed(1)}ms・最大 ${maxWeek.toFixed(1)}ms・道路が変わった週 ${roadWeek.toFixed(1)}ms（目安 30〜${LIMITS.weekMs}ms）`);
 console.log(`支持率 ${w.sim.lastWeek.approval.toFixed(1)}%・失業率 ${(w.sim.lastWeek.unemployment * 100).toFixed(1)}%・仕事 ${w.sim.lastWeek.jobs.toLocaleString('ja-JP')}`);
 
+// 市政を含めた週の終わりの日（毎週の計算・払い・請願の届き・選挙の確かめ・新聞の記事。docs/game-design.md 22 章）
+let p = { ...d, petitions: { inbox: [], handled: {}, effects: [] } };
+const civic = [];
+while (civic.length < 4) {
+  const next = Math.floor(p.city.day) + 1;
+  const s = performance.now();
+  p = stepDay(p, terrain, POLITICS_RULES);
+  const ms = performance.now() - s;
+  if (next % 7 === 0) civic.push(ms);
+}
+const maxCivic = Math.max(...civic);
+console.log(`週の終わりの日（市政を含む）: 最大 ${maxCivic.toFixed(1)}ms（目安 30〜${LIMITS.weekMs}ms）・届いた請願 ${String(p.petitions.inbox.length)}・記事 ${String(p.history.news.length)}`);
+
 // 申請の見込み（反対の受付に入った日。完成した形を仮に入れた 1 週分。docs/architecture.md 9.3）
 // 道路の真ん中の 1 マスにデータセンターを仮に置き、データの理由（騒音・電力・雇用・冷却水）を全て計算する
 const dcApp = (x, y) => ({
@@ -73,6 +86,6 @@ for (let i = 0; i < 6; i += 1) {
 }
 const maxAssess = Math.max(...assess.slice(1));
 console.log(`申請の見込み（反対の計算 1 件）: 最大 ${maxAssess.toFixed(1)}ms（目安 ${LIMITS.assessMs}ms 以下）`);
-const ok = meanDay <= LIMITS.dayMs && maxWeek <= LIMITS.weekMs && maxAssess <= LIMITS.assessMs;
+const ok = meanDay <= LIMITS.dayMs && maxWeek <= LIMITS.weekMs && maxCivic <= LIMITS.weekMs && maxAssess <= LIMITS.assessMs;
 console.log(ok ? '結果: 目安以内' : '結果: 目安を超えた');
 process.exitCode = ok ? 0 : 1;

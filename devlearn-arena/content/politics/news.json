@@ -1,0 +1,48 @@
+{
+  "title": "市民新報",
+  "templates": [
+    { "kind": "start", "headline": "{city}に市民新報、きょう創刊", "body": "島の小さな町に、新聞ができた。申請の行方、議会の採決、請願の扱い、選挙の見込み。市政で起きたことを、この紙面で毎週伝えていく。" },
+
+    { "kind": "application", "headline": "{district}に{facility}の申請", "body": "市は{facility}を{district}に建てる申請を出した。これから用途の審査と反対の受付に入る。近くに住む人の声がどれだけ集まるかが、最初の山になる。" },
+    { "kind": "application", "headline": "{facility}、{district}で計画が動き出す", "body": "{district}の空き地に{facility}を置く計画が、申請として受け付けられた。完成までには、審議と工事の両方を越えなければならない。" },
+
+    { "kind": "approved", "variant": "consent", "headline": "{facility}、異論なく可決", "body": "{district}の{facility}は、反対が 2 割に届かず、同意の案件として議会を通った。囲いの中で、近く工事が始まる。" },
+    { "kind": "approved", "variant": "consent", "headline": "{district}の{facility}、すんなり着工へ", "body": "目立った反対の無いまま、議会は{facility}を一括で可決した。地区の掲示板には、工事の日程の紙が貼られている。" },
+    { "kind": "approved", "variant": "vote", "headline": "{facility}、議会で可決 賛成 {yes} 反対 {no}", "body": "{district}の{facility}を巡る採決は、賛成 {yes}、反対 {no}で可決した。公聴会で出た懸念を、市が工事にどう生かすかが次の注目になる。" },
+    { "kind": "approved", "variant": "vote", "headline": "賛成 {yes} 対 {no}、{facility}が議会を通る", "body": "{district}に{facility}を建てる案は、7 人の議員の判断が分かれたものの、賛成が多数を占めた。反対に回った議員は「懸念は消えていない」と話した。" },
+
+    { "kind": "rejected", "headline": "{facility}、議会で否決 賛成 {yes} 反対 {no}", "body": "{district}の{facility}は、賛成 {yes}にとどまり否決された。最も多かった反対の声は「{reason}」。取り分けた費用は市に戻った。" },
+    { "kind": "rejected", "headline": "「{reason}」 {facility}の案、通らず", "body": "議会は{district}の{facility}を、賛成 {yes}、反対 {no}で退けた。同じ場所で出し直せるのは 28 日の後になる。" },
+
+    { "kind": "appeal", "variant": "filed", "headline": "{group}、{facility}に異議申し立て", "body": "議会を通った{district}の{facility}に、{group}が異議を申し立てた。28 日の間、着工は止まる。市が譲るのか、政治資本で抑えるのかに注目が集まる。" },
+    { "kind": "appeal", "variant": "cleared", "headline": "{facility}の申し立て決着、工事始まる", "body": "{district}の{facility}を巡る異議申し立てが片付き、止まっていた工事が動き出した。囲いの向こうで、重機の音がしている。" },
+
+    { "kind": "completed", "headline": "{facility}が完成 {district}", "body": "申請から審議、工事を経て、{district}の{facility}が完成した。きょうから都市の数字に数えられる。" },
+    { "kind": "completed", "headline": "{district}に{facility}、きょうから稼働", "body": "囲いが外れ、{facility}が姿を見せた。近くの店では、新しく通ってくる人を当てにした品ぞろえが始まっている。" },
+
+    { "kind": "election", "variant": "near", "headline": "選挙まで {n} 週、見込みの得票率は {rate}%", "body": "{n} 週後に市長選挙がある。今の支持と投票率から見込むと、得票率は {rate}%。50% を境に、残りの任期で何を決めるかが問われる。" },
+    { "kind": "election", "variant": "won", "headline": "市長が当選 得票率 {rate}%", "body": "{n} 期目の任期を締めくくる選挙で、市長は得票率 {rate}%で当選した。次の任期の公約が、近く示される。" },
+    { "kind": "election", "variant": "lost", "headline": "市長、落選 得票率 {rate}%", "body": "{n} 期目の選挙は得票率 {rate}%に終わり、市長は職を退くことになった。どの層が離れたのか、敗因の洗い出しが市役所の中で始まっている。" },
+
+    { "kind": "term-end", "headline": "{n} 期目の 4 年を振り返る", "body": "任期の終わりに、人口は {value} 人、支持率は {rate}%だった。建てた物、通した申請、果たした公約。この 4 年の決定の跡を、市の一覧で確かめられる。" },
+
+    { "kind": "closure", "headline": "{district}で店じまい {n} 件", "body": "売上が費用に届かない週が続き、{district}などで {n} 件の事業者が撤退した。空いた建物に次の事業者が入るまで、しばらくかかる。" },
+    { "kind": "closure", "headline": "{n} 件の事業者が撤退、{district}にシャッター", "body": "{district}の通りに、閉店のお知らせが貼られた。働いていた人は、ほかの地区に仕事を探すことになる。" },
+
+    { "kind": "tax", "variant": "up", "headline": "税率 {value}% から {rate}% へ引き上げ", "body": "市は来週から税率を {rate}%にする。財政は厚くなるが、暮らしの負担と事業者の費用が増える。家計の相談窓口に、早くも問い合わせが来ている。" },
+    { "kind": "tax", "variant": "down", "headline": "税率 {value}% から {rate}% へ引き下げ", "body": "来週から税率が {rate}%になる。家計と事業者には追い風だが、財政に入るお金は減る。公共の維持にどう回すのか、市の説明が待たれる。" },
+
+    { "kind": "petition", "variant": "accept", "headline": "請願「{reason}」を市が受理", "body": "{group}から届いた請願を、市は受け入れた。費用は財政から出す。署名を集めた人たちは「まず一歩」と話している。" },
+    { "kind": "petition", "variant": "accept", "headline": "「{reason}」 {district}の声、市に届く", "body": "{district}からの請願に、市は応じると答えた。中身が暮らしにどう効くのか、地区の人たちは見守っている。" },
+    { "kind": "petition", "variant": "reject", "headline": "請願「{reason}」、市が退ける", "body": "{group}の請願に、市は応じないと答えた。署名を集めた人たちは「声を聞く気があるのか」と不満を口にした。" },
+    { "kind": "petition", "variant": "expire", "headline": "請願「{reason}」、返事のないまま期限切れ", "body": "{group}の請願は、8 週たっても扱われなかった。地区の集会では「放っておかれた」という声が強まっている。" },
+
+    { "kind": "mission", "headline": "ミッション達成、これで {n} 本目", "body": "市のエンジニアがミッションをやり遂げた。学んだ技術が、{city}の仕組みとして形になりつつある。" },
+
+    { "kind": "scandal", "variant": "push", "headline": "反対の押し切り、この任期で {n} 回目", "body": "市長はまた公聴会で反対を押し切った。議会の外では「話を聞く場が形だけになっている」との批判が出ている。押し切られた側の信頼は、さらに下がった。" },
+    { "kind": "scandal", "variant": "wrong", "headline": "公聴会の説明に誤り、{n} 回目", "body": "公聴会で市が示した説明が、またも事実と違っていたことが分かった。聞いていた住民は「分かったふりで言いくるめられた」と憤っている。" },
+    { "kind": "scandal", "variant": "expired", "headline": "請願の放置、この任期で {n} 通", "body": "市民から届いた請願が、返事のないまま期限を迎え続けている。受信箱の中で止まった声は {n} 通になった。" },
+    { "kind": "scandal", "variant": "deficit", "headline": "財政の赤字、{n} 週続く", "body": "市の財政は {n} 週にわたって赤字のままだ。公共の維持が行き届かなくなるおそれがあり、議会では支出の見直しを求める声が上がった。" },
+    { "kind": "scandal", "variant": "pledge", "headline": "公約 {n} つ、果たせぬまま選挙へ", "body": "任期の初めに掲げた公約のうち {n} つが、果たされないまま選挙の日を迎えた。約束を信じて票を入れた層の間に、失望が広がっている。" }
+  ]
+}

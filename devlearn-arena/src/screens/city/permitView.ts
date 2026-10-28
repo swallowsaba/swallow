@@ -12,7 +12,8 @@ import { layerName } from '@/sim/layers';
 import { gainsOf } from '@/sim/council';
 import { dateOf } from '@/sim/rules';
 import { districtOf } from '@/sim/space';
-import type { Application, ApplicationStage, GroupId, ObjectionReason, ObjectionState, World } from '@/sim/types';
+import type { Application, ApplicationStage, ObjectionReason, ObjectionState, World } from '@/sim/types';
+import { groupName } from '@/sim/news';
 
 /**
  * 許認可の一覧・申請の詳細・都市の上の看板に出す中身（docs/ui-design.md 10.1・10.2、docs/city-design.md 9.1）。
@@ -250,14 +251,8 @@ export interface ObjectionRow {
   heat?: HeatKind;
 }
 
-const GROUP_NAMES: Record<GroupId, string> = { neighbors: '住民', merchants: '商店会', environment: '環境の会', taxpayers: '納税者の会', workers: '働く人の会' };
-
-/** 反対する集団の呼び名（近くの集団は地区の名前で呼ぶ。docs/game-design.md 16.1） */
-export function groupName(o: Pick<ObjectionState, 'group' | 'district'>, world: Pick<World, 'sim'>): string {
-  const local = o.group === 'neighbors' || o.group === 'merchants';
-  const place = o.district !== undefined ? world.sim.districtNames[o.district] : undefined;
-  return local && place ? `${place}の${GROUP_NAMES[o.group]}` : o.group === 'neighbors' ? '近隣の住民' : GROUP_NAMES[o.group];
-}
+/** 反対する集団の呼び名（近くの集団は地区の名前で呼ぶ。新聞の記事と同じ呼び名。docs/game-design.md 16.1） */
+export { groupName };
 
 /** 性質の名前（施設の性質の理由の元の値を言う時） */
 const TRAIT_NAMES: Partial<Record<string, string>> = { coolingWater: '冷却水の量' };

@@ -9,6 +9,7 @@ import { appealConcede, appealSuppress } from './appeal';
 import { persuade } from './council';
 import { choosePledges, creditMission, noteLearning, rerun } from './election';
 import { setTaxRate } from './budget';
+import { withNews } from './news';
 import { handlePetition, type PetitionChoice } from './petitions';
 import { closeHearing, playHand, type Hand } from './hearing';
 import { NO_RULES, type Application, type PoliticsRules, type World } from './types';
@@ -66,6 +67,11 @@ export interface Command {
  * 申請中・工事中の敷地には、ほかの物を置けない
  */
 export function applyOp(world: World, op: Op, terrain: Terrain, rules: PoliticsRules = NO_RULES): World {
+  // 命令で起きた出来事（申請を出した・請願の扱い・説得の後の不祥事など）を新聞の記事にする（docs/game-design.md 22.3）
+  return withNews(world, applyOpCore(world, op, terrain, rules), rules);
+}
+
+function applyOpCore(world: World, op: Op, terrain: Terrain, rules: PoliticsRules): World {
   const city = world.city;
   const day = Math.floor(city.day);
   // 落選して道を選ぶまでは、都市を変える命令を当てない（学習の資金・進み・ミッションと、再び立つは当てる）

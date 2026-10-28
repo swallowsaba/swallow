@@ -163,9 +163,10 @@ describe('公約（21.4）', () => {
     expect(w1.politics.capitalLog.some((x) => x.why === '公約を果たした（人口を増やす）')).toBe(true);
     expect(w1.sim.trust[0]).toBe(grown.sim.trust[0] as number + 3);
     expect(w1.politics.term.pledges.find((p) => p.pledgeId === 'p-never')?.doneDay).toBeUndefined();
-    // 選挙の日に果たせていない公約の層は −3
+    // 選挙の日に果たせていない公約の層は −3。公約を果たせずに選挙を迎えたことが新聞の不祥事になり、同じ層がさらに −1（22.3）
     const e = days(beforeElection(w1, 1), 1, RULES);
-    expect(e.sim.trust[9]).toBe((w1.sim.trust[9] as number) - 3);
+    expect(e.sim.trust[9]).toBe((w1.sim.trust[9] as number) - 3 - 1);
+    expect(e.history.news.some((a) => a.kind === 'scandal' && a.headline === '公約 1 つ、果たせぬまま選挙へ')).toBe(true);
     expect(e.politics.pastTerms.at(-1)?.pledgesDone).toEqual(['p-pop']);
   });
 
