@@ -2,10 +2,14 @@ import { z } from 'zod';
 import councilData from '../../content/politics/council.json';
 import explainData from '../../content/politics/explain.json';
 import namesData from '../../content/politics/names.json';
+import pledgesData from '../../content/politics/pledges.json';
 import { FACILITY_DEFS } from '@/city/facilities';
 import { DOMAINS } from '@/city/facilityInfo';
 import type { DomainId } from '@/city/types';
-import { MOD_KEYS, type CouncilMember, type GroupId, type IssueId, type Measure, type MemberLineKey, type ModKey, type ObjectionReason, type PoliticsRules } from '@/sim/types';
+import { parseCondition } from '@/sim/conditions';
+import { COUNTED_WORDS } from '@/sim/election';
+import { LAYER_COUNT } from '@/sim/layers';
+import { MOD_KEYS, type CouncilMember, type GroupId, type IssueId, type Measure, type MemberLineKey, type ModKey, type ObjectionReason, type Pledge, type PoliticsRules } from '@/sim/types';
 import { termsIn } from './rich';
 import { DOMAIN_IDS, domainId } from './schema';
 
@@ -143,10 +147,46 @@ export function validateCouncil(members: readonly CouncilMember[]): string[] {
   return out;
 }
 
-/** 模擬に渡す市政のデータ（理由と議員と、施設の電力・性質） */
+/* ---------- 公約（7.4） ---------- */
+
+export const pledgeSchema = z.object({
+  pledges: z.array(z.object({
+    id: z.string().regex(/^[a-z0-9-]+$/),
+    title: text,
+    goal: text,
+    layers: z.array(z.number().int()).min(1),
+  }).strict()),
+}).strict();
+
+export const PLEDGES: readonly Pledge[] = pledgeSchema.parse(pledgesData).pledges;
+
+/**
+ * 公約の検証（docs/content-spec.md 6 章）: goal が 7.7 の式として読める（学習の語は式に無い）・
+ * 今の模擬が数えている語だけ・層の番号が 0〜11 で重ならない・ID が重ならない・選べるよう 4 つ以上
+ */
+export function validatePledges(pledges: readonly Pledge[]): string[] {
+  const out: string[] = [];
+  const counted = new Set<string>(COUNTED_WORDS);
+  const ids = new Set<string>();
+  if (pledges.length < 4) out.push(`公約の候補が ${String(pledges.length)} つ（4 つ以上要る）`);
+  for (const p of pledges) {
+    if (ids.has(p.id)) out.push(`${p.id}: 公約の ID が重なる`);
+    ids.add(p.id);
+    const clauses = parseCondition(p.goal);
+    if (!clauses) out.push(`${p.id}: goal が式として読めない（${p.goal}）`);
+    for (const c of clauses ?? []) {
+      for (const w of [c.word, ...('start' in c ? [c.start] : [])]) if (!counted.has(w)) out.push(`${p.id}: ${w} は今の模擬が数えていない語`);
+    }
+    if (new Set(p.layers).size !== p.layers.length || p.layers.some((l) => l < 0 || l >= LAYER_COUNT)) out.push(`${p.id}: 層の番号が 0〜11 で重ならない形でない`);
+  }
+  return out;
+}
+
+/** 模擬に渡す市政のデータ（理由と議員と、施設の電力・性質と、公約） */
 export const POLITICS_RULES: PoliticsRules = {
   reasons: REASONS,
   council: COUNCIL,
+  pledges: PLEDGES,
   facilities: Object.fromEntries(Object.values(FACILITY_DEFS).filter((d) => d.powerMW !== undefined || d.traits).map((d) => [d.type, {
     ...(d.powerMW !== undefined ? { powerMW: d.powerMW } : {}),
     ...(d.traits ? { traits: d.traits } : {}),

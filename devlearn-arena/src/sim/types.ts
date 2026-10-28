@@ -197,9 +197,22 @@ export interface PoliticsRules {
   council: readonly CouncilMember[];
   /** 施設の電力の使用量（MW / Lv）と性質の初めの値（docs/content-spec.md 7.9） */
   facilities: Partial<Record<FacilityType, { powerMW?: number; traits?: Partial<Record<ModKey, number>> }>>;
+  /** 公約の候補（docs/content-spec.md 7.4。docs/game-design.md 21.4） */
+  pledges?: readonly Pledge[];
 }
 
-export const NO_RULES: PoliticsRules = { reasons: [], council: [], facilities: {} };
+export const NO_RULES: PoliticsRules = { reasons: [], council: [], facilities: {}, pledges: [] };
+
+/** 公約（docs/content-spec.md 7.4） */
+export interface Pledge {
+  id: string;
+  /** 「人口を 2 割増やす」 */
+  title: string;
+  /** 果たす条件（7.7 の式。start. を付けると任期の初めの値） */
+  goal: string;
+  /** この公約を重く見る層（果たした・果たせない時に信頼が動く） */
+  layers: number[];
+}
 
 export type GroupId = 'neighbors' | 'merchants' | 'environment' | 'taxpayers' | 'workers';
 export type ApplicationKind = 'facility' | 'upgrade' | 'rezone' | 'civic' | 'power' | 'reward';
@@ -272,6 +285,10 @@ export interface Term {
   startDay: number;
   pledges: { pledgeId: string; startValue: number; doneDay?: number }[];
   startSnapshot: { population: number; jobs: number; treasury: number; approval: number; lessonsDone: number };
+  /** 任期の初めの分野ごとのスキル段階（任期の終わりの一覧の「上がったスキル」。画面が知らせた値） */
+  startStages?: Partial<Record<DomainId, number>>;
+  /** この任期に達成したミッション（政治資本 +3 を得た物） */
+  missions?: string[];
 }
 
 export interface TermSummary {
@@ -304,6 +321,12 @@ export interface Politics {
   pushesThisTerm: number;
   wrongExplanations: number;
   expiredPetitions: number;
+  /** 落選して、同じ都市で再び立つか新しい都市で始めるかを選ぶまで（その間、都市の日は進まない。docs/game-design.md 21.2） */
+  defeated?: true;
+  /** 政治資本を得たミッション（同じミッションで 2 度得ない。公約の missionsDone） */
+  missions?: string[];
+  /** 学習の進み（画面が知らせる数だけ。任期の終わりの一覧に使い、市政の条件には使わない） */
+  learning?: { lessonsDone: number; stages: Partial<Record<DomainId, number>> };
 }
 
 export interface Budget {

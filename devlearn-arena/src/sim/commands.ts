@@ -1,12 +1,13 @@
 import { checkFacility, checkRoad, checkZone, demolish, placeFacility, placeRoad, placeZone, type DemolishTarget } from '@/city/place';
 import type { RoadPlan } from '@/city/roads';
 import type { Terrain } from '@/city/terrain';
-import type { Facility, FacilityType, Point, ZoneKind } from '@/city/types';
+import type { DomainId, Facility, FacilityType, Point, ZoneKind } from '@/city/types';
 import { cellKey, facilityCells, roadCellsOf } from '@/city/cells';
 import { checkUpgrade, type SkillValueMap } from '@/city/upgrade';
 import { file, needsApplication, occupiedSites, permitProblems, rezoneOf, withdraw, type PermitProblem } from './permits';
 import { appealConcede, appealSuppress } from './appeal';
 import { persuade } from './council';
+import { choosePledges, creditMission, noteLearning, rerun } from './election';
 import { closeHearing, playHand, type Hand } from './hearing';
 import { NO_RULES, type Application, type PoliticsRules, type World } from './types';
 
@@ -35,7 +36,15 @@ export type Op =
   /** 異議申し立てに、追加の譲歩で答える（docs/game-design.md 19 章） */
   | { kind: 'appealConcede'; applicationId: string; reasonId: string; concessionId: string; skills: SkillValueMap }
   /** 政治資本 4 で、異議申し立てを抑える */
-  | { kind: 'appealSuppress'; applicationId: string };
+  | { kind: 'appealSuppress'; applicationId: string }
+  /** 任期の初めに、公約を 2 つ選ぶ（docs/game-design.md 21.4） */
+  | { kind: 'pledges'; ids: string[] }
+  /** ミッションを達成した（政治資本 +3。同じミッションは 1 度だけ。21.5） */
+  | { kind: 'mission'; missionId: string }
+  /** 落選の後、同じ都市で再び立つ（21.2） */
+  | { kind: 'rerun' }
+  /** 学習の進み（修了したレッスンの数と分野ごとの段階）。任期の終わりの一覧に使うだけで、市政の条件には使わない */
+  | { kind: 'learning'; lessonsDone: number; stages: Partial<Record<DomainId, number>> };
 
 export interface Command {
   /** 出した順の番号（画面が付ける。模擬が当てた所までを返す） */
@@ -53,6 +62,8 @@ export interface Command {
 export function applyOp(world: World, op: Op, terrain: Terrain, rules: PoliticsRules = NO_RULES): World {
   const city = world.city;
   const day = Math.floor(city.day);
+  // 落選して道を選ぶまでは、都市を変える命令を当てない（学習の資金・進み・ミッションと、再び立つは当てる）
+  if (world.politics.defeated && !AFTER_DEFEAT.has(op.kind)) return world;
   switch (op.kind) {
     case 'road': {
       const check = checkRoad(city, terrain, op.plan);
@@ -113,8 +124,18 @@ export function applyOp(world: World, op: Op, terrain: Terrain, rules: PoliticsR
       return appealSuppress(world, op.applicationId, day).world;
     case 'funds':
       return { ...world, city: { ...city, funds: city.funds + op.amount } };
+    case 'pledges':
+      return choosePledges(world, op.ids, rules).world;
+    case 'mission':
+      return creditMission(world, op.missionId, day);
+    case 'rerun':
+      return rerun(world, day);
+    case 'learning':
+      return noteLearning(world, op.lessonsDone, op.stages);
   }
 }
+
+const AFTER_DEFEAT = new Set<Op['kind']>(['funds', 'mission', 'learning', 'rerun']);
 
 /**
  * 置く命令が申請になるか、申請を出せない理由（配置の小窓に出す。applyOp と同じ判定）。

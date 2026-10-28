@@ -315,12 +315,17 @@ interface Politics {
   pushesThisTerm: number;                // 押し切った回数（新聞の不祥事。docs/game-design.md 22.3）
   wrongExplanations: number;
   expiredPetitions: number;
+  defeated?: true;                       // 落選して、次の道（同じ都市で再び立つ・新しい都市で始める）を選ぶまで。その間、都市の日は進まない
+  missions?: string[];                   // 政治資本 +3 を得たミッション（同じミッションで 2 度得ない。公約の missionsDone）
+  learning?: { lessonsDone: number; stages: Partial<Record<DomainId, number>> };  // 画面が知らせる学習の進み（任期の終わりの一覧だけに使う。市政の条件には使わない）
 }
 interface Term {
   no: number;                            // 何期目か（落選して同じ都市で立っても数え続ける）
   startDay: number;                      // 選挙の日は startDay + 1,455（208 週の最後の日）
-  pledges: { pledgeId: string; startValue: number; doneDay?: number }[];  // 2 つ
+  pledges: { pledgeId: string; startValue: number; doneDay?: number }[];  // 2 つ。startValue は goal の start の語の、選んだ時の値
   startSnapshot: { population: number; jobs: number; treasury: number; approval: number; lessonsDone: number };
+  startStages?: Partial<Record<DomainId, number>>;  // 任期の初めの分野ごとのスキル段階（一覧の「上がったスキル」）
+  missions?: string[];                   // この任期に達成したミッション（一覧の missionsDone）
 }
 interface TermSummary {
   no: number; startDay: number; endDay: number;
@@ -351,7 +356,8 @@ interface Rewards {
 }
 ```
 
-- 敗因の `decisions` は、その層の点を最も下げた原因（`Cause.source`）の ID（申請・税率の変更・請願の扱い）
+- 敗因の `decisions` は、その層の点を最も下げた原因（`Cause.source`）の `種類:ID`（施設・区画・道路・決定。申請・税率の変更・請願の扱い）。2 つまで
+- `built` は、その任期に完成した申請の ID
 
 ## 12. 保存データの版 4 と、版 3 からの移行
 

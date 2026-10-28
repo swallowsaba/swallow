@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { ENTRIES } from './catalog';
 import { TERMS } from './glossary';
-import { COUNCIL, DOMAIN_LINKS, EXPLAIN, lowersMeasure, MEMBER_KEYS, objectionTargets, POLITICS_RULES, REASONS, validateCouncil, validateLearning, validateReasons } from './politics';
-import type { ObjectionReason } from '@/sim/types';
+import { COUNCIL, DOMAIN_LINKS, EXPLAIN, lowersMeasure, MEMBER_KEYS, objectionTargets, PLEDGES, POLITICS_RULES, REASONS, validateCouncil, validateLearning, validatePledges, validateReasons } from './politics';
+import type { ObjectionReason, Pledge } from '@/sim/types';
 
 /**
  * 市政のデータの検証（docs/content-spec.md 6 章の市政の項目）。
@@ -108,5 +108,33 @@ describe('議員のデータ（content/politics/council.json。7.2）', () => {
     expect(validateCouncil(copied)).toContain(`${b.id}: gain の文が ${a.id} と同じ`);
     const unknown = COUNCIL.map((m) => (m.id === a.id ? { ...m, lines: { ...m.lines, stance: '{name}は{dir}' } } : m));
     expect(validateCouncil(unknown)).toContain(`${a.id}: stance に知らない差し込み名 {name}`);
+  });
+});
+
+describe('公約のデータ（content/politics/pledges.json。7.4）', () => {
+  it('全ての公約が検証を通る（式として読める・学習の語が無い・今の模擬が数える語だけ・層の番号）', () => {
+    expect(validatePledges(PLEDGES)).toEqual([]);
+    expect(PLEDGES.length).toBeGreaterThanOrEqual(4);
+  });
+
+  it('検証は誤りを見つける: 読めない式・学習の語・まだ数えていない語・層の番号・重なる ID', () => {
+    const base = PLEDGES[0] as Pledge;
+    const bad: Pledge[] = [
+      base,
+      { ...base, id: 'b-1', goal: 'population >=' },
+      { ...base, id: 'b-2', goal: 'lessonsDone >= 3' },
+      { ...base, id: 'b-3', goal: 'coverage.school >= 60' },
+      { ...base, id: 'b-4', layers: [3, 3] },
+      { ...base, id: 'b-5', layers: [12] },
+      base,
+    ];
+    expect(validatePledges(bad)).toEqual([
+      'b-1: goal が式として読めない（population >=）',
+      'b-2: goal が式として読めない（lessonsDone >= 3）',
+      'b-3: coverage.school は今の模擬が数えていない語',
+      'b-4: 層の番号が 0〜11 で重ならない形でない',
+      'b-5: 層の番号が 0〜11 で重ならない形でない',
+      `${base.id}: 公約の ID が重なる`,
+    ]);
   });
 });

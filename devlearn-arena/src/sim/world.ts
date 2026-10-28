@@ -5,7 +5,8 @@ import { createRandom } from '@/city/random';
 import { START_AREA, type Terrain } from '@/city/terrain';
 import type { City } from '@/city/types';
 import { LAYER_COUNT, LAYER_SHARE, MEAN_HOUSEHOLD_SIZE } from './layers';
-import { DAYS_PER_WEEK, EXTERNAL_POWER_CAP, INITIAL_CAPITAL, INITIAL_TAX_RATE, INITIAL_TREASURY } from './rules';
+import { DAYS_PER_WEEK, EXTERNAL_POWER_CAP, INITIAL_TAX_RATE, INITIAL_TREASURY } from './rules';
+import { START_CAPITAL, stepPolitics } from './election';
 import { DISTRICT_COUNT, landingOf, spaceOf } from './space';
 import { NO_RULES, type Difficulty, type Politics, type PoliticsRules, type SimState, type World } from './types';
 import { stepApplications } from './permits';
@@ -33,8 +34,7 @@ export function districtNames(seed: number, parts: NameParts): string[] {
   return Array.from({ length: DISTRICT_COUNT }, (_, i) => all[i % all.length] as string);
 }
 
-/** 初めの政治資本（docs/game-design.md 27 章） */
-export const START_CAPITAL: Record<Difficulty, number> = { gentle: 14, normal: INITIAL_CAPITAL, tough: 7 };
+export { START_CAPITAL } from './election';
 
 function emptySim(city: City, terrain: Terrain, names: NameParts): SimState {
   return {
@@ -148,6 +148,8 @@ export function stepDay(world: World, terrain: Terrain, rules: PoliticsRules = N
 
 /** 1 日進め、週の終わりなら、その週の計算の途中の値（ヒートマップに使う）も返す */
 export function stepDayView(world: World, terrain: Terrain, rules: PoliticsRules = NO_RULES): { world: World; view: WeekView | null } {
+  // 落選して、次の道を選ぶまでは都市の日を進めない（docs/game-design.md 21.2）
+  if (world.politics.defeated) return { world, view: null };
   const day = Math.floor(world.city.day) + 1;
   // 申請の段階と工事（毎日。docs/game-design.md 13.1）
   const permitted = stepApplications(world, day, terrain, rules);
@@ -157,5 +159,7 @@ export function stepDayView(world: World, terrain: Terrain, rules: PoliticsRules
     simPopulation: true,
   });
   const next: World = { ...permitted, city };
-  return day % DAYS_PER_WEEK === 0 ? weekStep(next, terrain) : { world: next, view: null };
+  const stepped = day % DAYS_PER_WEEK === 0 ? weekStep(next, terrain) : { world: next, view: null };
+  // 市政（週の終わりの公約と支持率の上昇・選挙の日。docs/game-design.md 21 章）
+  return { world: stepPolitics(stepped.world, day, rules), view: stepped.view };
 }

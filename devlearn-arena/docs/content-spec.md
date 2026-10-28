@@ -511,6 +511,7 @@ interface Pledge {
 ```
 
 - 公約の `goal` に、レッスンの修了の数を入れない（docs/game-design.md 21.4。検証で、7.7 の学習の語が無いことを確かめる。`missions` は使ってよい）
+- `goal` に使えるのは、今の模擬が数えている語だけ（検証で確かめる）。行き届き（G10）・家賃の負担と騒音の語（それを数える Phase）を使う公約は、その Phase で足す
 
 ### 7.5 新聞の型の文
 
@@ -547,6 +548,7 @@ type MemberLineKey = 'gain' | 'concern' | 'unanswered' | 'explained' | 'wrong' |
 ### 7.7 条件の式
 
 請願の `when` と公約の `goal` に使う。`&&` でつなぎ、比べ方は `>=` `<=` `>` `<` `=`。
+右は数か、`start.<語>` に足す・掛ける数（`population >= start.population * 1.2`「人口を 2 割増やす」・`facilities.it >= start.facilities.it + 2`）。`start` の語は 1 つの式に 1 つ。
 
 | 語 | 値 |
 |---|---|

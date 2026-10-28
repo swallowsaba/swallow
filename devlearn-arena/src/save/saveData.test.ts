@@ -245,6 +245,28 @@ describe('版 3 → 版 4 の移行（docs/data-model.md 12 章・docs/acceptanc
     expect(read.ok && fromSaveData(read.data)).toEqual(withApps);
   });
 
+  it('G8: 任期・公約・過去の任期と敗因・落選して選ぶ前・ミッションと学習の進みが、保存・読み込みで元に戻る（docs/data-model.md 11 章）', () => {
+    const parts = played();
+    const world = parts.world;
+    const politics = {
+      ...world.politics,
+      capital: 3,
+      defeated: true as const,
+      missions: ['incident'],
+      learning: { lessonsDone: 12, stages: { db: 3, linux: 1 } },
+      term: { ...world.politics.term, no: 2, pledges: [{ pledgeId: 'pop-grow', startValue: 120, doneDay: 900 }, { pledgeId: 'it-two', startValue: 1 }], startStages: { db: 1 }, missions: ['incident'] },
+      pastTerms: [{
+        no: 1, startDay: 0, endDay: 1455, won: false, voteShare: 46.25, byLayer: Array.from({ length: 12 }, (_, i) => ({ support: 40 + i, turnout: 0.5 })),
+        causes: [{ layer: 3, factors: [{ factor: 'afford' as const, points: -12.5 }], decisions: ['facility:f2'] }],
+        built: ['a2'], approved: 3, rejected: 1, pledgesDone: ['pop-grow'], missionsDone: ['incident'], lessonsDone: 9, skillsUp: ['db' as const],
+        population: [100, 340] as [number, number], jobs: [20, 90] as [number, number], treasury: [800, 1200] as [number, number], approval: [50, 44] as [number, number],
+      }],
+    };
+    const saved: SaveParts = { ...parts, world: { ...world, politics } };
+    const read = readSave(JSON.stringify(toSaveData(saved, '2026-10-04T12:00:00+09:00', '2026-10-04')));
+    expect(read.ok && fromSaveData(read.data)).toEqual(saved);
+  });
+
   it('版 4 の保存・読み込みで、模擬と市政の状態が全て元に戻る', () => {
     const read = readSave(JSON.stringify(v3Save()));
     if (!read.ok) throw new Error('読めない');

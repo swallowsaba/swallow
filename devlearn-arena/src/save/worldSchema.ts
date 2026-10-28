@@ -107,6 +107,8 @@ export const applicationSchema = z.object({
 }).strict();
 
 const snapshot = z.object({ population: num, jobs: num, treasury: num, approval: num, lessonsDone: num }).strict();
+/** 分野ごとのスキル段階（0〜5） */
+const stages = z.record(z.enum(DOMAIN_IDS), z.number().int().min(0).max(5));
 const pair = z.tuple([num, num]);
 
 export const politicsSchema = z.object({
@@ -118,6 +120,8 @@ export const politicsSchema = z.object({
     startDay: num,
     pledges: z.array(z.object({ pledgeId: z.string(), startValue: num, doneDay: num.optional() }).strict()),
     startSnapshot: snapshot,
+    startStages: stages.optional(),
+    missions: z.array(z.string()).optional(),
   }).strict(),
   pastTerms: z.array(z.object({
     no: z.number().int(), startDay: num, endDay: num, won: z.boolean(), voteShare: num,
@@ -130,6 +134,9 @@ export const politicsSchema = z.object({
   pushesThisTerm: z.number().int().min(0),
   wrongExplanations: z.number().int().min(0),
   expiredPetitions: z.number().int().min(0),
+  defeated: z.literal(true).optional(),
+  missions: z.array(z.string()).optional(),
+  learning: z.object({ lessonsDone: num, stages }).strict().optional(),
 }).strict();
 
 export const budgetSchema = z.object({
