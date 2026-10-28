@@ -6,6 +6,10 @@ import { expect, test, type Page } from '@playwright/test';
  *   住宅を塗って人が住むのを待つ → 住宅のそばにデータセンター（申請）→ 反対の受付 → 公聴会の段
  *   → 公聴会の窓（スキル 0 でも譲歩と押し切るが並ぶ。開いている間は時間が止まる）
  *   → 公聴会の途中のまま、情報パネルの「ここで学ぶ」・上の帯の学ぶ・ミッションへ行ける → 戻ると公聴会は待っている
+ *
+ * 議会の段と異議申し立ての途中（G6）:
+ *   住宅の列に続く所を工業に塗る（用途地域の変更の申請）→ 公聴会で一番大きな論点を押し切って終える → 議会の段
+ *   → 採決の見込みの窓を開いたまま学習ライブラリへ → 可決して異議申し立て → 申し立ての途中のまま、レッスン・ミッションへ行ける
  */
 
 type Store = {
@@ -46,9 +50,8 @@ async function dragCells(page: Page, from: [number, number], to: [number, number
 
 test.setTimeout(180_000);
 
-test('公聴会の途中の申請があっても、施設・学習ライブラリ・ミッションから学べる。スキル 0 でも譲歩と押し切るが並ぶ', async ({ page }) => {
-  const errors: string[] = [];
-  page.on('pageerror', (e) => errors.push(String(e)));
+/** 一般道の両側に住宅、東に工場（働く所があると人が住む）を塗り、人が住むのを待つ。資金だけを足す（スキルは 0 のまま） */
+async function town(page: Page): Promise<void> {
   await page.goto('./');
   await page.waitForFunction(() => document.body.dataset.cityReady === '1');
   for (let i = 0; i < 3; i += 1) await page.keyboard.press('Enter');
@@ -70,6 +73,15 @@ test('公聴会の途中の申請があっても、施設・学習ライブラ�
   await page.keyboard.press('Escape');
   await page.keyboard.press('Escape');
   await days(page, 56);
+}
+
+/** 上の帯の入口 */
+const nav = (page: Page, name: string) => page.getByRole('navigation', { name: '画面への入口' }).getByRole('button', { name });
+
+test('公聴会の途中の申請があっても、施設・学習ライブラリ・ミッションから学べる。スキル 0 でも譲歩と押し切るが並ぶ', async ({ page }) => {
+  const errors: string[] = [];
+  page.on('pageerror', (e) => errors.push(String(e)));
+  await town(page);
 
   // 住宅のそばにデータセンター → 公聴会の段まで進める
   await page.getByTestId('build-group-facility').click();
@@ -127,5 +139,75 @@ test('公聴会の途中の申請があっても、施設・学習ライブラ�
 
   // 戻っても公聴会は待っている
   expect(await stageOf(page)).toBe('hearing');
+  expect(errors).toEqual([]);
+});
+
+test('議会の段・異議申し立ての途中の申請があっても、学習ライブラリ・レッスン・ミッションへ行ける（G6）', async ({ page }) => {
+  const errors: string[] = [];
+  page.on('pageerror', (e) => errors.push(String(e)));
+  await town(page);
+
+  // 一般道の北の、住宅の列の東に続く 6 マスを工業に塗る → 用途地域の変更の申請（住宅に接するので公聴会を省けない）
+  await page.getByTestId('build-group-zone').click();
+  await page.getByTestId('build-zone-industrial').click();
+  await dragCells(page, [45, 46], [50, 46]);
+  await page.keyboard.press('Escape');
+  await page.keyboard.press('Escape');
+  for (let i = 0; i < 40 && (await stageOf(page)) !== 'hearing'; i += 1) await days(page, 1);
+  expect(await stageOf(page)).toBe('hearing');
+
+  // 公聴会: 一番大きな論点を押し切り、ほかには答えずに終える → 議会の段
+  await page.evaluate(() => {
+    const s = (window as unknown as { __cityStore: { getState: () => { world: { applications: { id: string }[] }; openHearing: (id: string) => void } } }).__cityStore.getState();
+    s.openHearing(s.world.applications.at(-1)?.id ?? '');
+  });
+  const hearing = page.getByTestId('hearing-window');
+  await expect(hearing).toBeVisible();
+  await hearing.locator('.hearing-issue').first().click();
+  await page.getByTestId('hearing-push').click();
+  await page.getByTestId('hearing-end').click();
+  await expect(hearing).toHaveCount(0);
+  expect(await stageOf(page)).toBe('council');
+
+  // 採決の見込みの窓を開いたまま、上の帯の「学ぶ」から学習ライブラリへ
+  await page.evaluate(() => {
+    const s = (window as unknown as { __cityStore: { getState: () => { world: { applications: { id: string }[] }; openCouncil: (id: string) => void } } }).__cityStore.getState();
+    s.openCouncil(s.world.applications.at(-1)?.id ?? '');
+  });
+  await expect(page.getByTestId('council-window')).toBeVisible();
+  await expect(page.getByTestId('council-verdict')).toContainText('このままなら');
+  await nav(page, '学ぶ').click();
+  await expect(page.getByTestId('learn-view-list')).toBeVisible();
+  await page.goBack();
+  await expect(page.getByTestId('city-screen')).toBeVisible();
+  expect(await stageOf(page)).toBe('council');
+  if (await page.getByTestId('council-window').count()) await page.locator('[data-testid="council-window"] .council-close').click();
+
+  // 議会の日に可決 → 押し切った論点があり、反対率が境以上なので申し立てが立つ
+  for (let i = 0; i < 20 && (await stageOf(page)) === 'council'; i += 1) await days(page, 1);
+  expect(await stageOf(page)).toBe('appeal');
+  await page.evaluate(() => {
+    const s = (window as unknown as { __cityStore: { getState: () => { world: { applications: { id: string }[] }; openAppeal: (id: string) => void } } }).__cityStore.getState();
+    s.openAppeal(s.world.applications.at(-1)?.id ?? '');
+  });
+  await expect(page.getByTestId('appeal-window')).toBeVisible();
+
+  // 申し立ての途中のまま、レッスンを始められる（前提を学んでいなくても）
+  await page.goto('./#/learn/db.b.01');
+  await expect(page.getByTestId('entry-card')).toBeVisible();
+  await page.getByTestId('entry-start').click();
+  await expect(page.getByTestId('lesson-screen')).toBeVisible();
+  // ミッションも始められる
+  await page.goto('./#/city');
+  await expect(page.getByTestId('city-screen')).toBeVisible();
+  await nav(page, 'ミッション').click();
+  await page.locator('[data-testid^="mission-row-"]').first().click();
+  await page.getByTestId('mission-start').click();
+  await expect(page.getByTestId('mission-screen')).toBeVisible();
+  await page.goto('./#/city');
+  await expect(page.getByTestId('city-screen')).toBeVisible();
+
+  // 戻っても申し立ては待っている（都市の画面の外では時間が止まる）
+  expect(await stageOf(page)).toBe('appeal');
   expect(errors).toEqual([]);
 });
