@@ -94,7 +94,7 @@ export function CityNotice({ text, paused, shifted, windows, onOpen }: {
         </div>
       ) : null}
       {text && onOpen ? (
-        <button type="button" className="city-notice is-link" role="status" data-label-block data-testid="city-notice" onClick={onOpen} title="押すと申請の詳細を開く">
+        <button type="button" className="city-notice is-link" role="status" data-label-block data-testid="city-notice" onClick={onOpen} title="押すと、その窓を開く">
           {text}
         </button>
       ) : text ? (

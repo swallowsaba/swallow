@@ -166,20 +166,35 @@ function newTerm(world: World, no: number, startDay: number): Term {
   };
 }
 
-export type PledgeProblem = 'count' | 'unknown' | 'chosen';
+export type PledgeProblem = 'count' | 'unknown' | 'chosen' | 'met';
 
-/** 公約を 2 つ選ぶ（任期の初めに 1 度。21.4）。初めの値（start の語の値）を覚える */
+/** 公約の初めの値（goal の start の語の、今の値。start の語が無ければ 0） */
+function startValueOf(goal: string, values: Partial<Record<string, number>>): number {
+  const word = startWordOf(parseCondition(goal) ?? []);
+  return word ? (values[word] ?? 0) : 0;
+}
+
+/**
+ * 選ぶ時にすでに果たしている公約か（人が住む前の「人口を 2 割増やす」は 0 ≥ 0・失業者のいない町の「失業率を 5% 以下」）。
+ * 公約は任期の間に果たす物なので、選べない（何もせずに政治資本 +5 を得ない）
+ */
+export function pledgeMet(world: World, goal: string): boolean {
+  const clauses = parseCondition(goal);
+  if (!clauses) return false;
+  const values: Partial<Record<string, number>> = conditionValues(world);
+  return evalCondition(clauses, values, startValueOf(goal, values));
+}
+
+/** 公約を 2 つ選ぶ（任期の初めに 1 度。21.4）。初めの値（start の語の値）を覚える。すでに果たしている公約は選べない */
 export function choosePledges(world: World, ids: readonly string[], rules: PoliticsRules): { world: World; problem?: PledgeProblem } {
   if (world.politics.term.pledges.length > 0) return { world, problem: 'chosen' };
   if (ids.length !== 2 || new Set(ids).size !== 2) return { world, problem: 'count' };
   const all = rules.pledges ?? [];
   const chosen = ids.map((id) => all.find((p) => p.id === id));
   if (chosen.some((p) => !p)) return { world, problem: 'unknown' };
+  if (chosen.some((p) => pledgeMet(world, p?.goal ?? ''))) return { world, problem: 'met' };
   const values: Partial<Record<string, number>> = conditionValues(world);
-  const pledges = chosen.map((p) => {
-    const word = startWordOf(parseCondition(p?.goal ?? '') ?? []);
-    return { pledgeId: p?.id ?? '', startValue: word ? (values[word] ?? 0) : 0 };
-  });
+  const pledges = chosen.map((p) => ({ pledgeId: p?.id ?? '', startValue: startValueOf(p?.goal ?? '', values) }));
   return { world: { ...world, politics: { ...world.politics, term: { ...world.politics.term, pledges } } } };
 }
 

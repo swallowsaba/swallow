@@ -78,6 +78,10 @@ test('都市を作り、施設から学び、7 段を通して都市へ戻ると
     await page.keyboard.press('Enter');
   }
   await expect(page.getByTestId('intro')).toHaveCount(0);
+  // 1 期目の公約を選ぶ窓（G8）。この E2E では選ばずに閉じる（上の帯の任期の残りから、後で選べる）
+  await expect(page.getByTestId('election-window')).toBeVisible();
+  await page.getByTestId('election-window').getByRole('button', { name: '閉じる' }).click();
+  await expect(page.getByTestId('election-window')).toHaveCount(0);
 
   // G2: 移動・拡大縮小・回転（キーボード）。同じマスの画面の位置が変わる
   for (const key of ['d', '+', 'e']) {

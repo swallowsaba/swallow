@@ -436,6 +436,13 @@
   background: var(--hud-bg);
   outline: none;
 }
+.election-option:disabled {
+  cursor: default;
+  opacity: 0.55;
+}
+.election-option:disabled:hover {
+  background: var(--transparent);
+}
 .election-option.is-on {
   border-left-color: var(--gold);
   background: var(--hud-bg);

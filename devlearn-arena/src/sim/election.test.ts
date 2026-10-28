@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { POLITICS_RULES } from '@/content/politics';
+import { NAME_PARTS, POLITICS_RULES } from '@/content/politics';
 import { applyOp } from './commands';
 import {
   CAPITAL_CAP, causesOf, choosePledges, conditionValues, creditMission, electionDayOf, electionOf, GAIN, layerAdults, rerun, TERM_DAYS, turnoutOf, voteShareOf, WARN_DAYS,
@@ -7,7 +7,7 @@ import {
 import { LAYER_COUNT } from './layers';
 import type { Application, Pledge, PoliticsRules, World } from './types';
 import { SimRunner } from './runner';
-import { stepDay } from './world';
+import { newWorld, stepDay } from './world';
 import { grownVillage } from './__fixtures__/cities';
 
 /**
@@ -140,6 +140,17 @@ describe('公約（21.4）', () => {
     for (const bad of [['p-pop'], ['p-pop', 'p-pop'], ['p-pop', 'nope'], ['p-pop', 'p-unemp', 'p-never']]) expect(choosePledges(w, bad, RULES).problem, bad.join()).toBeDefined();
     // 選んだ後は選び直せない（任期の初めだけ）
     expect(choosePledges(ok.world, ['p-pop', 'p-never'], RULES).problem).toBe('chosen');
+  });
+
+  it('選ぶ時にすでに果たしている公約は選べない（人が住む前の「人口を 2 割増やす」は 0 ≥ 0。何もせずに政治資本を得ない）', () => {
+    const empty = newWorld(T, NAME_PARTS);
+    expect(empty.city.population).toBe(0);
+    const rules: PoliticsRules = { ...RULES, pledges: [...PLEDGES, { id: 'p-grow', title: '2 割増やす', goal: 'population >= start.population * 1.2', layers: [0] }, { id: 'p-low', title: '失業率を 5% 以下', goal: 'unemployment <= 5', layers: [0] }] };
+    expect(choosePledges(empty, ['p-grow', 'p-never'], rules).problem).toBe('met');
+    expect(choosePledges(empty, ['p-low', 'p-never'], rules).problem).toBe('met');
+    // 人が住んで失業率が 5% を超える町なら、同じ公約を選べる
+    const w = { ...GROWN.world, sim: { ...GROWN.world.sim, lastWeek: { ...GROWN.world.sim.lastWeek, unemployment: 0.3 } } };
+    expect(choosePledges(w, ['p-grow', 'p-low'], rules).problem).toBeUndefined();
   });
 
   it('果たすと政治資本 +5・重く見る層の信頼 +3（週の終わりに確かめる）。選挙の日に果たせていない公約は −3', () => {

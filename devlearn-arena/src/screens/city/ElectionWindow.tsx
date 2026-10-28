@@ -294,10 +294,17 @@ function PledgePicker({ store }: { store: CityStore }) {
       <ul className="election-options">
         {options.map((o) => (
           <li key={o.id}>
-            <button type="button" className={`election-option${picked.includes(o.id) ? ' is-on' : ''}`} aria-pressed={picked.includes(o.id)} data-pledge={o.id} onClick={() => toggle(o.id)}>
+            <button
+              type="button"
+              className={`election-option${picked.includes(o.id) ? ' is-on' : ''}`}
+              aria-pressed={picked.includes(o.id)}
+              disabled={o.met}
+              data-pledge={o.id}
+              onClick={() => toggle(o.id)}
+            >
               <b>{o.title}</b>
               <span className="election-option-goal">{o.text}</span>
-              <span className="election-option-layers">重く見る層: {o.layers}</span>
+              <span className="election-option-layers">{o.met ? '今すでに満たしているので、公約にできない' : `重く見る層: ${o.layers}`}</span>
             </button>
           </li>
         ))}

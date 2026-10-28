@@ -4,6 +4,8 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { directHost } from '@/sim/host';
 import { grownVillage } from '@/sim/__fixtures__/cities';
 import { TERM_DAYS } from '@/sim/election';
+import { newWorld } from '@/sim/world';
+import { NAME_PARTS } from '@/content/politics';
 import type { World } from '@/sim/types';
 import { createCityStore } from './cityStore';
 import { ElectionWindow } from './ElectionWindow';
@@ -126,5 +128,17 @@ describe('当選と公約', () => {
     expect(host.querySelector('#election-title')?.textContent).toBe('1 期目の公約を選ぶ');
     const first = host.querySelector('[data-pledge="pop-grow"]');
     expect(first?.textContent).toMatch(/^人口を 2 割増やす人口 [\d,]+人（目標 [\d,.]+人以上）重く見る層: /);
+  });
+
+  it('人が住む前の島では、すでに満たしている公約（人口を 2 割増やす・失業率 5% 以下）は押せず、理由を添える', () => {
+    const { store, host } = mount(newWorld(GROWN.terrain, NAME_PARTS));
+    act(() => store.getState().askPledges());
+    const pop = host.querySelector('[data-pledge="pop-grow"]') as HTMLButtonElement;
+    expect(pop.disabled).toBe(true);
+    expect(pop.textContent).toContain('今すでに満たしているので、公約にできない');
+    expect((host.querySelector('[data-pledge="unemployment-low"]') as HTMLButtonElement).disabled).toBe(true);
+    expect((host.querySelector('[data-pledge="it-two"]') as HTMLButtonElement).disabled).toBe(false);
+    click(pop);
+    expect(pop.getAttribute('aria-pressed')).toBe('false');
   });
 });

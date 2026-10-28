@@ -2,7 +2,7 @@ import { DOMAINS } from '@/city/facilityInfo';
 import type { DomainId, Point } from '@/city/types';
 import { EXPLAIN, PLEDGES } from '@/content/politics';
 import { parseCondition, startWordOf, type Clause } from '@/sim/conditions';
-import { conditionValues, electionDayOf, electionOf, layerAdults, voteShareOf } from '@/sim/election';
+import { conditionValues, electionDayOf, electionOf, layerAdults, pledgeMet, voteShareOf } from '@/sim/election';
 import { causeText } from '@/sim/explain';
 import { AGE_BANDS, AGE_NAMES, FACTOR_NAMES, INCOME_BANDS, INCOME_NAMES, layerName } from '@/sim/layers';
 import { applicationName } from '@/sim/permits';
@@ -175,13 +175,13 @@ export function termModel(world: World): TermModel | null {
   };
 }
 
-/** 公約の候補（10.7: 候補を一覧で。果たす条件と今の値を添える） */
-export function pledgeOptions(world: World): { id: string; title: string; text: string; layers: string }[] {
+/** 公約の候補（10.7: 候補を一覧で。果たす条件と今の値を添える）。met はすでに果たしている候補（選べない） */
+export function pledgeOptions(world: World): { id: string; title: string; text: string; layers: string; met: boolean }[] {
   const values = conditionValues(world);
   return PLEDGES.map((p) => {
     const word = startWordOf(parseCondition(p.goal) ?? []);
     const start = word ? (values as Partial<Record<string, number>>)[word] : undefined;
-    return { id: p.id, title: p.title, text: goalText(p, values, start), layers: pledgeLayers(p) };
+    return { id: p.id, title: p.title, text: goalText(p, values, start), layers: pledgeLayers(p), met: pledgeMet(world, p.goal) };
   });
 }
 

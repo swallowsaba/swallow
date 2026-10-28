@@ -62,6 +62,10 @@ async function town(page: Page): Promise<void> {
   await page.waitForFunction(() => document.body.dataset.cityReady === '1');
   for (let i = 0; i < 3; i += 1) await page.keyboard.press('Enter');
   await expect(page.getByTestId('intro')).toHaveCount(0);
+  // 1 期目の公約を選ぶ窓（G8）。この E2E では選ばずに閉じる（上の帯の任期の残りから、後で選べる）
+  await expect(page.getByTestId('election-window')).toBeVisible();
+  await page.getByTestId('election-window').getByRole('button', { name: '閉じる' }).click();
+  await expect(page.getByTestId('election-window')).toHaveCount(0);
   // 資金だけを足す（学習の記録には触れない。スキルは 0 のまま）
   await page.evaluate(() => {
     const s = (window as unknown as { __cityStore: Store }).__cityStore.getState();
