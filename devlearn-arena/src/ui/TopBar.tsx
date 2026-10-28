@@ -21,7 +21,7 @@ export interface TopBarProps {
   capital?: number;
   /** 政治資本を押すと、予算の窓の政治資本のつまみ（docs/ui-design.md 3.1） */
   onCapital?: () => void;
-  /** 財政（docs/game-design.md 22.2）。押すと予算の窓。無ければ出さない */
+  /** 財政（docs/game-design.md 22.2）。開発資金と同じ項目に並べ、押すと予算の窓。無ければ開発資金だけ */
   treasury?: { value: number; onOpen: () => void };
   /** 任期の残り（「選挙まで 38 週」）。押すと選挙の見込み（docs/ui-design.md 3.1・10.6）。無ければ出さない */
   term?: TopBarTerm;
@@ -245,23 +245,30 @@ function Approval({ value, delta, onOpen }: { value: number | null; delta: numbe
   );
 }
 
-/** 財政。赤字の間は state.bad の色と「赤字」。押すと予算の窓（docs/ui-design.md 3.1） */
-function Treasury({ value, onOpen }: { value: number; onOpen: () => void }) {
-  const deficit = value < 0;
+/**
+ * 開発資金・財政（docs/ui-design.md 3.1 の 1 つの項目）。2 つの財布を並べ、押すと予算の窓。
+ * 財政が赤字の間は、記号を state.bad の線で塗り、財政の数字に赤い下線と「赤字」
+ */
+function Money({ funds, treasury, onOpen }: { funds: number; treasury: number; onOpen: () => void }) {
+  const deficit = treasury < 0;
   return (
     <button
       type="button"
       className={`topbar-stat is-entry${deficit ? ' is-deficit' : ''}`}
       data-testid="topbar-treasury"
-      title={deficit ? '財政が赤字。押すと予算（F）' : '財政（市の会計。税収から公共の維持を払う）。押すと予算（F）'}
+      title={`開発資金（学習で増える。建てる物に使う）と財政（市の会計。税収から公共の維持を払う）${deficit ? '。財政が赤字' : ''}。押すと予算（F）`}
       onClick={onOpen}
     >
-      <span className="topbar-stat-icon"><Icon name="treasury" size={18} /></span>
+      <span className="topbar-stat-icon"><Icon name="funds" size={18} /></span>
       <span className="topbar-stat-text">
-        <span className="topbar-stat-label">財政</span>
+        <span className="topbar-stat-label">開発資金・財政</span>
         <span className="topbar-stat-value num">
-          {format(Math.round(value))}
-          <span className="topbar-stat-unit">{deficit ? '赤字' : '財政'}</span>
+          {format(funds)}
+          <span className="topbar-stat-unit">資金</span>
+          <span className="topbar-treasury-value">
+            {format(Math.round(treasury))}
+            <span className="topbar-stat-unit">{deficit ? '赤字' : '財政'}</span>
+          </span>
         </span>
       </span>
     </button>
@@ -313,8 +320,7 @@ export function TopBar(props: TopBarProps) {
       </a>
       <div className="topbar-stats">
         {props.clock ? <Clock clock={props.clock} /> : null}
-        <Stat icon="funds" label="開発資金" value={format(props.funds)} unit="資金" />
-        {props.treasury ? <Treasury value={props.treasury.value} onOpen={props.treasury.onOpen} /> : null}
+        {props.treasury ? <Money funds={props.funds} treasury={props.treasury.value} onOpen={props.treasury.onOpen} /> : <Stat icon="funds" label="開発資金" value={format(props.funds)} unit="資金" />}
         {props.approval !== undefined ? <Approval value={props.approval} delta={props.approvalDelta ?? null} {...(props.onApproval ? { onOpen: props.onApproval } : {})} /> : null}
         {props.capital !== undefined ? (props.onCapital ? <Capital value={props.capital} onOpen={props.onCapital} /> : <Stat icon="capital" label="政治資本" value={String(props.capital)} testId="topbar-capital" />) : null}
         {props.term ? <Term term={props.term} /> : null}
