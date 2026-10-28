@@ -29,6 +29,7 @@ import { VIEW_LABELS } from './viewKinds';
 import { ViewWindow } from './ViewWindow';
 import { PermitDetailWindow, PermitListWindow } from './PermitWindows';
 import { AppealWindow } from './AppealWindow';
+import { BudgetWindow, InboxWindow, NewsWindow } from './CivicWindows';
 import { CouncilWindow } from './CouncilWindow';
 import { HearingWindow } from './HearingWindow';
 import { ElectionWindow } from './ElectionWindow';
@@ -91,6 +92,7 @@ export function CityScreen({ session, active = true, covered = false, current, d
     windows: s.windows, toggleWindow: s.toggleWindow, openWindow: s.openWindow, heat: s.heat,
     mayor: mayorCount(s.world), openPermit: s.openPermit,
     capital: s.world.politics.capital, defeated: s.world.politics.defeated === true,
+    treasury: Math.round(s.world.budget.treasury), inbox: s.world.petitions.inbox.length,
     weeksLeft: Math.max(0, Math.ceil((electionDayOf(s.world.politics.term) - Math.floor(s.world.city.day)) / DAYS_PER_WEEK)),
     openElection: s.openElection,
   })));
@@ -122,6 +124,9 @@ export function CityScreen({ session, active = true, covered = false, current, d
       else if (k === 'g') onEntryRef.current?.('graph');
       else if (k === 'v') store.getState().toggleWindow('view');
       else if (k === 'p') store.getState().toggleWindow('permits');
+      else if (k === 'i') store.getState().toggleWindow('inbox');
+      else if (k === 'f') store.getState().toggleWindow('budget');
+      else if (k === 'n') store.getState().toggleWindow('news');
       else if (k === '1' || k === '2' || k === '3') store.getState().setSpeed(Number(k) as 1 | 2 | 3);
     };
     window.addEventListener('keydown', onKey);
@@ -253,6 +258,10 @@ export function CityScreen({ session, active = true, covered = false, current, d
       s.openElection(s.world.politics.defeated || (last && last.endDay >= Math.floor(s.world.city.day) - DAYS_PER_WEEK) ? 'result' : 'preview');
       return;
     }
+    if (n?.window === 'inbox' || n?.window === 'news') {
+      s.openWindow(n.window);
+      return;
+    }
     if (!n?.permitId) return;
     if (n.window === 'council') s.openCouncil(n.permitId);
     else if (n.window === 'appeal') s.openAppeal(n.permitId);
@@ -277,6 +286,8 @@ export function CityScreen({ session, active = true, covered = false, current, d
         approvalDelta={state.approvalDelta}
         onApproval={() => state.openWindow('view')}
         capital={state.capital}
+        onCapital={() => state.openWindow('budget')}
+        treasury={{ value: state.treasury, onOpen: () => state.openWindow('budget') }}
         term={{ weeksLeft: state.weeksLeft, defeated: state.defeated, onOpen: () => state.openElection(state.defeated ? 'result' : 'preview') }}
         funds={state.funds}
         xp={xp}
@@ -286,16 +297,17 @@ export function CityScreen({ session, active = true, covered = false, current, d
         disabled={disabled}
         current={current}
         civic={{
-          badge: state.mayor,
+          // 入口の数の印は、市長の手を待つ申請と、届いた請願（docs/ui-design.md 3.1）
+          badge: state.mayor + state.inbox,
           items: [
             { id: 'permits', badge: state.mayor },
-            { id: 'inbox', badge: 0, disabled: true },
-            { id: 'budget', badge: 0, disabled: true },
-            { id: 'news', badge: 0, disabled: true },
+            { id: 'inbox', badge: state.inbox },
+            { id: 'budget', badge: 0 },
+            { id: 'news', badge: 0 },
             { id: 'rewards', badge: 0, disabled: true },
           ],
           onItem: (id) => {
-            if (id === 'permits') state.openWindow('permits');
+            if (id !== 'rewards') state.openWindow(id);
           },
         }}
         {...(onEntry ? { onEntry } : {})}
@@ -332,6 +344,9 @@ export function CityScreen({ session, active = true, covered = false, current, d
             if (id === 'view') return <ViewWindow key={id} store={store} stack={i} shifted={panel !== null} />;
             if (id === 'permits') return <PermitListWindow key={id} store={store} stack={i} shifted={panel !== null} />;
             if (id === 'appeal') return <AppealWindow key={id} store={store} stack={i} shifted={panel !== null} skills={skillValues} />;
+            if (id === 'inbox') return <InboxWindow key={id} store={store} stack={i} shifted={panel !== null} />;
+            if (id === 'budget') return <BudgetWindow key={id} store={store} stack={i} shifted={panel !== null} />;
+            if (id === 'news') return <NewsWindow key={id} store={store} stack={i} shifted={panel !== null} />;
             return <PermitDetailWindow key={id} store={store} stack={i} shifted={panel !== null} skills={skillValues} />;
           })}
           <HearingWindow store={store} skills={skillValues} {...(onCard ? { onLearn: onCard } : {})} />

@@ -82,6 +82,13 @@
   display: flex;
   color: var(--gold);
 }
+/* 財政が赤字の間（docs/ui-design.md 3.1）。記号は線を state.bad で塗り、数字には赤い下線（文字の色は明るさの差の決まりのまま） */
+.topbar-stat.is-deficit .topbar-stat-icon svg {
+  stroke: var(--bad);
+}
+.topbar-stat.is-deficit .topbar-stat-value {
+  box-shadow: inset 0 -2px 0 var(--bad);
+}
 .topbar-stat-text {
   display: flex;
   flex-direction: column;

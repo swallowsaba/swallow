@@ -9,7 +9,7 @@ export type IconName =
   | 'export' | 'import' | 'restart' | 'save' | 'calendar' | 'approval' | 'speed1' | 'speed2' | 'speed3'
   | 'up' | 'heat' | 'collapse' | 'civic' | 'permit' | 'pin'
   | 'issue-afford' | 'issue-environment' | 'issue-jobs' | 'issue-finance' | 'issue-safety' | 'issue-traffic' | 'issue-tech' | 'vote'
-  | 'capital' | 'term';
+  | 'capital' | 'term' | 'inbox' | 'news' | 'treasury';
 
 const PATHS: Record<IconName, string> = {
   // 開いた本
@@ -120,6 +120,12 @@ const PATHS: Record<IconName, string> = {
   capital: 'M10 3.5h4v4.2c0 .8 2.5 1.3 2.5 3.3H7.5c0-2 2.5-2.5 2.5-3.3Z M6 11h12v3H6Z M7.5 18h9 M5 20.5h14',
   // 任期（砂時計）
   term: 'M6.5 3.5h11 M6.5 20.5h11 M8 3.5c0 4.6 4 5.4 4 8.5s-4 3.9-4 8.5 M16 3.5c0 4.6-4 5.4-4 8.5s4 3.9 4 8.5 M10 18.5h4',
+  // 受信箱（封筒と、差し込まれた手紙の端）
+  inbox: 'M3.5 9.5 12 15l8.5-5.5 M3.5 9.5V19h17V9.5 M3.5 9.5 7 7 M20.5 9.5 17 7 M7 11.8V4.5h10v7.3 M9.5 7.5h5 M9.5 10h3',
+  // 市内新聞（折った紙面と、見出しと段組みの線）
+  news: 'M4.5 5h12v14.5H6a1.5 1.5 0 0 1-1.5-1.5Z M16.5 8.5h3V18a1.5 1.5 0 0 1-3 0 M7 8h7 M7 11h3 M7 13.5h3 M7 16h3 M11.5 11h2.5v5h-2.5Z',
+  // 財政（市の金庫。扉と、回す取っ手）
+  treasury: 'M4 5.5h16V19H4Z M4 19v1.5 M20 19v1.5 M7 8.5h10v7.5H7Z M12 10.5a1.8 1.8 0 1 0 0 3.6 1.8 1.8 0 0 0 0-3.6Z M12 10.5V9.4 M17 11h1.5 M17 13.5h1.5',
 };
 
 export function Icon({ name, size = 20 }: { name: IconName; size?: number }) {

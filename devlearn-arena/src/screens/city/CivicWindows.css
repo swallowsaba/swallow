@@ -1,0 +1,424 @@
+/* 受信箱・予算・市内新聞（docs/ui-design.md 10.8〜10.10）。札を並べず、線で区切った行と、数と短い棒で示す */
+
+.civic-summary {
+  margin: 0 0 6px;
+  font-size: var(--fs-13);
+  color: var(--hud-text-sub);
+}
+.civic-summary b,
+.ledger-head b {
+  font-family: var(--font-number);
+  font-size: var(--fs-16);
+  color: var(--hud-text);
+}
+.civic-empty {
+  margin: 4px 0;
+  font-size: var(--fs-13);
+  color: var(--hud-text-sub);
+  line-height: 1.6;
+}
+.civic-h {
+  margin: 0 0 6px;
+  font-family: var(--font-heading);
+  font-size: var(--fs-14);
+  font-weight: 700;
+  color: var(--gold-light);
+  letter-spacing: 0.04em;
+}
+.civic-unit {
+  margin-left: 4px;
+  font-size: var(--fs-12);
+  color: var(--hud-text-sub);
+}
+/* 増えるは state.ok の字、減るは赤い下線（赤い字は暗い地の上で明るさの差が足りない。選挙の窓と同じ） */
+.num.is-up,
+.is-up {
+  color: var(--ok);
+}
+.num.is-down,
+.is-down {
+  box-shadow: inset 0 -2px 0 var(--bad);
+}
+
+/* 手のボタン（HUD の窓の言葉。四角を並べず、斜めに切った小さな札） */
+.civic-button {
+  height: 30px;
+  padding: 0 16px;
+  border: 1px solid var(--hud-line);
+  background: var(--hud-bg-strong);
+  color: var(--hud-text);
+  font: inherit;
+  font-weight: 700;
+  font-size: var(--fs-13);
+  cursor: pointer;
+  clip-path: polygon(8px 0, 100% 0, calc(100% - 8px) 100%, 0 100%);
+  transition: transform 0.12s, background 0.12s;
+}
+.civic-button:hover:not(:disabled) {
+  color: var(--gold-light);
+}
+.civic-button:active:not(:disabled) {
+  transform: translateY(2px);
+}
+.civic-button.is-primary {
+  border: none;
+  background: linear-gradient(180deg, var(--gold-light), var(--gold));
+  color: var(--navy);
+}
+.civic-button.is-quiet {
+  background: var(--transparent);
+}
+.civic-button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+/* ---------- 受信箱 ---------- */
+
+.petition-rows {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.petition-row {
+  padding: 8px 0 10px;
+  border-bottom: 1px solid var(--hud-line);
+}
+.petition-head {
+  display: flex;
+  width: 100%;
+  align-items: baseline;
+  gap: 8px;
+  padding: 0;
+  border: none;
+  background: var(--transparent);
+  color: var(--hud-text);
+  text-align: left;
+  cursor: pointer;
+}
+.petition-head:hover .petition-title {
+  color: var(--gold-light);
+}
+.petition-title {
+  flex: 1;
+  font-weight: 700;
+  font-size: var(--fs-16);
+  line-height: 1.4;
+}
+.petition-left {
+  white-space: nowrap;
+  font-size: var(--fs-12);
+  color: var(--hud-text-sub);
+}
+.petition-left .num {
+  font-family: var(--font-number);
+  font-size: var(--fs-14);
+  color: var(--hud-text);
+}
+.petition-left.is-near .num {
+  color: var(--warn);
+}
+.petition-from {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin: 3px 0 0;
+  font-size: var(--fs-12);
+  color: var(--hud-text-sub);
+}
+.petition-reopen {
+  margin-left: auto;
+  padding: 0;
+  border: none;
+  background: var(--transparent);
+  color: var(--gold-light);
+  font: inherit;
+  cursor: pointer;
+}
+.petition-text {
+  margin: 6px 0 4px;
+  font-size: var(--fs-13);
+  line-height: 1.7;
+  color: var(--hud-text);
+}
+.petition-basis {
+  margin: 0 0 6px;
+  padding-left: 8px;
+  border-left: 3px solid var(--warn);
+  font-size: var(--fs-12);
+  color: var(--hud-text);
+}
+.petition-effects {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 2px 8px;
+  margin: 0 0 8px;
+  font-size: var(--fs-12);
+  line-height: 1.55;
+}
+.petition-effects dt {
+  font-weight: 700;
+  color: var(--gold-light);
+}
+.petition-effects dd {
+  margin: 0;
+  color: var(--hud-text-sub);
+}
+.petition-hands {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.petition-problem {
+  font-size: var(--fs-12);
+  color: var(--warn);
+}
+
+/* ---------- 予算 ---------- */
+
+.budget-section {
+  padding: 8px 0;
+  border-bottom: 1px solid var(--hud-line);
+}
+.budget-section:last-child {
+  border-bottom: none;
+}
+.ledger {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+.ledger-head {
+  margin: 0 0 4px;
+  font-size: var(--fs-12);
+  color: var(--hud-text-sub);
+}
+.ledger-lines {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.ledger-line {
+  display: grid;
+  grid-template-columns: 1fr 40px auto;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--fs-12);
+  line-height: 1.8;
+}
+.ledger-line.is-zero {
+  color: var(--hud-text-sub);
+}
+.ledger-label {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.ledger-bar {
+  height: 5px;
+  background: var(--hud-bg-strong);
+}
+.ledger-bar span {
+  display: block;
+  height: 100%;
+}
+.ledger-line.is-in .ledger-bar span {
+  background: var(--ok);
+}
+.ledger-line.is-out .ledger-bar span {
+  background: var(--warn);
+}
+.ledger-value {
+  font-family: var(--font-number);
+  text-align: right;
+}
+.budget-treasury {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  margin: 0 0 4px;
+}
+.budget-treasury b {
+  font-family: var(--font-number);
+  font-size: var(--fs-28);
+  color: var(--hud-text);
+}
+.budget-treasury.is-deficit b {
+  box-shadow: inset 0 -3px 0 var(--bad);
+}
+.budget-deficit {
+  padding-left: 6px;
+  border-left: 3px solid var(--bad);
+  font-size: var(--fs-12);
+  color: var(--hud-text);
+}
+.budget-sub {
+  font-size: var(--fs-12);
+  color: var(--hud-text-sub);
+}
+.budget-note {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 4px 0 0;
+  font-size: var(--fs-12);
+  color: var(--hud-text-sub);
+}
+.budget-note svg {
+  color: var(--gold);
+}
+.tax-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.tax-slider {
+  flex: 1;
+  accent-color: var(--gold);
+}
+.tax-value {
+  min-width: 44px;
+  font-size: var(--fs-13);
+  color: var(--hud-text-sub);
+}
+.tax-value b {
+  font-family: var(--font-number);
+  font-size: var(--fs-18);
+  color: var(--hud-text);
+}
+.tax-now {
+  margin: 6px 0;
+  font-size: var(--fs-12);
+  color: var(--hud-text-sub);
+}
+.tax-now b {
+  font-family: var(--font-number);
+  color: var(--hud-text);
+}
+.tax-layers {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--fs-12);
+}
+.tax-layers th {
+  padding: 2px 4px;
+  font-weight: 500;
+  color: var(--hud-text-sub);
+  text-align: left;
+}
+.tax-layers td {
+  padding: 2px 4px;
+  font-family: var(--font-number);
+  text-align: right;
+  border-top: 1px solid var(--hud-line);
+}
+.capital-meter {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 6px;
+}
+.capital-meter b {
+  font-family: var(--font-number);
+  font-size: var(--fs-22);
+}
+.capital-bar {
+  flex: 1;
+  height: 6px;
+  background: var(--hud-bg-strong);
+}
+.capital-bar span {
+  display: block;
+  height: 100%;
+  background: var(--gold);
+}
+.capital-log {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+.capital-lines {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: var(--fs-12);
+  line-height: 1.8;
+}
+.capital-lines li {
+  display: flex;
+  justify-content: space-between;
+  gap: 6px;
+}
+.capital-lines b {
+  font-family: var(--font-number);
+}
+
+/* ---------- 市内新聞（HUD の窓のまま。紙の模様を敷かない） ---------- */
+
+.news-search {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 8px;
+  margin-bottom: 8px;
+  border-bottom: 1px solid var(--hud-line);
+  color: var(--hud-text-sub);
+}
+.news-search input {
+  flex: 1;
+  height: 30px;
+  border: none;
+  background: var(--transparent);
+  color: var(--hud-text);
+  font: inherit;
+  font-size: var(--fs-13);
+  outline: none;
+}
+.news-issue {
+  margin-bottom: 10px;
+}
+.news-date {
+  margin: 0 0 4px;
+  padding-bottom: 2px;
+  font-family: var(--font-heading);
+  font-size: var(--fs-12);
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: var(--gold);
+  border-bottom: 2px solid var(--gold);
+}
+.news-article {
+  padding: 6px 0 8px;
+  border-bottom: 1px solid var(--hud-line);
+}
+.news-article.is-scandal {
+  border-left: 3px solid var(--bad);
+  padding-left: 8px;
+}
+.news-headline {
+  display: block;
+  width: 100%;
+  padding: 0;
+  border: none;
+  background: var(--transparent);
+  color: var(--hud-text);
+  font-family: var(--font-heading);
+  font-size: var(--fs-22);
+  font-weight: 800;
+  line-height: 1.35;
+  text-align: left;
+  cursor: pointer;
+}
+.news-headline:disabled {
+  cursor: default;
+}
+.news-headline:hover:not(:disabled) {
+  color: var(--gold-light);
+}
+.news-body {
+  margin: 4px 0 0;
+  font-size: var(--fs-13);
+  line-height: 1.75;
+  color: var(--hud-text-sub);
+}
