@@ -7,6 +7,7 @@ import { createCamera, pan, rotateCamera, screenToWorld, zoomAt, type Camera, ty
 import type { CellMark } from '../place';
 import { constructionStage, facilityBuildStage, SECONDS_PER_DAY } from '../rules';
 import { agentPose, agentsOf, roadNetwork, type Agent, type Network } from '../traffic';
+import { sameRoads, sameZones } from './sameContent';
 import { compareBoxes, depthOrder, type DepthBox } from '../depth';
 import { project, rotate, type Rotation } from '../projection';
 import { roadShapes, type RoadShape } from '../roadGeometry';
@@ -221,19 +222,17 @@ export class CityRenderer {
     const prev = this.cityState;
     if (next === prev) return;
     this.cityState = next;
-    let groundChanged = false;
-    if (next.roads !== prev.roads) {
+    // 模擬の Worker から届く都市は毎日新しい写しなので、道路と区画は中身で比べる（3 倍の速さで毎日作り直さない）
+    const roadsChanged = !sameRoads(prev.roads, next.roads);
+    const zonesChanged = !sameZones(prev.zones, next.zones);
+    if (roadsChanged) {
       this.ground.roads = roadShapes(next.roads);
-      groundChanged = true;
+      this.net = roadNetwork(next.roads);
     }
-    if (next.zones !== prev.zones) {
-      this.ground.zones = next.zones;
-      groundChanged = true;
-    }
-    if (groundChanged) this.chunks.clear();
-    if (next.roads !== prev.roads) this.net = roadNetwork(next.roads);
+    if (zonesChanged) this.ground.zones = next.zones;
+    if (roadsChanged || zonesChanged) this.chunks.clear();
     const key = agentsKeyOf(next);
-    if (next.roads !== prev.roads || key !== this.agentsKey) {
+    if (roadsChanged || key !== this.agentsKey) {
       this.agentsKey = key;
       this.agents = agentsOf(next, this.net);
     }
