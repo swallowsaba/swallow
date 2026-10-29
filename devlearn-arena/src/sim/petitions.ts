@@ -1,4 +1,5 @@
-import { cellKey, facilityCells, occupancyOf } from '@/city/cells';
+import { cellKindAt, facilityCells, occupancyOf } from '@/city/cells';
+import { isRevealed } from '@/city/rules';
 import { COVERAGE_KINDS, FACILITY_DEFS } from '@/city/facilities';
 import { checkFacility, placeFacility } from '@/city/place';
 import type { Terrain } from '@/city/terrain';
@@ -10,7 +11,7 @@ import { parkAt, serviceAt } from './land';
 import { adultsOf, incomeOf, LAYERS, sizeOf } from './layers';
 import { file, needsApplication, occupiedSites, permitProblems } from './permits';
 import { DISTRICT_SIZE } from './rules';
-import { DISTRICT_COUNT, DISTRICTS_PER_SIDE } from './space';
+import { CELLS, DISTRICT_COUNT, DISTRICTS_PER_SIDE, indexOf, inMap, SIZE } from './space';
 import type { Petition, PetitionState, PoliticsRules, World } from './types';
 import type { WeekView } from './week';
 
@@ -201,7 +202,7 @@ export function candidatesOf(world: World, terrain: Terrain, values: PlaceValues
     hits.sort((a, b) => (upward(first) ? b.v - a.v : a.v - b.v) || a.d - b.d);
     const effect = p.accept.effect;
     const best = effect.kind === 'build'
-      ? hits.find((h) => buildSiteOf(world, terrain, effect.type, h.d) !== null)
+      ? hits.find((h) => hasBuildSite(world, terrain, effect.type, h.d))
       : hits[0];
     if (best) out.push({ petitionId: p.id, district: best.d, ...(best.layer !== undefined ? { layer: best.layer } : {}), value: best.v, priority: p.priority });
   }
@@ -272,23 +273,7 @@ export type PetitionProblem = 'no-site' | 'permit';
 export function buildSiteOf(world: World, terrain: Terrain, type: Parameters<typeof checkFacility>[2], district: number, near?: () => Point | undefined): Point | null {
   const x0 = (district % DISTRICTS_PER_SIDE) * DISTRICT_SIZE;
   const y0 = Math.floor(district / DISTRICTS_PER_SIDE) * DISTRICT_SIZE;
-  const sites = occupiedSites(world);
-  const occ = occupancyOf(world.city);
-  const taken = (x: number, y: number): boolean => {
-    const k = cellKey(x, y);
-    return occ.roads.has(k) || occ.zones.has(k) || occ.buildings.has(k) || occ.facilities.has(k) || sites.has(k);
-  };
-  // 財布は財政なので、置ける場所の判定では開発資金を見ない
-  const city = { ...world.city, funds: Number.MAX_SAFE_INTEGER };
-  const ok: Point[] = [];
-  for (let y = y0; y < y0 + DISTRICT_SIZE; y += 1) {
-    for (let x = x0; x < x0 + DISTRICT_SIZE; x += 1) {
-      const origin = { x, y };
-      // 埋まったマスを先に除く（込んだ都市では、ほとんどの場所がここで外れる）
-      if (facilityCells({ type, origin, rotation: 0 }).some((c) => taken(c.x, c.y))) continue;
-      if (checkFacility(city, terrain, type, origin, 0).ok) ok.push(origin);
-    }
-  }
+  const ok = sitesIn(world, terrain, type, district, false);
   if (ok.length === 0) return null;
   const center = near?.() ?? { x: x0 + DISTRICT_SIZE / 2, y: y0 + DISTRICT_SIZE / 2 };
   let best: { at: Point; d: number } | null = null;
@@ -297,6 +282,65 @@ export function buildSiteOf(world: World, terrain: Terrain, type: Parameters<typ
     if (!best || d < best.d) best = { at, d };
   }
   return best?.at ?? null;
+}
+
+/** 地区の中に、建てる物を置ける場所が 1 つでもあるか（請願が届くかを確かめる時。見つけたら探すのをやめる） */
+export function hasBuildSite(world: World, terrain: Terrain, type: Parameters<typeof checkFacility>[2], district: number): boolean {
+  return sitesIn(world, terrain, type, district, true).length > 0;
+}
+
+/** 地区の中の置ける場所（番号の小さいマスから）。first なら 1 つ見つけたら返す */
+function sitesIn(world: World, terrain: Terrain, type: Parameters<typeof checkFacility>[2], district: number, first: boolean): Point[] {
+  const x0 = (district % DISTRICTS_PER_SIDE) * DISTRICT_SIZE;
+  const y0 = Math.floor(district / DISTRICTS_PER_SIDE) * DISTRICT_SIZE;
+  const used = takenCells(world, terrain);
+  const taken = (x: number, y: number): boolean => !inMap(x, y) || used[indexOf(x, y)] === 1;
+  // 財布は財政なので、置ける場所の判定では開発資金を見ない
+  const city = { ...world.city, funds: Number.MAX_SAFE_INTEGER };
+  const ok: Point[] = [];
+  for (let y = y0; y < y0 + DISTRICT_SIZE; y += 1) {
+    for (let x = x0; x < x0 + DISTRICT_SIZE; x += 1) {
+      const origin = { x, y };
+      // 埋まったマスを先に除く（込んだ都市では、ほとんどの場所がここで外れる）
+      if (facilityCells({ type, origin, rotation: 0 }).some((c) => taken(c.x, c.y))) continue;
+      if (checkFacility(city, terrain, type, origin, 0).ok) {
+        ok.push(origin);
+        if (first) return ok;
+      }
+    }
+  }
+  return ok;
+}
+
+/**
+ * 置けないマス（道路・区画・建物・施設・申請中の敷地と、まだ晴れていない所・水・丘）の表。同じ世界の中で、地区と請願をまたいで使い回す
+ * （週の終わりに建てる請願 5 つ × 地区の数だけ場所を探すため。込んだ都市で 1 週 20ms かかっていた）
+ */
+const takenCache = new WeakMap<World, Uint8Array>();
+function takenCells(world: World, terrain: Terrain): Uint8Array {
+  const hit = takenCache.get(world);
+  if (hit) return hit;
+  const out = new Uint8Array(CELLS);
+  for (let i = 0; i < CELLS; i += 1) {
+    const x = i % SIZE;
+    const y = Math.floor(i / SIZE);
+    const kind = cellKindAt(terrain, x, y);
+    if (kind !== 'land' || !isRevealed(world.city.revealed, x, y)) out[i] = 1;
+  }
+  const occ = occupancyOf(world.city);
+  const mark = (k: string): void => {
+    const [xs, ys] = k.split(',');
+    const x = Number(xs);
+    const y = Number(ys);
+    if (inMap(x, y)) out[indexOf(x, y)] = 1;
+  };
+  for (const k of occ.roads) mark(k);
+  for (const k of occ.zones.keys()) mark(k);
+  for (const k of occ.buildings.keys()) mark(k);
+  for (const k of occ.facilities.keys()) mark(k);
+  for (const k of occupiedSites(world)) mark(k);
+  takenCache.set(world, out);
+  return out;
 }
 
 /** 送った層の世帯の重心（届いた地区の中。無ければ undefined） */

@@ -5,6 +5,7 @@ import { performance } from 'node:perf_hooks';
 import { gridCity } from '../src/sim/__fixtures__/cities.ts';
 import { stepDay } from '../src/sim/world.ts';
 import { weekStep } from '../src/sim/week.ts';
+import { heatOf } from '../src/sim/heat.ts';
 import { spaceOf } from '../src/sim/space.ts';
 import { networkOf, resetNetworkCache } from '../src/sim/network.ts';
 import { oppositionOf } from '../src/sim/opposition.ts';
@@ -70,7 +71,17 @@ while (civic.length < 4) {
   if (next % 7 === 0) civic.push(ms);
 }
 const maxCivic = Math.max(...civic);
+// 週に 1 回のヒートマップの値（G10 で公共サービスの行き届き 6 つと電力を足した。Worker で作って画面へ移す）
+const hv = weekStep(p, terrain, false, POLITICS_RULES);
+const heats = [];
+for (let i = 0; i < 5; i += 1) {
+  const s = performance.now();
+  heatOf(hv.world, hv.view);
+  heats.push(performance.now() - s);
+}
+const maxHeat = Math.max(...heats);
 console.log(`週の終わりの日（市政を含む）: 最大 ${maxCivic.toFixed(1)}ms（目安 30〜${LIMITS.weekMs}ms）・届いた請願 ${String(p.petitions.inbox.length)}・記事 ${String(p.history.news.length)}`);
+console.log(`ヒートマップの値（週に 1 回・13 種）: 最大 ${maxHeat.toFixed(1)}ms`);
 
 // 申請の見込み（反対の受付に入った日。完成した形を仮に入れた 1 週分。docs/architecture.md 9.3）
 // 道路の真ん中の 1 マスにデータセンターを仮に置き、データの理由（騒音・電力・雇用・冷却水）を全て計算する
