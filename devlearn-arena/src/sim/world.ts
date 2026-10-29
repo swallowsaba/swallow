@@ -9,6 +9,7 @@ import { DAYS_PER_WEEK, EXTERNAL_POWER_CAP, INITIAL_TAX_RATE, INITIAL_TREASURY, 
 import { START_CAPITAL, stepPolitics } from './election';
 import { settleWeek } from './budget';
 import { withNews } from './news';
+import { demandOfTerms } from './demand';
 import { petitionSpend, stepPetitions } from './petitions';
 import { facilityPowerDistrict, powerGridOf, powerUse, stepPower, stoppedNow } from './power';
 import { DISTRICT_COUNT, landingOf, spaceOf } from './space';
@@ -165,6 +166,8 @@ export function stepDayView(world: World, terrain: Terrain, rules: PoliticsRules
     upgradeKinds: ['residential'],
     simPopulation: true,
     ...(stopped.size > 0 ? { facilityOff: (f: Facility) => stopped.has(facilityPowerDistrict(f)) } : {}),
+    // 区画の建物は、前の週の終わりの需要（23 章）に従って建ち・育つ
+    ...(world.sim.lastWeek.demand ? { demand: demandOfTerms(world.sim.lastWeek.demand) } : {}),
   });
   const next: World = { ...permitted, city };
   const weekly = day % DAYS_PER_WEEK === 0 ? weekStep(next, terrain, false, rules) : null;

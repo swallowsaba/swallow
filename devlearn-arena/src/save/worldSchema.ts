@@ -35,7 +35,10 @@ export const simStateSchema = z.object({
     recent: z.array(z.array(z.number().int().min(0).max(143))).max(4).optional(),
   }).strict(),
   employed: z.record(z.string(), num),
-  lastWeek: z.object({ unemployedLowMid: num, approval: num, jobs: num, unemployment: num }).strict(),
+  lastWeek: z.object({
+    unemployedLowMid: num, approval: num, jobs: num, unemployment: num,
+    demand: z.object({ residential: z.array(num).length(3), commercial: z.array(num).length(2), office: z.array(num).length(3), industrial: z.array(num).length(3) }).strict().optional(),
+  }).strict(),
 }).strict();
 
 const causeSchema = z.object({

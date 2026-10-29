@@ -64,6 +64,8 @@ export interface SimState {
     approval: number;
     jobs: number;
     unemployment: number;
+    /** 需要の項（23 章。src/sim/demand.ts の DEMAND_TERMS の順）。次の週の毎日の区画の建物の建ち方と、区画の道具の棒に使う。無ければ前の決まり（版 4 の初めの保存） */
+    demand?: Record<ZoneKind, number[]>;
   };
 }
 

@@ -114,7 +114,8 @@ describe('理由の 1 行（18.2）: 点に最も効いた項を言い表す', (
 
 /* ---------- 申請の流れの上で ---------- */
 
-const GROWN = grownVillage();
+// 公共サービスのそろった村（支持率が 40% を下回らず、議員の判断に支持率の −2 が掛からない町）
+const GROWN = grownVillage(90, true);
 const T = GROWN.terrain;
 const NEAR: Op = { kind: 'facility', type: 'datacenter', origin: { x: 46, y: 36 }, rotation: 0 };
 const days = (world: World, n: number): World => {
@@ -154,7 +155,7 @@ describe('同じ申請で、公聴会の答え方を変えると、賛否と 1 �
   it('答えない / 譲歩する / 押し切って説得する で、賛成の数と各人の理由が変わる', () => {
     const silent = appOf(answer(() => null), H.id);
     const conceded = appOf(answer((x) => ({ kind: 'concede', concessionId: firstConcession(H.world, x.reasonId) })), H.id);
-    const pushed = appOf(answer(pushJobs, {}, 'nadamoto'), H.id);
+    const pushed = appOf(answer(pushJobs, {}, 'michishita'), H.id);
     const yes = (a: Application): number => a.vote?.members.filter((m) => m.yes).length ?? -1;
     const score = (a: Application): number => a.vote?.members.reduce((s, m) => s + m.score, 0) ?? 0;
     // 譲歩すると点が上がり（賛否の数は同じこともある）、押し切って説得すると賛成が増える
@@ -221,7 +222,7 @@ describe('異議申し立て（19 章）', () => {
 
   /** 押し切って説得し、可決したが申し立てが立った申請 */
   function appealed(): World {
-    const w = answer(pushJobs, {}, 'nadamoto');
+    const w = answer(pushJobs, {}, 'michishita');
     const a = appOf(w, H.id);
     if (a.stage === 'appeal') return w;
     // 境の手前で可決した時は、採決の前に申し立ての境を手ごわい町（25%）にして立てる（反対率は公聴会の時のまま）
@@ -231,7 +232,7 @@ describe('異議申し立て（19 章）', () => {
       x = playHand(x, T, POLITICS_RULES, H.id, y.reasonId, pushJobs(y), {}, today(x)).world;
     });
     x = closeHearing(x, H.id, today(x));
-    x = persuade(x, POLITICS_RULES, H.id, 'nadamoto', today(x)).world;
+    x = persuade(x, POLITICS_RULES, H.id, 'michishita', today(x)).world;
     x = { ...x, politics: { ...x.politics, difficulty: 'tough' } };
     return days(x, 15);
   }

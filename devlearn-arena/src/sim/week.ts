@@ -10,6 +10,7 @@ import {
   workersOf, type FactorId,
 } from './layers';
 import { networkOf, type Network } from './network';
+import { demandTermsOf } from './demand';
 import { petitionModsOf, type PetitionMods } from './petitionMods';
 import { stoppedNow } from './power';
 import {
@@ -445,23 +446,23 @@ export function weekStep(world: World, terrain: Terrain, init = false, rules: Po
   for (let i = 0; i < jobs.length; i += 1) openJobs += (jobs[i] as number) * (1 - (commute.fill[i] as number));
   let units = 0;
   let occupied = 0;
+  // 都市の魅力: 住民の満足の平均 − 50。住民がいなければ、住んだとした時の満足の平均（引っ越しの前の世帯で数える）
+  let attraction = 0;
+  if (totalAdults > 0) {
+    attraction = approvalTargetMean(space, households, points) - 50;
+  } else if (space.residential.length > 0) {
+    let s = 0;
+    for (const zb of space.residential) {
+      const rows = points.get(zb.building.id) as number[][];
+      for (const l of LAYERS) s += (LAYER_SHARE[l] as number) * (rows[l] as number[]).reduce((x, v) => x + v, 0);
+    }
+    attraction = s / space.residential.length;
+  }
   if (!init) {
     for (const zb of space.residential) {
       const hh = households[zb.building.id] as number[];
       const burden = (rent.get(zb.building.id) as { burden: number[] }).burden;
       for (const l of LAYERS) if ((burden[l] as number) > BURDEN_LEAVE && (hh[l] as number) > 0) hh[l] = (hh[l] as number) * (1 - LEAVE_RATE);
-    }
-    // 都市の魅力: 住民の満足の平均 − 50。住民がいなければ、住んだとした時の満足の平均
-    let attraction = 0;
-    if (totalAdults > 0) {
-      attraction = approvalTargetMean(space, households, points) - 50;
-    } else if (space.residential.length > 0) {
-      let s = 0;
-      for (const zb of space.residential) {
-        const rows = points.get(zb.building.id) as number[][];
-        for (const l of LAYERS) s += (LAYER_SHARE[l] as number) * (rows[l] as number[]).reduce((x, v) => x + v, 0);
-      }
-      attraction = s / space.residential.length;
     }
     // 入る人の数 = 空いた仕事 × 1.2 + 魅力 × 2（23 章の住宅の需要の項）。
     // 仕事に引かれて来る人は、空いた仕事の収入の帯の人（13.6: 収入の帯の合う仕事に入る）。魅力に引かれて来る人は初めの分布
@@ -500,9 +501,15 @@ export function weekStep(world: World, terrain: Terrain, init = false, rules: Po
       incoming -= take;
     }
   }
+  // 空いている戸に住める人（住める層のある建物の空いた戸。23 章の住宅の需要の項）
+  let vacantPeople = 0;
   for (const zb of space.residential) {
-    units += unitsOf(zb.building, space.zoneMods.get(zb.zoneId));
-    occupied += (households[zb.building.id] as number[]).reduce((s, v) => s + v, 0);
+    const u = unitsOf(zb.building, space.zoneMods.get(zb.zoneId));
+    const o = (households[zb.building.id] as number[]).reduce((s, v) => s + v, 0);
+    units += u;
+    occupied += o;
+    const burden = (rent.get(zb.building.id) as { burden: number[] }).burden;
+    if (u > o && LAYERS.some((l) => (burden[l] as number) <= BURDEN_LIVABLE)) vacantPeople += (u - o) * PEOPLE_PER_UNIT;
   }
   for (const [id, hh] of Object.entries(households)) households[id] = hh.map((v) => Math.round(v * 1e6) / 1e6);
   const vacancy = units > 0 ? Math.max(0, (units - occupied) / units) : RENT_FACTOR.vacancyTarget;
@@ -538,6 +545,14 @@ export function weekStep(world: World, terrain: Terrain, init = false, rules: Po
     for (const b of [0, 1]) unemployedLowMid += (workers[d * 3 + b] as number) - (commute.employed[d * 3 + b] as number);
   }
   const approvalR = Math.round(approval * 1e6) / 1e6;
+  // 需要（23 章）。次の週の毎日の区画の建物の建ち方に使う
+  const slotsBy = (kinds: readonly Employer['kind'][]): number => employers.filter((e) => kinds.includes(e.kind)).reduce((s, e) => s + e.slots[0] + e.slots[1] + e.slots[2], 0);
+  let spendingTotal = 0;
+  for (const v of spending.values()) spendingTotal += v;
+  const demand = demandTermsOf({
+    openJobs, attraction, vacantPeople, spending: spendingTotal, taxRate, shopJobs: slotsBy(['shop']), techPower: city.techPower,
+    officeJobs: slotsBy(['office', 'it']), unemployedLowMid, roadCells: space.roadCells.length, factoryJobs: slotsBy(['factory']),
+  });
   const treasury = init ? budget.treasury : round2(budget.treasury + income.residents + income.businesses);
   city = { ...city, population: Math.round(peopleAfter) };
   const employed: Record<string, number> = {};
@@ -578,7 +593,7 @@ export function weekStep(world: World, terrain: Terrain, init = false, rules: Po
       supportParts: Object.fromEntries(Object.entries(supportParts).map(([d, rows]) => [d, rows.map((r) => r.map((v) => Math.round(v * 1e6) / 1e6))])),
       trust,
       employed,
-      lastWeek: { unemployedLowMid: Math.round(unemployedLowMid * 1e6) / 1e6, approval: approvalR, jobs: Math.round(totalJobs), unemployment: sample.unemployment },
+      lastWeek: { unemployedLowMid: Math.round(unemployedLowMid * 1e6) / 1e6, approval: approvalR, jobs: Math.round(totalJobs), unemployment: sample.unemployment, demand },
     },
     history,
     budget: { ...budget, treasury, ledger },

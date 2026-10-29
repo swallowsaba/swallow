@@ -16,7 +16,8 @@ import { grownVillage } from './__fixtures__/cities';
  * 公聴会の後は、議会 7 席の採決（G6。council.test.ts）で決まる
  */
 
-const GROWN = grownVillage();
+// 公共サービスのそろった村（支持率が 40% を下回らず、議員の判断に支持率の −2 が掛からない町）
+const GROWN = grownVillage(90, true);
 const NEAR: Op = { kind: 'facility', type: 'datacenter', origin: { x: 46, y: 36 }, rotation: 0 };
 const T = GROWN.terrain;
 
@@ -224,7 +225,7 @@ describe('公聴会の終わり（17.4）と議会の採決', () => {
     expect(pending).toBeGreaterThan(0);
     w = closeHearing(w, HEARING.id, today(w));
     // 反対の向きで 0 に近い議員を説得する（政治資本 3）
-    const r = persuade(w, POLITICS_RULES, HEARING.id, 'nadamoto', today(w));
+    const r = persuade(w, POLITICS_RULES, HEARING.id, 'michishita', today(w));
     expect(r.problem).toBeUndefined();
     w = r.world;
     const funds = w.city.funds;

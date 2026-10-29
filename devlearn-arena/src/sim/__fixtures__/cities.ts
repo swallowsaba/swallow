@@ -20,13 +20,24 @@ export const SEED = 20261002;
 
 const cmd = (seq: number, day: number, op: Op): Command => ({ seq, day, op });
 
+/** 公共サービスのそろった村に初めからある物（一般道の西の端と、サーバ施設の両隣。docs/game-design.md 24.2）。維持費（週 120）を払えるように財政を足しておく */
+export const VILLAGE_SERVICES: readonly Facility[] = [
+  { id: 'c1', type: 'police', origin: { x: 36, y: 48 }, rotation: 0, level: 1, state: 'active', builtDay: 0 },
+  { id: 'c2', type: 'fire', origin: { x: 36, y: 45 }, rotation: 0, level: 1, state: 'active', builtDay: 0 },
+  { id: 'c3', type: 'clinic', origin: { x: 50, y: 48 }, rotation: 0, level: 1, state: 'active', builtDay: 0 },
+  { id: 'c4', type: 'school', origin: { x: 53, y: 48 }, rotation: 0, level: 1, state: 'active', builtDay: 0 },
+];
+export const VILLAGE_TREASURY = 8000;
+
 /**
  * 村: 新しい都市に、命令で道路・住宅・工業・施設を足していく（何日目に何をしたか）。
- * 一般道（y = 47）の両側に住宅、東に工業、サーバ施設、北へ細い道とオフィス
+ * 一般道（y = 47）の両側に住宅、東に工業、サーバ施設、北へ細い道とオフィス。
+ * services: 一般道の南に、初めから公共サービスが 4 つある（財政 8,000）
  */
-export function village(): { world: World; terrain: Terrain; commands: Command[] } {
+export function village(services = false): { world: World; terrain: Terrain; commands: Command[] } {
   const terrain = terrainOf(SEED);
-  const world = newWorld(terrain, NAME_PARTS, SEED);
+  const base = newWorld(terrain, NAME_PARTS, SEED);
+  const world: World = services ? { ...base, city: { ...base.city, facilities: [...VILLAGE_SERVICES] }, budget: { ...base.budget, treasury: VILLAGE_TREASURY } } : base;
   const commands: Command[] = [
     cmd(1, 0, { kind: 'funds', amount: 4000 }),
     cmd(2, 0, { kind: 'zone', zone: 'residential', a: { x: 38, y: 48 }, b: { x: 49, y: 48 } }),
@@ -45,8 +56,8 @@ export function village(): { world: World; terrain: Terrain; commands: Command[]
  * 命令の列を日付どおりに当てながら 90 日進めた村（住宅に人が住み、店と工場が動いている。資金 20,000）。
  * 市政のデータ（反対の理由）を入れて動かす。反対・公聴会のテストが使う
  */
-export function grownVillage(days = 90): { world: World; terrain: Terrain } {
-  const { world, terrain, commands } = village();
+export function grownVillage(days = 90, services = false): { world: World; terrain: Terrain } {
+  const { world, terrain, commands } = village(services);
   const runner = new SimRunner(world);
   runner.load(world, 0, POLITICS_RULES);
   let i = 0;

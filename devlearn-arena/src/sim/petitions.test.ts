@@ -96,7 +96,8 @@ describe('届く（22.1）', () => {
   });
 
   it('負担が軽い都市には、家賃の請願は届かない', () => {
-    const { world } = toWeekEnd(SMALL.world, only('rent-low'));
+    // 需給の倍率が一番低い（空き室の多い）町
+    const { world } = toWeekEnd({ ...SMALL.world, sim: { ...SMALL.world.sim, rentFactor: 0.6 } }, only('rent-low'));
     expect(world.petitions.inbox).toEqual([]);
   });
 

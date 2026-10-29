@@ -42,6 +42,8 @@ export interface GrowOptions {
   simPopulation?: boolean;
   /** 停電で止まっている施設（技術力に数えない。docs/game-design.md 24.1）。都市の模擬が渡す */
   facilityOff?: (f: Facility) => boolean;
+  /** 都市の模擬の需要（docs/game-design.md 23 章。前の週の終わりの値）。渡せば、建物の建ち方はこれに従う */
+  demand?: Record<ZoneKind, number>;
 }
 
 function isDone(builtDay: number, day: number): boolean {
@@ -183,7 +185,7 @@ export function growDay(city: City, day: number, options: GrowOptions = {}): Cit
   const stage = Math.max(next.stage, stageOf(stats.techPower, options.simPopulation ? city.population : stats.population)) as Stage;
   next = { ...next, stage, revealed: stage === city.stage ? next.revealed : revealedFor(stage) };
 
-  const demand = demandOf(stats);
+  const demand = options.demand ?? demandOf(stats);
   const occ = occupancyOf(next);
   const zoneById = new Map(next.zones.map((z) => [z.id, z]));
   const buildings: Building[] = [...next.buildings];
