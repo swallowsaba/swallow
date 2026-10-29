@@ -208,6 +208,22 @@ export function weekStep(world: World, terrain: Terrain, init = false, rules: Po
   };
   const coverage = new Map<string, { value: number; src: number }[]>();
   for (const [id, list] of raw) coverage.set(id, list.map((sv) => ({ value: sv.value * capFactor(sv.src), src: sv.src })));
+  // 住民の行き届きの平均（0〜100。世帯の数で重み。条件の式の coverage.<種類>。docs/content-spec.md 7.7）
+  const coverageMean: Record<CoverageKind | 'park', number> = { police: 0, fire: 0, school: 0, clinic: 0, park: 0 };
+  {
+    let n = 0;
+    for (const zb of space.residential) {
+      const c = (households[zb.building.id] as number[]).reduce((s, v) => s + v, 0);
+      if (c <= 0) continue;
+      n += c;
+      const list = raw.get(zb.building.id) as { value: number }[];
+      SERVICE_FACTORS.forEach((s, k) => {
+        coverageMean[s.kind] += c * (list[k] as { value: number }).value;
+      });
+      coverageMean.park += c * parkAt(field, zb.building.cell.x, zb.building.cell.y).value;
+    }
+    for (const k of Object.keys(coverageMean) as (CoverageKind | 'park')[]) coverageMean[k] = n > 0 ? Math.round((coverageMean[k] / n) * 10000) / 100 : 0;
+  }
   for (const zb of space.residential) {
     const b = zb.building;
     const land = field.land[zb.cell] as number;
@@ -593,7 +609,7 @@ export function weekStep(world: World, terrain: Terrain, init = false, rules: Po
       supportParts: Object.fromEntries(Object.entries(supportParts).map(([d, rows]) => [d, rows.map((r) => r.map((v) => Math.round(v * 1e6) / 1e6))])),
       trust,
       employed,
-      lastWeek: { unemployedLowMid: Math.round(unemployedLowMid * 1e6) / 1e6, approval: approvalR, jobs: Math.round(totalJobs), unemployment: sample.unemployment, demand },
+      lastWeek: { unemployedLowMid: Math.round(unemployedLowMid * 1e6) / 1e6, approval: approvalR, jobs: Math.round(totalJobs), unemployment: sample.unemployment, demand, coverage: coverageMean },
     },
     history,
     budget: { ...budget, treasury, ledger },

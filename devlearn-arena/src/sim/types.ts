@@ -66,6 +66,8 @@ export interface SimState {
     unemployment: number;
     /** 需要の項（23 章。src/sim/demand.ts の DEMAND_TERMS の順）。次の週の毎日の区画の建物の建ち方と、区画の道具の棒に使う。無ければ前の決まり（版 4 の初めの保存） */
     demand?: Record<ZoneKind, number[]>;
+    /** 住民の行き届きの平均（0〜100。警察・消防・学校・診療所は定員の前、公園は緑地の行き届き）。公約の coverage.<種類> の語（docs/content-spec.md 7.7） */
+    coverage?: { police: number; fire: number; school: number; clinic: number; park: number };
   };
 }
 
@@ -215,7 +217,7 @@ export const NO_RULES: PoliticsRules = { reasons: [], council: [], facilities: {
 export type PetitionEffect =
   /** 届いた地区の、送った層の家賃を ratio だけ下げる */
   | { kind: 'rent-subsidy'; ratio: number; weeks: number }
-  /** 届いた地区の空き地に、その種類を建てる（申請の要らない種類はそのまま置く。費用は財政） */
+  /** 届いた地区の空き地に、その種類を建てる（申請の要らない種類はそのまま置き、公共サービスは申請を出す。費用は財政） */
   | { kind: 'build'; type: FacilityType }
   /** 外からの電気の上限を足す */
   | { kind: 'power-cap'; mw: number }

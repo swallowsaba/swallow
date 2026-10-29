@@ -38,6 +38,7 @@ export const simStateSchema = z.object({
   lastWeek: z.object({
     unemployedLowMid: num, approval: num, jobs: num, unemployment: num,
     demand: z.object({ residential: z.array(num).length(3), commercial: z.array(num).length(2), office: z.array(num).length(3), industrial: z.array(num).length(3) }).strict().optional(),
+    coverage: z.object({ police: num, fire: num, school: num, clinic: num, park: num }).strict().optional(),
   }).strict(),
 }).strict();
 

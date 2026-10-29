@@ -221,7 +221,7 @@ export const PETITIONS: readonly Petition[] = petitionSchema.parse(petitionsData
 
 /**
  * 請願の検証（docs/content-spec.md 6 章）: when が 7.7 の式として読め、今の模擬が数えている語だけ（start の語は公約だけ）・
- * 層の番号が 0〜11 で重ならない・続く中身と毎週の費用は週の数を持つ・建てる種類は申請の要らない物（申請の要る公共サービスは G10 で足す）・
+ * 層の番号が 0〜11 で重ならない・続く中身と毎週の費用は週の数を持つ・建てる種類は公共サービス（申請を出す）か申請の要らない物・
  * 文（要望・受理・拒否）を請願どうしで使い回さない・ID が重ならない
  */
 export function validatePetitions(petitions: readonly Petition[]): string[] {
@@ -241,7 +241,7 @@ export function validatePetitions(petitions: readonly Petition[]): string[] {
     }
     if (p.layers && (new Set(p.layers).size !== p.layers.length || p.layers.some((l) => l < 0 || l >= LAYER_COUNT))) out.push(`${p.id}: 層の番号が 0〜11 で重ならない形でない`);
     const e = p.accept.effect;
-    if (e.kind === 'build' && needsApplication(e.type)) out.push(`${p.id}: ${e.type} は申請の要る種類（建てる請願は、申請の要らない種類だけ）`);
+    if (e.kind === 'build' && needsApplication(e.type) && FACILITY_DEFS[e.type].group !== 'civic') out.push(`${p.id}: ${e.type} は公共サービスでない申請の要る種類（建てる請願は、公共サービスか申請の要らない種類だけ）`);
     if (e.kind === 'build' && clauses && !clauses.some((c) => c.word.startsWith('any:'))) out.push(`${p.id}: 建てる請願は、届く地区を決める any: の語が要る`);
     if ((e.kind === 'rent-subsidy' || e.kind === 'noise-limit' || e.kind === 'bus') && clauses && !clauses.some((c) => c.word.startsWith('any:'))) out.push(`${p.id}: 地区に効く中身は、届く地区を決める any: の語が要る`);
     if ((p.accept.cost?.weekly ?? 0) > 0 && p.accept.cost?.weeks === undefined && !('weeks' in e)) out.push(`${p.id}: 毎週の費用に週の数が無い`);

@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { NAME_PARTS, POLITICS_RULES } from '@/content/politics';
 import { applyOp } from './commands';
 import {
-  CAPITAL_CAP, causesOf, choosePledges, conditionValues, creditMission, electionDayOf, electionOf, GAIN, layerAdults, rerun, TERM_DAYS, turnoutOf, voteShareOf, WARN_DAYS,
+  CAPITAL_CAP, causesOf, choosePledges, conditionValues, creditMission, electionDayOf, electionOf, GAIN, layerAdults, pledgeMet, rerun, TERM_DAYS, turnoutOf, voteShareOf, WARN_DAYS,
 } from './election';
 import { LAYER_COUNT } from './layers';
 import type { Application, Pledge, PoliticsRules, World } from './types';
@@ -228,5 +228,18 @@ describe('落選の後の道（21.2）', () => {
     expect(r.city.buildings).toBe(lost.city.buildings);
     // 落選していなければ何もしない
     expect(rerun(w0, today(w0))).toBe(w0);
+  });
+});
+
+describe('公共サービスの公約（7.7 の coverage.<種類>。G10）', () => {
+  it('住民の行き届きの平均（週の終わりの値）で果たしたかを決める。完成した公共サービスの数を facilities.civic で数える', () => {
+    const w = GROWN.world;
+    expect(pledgeMet(w, 'coverage.school >= 60')).toBe(false);
+    const covered = { ...w, sim: { ...w.sim, lastWeek: { ...w.sim.lastWeek, coverage: { police: 55, fire: 0, school: 64, clinic: 51, park: 0 } } } };
+    expect(pledgeMet(covered, 'coverage.school >= 60')).toBe(true);
+    expect(pledgeMet(covered, 'coverage.police >= 50 && coverage.clinic >= 50')).toBe(true);
+    const civic = { ...w, city: { ...w.city, facilities: [...w.city.facilities, { id: 'cv', type: 'police' as const, origin: { x: 53, y: 48 }, rotation: 0 as const, level: 1 as const, state: 'active' as const, builtDay: 0 }] } };
+    expect(conditionValues(civic)['facilities.civic']).toBe(1);
+    expect(conditionValues(civic)['facilities.it']).toBe(conditionValues(w)['facilities.it']);
   });
 });

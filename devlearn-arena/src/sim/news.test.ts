@@ -169,3 +169,19 @@ describe('過去の記事', () => {
     expect(heads[0]).not.toBe(heads[1]);
   });
 });
+
+describe('停電の記事（22.3・24.1）', () => {
+  it('止まる地区が出た週に載り、地区の名前と数が入る。続く間は毎週は載せない', () => {
+    const dark = { ...BASE, sim: { ...BASE.sim, power: { ...BASE.sim.power, externalCapMW: 0 } } };
+    const w1 = days(dark, 7 - (Math.floor(dark.city.day) % 7));
+    const article = w1.history.news.find((a) => a.kind === 'outage');
+    expect(article).toBeDefined();
+    const stopped = w1.sim.power.recent?.at(-1) ?? [];
+    expect(article?.headline).toContain(String(stopped.length));
+    expect(article?.headline + (article?.body ?? '')).toContain(w1.sim.districtNames[stopped[0] ?? 0] ?? '?');
+    // 次の週も止まるが、止まる地区が増えなければ新しい記事は出ない
+    const w2 = days(w1, 7);
+    const count = (w: World): number => w.history.news.filter((a) => a.kind === 'outage').length;
+    if ((w2.sim.power.recent?.at(-1)?.length ?? 0) <= stopped.length) expect(count(w2)).toBe(count(w1));
+  });
+});

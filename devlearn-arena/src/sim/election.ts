@@ -127,11 +127,16 @@ export function causesOf(world: World, result: ElectionResult): NonNullable<Term
 }
 
 /** 今の模擬が数えている条件の語（conditionValues の鍵。公約の検証に使う） */
-export const COUNTED_WORDS = ['population', 'jobs', 'unemployment', 'approval', 'treasury', 'taxRate', 'outageDays', 'facilities.it', 'facilities.civic', 'missionsDone'] as const;
+export const COUNTED_WORDS = [
+  'population', 'jobs', 'unemployment', 'approval', 'treasury', 'taxRate', 'outageDays', 'facilities.it', 'facilities.civic', 'missionsDone',
+  'coverage.police', 'coverage.fire', 'coverage.school', 'coverage.clinic', 'coverage.park',
+] as const;
 
 /** 公約の条件の値（docs/content-spec.md 7.7。今ある模擬の値だけ。行き届き・家賃の負担・騒音の語は、それを数える Phase で足す） */
 export function conditionValues(world: World): Record<(typeof COUNTED_WORDS)[number], number> {
   const it = world.city.facilities.filter((f) => FACILITY_DEFS[f.type].group === 'facility' && f.state === 'active').length;
+  const civic = world.city.facilities.filter((f) => FACILITY_DEFS[f.type].group === 'civic' && f.state === 'active').length;
+  const cover = world.sim.lastWeek.coverage;
   return {
     population: world.city.population,
     jobs: world.sim.lastWeek.jobs,
@@ -141,8 +146,13 @@ export function conditionValues(world: World): Record<(typeof COUNTED_WORDS)[num
     taxRate: world.budget.taxRate,
     outageDays: Math.max(0, ...world.sim.power.outageDays),
     'facilities.it': it,
-    'facilities.civic': 0,
+    'facilities.civic': civic,
     missionsDone: world.politics.missions?.length ?? 0,
+    'coverage.police': cover?.police ?? 0,
+    'coverage.fire': cover?.fire ?? 0,
+    'coverage.school': cover?.school ?? 0,
+    'coverage.clinic': cover?.clinic ?? 0,
+    'coverage.park': cover?.park ?? 0,
   };
 }
 

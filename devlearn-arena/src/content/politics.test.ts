@@ -124,7 +124,7 @@ describe('公約のデータ（content/politics/pledges.json。7.4）', () => {
       base,
       { ...base, id: 'b-1', goal: 'population >=' },
       { ...base, id: 'b-2', goal: 'lessonsDone >= 3' },
-      { ...base, id: 'b-3', goal: 'coverage.school >= 60' },
+      { ...base, id: 'b-3', goal: 'noiseAtHome <= 20' },
       { ...base, id: 'b-4', layers: [3, 3] },
       { ...base, id: 'b-5', layers: [12] },
       base,
@@ -132,7 +132,7 @@ describe('公約のデータ（content/politics/pledges.json。7.4）', () => {
     expect(validatePledges(bad)).toEqual([
       'b-1: goal が式として読めない（population >=）',
       'b-2: goal が式として読めない（lessonsDone >= 3）',
-      'b-3: coverage.school は今の模擬が数えていない語',
+      'b-3: noiseAtHome は今の模擬が数えていない語',
       'b-4: 層の番号が 0〜11 で重ならない形でない',
       'b-5: 層の番号が 0〜11 で重ならない形でない',
       `${base.id}: 公約の ID が重なる`,

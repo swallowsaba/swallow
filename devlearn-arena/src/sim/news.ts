@@ -31,6 +31,7 @@ export const NEWS_SLOTS: Record<string, readonly NewsSlot[]> = {
   'election:won': ['n', 'rate'],
   'election:lost': ['n', 'rate'],
   'term-end': ['n', 'value', 'rate'],
+  outage: ['n', 'district'],
   closure: ['n', 'district'],
   'tax:up': ['rate', 'value'],
   'tax:down': ['rate', 'value'],
@@ -200,6 +201,13 @@ function cityEvents(before: World, after: World, rules: PoliticsRules): Event[] 
       values: { n: closed.length, district: d !== undefined ? (after.sim.districtNames[d] ?? '') : '' },
       ...(b ? { at: { x: b.cell.x + 0.5, y: b.cell.y + 0.5 } } : {}),
     });
+  }
+  // 停電（24.1）: 止まる地区が出た週と、止まる地区が増えた週だけ（続く間、毎週は載せない）
+  const stopped = after.sim.power.recent?.at(-1) ?? [];
+  const was = before.sim.power.recent?.at(-1) ?? [];
+  if (after.sim.power.recent !== before.sim.power.recent && stopped.length > 0 && stopped.length > was.length) {
+    const d = stopped[0] as number;
+    out.push({ kind: 'outage', values: { n: stopped.length, district: after.sim.districtNames[d] ?? '' }, at: districtCenter(d) });
   }
   if (after.budget.taxRate !== before.budget.taxRate) {
     out.push({ kind: 'tax', variant: after.budget.taxRate > before.budget.taxRate ? 'up' : 'down', values: { rate: after.budget.taxRate, value: before.budget.taxRate } });

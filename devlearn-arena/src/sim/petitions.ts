@@ -1,14 +1,14 @@
 import { cellKey, facilityCells, occupancyOf } from '@/city/cells';
-import { FACILITY_DEFS } from '@/city/facilities';
+import { COVERAGE_KINDS, FACILITY_DEFS } from '@/city/facilities';
 import { checkFacility, placeFacility } from '@/city/place';
 import type { Terrain } from '@/city/terrain';
 import type { Point } from '@/city/types';
 import { evalCondition, parseCondition, type Clause } from './conditions';
 import { conditionValues } from './election';
 import { moveTrust } from './hearing';
-import { parkAt } from './land';
+import { parkAt, serviceAt } from './land';
 import { adultsOf, incomeOf, LAYERS, sizeOf } from './layers';
-import { occupiedSites } from './permits';
+import { file, needsApplication, occupiedSites, permitProblems } from './permits';
 import { DISTRICT_SIZE } from './rules';
 import { DISTRICT_COUNT, DISTRICTS_PER_SIDE } from './space';
 import type { Petition, PetitionState, PoliticsRules, World } from './types';
@@ -20,10 +20,11 @@ import type { WeekView } from './week';
  * 受信箱は 5 通まで・届いて 8 週が期限・扱ってから 26 週は同じ請願が届かない
  */
 
-/** 請願の when に使える語（今の模擬が数えている物。docs/content-spec.md 7.7。行き届きは公園だけ。警察・消防・学校・診療所は G10） */
+/** 請願の when に使える語（今の模擬が数えている物。docs/content-spec.md 7.7） */
 export const PETITION_WORDS = [
   'population', 'jobs', 'unemployment', 'approval', 'treasury', 'taxRate', 'outageDays', 'facilities.it', 'facilities.civic',
   'rentBurden.低', 'rentBurden.中', 'rentBurden.高', 'noiseAtHome', 'coverage.park',
+  'coverage.police', 'coverage.fire', 'coverage.school', 'coverage.clinic',
 ] as const;
 
 export const INBOX_MAX = 5;
@@ -56,20 +57,22 @@ function topTenthMean(values: number[]): number {
  * 家賃の負担は収入の帯ごとの世帯の平均（%）・住まいの騒音は大きい方から 1 割の平均・公園の行き届きは世帯の平均（0〜100）
  */
 export function placeValues(world: World, view: Pick<WeekView, 'space' | 'field' | 'rent' | 'workers' | 'commute'>): PlaceValues {
-  type Acc = { burden: number[]; bandN: number[]; noise: number[]; park: number; hh: number; people: number; layers: number[] };
+  type Acc = { burden: number[]; bandN: number[]; noise: number[]; park: number; service: number[]; hh: number; people: number; layers: number[] };
+  const fresh = (): Acc => ({ burden: [0, 0, 0], bandN: [0, 0, 0], noise: [], park: 0, service: COVERAGE_KINDS.map(() => 0), hh: 0, people: 0, layers: new Array<number>(12).fill(0) });
   const acc = new Map<number, Acc>();
-  const cityAcc: Acc = { burden: [0, 0, 0], bandN: [0, 0, 0], noise: [], park: 0, hh: 0, people: 0, layers: new Array<number>(12).fill(0) };
+  const cityAcc: Acc = fresh();
   for (const zb of view.space.residential) {
     const hh = world.sim.households[zb.building.id];
     if (!hh) continue;
     let a = acc.get(zb.district);
     if (!a) {
-      a = { burden: [0, 0, 0], bandN: [0, 0, 0], noise: [], park: 0, hh: 0, people: 0, layers: new Array<number>(12).fill(0) };
+      a = fresh();
       acc.set(zb.district, a);
     }
     const burden = view.rent.get(zb.building.id)?.burden ?? [];
     const noise = view.field.noise[zb.cell] as number;
     const park = parkAt(view.field, zb.building.cell.x, zb.building.cell.y).value;
+    const service = COVERAGE_KINDS.map((k) => serviceAt(view.field, k, zb.building.cell.x, zb.building.cell.y).value);
     let n = 0;
     for (const t of [a, cityAcc]) {
       for (const l of LAYERS) {
@@ -83,6 +86,9 @@ export function placeValues(world: World, view: Pick<WeekView, 'space' | 'field'
         if (t === a) n += c;
       }
       t.park += n * park;
+      service.forEach((v, k) => {
+        t.service[k] = (t.service[k] as number) + n * v;
+      });
       t.hh += n;
       if (n > 0) t.noise.push(noise);
     }
@@ -93,6 +99,9 @@ export function placeValues(world: World, view: Pick<WeekView, 'space' | 'field'
       noiseAtHome: round2(topTenthMean(a.noise)),
       'coverage.park': a.hh > 0 ? round2((a.park / a.hh) * 100) : 0,
     };
+    COVERAGE_KINDS.forEach((k, i) => {
+      out[`coverage.${k}`] = a.hh > 0 ? round2(((a.service[i] as number) / a.hh) * 100) : 0;
+    });
     BANDS.forEach((name, b) => {
       if ((a.bandN[b] as number) > 0) out[`rentBurden.${name}`] = round2(((a.burden[b] as number) / (a.bandN[b] as number)) * 100);
     });
@@ -253,7 +262,8 @@ export function stepPetitions(world: World, terrain: Terrain, view: Parameters<t
 }
 
 export type PetitionChoice = 'accept' | 'reject' | 'hold';
-export type PetitionProblem = 'no-site';
+/** no-site: 地区に置ける場所が無い / permit: 申請を出せない（6 件まで・財政が赤字の間の公共サービス。docs/game-design.md 15.2・22.2） */
+export type PetitionProblem = 'no-site' | 'permit';
 
 /**
  * 地区の中で、建てる物を置ける場所（near の点に近い順。同じなら番号の小さいマス）。
@@ -314,7 +324,12 @@ export function petitionProblems(world: World, terrain: Terrain, rules: Pick<Pol
   const p = entry ? rules.petitions?.find((x) => x.id === entry.petitionId) : undefined;
   if (!entry || !p || p.accept.effect.kind !== 'build') return [];
   if (entry.district === undefined) return ['no-site'];
-  return buildSiteOf(world, terrain, p.accept.effect.type, entry.district) ? [] : ['no-site'];
+  const type = p.accept.effect.type;
+  const at = buildSiteOf(world, terrain, type, entry.district);
+  if (!at) return ['no-site'];
+  // 申請の要る公共サービスは申請になる（15.1）。出せない時は受理できない
+  if (needsApplication(type) && permitProblems(world, { kind: 'facility', target: { type, origin: at, rotation: 0 } }, Math.floor(world.city.day)).length > 0) return ['permit'];
+  return [];
 }
 
 /** 受理した時に財政から払う額（1 度に払う額と、毎週の額 × 週の数） */
@@ -346,10 +361,14 @@ export function handlePetition(world: World, terrain: Terrain, rules: Pick<Polit
   let city = world.city;
   let sim = { ...world.sim, trust: moveTrust(world.sim.trust, layers, PETITION_TRUST.accept) };
   let effects = world.petitions.effects;
+  let filed: World | null = null;
   if (e.kind === 'build' && entry.district !== undefined) {
     const district = entry.district;
     const at = buildSiteOf(world, terrain, e.type, district, () => homesCenter(world, district, p.layers ?? []));
-    if (at) {
+    if (at && needsApplication(e.type)) {
+      // 公共サービスは、その場所に申請を出す（費用は財政から取り分ける。否決・取り下げで戻る。15.1・22.1）
+      filed = file(world, { kind: 'facility', target: { type: e.type, origin: at, rotation: 0 } }, cost.once, Math.floor(world.city.day), terrain);
+    } else if (at) {
       const check = checkFacility({ ...city, funds: Number.MAX_SAFE_INTEGER }, terrain, e.type, at, 0);
       // 財政から払うので、開発資金は変えない
       city = { ...placeFacility(city, e.type, at, 0, { ...check, cost: 0 }) };
@@ -360,6 +379,7 @@ export function handlePetition(world: World, terrain: Terrain, rules: Pick<Polit
   if (cost.weekly > 0 || 'weeks' in e) {
     effects = [...effects, { petitionId: p.id, untilWeek: week + cost.weeks, ...(entry.district !== undefined ? { district: entry.district } : {}) }];
   }
+  if (filed) return { ...filed, sim: { ...filed.sim, trust: sim.trust }, petitions: { inbox, handled, effects } };
   return {
     ...world,
     city,

@@ -3,6 +3,7 @@ import { CAPITAL_CAP } from '@/sim/election';
 import { factorIndex, layerName, LAYERS, WEIGHTS } from '@/sim/layers';
 import { parseCondition } from '@/sim/conditions';
 import { groupName } from '@/sim/news';
+import { needsApplication } from '@/sim/permits';
 import { acceptCost, PETITION_DEADLINE_WEEKS, PETITION_TRUST, petitionProblems } from '@/sim/petitions';
 import { DAYS_PER_WEEK, dateOf, taxPoints } from '@/sim/rules';
 import { districtCenter } from '@/sim/space';
@@ -77,7 +78,9 @@ function effectText(p: Petition, place: string, who: string): string {
   const at = place ? `${place}の` : '';
   switch (e.kind) {
     case 'rent-subsidy': return `${at}${who}の家賃を ${num(e.ratio * 100)}% 下げる（${String(e.weeks)} 週）`;
-    case 'build': return `${at}空き地に${FACILITY_DEFS[e.type].name}を建てる`;
+    case 'build': return needsApplication(e.type)
+      ? `${at}空き地に${FACILITY_DEFS[e.type].name}の申請を出す（審議を経て建つ。否決・取り下げで費用は戻る）`
+      : `${at}空き地に${FACILITY_DEFS[e.type].name}を建てる`;
     case 'power-cap': return `外から買う電気の上限を ${num1(e.mw)} MW 増やす`;
     case 'noise-limit': return `${at}住まいに届く工場の騒音を ${num((1 - e.factor) * 100)}% 下げる。その工場の売上も同じだけ下がる（${String(e.weeks)} 週）`;
     case 'bus': return `${at}通勤の時間を ${num((1 - e.traffic) * 100)}% 縮める（${String(e.weeks)} 週）`;
@@ -107,7 +110,7 @@ export function inboxRows(world: World, terrain: Terrain, rules: Pick<PoliticsRu
         cost: parts.length > 0 ? parts.join('・') : '財政の費用は無い',
         effect: effectText(p, place, who),
         trust: `${who}の信頼 +${String(PETITION_TRUST.accept)}`,
-        ...(problems.includes('no-site') ? { problem: `${place}に建てられる空き地が無い` } : {}),
+        ...(problems.includes('no-site') ? { problem: `${place}に建てられる空き地が無い` } : problems.includes('permit') ? { problem: '今は申請を出せない（審議中の申請が 6 件か、財政が赤字）' } : {}),
       },
       reject: `${who}の信頼 ${String(PETITION_TRUST.reject)}`,
       hold: `何も起きない。期限（あと ${String(Math.max(0, i.arrivedWeek + PETITION_DEADLINE_WEEKS - world.sim.week))} 週）が来ると放置になり、信頼 ${String(PETITION_TRUST.expire)}`,

@@ -3,7 +3,7 @@ import { FACILITY_DEFS } from '@/city/facilities';
 import { PETITIONS, POLITICS_RULES, validatePetitions } from '@/content/politics';
 import { applyOp } from './commands';
 import { incomeOf, LAYERS } from './layers';
-import { buildSiteOf, INBOX_MAX, placeValues, PETITION_COOLDOWN_WEEKS, PETITION_DEADLINE_WEEKS } from './petitions';
+import { buildSiteOf, INBOX_MAX, placeValues, PETITION_COOLDOWN_WEEKS, PETITION_DEADLINE_WEEKS, petitionProblems } from './petitions';
 import type { Petition, PoliticsRules, World } from './types';
 import { weekStep, type WeekView } from './week';
 import { stepDayView } from './world';
@@ -47,15 +47,15 @@ describe('請願のデータ', () => {
     const base = PETITIONS[0] as Petition;
     const bad: Petition[] = [
       { ...base, id: 'a', when: 'rentBurden.低 >> 3' },
-      { ...base, id: 'b', when: 'any:coverage.school < 10', text: 'b1', accept: { ...base.accept, why: 'b2' }, reject: { why: 'b3' } },
+      { ...base, id: 'b', when: 'any:missionsDone >= 1', text: 'b1', accept: { ...base.accept, why: 'b2' }, reject: { why: 'b3' } },
       { ...base, id: 'c', when: 'population >= start.population', text: 'c1', accept: { ...base.accept, why: 'c2' }, reject: { why: 'c3' } },
       { ...base, id: 'd', text: 'd1', accept: { effect: { kind: 'build', type: 'datacenter' }, why: 'd2' }, reject: base.reject },
     ];
     const problems = validatePetitions(bad);
     expect(problems).toContain('a: when が式として読めない（rentBurden.低 >> 3）');
-    expect(problems).toContain('b: coverage.school は今の模擬が数えていない語');
+    expect(problems).toContain('b: missionsDone は今の模擬が数えていない語');
     expect(problems).toContain('c: start の語は公約だけ（population）');
-    expect(problems).toContain('d: datacenter は申請の要る種類（建てる請願は、申請の要らない種類だけ）');
+    expect(problems).toContain('d: datacenter は公共サービスでない申請の要る種類（建てる請願は、公共サービスか申請の要らない種類だけ）');
     expect(problems.some((p) => p.startsWith('d: 文が a と同じ'))).toBe(true);
   });
 });
@@ -271,5 +271,42 @@ describe('決定性', () => {
     const b = run();
     expect(a.petitions).toEqual(b.petitions);
     expect(a.budget).toEqual(b.budget);
+  });
+});
+
+describe('公共サービスの行き届きの請願と公約（7.7・22.1。G10）', () => {
+  it('地区の行き届き（coverage.<種類>）は、住民の世帯の数で重みを付けた平均（0〜100）', () => {
+    const { world, view } = toWeekEnd(SMALL.world);
+    if (!view) throw new Error('週の終わりの値が無い');
+    const v = placeValues(world, view);
+    // 公共サービスの無い村は、どの地区も 0
+    for (const d of v.districts.values()) for (const k of ['police', 'fire', 'school', 'clinic']) expect(d[`coverage.${k}`]).toBe(0);
+    expect(world.sim.lastWeek.coverage).toEqual({ police: 0, fire: 0, school: 0, clinic: 0, park: expect.any(Number) as number });
+  });
+
+  it('学校の届かない地区に「歩いて通える学校」が届き、受理すると学校の申請が出る（費用は財政から取り分け、否決・取り下げで戻る）', () => {
+    const rules = only('school-far');
+    const w0 = toWeekEnd(SMALL.world, rules).world;
+    const entry = w0.petitions.inbox[0];
+    expect(entry?.petitionId).toBe('school-far');
+    const w1 = applyOp(w0, { kind: 'petition', inboxId: entry?.id ?? '', choice: 'accept' }, T, rules);
+    const app = w1.applications.at(-1);
+    expect(app).toMatchObject({ kind: 'facility', wallet: 'treasury', reserved: FACILITY_DEFS.school.cost, target: { type: 'school' } });
+    expect(w1.budget.treasury).toBeCloseTo(w0.budget.treasury - FACILITY_DEFS.school.cost, 2);
+    // 受理は信頼 +2、建物はまだ建っていない（審議を経て建つ）
+    expect(w1.city.facilities.some((f) => f.type === 'school')).toBe(false);
+    const p = PETITIONS.find((x) => x.id === 'school-far') as Petition;
+    for (const l of p.layers ?? []) expect(w1.sim.trust[l]).toBeCloseTo((w0.sim.trust[l] ?? 0) + 2, 6);
+    const back = applyOp(w1, { kind: 'withdraw', applicationId: app?.id ?? '' }, T, rules);
+    expect(back.budget.treasury).toBeCloseTo(w0.budget.treasury, 2);
+  });
+
+  it('財政が赤字の間は、申請の要る建てる請願を受理できない', () => {
+    const rules = only('school-far');
+    const w0 = toWeekEnd(SMALL.world, rules).world;
+    const red = { ...w0, budget: { ...w0.budget, treasury: -5 } };
+    const entry = red.petitions.inbox[0];
+    expect(petitionProblems(red, T, rules, entry?.id ?? '')).toEqual(['permit']);
+    expect(applyOp(red, { kind: 'petition', inboxId: entry?.id ?? '', choice: 'accept' }, T, rules)).toBe(red);
   });
 });

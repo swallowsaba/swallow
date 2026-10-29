@@ -5,6 +5,8 @@
     { "id": "jobs-grow", "title": "働き口を 3 割増やす", "goal": "jobs >= start.jobs * 1.3", "layers": [3, 4, 6, 7] },
     { "id": "it-two", "title": "IT 施設を 2 つ完成させる", "goal": "facilities.it >= start.facilities.it + 2", "layers": [1, 2, 8] },
     { "id": "missions-two", "title": "ミッションを 2 つ達成する", "goal": "missionsDone >= start.missionsDone + 2", "layers": [0, 1, 2] },
-    { "id": "treasury-up", "title": "財政を 1,000 積み増す", "goal": "treasury >= start.treasury + 1000", "layers": [8, 10, 11] }
+    { "id": "treasury-up", "title": "財政を 1,000 積み増す", "goal": "treasury >= start.treasury + 1000", "layers": [8, 10, 11] },
+    { "id": "safety-reach", "title": "警察と診療所を住民の半分に届ける", "goal": "coverage.police >= 50 && coverage.clinic >= 50", "layers": [3, 9, 10, 11] },
+    { "id": "school-reach", "title": "学校の行き届きを 6 割にする", "goal": "coverage.school >= 60", "layers": [3, 4, 5] }
   ]
 }
