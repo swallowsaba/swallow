@@ -7,7 +7,7 @@
 // 1 期目の公約の窓を閉じる → 新しい市庁舎の節目に届いた都市（市政の引き出しの数の印）
 // → 褒賞の一覧（5 つの節目と今の値）→「建てる」で公共の引き出しの褒賞の棚 → 置いて申請（財政 1,000）
 // → 褒賞の建物 5 つを完成した物として町の北に置いて近くで（描き方）→ 市庁舎の情報パネル（政治資本の上限 35）
-import { at, days } from './town.mjs';
+import { at, days, drag, pick } from './town.mjs';
 
 const text = (page, sel) => page.evaluate((s) => document.querySelector(s)?.textContent ?? null, sel);
 const HUD = '[data-testid="topbar"], [data-testid="build-menu"], [data-testid="overlay-toggle"], [data-testid="recommend"], [data-testid="minimap"]';
@@ -87,7 +87,53 @@ export default async function awardsG11(page, shot) {
   });
   await page.waitForTimeout(600);
   await shot(`g11-buildings${tag}`);
-  await page.evaluate(() => window.__city.zoomBy(-2));
+
+  // 競技場の照明は試合の日だけ灯る（docs/city-design.md 9.5）。時間を止め、完成した日を動かして試合の日とほかの日を撮る
+  const stadiumDay = (offset) => page.evaluate((o) => {
+    const s = window.__cityStore.getState();
+    if (!s.paused) s.togglePause();
+    const day = Math.floor(s.world.city.day);
+    s.load({ ...s.world, city: { ...s.world.city, facilities: s.world.city.facilities.map((x) => (x.id === 'a-stadium' ? { ...x, completeDay: day - o } : x)) } });
+  }, offset);
+  await page.evaluate(() => {
+    window.__city.focusOn(41.5, 39.5);
+    window.__city.zoomBy(1);
+  });
+  await stadiumDay(14);
+  await page.waitForTimeout(800);
+  await shot(`g11-stadium-match${tag}`);
+  await stadiumDay(13);
+  await page.waitForTimeout(800);
+  await shot(`g11-stadium-off${tag}`);
+  await page.evaluate(() => window.__city.zoomBy(-3));
+
+  // ヒートマップ「催し」（競技場から 15 マス以内の住宅。docs/decisions.md U-14）。通りの南に住宅の区画を引き、家が建つまで進める
+  await page.evaluate(() => window.__city.focusOn(44, 44));
+  await pick(page, 'zone', 'build-zone-residential');
+  await drag(page, [34, 42], [58, 42]);
+  await page.keyboard.press('Escape');
+  await page.keyboard.press('Escape');
+  await days(page, 42);
+  console.log('人口', await page.evaluate(() => window.__cityStore.getState().world.city.population));
+  await stadiumDay(13);
+  await weekEnd(page);
+  await page.evaluate(() => {
+    const s = window.__cityStore.getState();
+    if (!s.paused) s.togglePause();
+    window.__city.focusOn(44, 44);
+  });
+  await page.keyboard.press('v');
+  await page.click('[data-testid="overlay-event"]');
+  await page.waitForTimeout(500);
+  console.log('凡例（催し）', await text(page, '[data-testid="overlay-legend"]'));
+  console.log('催しの点', await page.evaluate(() => {
+    const b = window.__cityStore.getState().world.history.breakdown.at(-1);
+    return b ? b.factors[12].reduce((a, v) => a + v, 0).toFixed(3) : null;
+  }));
+  await shot(`g11-event-heat${tag}`);
+  await page.keyboard.press('Escape');
+  await page.keyboard.press('v');
+  await page.waitForTimeout(200);
 
   // 新しい市庁舎の情報パネル（学習の入口ではない。効きを示す）と、上の帯の政治資本の上限
   const hall = await at(page, 35, 40);
