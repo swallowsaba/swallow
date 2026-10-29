@@ -7,12 +7,14 @@ import { TAX_RANGE } from '@/sim/budget';
 import { Icon } from '@/ui/icons/Icon';
 import { SmallWindow } from '@/ui/SmallWindow';
 import type { CityStore } from './cityStore';
-import { budgetModel, capitalModel, inboxRows, newsIssues, taxPreview, type LedgerLine } from './civicView';
+import { svgView } from '@/city/generate/svg';
+import { facilitySvg } from '@/city/render/sprites';
+import { budgetModel, capitalModel, inboxRows, newsIssues, rewardRows, taxPreview, type LedgerLine } from './civicView';
 import { WeeklyGraph } from './WeeklyGraph';
 import './CivicWindows.css';
 
 /**
- * 受信箱（docs/ui-design.md 10.8）・予算（10.9）・市内新聞（10.10）。どれも小さな窓（10.0）。
+ * 受信箱（docs/ui-design.md 10.8）・予算（10.9）・市内新聞（10.10）・褒賞の一覧（10.11）。どれも小さな窓（10.0）。
  * カードを並べず、線で区切った行と、数と短い棒で示す
  */
 
@@ -232,6 +234,66 @@ export function NewsWindow({ store, stack, shifted }: WindowProps) {
           ))}
         </div>
       )}
+    </SmallWindow>
+  );
+}
+
+/* ---------- 褒賞の一覧 ---------- */
+
+const STATUS_LABEL = { locked: 'まだ', open: '建てられる', pending: '申請中', built: '建った' } as const;
+
+/** 建物の正面の姿（一覧の小さな見本） */
+function awardImage(type: Parameters<typeof facilitySvg>[0]): string | null {
+  const svg = facilitySvg(type, 1);
+  return svg ? `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svgView(svg, 'front').svg)}` : null;
+}
+
+export function RewardsWindow({ store, stack, shifted }: WindowProps) {
+  const s = useStore(store, useShallow((x) => ({
+    rewards: x.world.rewards, apps: x.world.applications, facilities: x.world.city.facilities, population: x.world.city.population, week: x.world.sim.week,
+    closeWindow: x.closeWindow, openWindow: x.openWindow, openMenu: x.openMenu, setTool: x.setTool,
+  })));
+  const world = store.getState().world;
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const rows = useMemo(() => rewardRows(world), [s.rewards, s.apps, s.facilities, s.population, s.week]);
+  const images = useMemo(() => new Map(rows.map((r) => [r.type, awardImage(r.type)])), [rows]);
+  return (
+    <SmallWindow testId="rewards-window" icon="stage" title="褒賞" stack={stack} shifted={shifted} onClose={() => s.closeWindow('rewards')} onFront={() => s.openWindow('rewards')}>
+      <p className="civic-summary">人口と支持率の節目で、建てられる建物が増える。学ぶことには関係しない（どのレッスンも、いつでも始められる）</p>
+      <ul className="reward-rows" data-testid="reward-rows">
+        {rows.map((r) => (
+          <li key={r.type} className={`reward-row is-${r.status}`} data-testid={`reward-${r.type}`}>
+            <span className="reward-art" aria-hidden="true">{images.get(r.type) ? <img src={images.get(r.type) ?? ''} alt="" draggable={false} /> : null}</span>
+            <div className="reward-body">
+              <p className="reward-head">
+                <span className="reward-name">{r.name}</span>
+                <span className={`reward-status is-${r.status}`} data-testid="reward-status">{STATUS_LABEL[r.status]}</span>
+              </p>
+              <ul className="reward-parts">
+                {r.parts.map((p) => (
+                  <li key={p.label} className={p.met ? 'is-met' : ''}><Icon name={p.met ? 'check' : 'pin'} size={12} /><span className="num-mix">{p.label}</span></li>
+                ))}
+              </ul>
+              <p className="reward-effect">{r.effect}</p>
+              <p className="reward-note">
+                {r.note}
+                {r.status === 'open' ? (
+                  <button
+                    type="button"
+                    className="civic-button is-primary reward-build"
+                    data-testid="reward-build"
+                    onClick={() => {
+                      // 建設メニューの「公共」の褒賞の棚で、その建物を選んだ状態にする（docs/ui-design.md 10.11）
+                      s.openMenu('civic');
+                      s.setTool({ kind: 'facility', type: r.type });
+                    }}
+                  >建てる</button>
+                ) : null}
+              </p>
+            </div>
+          </li>
+        ))}
+      </ul>
     </SmallWindow>
   );
 }

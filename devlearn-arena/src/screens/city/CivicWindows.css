@@ -422,3 +422,95 @@
   line-height: 1.75;
   color: var(--hud-text-sub);
 }
+
+/* ---------- 褒賞の一覧（docs/ui-design.md 10.11） ---------- */
+
+.reward-rows {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.reward-row {
+  display: flex;
+  gap: 10px;
+  padding: 8px 0 10px;
+  border-bottom: 1px solid var(--hud-line);
+}
+.reward-art {
+  flex: none;
+  width: 64px;
+  height: 52px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.reward-art img {
+  max-width: 64px;
+  max-height: 52px;
+}
+.reward-row.is-locked .reward-art img {
+  opacity: 0.5;
+  filter: saturate(0.3);
+}
+.reward-body {
+  flex: 1;
+  min-width: 0;
+}
+.reward-head {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin: 0;
+}
+.reward-name {
+  flex: 1;
+  font-weight: 700;
+  font-size: var(--fs-16);
+}
+.reward-status {
+  white-space: nowrap;
+  font-size: var(--fs-12);
+  color: var(--hud-text-sub);
+}
+.reward-status.is-open {
+  color: var(--gold-light);
+  font-weight: 700;
+}
+.reward-status.is-built {
+  color: var(--ok);
+}
+.reward-parts {
+  margin: 4px 0 0;
+  padding: 0;
+  list-style: none;
+  font-size: var(--fs-13);
+  color: var(--hud-text-sub);
+}
+.reward-parts li {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.reward-parts li.is-met {
+  color: var(--hud-text);
+}
+.reward-parts li.is-met svg {
+  color: var(--ok);
+}
+.reward-effect {
+  margin: 4px 0 0;
+  font-size: var(--fs-13);
+  line-height: 1.5;
+}
+.reward-note {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 4px 0 0;
+  font-size: var(--fs-12);
+  color: var(--hud-text-sub);
+}
+.reward-build {
+  margin-left: auto;
+  height: 26px;
+}

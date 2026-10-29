@@ -11,6 +11,7 @@ import { FACILITY_DEFS, type CoverageKind } from '@/city/facilities';
 import { checkUpgrade } from '@/city/upgrade';
 import { EXPLAIN, NAME_PARTS, POLITICS_RULES } from '@/content/politics';
 import { explainApproval } from '@/sim/explain';
+import { AWARD_TYPES } from '@/sim/awards';
 import type { Hand } from '@/sim/hearing';
 import { newAnswerNotes, reactionLesson, reactionText } from './hearingView';
 import { groupName } from './permitView';
@@ -45,11 +46,11 @@ export type MenuGroup = 'road' | 'zone' | 'facility' | 'park' | 'civic' | 'demol
 /** 表示切替で重ねる物（今ある 4 つと、模擬のヒートマップ。docs/ui-design.md 11.1） */
 export type ViewKind = OverlayKind | HeatKind;
 
-/** 都市の上に重ねる小さな窓（docs/ui-design.md 10.0）。表示切替・許認可の一覧・申請 1 件の詳細・異議申し立て・受信箱・予算・市内新聞 */
-export type SmallWindowId = 'view' | 'permits' | 'permit' | 'appeal' | 'inbox' | 'budget' | 'news';
+/** 都市の上に重ねる小さな窓（docs/ui-design.md 10.0）。表示切替・許認可の一覧・申請 1 件の詳細・異議申し立て・受信箱・予算・市内新聞・褒賞の一覧 */
+export type SmallWindowId = 'view' | 'permits' | 'permit' | 'appeal' | 'inbox' | 'budget' | 'news' | 'rewards';
 
 /** 知らせを押した時に開く窓（既定は申請の詳細。選挙・受信箱・新聞は申請を持たない） */
-export type NoticeWindow = 'permit' | 'council' | 'appeal' | 'election' | 'inbox' | 'news';
+export type NoticeWindow = 'permit' | 'council' | 'appeal' | 'election' | 'inbox' | 'news' | 'rewards';
 
 /** 選挙の大きな窓に出す物（docs/ui-design.md 10.6・10.7）: 今の見込み・選挙の結果・任期の終わりの一覧と公約を選ぶ */
 export type ElectionView = 'preview' | 'result' | 'term';
@@ -274,6 +275,7 @@ export function createCityStore(seed?: number, initial?: City, options: CityStor
       const prevDay = Math.floor(base.city.day);
       const prevPetitions = base.petitions;
       const prevNews = base.history.news;
+      const prevRewards = base.rewards;
       base = { ...base, ...m.patch };
       acked = Math.max(acked, m.day);
       pending = pending.filter((c) => c.seq > m.seq);
@@ -284,7 +286,7 @@ export function createCityStore(seed?: number, initial?: City, options: CityStor
         for (const n of stageNotices(prevApps, base)) get().notify(n.text, performance.now(), n.permitId, n.window);
       }
       // 請願が届いた・不祥事の記事が出た（押すと受信箱・新聞。docs/ui-design.md 3 章）
-      for (const n of civicNotices(prevPetitions, prevNews, base)) get().notify(n.text, performance.now(), undefined, n.window);
+      for (const n of civicNotices(prevPetitions, prevNews, base, prevRewards)) get().notify(n.text, performance.now(), undefined, n.window);
       // 選挙（docs/game-design.md 21.1）: 8 週前に知らせ、選挙の日に結果の窓を開く。落選したら道を選ぶまで時間を止める
       for (const n of electionNotices(prevPolitics, prevDay, base)) get().notify(n, performance.now(), undefined, 'election');
       if (base.politics !== prevPolitics) {
@@ -642,10 +644,17 @@ function appealGroupName(a: Application, world: World): string {
 }
 
 /**
- * 請願が届いた知らせ（押すと受信箱）と、不祥事の記事が出た知らせ（押すと新聞）。docs/ui-design.md 3 章・10.8・10.10
+ * 請願が届いた知らせ（押すと受信箱）と、不祥事の記事が出た知らせ（押すと新聞）と、褒賞の節目に届いた知らせ（押すと褒賞の一覧）。
+ * docs/ui-design.md 3 章・10.8・10.10・docs/game-design.md 25 章
  */
-export function civicNotices(before: World['petitions'], beforeNews: readonly Article[], after: World): { text: string; window: NoticeWindow }[] {
+export function civicNotices(before: World['petitions'], beforeNews: readonly Article[], after: World, beforeRewards?: World['rewards']): { text: string; window: NoticeWindow }[] {
   const out: { text: string; window: NoticeWindow }[] = [];
+  if (beforeRewards && after.rewards.unlocked !== beforeRewards.unlocked) {
+    for (const type of AWARD_TYPES) {
+      if (after.rewards.unlocked[type] === undefined || beforeRewards.unlocked[type] !== undefined) continue;
+      out.push({ text: `節目に届いた: ${FACILITY_DEFS[type].name}を建てられるようになった（建設メニューの「公共」）。押すと褒賞の一覧`, window: 'rewards' });
+    }
+  }
   const had = new Set(before.inbox.map((i) => i.id));
   for (const i of after.petitions.inbox) {
     if (had.has(i.id)) continue;

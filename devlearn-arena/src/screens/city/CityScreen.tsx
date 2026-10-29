@@ -11,7 +11,7 @@ import { STAGE_NAMES } from '@/game/stage';
 import { HEAT_KINDS, SERVICE_HEAT, type HeatKind } from '@/sim/heat';
 import { reachAreaOf } from '@/sim/reachArea';
 import { POLITICS_RULES } from '@/content/politics';
-import { powerLine } from './civicView';
+import { awardItems, openRewards, powerLine } from './civicView';
 import { facilityPowerDistrict, poweredOffIds, stoppedNow } from '@/sim/power';
 import { dateOf } from '@/sim/rules';
 import { spaceOf } from '@/sim/space';
@@ -27,7 +27,7 @@ import { panelModel } from './infoPanelModel';
 import { OverlayToggle, type OverlayLegend } from './OverlayToggle';
 import { RecommendPanel } from './RecommendPanel';
 import { unplacedLandmarks } from '@/learning/missions';
-import type { City, DomainId } from '@/city/types';
+import type { City, DomainId, FacilityType } from '@/city/types';
 import { FACILITY_DEFS } from '@/city/facilities';
 import type { CityGameState, CityStore, ViewKind } from './cityStore';
 import { HEAT_INFO, heatImage, heatLegend } from './heatScale';
@@ -35,7 +35,7 @@ import { VIEW_LABELS } from './viewKinds';
 import { ViewWindow } from './ViewWindow';
 import { PermitDetailWindow, PermitListWindow } from './PermitWindows';
 import { AppealWindow } from './AppealWindow';
-import { BudgetWindow, InboxWindow, NewsWindow } from './CivicWindows';
+import { BudgetWindow, InboxWindow, NewsWindow, RewardsWindow } from './CivicWindows';
 import { CouncilWindow } from './CouncilWindow';
 import { HearingWindow } from './HearingWindow';
 import { ElectionWindow } from './ElectionWindow';
@@ -100,10 +100,16 @@ export function CityScreen({ session, active = true, covered = false, current, d
     windows: s.windows, toggleWindow: s.toggleWindow, openWindow: s.openWindow, heat: s.heat,
     mayor: mayorCount(s.world), openPermit: s.openPermit,
     capital: s.world.politics.capital, defeated: s.world.politics.defeated === true,
-    treasury: Math.round(s.world.budget.treasury), inbox: s.world.petitions.inbox.length,
+    treasury: Math.round(s.world.budget.treasury), inbox: s.world.petitions.inbox.length, rewards: openRewards(s.world),
+    // 褒賞の建物の様子は、文字列にして読む（毎回作る配列を選ぶと、描き直しが止まらない）
+    awardsKey: awardItems(s.world).map((a) => `${a.type}:${a.status}`).join(','),
     weeksLeft: Math.max(0, Math.ceil((electionDayOf(s.world.politics.term) - Math.floor(s.world.city.day)) / DAYS_PER_WEEK)),
     openElection: s.openElection,
   })));
+  const awards = useMemo(() => (state.awardsKey === '' ? [] : state.awardsKey.split(',').map((k) => {
+    const [type, status] = k.split(':') as [FacilityType, 'open' | 'pending' | 'built'];
+    return { type, status };
+  })), [state.awardsKey]);
   // 公約を選んでいない任期なら、公約を選ぶ窓を出す（初回の操作説明の後。移行した都市の 1 期目も。docs/data-model.md 12 章）
   const introSeen = useStore(session.player, (p) => p.player.introSeen);
   const noPledges = useStore(store, (s) => s.world.politics.term.pledges.length === 0);
@@ -287,7 +293,7 @@ export function CityScreen({ session, active = true, covered = false, current, d
       s.openElection(s.world.politics.defeated || (last && last.endDay >= Math.floor(s.world.city.day) - DAYS_PER_WEEK) ? 'result' : 'preview');
       return;
     }
-    if (n?.window === 'inbox' || n?.window === 'news') {
+    if (n?.window === 'inbox' || n?.window === 'news' || n?.window === 'rewards') {
       s.openWindow(n.window);
       return;
     }
@@ -333,11 +339,9 @@ export function CityScreen({ session, active = true, covered = false, current, d
             { id: 'inbox', badge: state.inbox },
             { id: 'budget', badge: 0 },
             { id: 'news', badge: 0 },
-            { id: 'rewards', badge: 0, disabled: true },
+            { id: 'rewards', badge: state.rewards },
           ],
-          onItem: (id) => {
-            if (id !== 'rewards') state.openWindow(id);
-          },
+          onItem: (id) => state.openWindow(id),
         }}
         {...(onEntry ? { onEntry } : {})}
       />
@@ -377,13 +381,14 @@ export function CityScreen({ session, active = true, covered = false, current, d
             if (id === 'inbox') return <InboxWindow key={id} store={store} stack={i} shifted={panel !== null} />;
             if (id === 'budget') return <BudgetWindow key={id} store={store} stack={i} shifted={panel !== null} />;
             if (id === 'news') return <NewsWindow key={id} store={store} stack={i} shifted={panel !== null} />;
+            if (id === 'rewards') return <RewardsWindow key={id} store={store} stack={i} shifted={panel !== null} />;
             return <PermitDetailWindow key={id} store={store} stack={i} shifted={panel !== null} skills={skillValues} />;
           })}
           <HearingWindow store={store} skills={skillValues} {...(onCard ? { onLearn: onCard } : {})} />
           <CouncilWindow store={store} />
           <ElectionWindow store={store} {...(onNewCity ? { onNewCity } : {})} />
           <HeatHover store={store} canvas={canvasRef} renderer={rendererRef} />
-          <BuildMenu state={state} landmarks={landmarks} treasury={state.treasury} demand={state.demand} />
+          <BuildMenu state={state} landmarks={landmarks} treasury={state.treasury} demand={state.demand} awards={awards} />
           <PlacementHint hint={state.confirm ? null : state.hint} />
           <DemolishConfirm target={state.confirm} onYes={onYes} onNo={onNo} />
           <Intro session={session} />

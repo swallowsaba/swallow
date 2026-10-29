@@ -15,7 +15,7 @@ import './BuildMenu.css';
  * 建設メニュー（docs/ui-design.md 3 章: 下中央、高さ 72。選ぶと上に種類の引き出し）。
  * 道路・区画・施設・公園・取り壊し。
  * ミッションで受け取った記念碑は、公園の引き出しに「受け取った報酬」として並び、費用なしで置ける（docs/city-design.md 4 章）。
- * 公共の引き出し（docs/ui-design.md 11.5）: 公共サービスと発電所。財布は財政（費用の印は金庫）。区画の引き出しに需要の棒（11.4）
+ * 公共の引き出し（docs/ui-design.md 11.5）: 公共サービスと発電所と、節目に届いた褒賞の建物。財布は財政（費用の印は金庫）。区画の引き出しに需要の棒（11.4）
  */
 
 const GROUPS: { id: MenuGroup; label: string; icon: IconName }[] = [
@@ -27,12 +27,19 @@ const GROUPS: { id: MenuGroup; label: string; icon: IconName }[] = [
   { id: 'demolish', label: '取り壊し', icon: 'demolish' },
 ];
 
-/** 公共の引き出しの棚（1 度に 5 つまで並べる。docs/visual-design.md V7） */
-type CivicShelf = 'service' | 'power';
+/** 公共の引き出しの棚（1 度に 5 つまで並べる。docs/visual-design.md V7）。褒賞の棚は、節目に届いた建物がある時だけ出す（docs/ui-design.md 11.5） */
+type CivicShelf = 'service' | 'power' | 'award';
 const CIVIC_SHELVES: { id: CivicShelf; label: string; types: FacilityType[] }[] = [
   { id: 'service', label: '公共サービス', types: ['police', 'fire', 'school', 'clinic'] },
   { id: 'power', label: '電気', types: ['power-thermal', 'power-solar'] },
+  { id: 'award', label: '褒賞', types: [] },
 ];
+
+/** 褒賞の建物の、建設メニューでの様子（届いていない物は出さない） */
+export interface AwardItem {
+  type: FacilityType;
+  status: 'open' | 'pending' | 'built';
+}
 
 const ROAD_KINDS: BuildRoadKind[] = ['lane', 'street', 'avenue', 'roundabout'];
 const ZONE_KINDS: ZoneKind[] = ['residential', 'commercial', 'office', 'industrial'];
@@ -89,7 +96,7 @@ function lockOf(stage: number, minStage: 1 | 2 | 3 | 4 | 5): string | null {
   return stage < minStage ? `「${STAGE_NAMES[minStage]}」になると作れる` : null;
 }
 
-export function BuildMenu({ state, landmarks = [], treasury = 0, demand }: {
+export function BuildMenu({ state, landmarks = [], treasury = 0, demand, awards = [] }: {
   state: Pick<CityGameState, 'menu' | 'tool' | 'openMenu' | 'setTool'> & { stage: number };
   /** 受け取ったが、まだ置いていない記念碑（ミッションの報酬） */
   landmarks?: readonly string[];
@@ -97,11 +104,23 @@ export function BuildMenu({ state, landmarks = [], treasury = 0, demand }: {
   treasury?: number;
   /** 前の週の需要の項（区画の引き出しの棒。docs/ui-design.md 11.4） */
   demand?: DemandTerms | undefined;
+  /** 節目に届いた褒賞の建物（docs/game-design.md 25 章） */
+  awards?: readonly AwardItem[];
 }) {
   const { stage, menu, tool, openMenu, setTool } = state;
   const thumbs = useMemo(() => new Map(FACILITY_ORDER.map((t) => [t, thumbnail(t)])), []);
   const [shelf, setShelf] = useState<FacilityShelf>('base');
-  const [civicShelf, setCivicShelf] = useState<CivicShelf>('service');
+  const [shelfPicked, setCivicShelf] = useState<CivicShelf>('service');
+  // 褒賞の一覧の「建てる」で褒賞の建物を選んだ時は、褒賞の棚を開く（docs/ui-design.md 10.11）
+  const pickedAward = tool.kind === 'facility' && FACILITY_DEFS[tool.type].group === 'award';
+  const [awardOpened, setAwardOpened] = useState(false);
+  if (pickedAward && !awardOpened) {
+    setAwardOpened(true);
+    setCivicShelf('award');
+  } else if (!pickedAward && awardOpened) {
+    setAwardOpened(false);
+  }
+  const civicShelf: CivicShelf = shelfPicked === 'award' && awards.length === 0 ? 'service' : shelfPicked;
   const isTool = (t: Tool): boolean => JSON.stringify(t) === JSON.stringify(tool);
   const roadShape = tool.kind === 'road' ? tool.shape : 'straight';
 
@@ -159,11 +178,15 @@ export function BuildMenu({ state, landmarks = [], treasury = 0, demand }: {
       </>
     );
   } else if (menu === 'civic') {
-    const types = CIVIC_SHELVES.find((s) => s.id === civicShelf)?.types ?? [];
+    const types = civicShelf === 'award' ? awards.map((a) => a.type) : CIVIC_SHELVES.find((s) => s.id === civicShelf)?.types ?? [];
+    const awardLock = (type: FacilityType): string | null => {
+      const a = awards.find((x) => x.type === type);
+      return a?.status === 'built' ? '建っている（1 つずつまで）' : a?.status === 'pending' ? '申請中' : null;
+    };
     drawer = (
       <>
         <div className="build-shape" role="tablist" aria-label="公共の棚">
-          {CIVIC_SHELVES.map((s) => (
+          {CIVIC_SHELVES.filter((s) => s.id !== 'award' || awards.length > 0).map((s) => (
             <button
               key={s.id}
               type="button"
@@ -185,12 +208,14 @@ export function BuildMenu({ state, landmarks = [], treasury = 0, demand }: {
             cost={format(FACILITY_DEFS[type].cost)}
             wallet="treasury"
             selected={isTool({ kind: 'facility', type })}
-            locked={treasury < 0 ? '財政が赤字の間は申請を出せない' : lockOf(stage, FACILITY_DEFS[type].minStage)}
+            locked={treasury < 0 ? '財政が赤字の間は申請を出せない' : awardLock(type) ?? lockOf(stage, FACILITY_DEFS[type].minStage)}
             image={thumbs.get(type) ?? null}
             onPick={() => setTool({ kind: 'facility', type })}
           />
         ))}
-        <p className="build-note">{civicShelf === 'service' ? '財政で建て、毎週 30 の維持費。道路で届く範囲の住民の暮らしを支える（学習の入口ではない）' : '財政で建て、維持費がかかる。道路に面して置くと、つながった道路網に電気が届く'}</p>
+        <p className="build-note">{civicShelf === 'service' ? '財政で建て、毎週 30 の維持費。道路で届く範囲の住民の暮らしを支える（学習の入口ではない）'
+          : civicShelf === 'power' ? '財政で建て、維持費がかかる。道路に面して置くと、つながった道路網に電気が届く'
+          : '人口と支持率の節目で建てられるようになった建物。財政で建て、申請が要る。1 つずつまで（維持費は無い）'}</p>
       </>
     );
   } else if (menu === 'facility' || menu === 'park') {

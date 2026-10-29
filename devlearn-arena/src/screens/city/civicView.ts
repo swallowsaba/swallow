@@ -1,5 +1,8 @@
 import type { Point } from '@/city/types';
-import { capitalCapOf } from '@/sim/awards';
+import { AWARD_TYPES, CAPITAL_CAP, capitalCapOf, CITY_HALL, CIVIC_HALL_TRUST } from '@/sim/awards';
+import { awardStatus, milestoneParts, type AwardStatus } from '@/sim/rewards';
+import { DEMAND_AWARD, LAND_AWARD } from '@/sim/rules';
+import type { FacilityType } from '@/city/types';
 import { factorIndex, layerName, LAYERS, WEIGHTS } from '@/sim/layers';
 import { parseCondition } from '@/sim/conditions';
 import { groupName } from '@/sim/news';
@@ -261,3 +264,71 @@ export function powerLine(world: Pick<World, 'city' | 'sim' | 'budget'>, rules: 
   return `電力 使う ${mw(powerUse(world.city, rules))} MW ／ 来る ${mw(plants + ext)} MW（発電所 ${mw(plants)}${deficit && plants > 0 ? '（赤字の間は 7 割）' : ''}・外の電気 ${mw(ext)} まで）`
     + (stopped > 0 ? `・止まっている地区 ${String(stopped)}` : '');
 }
+
+/* ---------- 褒賞の一覧（10.11） ---------- */
+
+export interface RewardRow {
+  type: FacilityType;
+  name: string;
+  /** 節目の条件と今の値（「人口 3,420 / 5,000」）。届いた後は届いた日 */
+  parts: { label: string; met: boolean }[];
+  /** 効き（docs/game-design.md 25 章の表） */
+  effect: string;
+  status: AwardStatus;
+  /** 今の様子の 1 行（「節目に届いていない」「建てられる（財政 1,000）」「申請中」「建っている」） */
+  note: string;
+}
+
+const WORD_LABEL: Record<string, (value: number, target: number) => string> = {
+  population: (v, t) => `人口 ${num(v)} / ${num(t)}`,
+  approval: (v, t) => `支持率 ${num(v)}% / ${num(t)}%`,
+  highApprovalWeeks: (v, t) => `支持率 65% 以上の週 ${num(v)} / ${num(t)}`,
+};
+
+/** 褒賞の建物の効きの言い表し（25 章。値は模擬の決まりから作る） */
+export function awardEffect(type: FacilityType): string {
+  const def = FACILITY_DEFS[type];
+  switch (type) {
+    case 'city-hall': return `政治資本の上限 +${String(CITY_HALL.capital)}（${String(CAPITAL_CAP)} → ${String(CAPITAL_CAP + CITY_HALL.capital)}）。議員の説得が政治資本 ${String(CITY_HALL.persuade)} で済む`;
+    case 'memorial': {
+      const l = LAND_AWARD.memorial;
+      return `半径 ${String(l?.radius ?? 0)} マスの地価 +${String(l?.value ?? 0)}（離れるほど薄まる）。店の需要 +${String(DEMAND_AWARD.memorial ?? 0)}`;
+    }
+    case 'stadium': return '若者と子育ての満足 +3（半径 15）。試合の日（14 日ごと）は騒音と交通が増える';
+    case 'civic-hall': return `全ての層の市政への信頼 +${String(CIVIC_HALL_TRUST)}（建った時に 1 回）`;
+    case 'central-park': return `緑地の行き届き ${String(def.coverage?.distance ?? 0)} マス（公園の 2 倍の遠さまで）`;
+    default: return '';
+  }
+}
+
+export function rewardRows(world: World): RewardRow[] {
+  return AWARD_TYPES.map((type) => {
+    const def = FACILITY_DEFS[type];
+    const status = awardStatus(world, type);
+    const unlocked = world.rewards.unlocked[type];
+    const parts = unlocked !== undefined
+      ? [{ label: `${dateLabel(unlocked)}に節目に届いた`, met: true }]
+      : milestoneParts(world, type).map((p) => ({ label: (WORD_LABEL[p.word] ?? ((v: number, t: number) => `${p.word} ${num(v)} / ${num(t)}`))(p.value, p.target), met: p.met }));
+    const note = status === 'built' ? '建っている（1 つずつまで）'
+      : status === 'pending' ? '申請中か工事中'
+      : status === 'open' ? `建てられる（財政 ${num(def.cost)}。申請が要る）`
+      : '節目に届くと建てられる。届いた後に下がっても建てられる';
+    return { type, name: def.name, parts, effect: awardEffect(type), status, note };
+  });
+}
+
+/** 建設メニューに出す褒賞の建物（節目に届いた物だけ。docs/ui-design.md 11.5） */
+export function awardItems(world: World): { type: FacilityType; status: 'open' | 'pending' | 'built' }[] {
+  return AWARD_TYPES.flatMap((type) => {
+    const status = awardStatus(world, type);
+    return status === 'locked' ? [] : [{ type, status }];
+  });
+}
+
+/** 建てられる（届いて、まだ建てていない）褒賞の数（市政の引き出しの数の印） */
+export const openRewards = (world: World): number => AWARD_TYPES.filter((t) => awardStatus(world, t) === 'open').length;
+
+const dateLabel = (day: number): string => {
+  const d = dateOf(day);
+  return `${String(d.year)} 年目 ${String(d.week)} 週`;
+};

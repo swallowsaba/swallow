@@ -6,9 +6,9 @@ import type { Article, World } from '@/sim/types';
 import { grownVillage } from '@/sim/__fixtures__/cities';
 import { TopBar } from '@/ui/TopBar';
 import { civicNotices, createCityStore } from './cityStore';
-import { budgetModel, capitalModel, inboxRows, newsIssues, powerLine, taxPreview } from './civicView';
+import { budgetModel, capitalModel, inboxRows, newsIssues, openRewards, powerLine, rewardRows, taxPreview } from './civicView';
 import { powerUse } from '@/sim/power';
-import { BudgetWindow, InboxWindow, NewsWindow } from './CivicWindows';
+import { BudgetWindow, InboxWindow, NewsWindow, RewardsWindow } from './CivicWindows';
 
 /**
  * 受信箱（docs/ui-design.md 10.8）・予算（10.9）・市内新聞（10.10）と、上の帯の財政（3.1）
@@ -202,5 +202,40 @@ describe('発電所を選んでいる間の電力の 1 行（docs/ui-design.md 1
     expect(store.getState().overlay).toBe('police');
     store.getState().openMenu(null);
     expect(store.getState().overlay).toBe('rent');
+  });
+});
+
+describe('褒賞の一覧（10.11）', () => {
+  const unlocked: World = { ...GROWN, city: { ...GROWN.city, population: 3420 }, sim: { ...GROWN.sim, lastWeek: { ...GROWN.sim.lastWeek, approval: 58 } }, rewards: { unlocked: { 'city-hall': 140 }, built: {}, highApprovalWeeks: 3 } };
+
+  it('5 つの名前・節目の条件と今の値・効き・建てたかを示す。届いた物は届いた日', () => {
+    const rows = rewardRows(unlocked);
+    expect(rows.map((r) => [r.name, r.status])).toEqual([
+      ['新しい市庁舎', 'open'], ['市民記念館', 'locked'], ['競技場', 'locked'], ['市民ホール', 'locked'], ['中央公園', 'locked'],
+    ]);
+    expect(rows[0]?.parts.map((p) => p.label)).toEqual(['1 年目 21 週に節目に届いた']);
+    expect(rows[1]?.parts).toEqual([{ label: '人口 3,420 / 5,000', met: false }, { label: '支持率 58% / 55%', met: true }]);
+    expect(rows[3]?.parts).toEqual([{ label: '支持率 65% 以上の週 3 / 8', met: false }]);
+    expect(rows[0]?.effect).toBe('政治資本の上限 +5（30 → 35）。議員の説得が政治資本 2 で済む');
+    expect(rows[0]?.note).toBe('建てられる（財政 1,000。申請が要る）');
+    expect(openRewards(unlocked)).toBe(1);
+  });
+
+  it('届いた物の「建てる」を押すと、建設メニューの公共の引き出しで、その建物を選んだ状態になる', () => {
+    const store = storeOf(unlocked);
+    store.getState().openWindow('rewards');
+    const host = mount(<RewardsWindow store={store} stack={0} shifted={false} />);
+    const buttons = host.querySelectorAll('[data-testid="reward-build"]');
+    expect(buttons).toHaveLength(1);
+    act(() => (buttons[0] as HTMLButtonElement).click());
+    expect(store.getState().menu).toBe('civic');
+    expect(store.getState().tool).toEqual({ kind: 'facility', type: 'city-hall' });
+    expect(host.querySelector('[data-testid="reward-memorial"] [data-testid="reward-status"]')?.textContent).toBe('まだ');
+  });
+
+  it('節目に届いた週に「建てられるようになった」の知らせ（押すと褒賞の一覧）', () => {
+    const notes = civicNotices(GROWN.petitions, GROWN.history.news, unlocked, GROWN.rewards);
+    expect(notes).toContainEqual({ text: '節目に届いた: 新しい市庁舎を建てられるようになった（建設メニューの「公共」）。押すと褒賞の一覧', window: 'rewards' });
+    expect(civicNotices(GROWN.petitions, GROWN.history.news, unlocked, unlocked.rewards).filter((n) => n.window === 'rewards')).toEqual([]);
   });
 });

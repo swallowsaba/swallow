@@ -1,5 +1,6 @@
 import { frontOf, occupancyOf } from '@/city/cells';
 import { FACILITY_DEFS, serviceCoverageOf, type CoverageKind } from '@/city/facilities';
+import { awardEffect } from './civicView';
 import { domainsOfFacility, facilityCondition, nextLevelOf, parkReach } from '@/city/facilityInfo';
 import { amenityAt } from '@/city/growth';
 import { buildingName } from '@/city/place';
@@ -112,6 +113,15 @@ export function panelModel(city: City, sel: Selection, skills: Skills = {}, prog
         effect: cov
           ? `道路で ${String(cov.distance)} マスまでの${who}の${SERVICE_LIFE[cov.kind]}を支える。${upkeep}`
           : `出力 ${String(-(def.powerMW ?? 0))} MW。面している道路網の建物に電気を送る。${upkeep}`,
+        ...(permit ? { permitId: permit.id } : {}),
+      };
+    }
+    // 褒賞の建物（docs/game-design.md 25 章）: 学習の入口ではない。効きだけを出す（docs/ui-design.md 5 章）
+    if (def.group === 'award') {
+      return {
+        kind: 'facility', id: f.id, name: def.name, typeLabel: '褒賞の建物', level: f.level, levelNote: '', condition,
+        domains: [], lessons: [], libraryDomain: null, missions: [], missionTotal: 0, upgrade: null,
+        effect: `${awardEffect(f.type)}。人口と支持率の節目で建てられた（維持費は無い）`,
         ...(permit ? { permitId: permit.id } : {}),
       };
     }
