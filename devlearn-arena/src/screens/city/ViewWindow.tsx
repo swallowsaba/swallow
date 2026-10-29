@@ -71,7 +71,7 @@ export function ViewWindow({ store, stack, shifted }: { store: CityStore; stack:
       <section className="view-section" aria-label="ヒートマップ">
         <h3 className="view-heading">ヒートマップ<span className="view-heading-sub">選ぶと都市の地面に色を重ねる</span></h3>
         <div className="view-kinds">
-          {HEAT_KINDS.filter((k) => !(SERVICE_HEAT as readonly string[]).includes(k)).map((k) => row(k, HEAT_INFO[k].label, stepColors(k)))}
+          {HEAT_KINDS.filter((k) => !(SERVICE_HEAT as readonly string[]).includes(k)).map((k) => row(k, k === 'service' ? '公共サービス' : HEAT_INFO[k].label, stepColors(k)))}
           {CITY_KINDS.map((k) => row(k.id, k.label, null))}
         </div>
         {serviceOn ? (

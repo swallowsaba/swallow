@@ -15,9 +15,9 @@ export function PlacementHint({ hint }: { hint: Hint | null }) {
       <div className="place-hint-title">{hint.title}</div>
       {hint.cost > 0 ? (
         <div className="place-hint-cost">
-          <Icon name="funds" size={14} />
+          <Icon name={hint.wallet === 'treasury' ? 'treasury' : 'funds'} size={14} />
           <span className="num">{format(hint.cost)}</span>
-          <span className="place-hint-unit">資金</span>
+          <span className="place-hint-unit">{hint.wallet === 'treasury' ? '財政' : '資金'}</span>
         </div>
       ) : null}
       {hint.reasons.length > 0 ? (

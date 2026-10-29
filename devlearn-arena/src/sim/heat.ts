@@ -105,8 +105,8 @@ export function heatOf(world: World, view: WeekView): HeatFields {
 }
 
 /**
- * 公共サービスの行き届き（0〜100%）: 道路の外の陸のマスに、面する道路の行き届き × 定員の余り（住民の満足と同じ値。24.2）。
- * 平均は 5 種（警察・消防・学校・診療所・公園）の平均
+ * 公共サービスの行き届き（0〜100%）: 道路に面した陸のマス（行き届きは道路で届くので、道路に面していないマスには塗らない）に、
+ * 面する道路の行き届き × 定員の余り（住民の満足と同じ値。24.2）。平均は 5 種（警察・消防・学校・診療所・公園）の平均
  */
 function serviceHeat(view: WeekView, mask: Uint8Array): Record<ServiceHeat | 'service', Float32Array> {
   const out = { police: blank(), fire: blank(), school: blank(), clinic: blank(), park: blank(), service: blank() };
@@ -114,6 +114,7 @@ function serviceHeat(view: WeekView, mask: Uint8Array): Record<ServiceHeat | 'se
     if (!mask[i] || view.space.roadKind[i] !== -1) continue;
     const x = i % SIZE;
     const y = Math.floor(i / SIZE);
+    if (!facesRoad(view, x, y)) continue;
     let sum = 0;
     for (const kind of COVERAGE_KINDS) {
       const sv = serviceAt(view.field, kind, x, y);
@@ -127,6 +128,10 @@ function serviceHeat(view: WeekView, mask: Uint8Array): Record<ServiceHeat | 'se
   }
   return out;
 }
+
+const facesRoad = (view: WeekView, x: number, y: number): boolean =>
+  (x > 0 && view.space.roadKind[indexOf(x - 1, y)] !== -1) || (x < SIZE - 1 && view.space.roadKind[indexOf(x + 1, y)] !== -1)
+  || (y > 0 && view.space.roadKind[indexOf(x, y - 1)] !== -1) || (y < SIZE - 1 && view.space.roadKind[indexOf(x, y + 1)] !== -1);
 
 /** 電力（docs/city-design.md 9.4）: 建物と施設のマスに、来ていれば 1、今の週に止まった地区なら 0 */
 function powerHeat(world: Pick<World, 'sim'>, view: WeekView): Float32Array {

@@ -65,7 +65,8 @@ export function attachBuildControls(canvas: HTMLCanvasElement, renderer: CityRen
     const at = { x: pointer.cx + 18, y: pointer.cy + 20 };
     const show = (check: PlanCheck, title: string, extra: Parameters<CityRenderer['setPreview']>[0] = null): void => {
       renderer.setPreview(extra ?? { cells: check.cells, ok: check.ok });
-      store.getState().setHint({ ...at, ok: check.ok, cost: check.cost, reasons: check.reasons, title });
+      const wallet = tool.kind === 'facility' ? FACILITY_DEFS[tool.type].wallet : undefined;
+      store.getState().setHint({ ...at, ok: check.ok, cost: check.cost, reasons: check.reasons, title, ...(wallet ? { wallet } : {}) });
     };
 
     if (tool.kind === 'road') {

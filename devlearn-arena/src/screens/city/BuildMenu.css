@@ -253,8 +253,9 @@
   display: flex;
   flex-direction: column;
   justify-content: center;
+  flex: 0 0 auto;
   gap: 3px;
-  min-width: 220px;
+  width: 268px;
   padding-left: 10px;
   margin-left: 4px;
   border-left: 1px solid var(--hud-line);
@@ -287,12 +288,12 @@
 }
 .demand-line {
   display: grid;
-  grid-template-columns: auto 1fr 40px;
+  grid-template-columns: 52px 1fr 36px;
   align-items: center;
   gap: 6px;
 }
 .demand-sub {
-  min-width: 42px;
+  white-space: nowrap;
   font-weight: 400;
   color: var(--hud-text-sub);
   text-align: left;
@@ -301,7 +302,6 @@
   position: relative;
   display: block;
   height: 8px;
-  min-width: 96px;
   background: var(--hud-bg-strong);
   border: 1px solid var(--hud-line);
 }

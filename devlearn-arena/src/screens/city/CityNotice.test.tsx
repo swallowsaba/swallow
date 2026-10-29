@@ -2,7 +2,7 @@ import { act } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { afterEach, describe, expect, it } from 'vitest';
 import { SMALL_WINDOW_WIDTH, smallWindowRight } from '@/ui/smallWindowPlace';
-import { CityNotice } from './CityOverlays';
+import { CityNotice, PlacementHint } from './CityOverlays';
 
 /**
  * 知らせ（上の帯の下、右寄せ。docs/ui-design.md 3 章）は、情報パネルと小さな窓（10.0）の後ろに隠れない。
@@ -42,5 +42,14 @@ describe('知らせの置き場所', () => {
         expect(right, `${String(n)} 枚`).toBeGreaterThanOrEqual(smallWindowRight(n - 1, shifted) + SMALL_WINDOW_WIDTH);
       }
     }
+  });
+});
+
+describe('置く物の札の費用の財布', () => {
+  it('公共サービスと発電所は財政、それ以外は開発資金', () => {
+    const host = mount(<><PlacementHint hint={{ x: 0, y: 0, ok: true, cost: 800, reasons: [], title: '火力の発電所', wallet: 'treasury' }} /></>);
+    expect(host.querySelector('.place-hint-cost')?.textContent).toBe('800財政');
+    const other = mount(<PlacementHint hint={{ x: 0, y: 0, ok: true, cost: 400, reasons: [], title: 'Web 施設' }} />);
+    expect(other.querySelector('.place-hint-cost')?.textContent).toBe('400資金');
   });
 });

@@ -95,7 +95,7 @@ export function panelModel(city: City, sel: Selection, skills: Skills = {}, prog
     const day = Math.floor(city.day);
     const left = f.completeDay !== undefined ? Math.max(0, f.completeDay - day) : null;
     const condition = cond.kind === 'active' && off.has(f.id)
-      ? { text: '停電している（輪番の停電。ここで学ぶことはできる）', tone: 'bad' as const }
+      ? { text: def.group === 'facility' ? '停電している（輪番の停電。ここで学ぶことはできる）' : '停電している（輪番の停電）', tone: 'bad' as const }
       : cond.kind === 'active'
       ? { text: '稼働中', tone: 'ok' as const }
       : cond.kind === 'constructing'

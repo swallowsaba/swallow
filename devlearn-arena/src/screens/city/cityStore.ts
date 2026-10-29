@@ -65,6 +65,8 @@ export interface Hint {
   y: number;
   ok: boolean;
   cost: number;
+  /** 費用の財布（公共サービスと発電所は財政。無ければ開発資金） */
+  wallet?: 'funds' | 'treasury';
   reasons: Reason[];
   /** 何を置こうとしているか（1 行） */
   title: string;

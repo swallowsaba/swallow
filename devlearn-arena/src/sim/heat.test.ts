@@ -93,7 +93,7 @@ describe('公共サービスの行き届きと電力のヒートマップ（docs
   const active = (id: string, type: Facility['type'], x: number, y: number): Facility => ({ id, type, origin: { x, y }, rotation: 0, level: 1, state: 'active', builtDay: 0 });
   const withFacilities = (w: World, ...fs: Facility[]): World => ({ ...w, city: { ...w.city, facilities: [...w.city.facilities, ...fs] } });
 
-  it('行き届き（0〜100%）は、道路の外の陸のマスと住宅のマスに、面する道路の行き届き × 定員の余り。平均は 5 種の平均', () => {
+  it('行き届き（0〜100%）は、道路に面した陸のマス（住宅のマスを含む）に、面する道路の行き届き × 定員の余り。平均は 5 種の平均', () => {
     const w0 = withFacilities(GROWN.world, active('p', 'police', 53, 48), active('s', 'school', 58, 48));
     const { world: w, view } = weekStep(w0, T, false, POLITICS_RULES);
     const heat = heatOf(w, view);
@@ -111,8 +111,10 @@ describe('公共サービスの行き届きと電力のヒートマップ（docs
     // 道路と海には塗らない
     expect(Number.isNaN(heat.cells.police[view.space.roadCells[0] as number])).toBe(true);
     expect(Number.isNaN(heat.cells.police[indexOf(0, 0)])).toBe(true);
-    // 遠い陸のマスは 0
-    expect(heat.cells.police[indexOf(20, 20)]).toBe(0);
+    // 道路に面していない陸のマスには塗らない。道路に面していて届かないマスは 0
+    expect(Number.isNaN(heat.cells.police[indexOf(20, 20)])).toBe(true);
+    const far = view.space.residential.find((r) => serviceAt(view.field, 'police', r.building.cell.x, r.building.cell.y).value === 0);
+    if (far) expect(heat.cells.police[far.cell]).toBe(0);
   });
 
   it('電力: 来ている建物は 1、今の週に止まった地区の建物は 0。止まっていない時は全て 1', () => {

@@ -11,6 +11,8 @@ export interface HeatInfo {
   label: string;
   /** 値の大きい方が良いか（null は良し悪しが無い） */
   good: 'high' | 'low' | null;
+  /** 凡例の両端の言葉（無ければ「低い」「高い」） */
+  ends?: [string, string];
   /** 決まった幅（無ければ、塗るマスの値の幅） */
   range?: [number, number];
   /** 値を単位付きの文にする */
@@ -42,7 +44,7 @@ function coverageInfo(): Record<ServiceHeat | 'service', HeatInfo> {
   for (const k of ['service', ...SERVICE_HEAT] as const) {
     const name = k === 'service' ? '公共サービス' : SERVICE_NAMES[k];
     out[k] = {
-      label: k === 'service' ? '公共サービスの行き届き' : `行き届き（${SERVICE_NAMES[k]}）`, good: 'high', range: [0, 100],
+      label: k === 'service' ? '公共サービスの行き届き' : `行き届き（${SERVICE_NAMES[k]}）`, good: 'high', range: [0, 100], ends: ['届かない', '届く'],
       format: (v) => `${name}の行き届き ${int(v)}%`,
       span: () => '0〜100%（距離で薄まる）',
       note: SERVICE_NOTES[k],
@@ -84,7 +86,7 @@ export const HEAT_INFO: Record<HeatKind, HeatInfo> = {
   },
   ...coverageInfo(),
   power: {
-    label: '電力', good: 'high', range: [0, 1],
+    label: '電力', good: 'high', range: [0, 1], ends: ['止まった', '来ている'],
     format: (v) => (v >= 0.5 ? '電気が来ている' : '停電している（輪番で止まった地区）'),
     span: () => '来ている／止まった',
     note: '電気は道路に沿って届く。足りない週は、地区を番号の順に止める',
@@ -153,8 +155,8 @@ export function heatImage(kind: HeatKind, values: Float32Array): Uint8ClampedArr
 }
 
 /** 凡例（「家賃 4.0〜11.0 万円／月」と、段の色） */
-export function heatLegend(kind: HeatKind, values: Float32Array): { title: string; span: string; colors: string[]; note: string } {
+export function heatLegend(kind: HeatKind, values: Float32Array): { title: string; span: string; colors: string[]; note: string; ends: [string, string] } {
   const info = HEAT_INFO[kind];
   const range = rangeOf(kind, values);
-  return { title: info.label, span: range ? info.span(range[0], range[1]) : 'まだ値が無い', colors: stepColors(kind), note: info.note };
+  return { title: info.label, span: range ? info.span(range[0], range[1]) : 'まだ値が無い', colors: stepColors(kind), note: info.note, ends: info.ends ?? ['低い', '高い'] };
 }

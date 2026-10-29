@@ -467,7 +467,7 @@ function legendOf(kind: ViewKind, store: CityStore): OverlayLegend {
   const city = s.city;
   if (isHeat(kind)) {
     const l = heatLegend(kind, s.heat?.cells[kind] ?? new Float32Array(0));
-    return { low: '低い', high: '高い', note: l.note, span: l.span, colors: l.colors };
+    return { low: l.ends[0], high: l.ends[1], note: l.note, span: l.span, colors: l.colors };
   }
   switch (kind) {
     case 'learning':
