@@ -40,6 +40,8 @@ export interface GrowOptions {
   upgradeKinds?: readonly ZoneKind[];
   /** 都市規模を、建物の大きさからでなく、今の city.population（模擬の住民の合計）のまま使う */
   simPopulation?: boolean;
+  /** 停電で止まっている施設（技術力に数えない。docs/game-design.md 24.1）。都市の模擬が渡す */
+  facilityOff?: (f: Facility) => boolean;
 }
 
 function isDone(builtDay: number, day: number): boolean {
@@ -239,7 +241,7 @@ export function growDay(city: City, day: number, options: GrowOptions = {}): Cit
     // 都市規模は模擬の住民の合計のまま。技術力だけを数え直す（施設の Lv の合計）
     const roads = occupancyOf(next).roads;
     let techPower = 0;
-    for (const f of next.facilities) if (FACILITY_DEFS[f.type].group === 'facility' && facilityWorks(f, roads)) techPower += facilityTech(f);
+    for (const f of next.facilities) if (FACILITY_DEFS[f.type].group === 'facility' && facilityWorks(f, roads) && !options.facilityOff?.(f)) techPower += facilityTech(f);
     return { ...next, population: city.population, techPower };
   }
   const after = statsOf(next);

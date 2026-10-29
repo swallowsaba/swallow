@@ -133,7 +133,8 @@ describe('任期と選挙の日（21.1）', () => {
 
 describe('公約（21.4）', () => {
   it('2 つ選ぶ。初めの値を覚える。知らない ID・同じ物・2 つでない時は選べない', () => {
-    const w = GROWN.world;
+    // 失業のある町（失業率 0% の町では「失業率を下げる」は選ぶ時に果たしている）
+    const w = { ...GROWN.world, sim: { ...GROWN.world.sim, lastWeek: { ...GROWN.world.sim.lastWeek, unemployment: 0.2 } } };
     const ok = choosePledges(w, ['p-pop', 'p-unemp'], RULES);
     expect(ok.problem).toBeUndefined();
     expect(ok.world.politics.term.pledges).toEqual([{ pledgeId: 'p-pop', startValue: w.city.population }, { pledgeId: 'p-unemp', startValue: 0 }]);

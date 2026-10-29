@@ -83,6 +83,16 @@ export const FACTORY_REVENUE = 2.2;
 export const LAND_BASE = 100;
 export const LAND_ROAD: Partial<Record<RoadKind, number>> = { street: 10, avenue: 20, roundabout: 10, bridge: 10 };
 export const LAND_PARK_MAX = 30;
+/** 財政が赤字の間の、公共サービスの行き届きの割合（22.2） */
+export const SERVICE_DEFICIT = 0.5;
+/**
+ * 公共サービスの満足の点（13.8）: 行き届き 0 で base、1 で base + slope（間は直線）。
+ * 学校は子育ての層だけに効く（24.2）
+ */
+export const SERVICE_POINTS = { police: { base: -6, slope: 10 }, school: { base: -6, slope: 10 }, clinic: { base: -6, slope: 10 }, fire: { base: -4, slope: 7 } } as const;
+/** 電力の満足の点: 停電した日の割合（直近 4 週）× −15（13.8） */
+export const POWER_POINTS = -15;
+/** 公共サービスの行き届きの平均（4 種）の、地価への最大の効き（13.4） */
 export const LAND_SERVICE_MAX = 30;
 /** 仕事への近さ: 平均の通勤時間が 20 分以下で +20、60 分で 0 */
 export const LAND_JOBS = { max: 20, near: 20, far: 60 } as const;
@@ -154,9 +164,12 @@ export const INITIAL_TREASURY = 800;
 export const TAX_RESIDENT = 0.03;
 export const TAX_BUSINESS = 0.05;
 
-/* ---------- 電力（24.1。G10 で使う。版 4 の形のために陸揚げ所と上限を持つ） ---------- */
+/* ---------- 電力（24.1） ---------- */
 
+/** 外からの電気の上限（MW。新しい都市） */
 export const EXTERNAL_POWER_CAP = 8;
+/** 移行した都市の外からの電気の上限 = max(8, 今の使う量 × 1.2)（docs/data-model.md 12 章。移行した瞬間に停電させない） */
+export const MIGRATION_POWER_MARGIN = 1.2;
 
 /* ---------- 政治資本（21.5・27 章。版 4 の形の初めの値） ---------- */
 

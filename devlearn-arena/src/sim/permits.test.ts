@@ -75,10 +75,11 @@ describe('申請の対象（15.1）', () => {
 
   it('用途地域の変更: 人の住む住宅から 3 マス以内に工業を塗る時・区画の種類を変える時だけ申請になる', () => {
     const { world, terrain } = rich();
-    // 空き地に住宅を塗って 1 週たつと、人が住む
+    // 空き地に住宅を塗って 2 週たつと建物が建つ。そこに人が住む（公共サービスも仕事も無い村には人が来ないので、世帯を入れる）
     let w = apply(world, terrain, { kind: 'zone', zone: 'residential', a: { x: 40, y: 48 }, b: { x: 42, y: 48 } });
     expect(w.applications).toHaveLength(0);
     for (let i = 0; i < 14; i += 1) w = stepDay(w, terrain);
+    w = { ...w, sim: { ...w.sim, households: Object.fromEntries(w.city.buildings.map((b) => [b.id, [1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]])) } };
     expect(Object.values(w.sim.households).some((h) => h.some((v) => v > 0))).toBe(true);
     // (1) 住宅の向かい（2 マス）に工業 → 申請
     expect(rezoneOf(w, 'industrial', [{ x: 41, y: 46 }]).needed).toBe(true);

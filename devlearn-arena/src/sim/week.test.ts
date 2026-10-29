@@ -170,18 +170,33 @@ describe('支持と支持率（docs/game-design.md 13.8）', () => {
   it('層の支持は、毎週、目標との差の 1/4 だけ近づく（急に跳ねない）', () => {
     const { world, terrain } = town();
     // 税率を 20% にすると、税の点が 10 下がる（重みのある層はそれだけ）。支持はその 1/4 ずつ近づく
+    // 目標は、その週の建物ごとの点（0〜100 に縮めた後）を、地区の中で世帯の数で平均した物
     const before = world.sim.supportParts;
     const taxed: World = { ...world, budget: { ...world.budget, taxRate: 20 } };
-    const { world: after } = weekStep(taxed, terrain);
+    const { world: after, view } = weekStep(taxed, terrain);
     const d = Object.keys(before)[0] as string;
     const tax = FACTORS.indexOf('tax');
+    let checked = 0;
     for (let l = 0; l < 12; l += 1) {
       const prev = before[d]?.[l]?.[tax] as number;
       const next = after.sim.supportParts[d]?.[l]?.[tax] as number;
       if (after.sim.support[Number(d)]?.[l] === -1) continue;
-      const goal = -10 * weightOf(l, 'tax');
+      let s = 0;
+      let n = 0;
+      for (const zb of view.space.residential) {
+        if (zb.district !== Number(d)) continue;
+        const hh = taxed.sim.households[zb.building.id]?.[l] ?? 0;
+        s += hh * (view.points.get(zb.building.id)?.[l]?.[tax] ?? 0);
+        n += hh;
+      }
+      const goal = s / n;
+      // 縮めていなければ、税の点は −10 × 重み
+      expect(goal).toBeLessThan(0);
+      expect(goal).toBeGreaterThanOrEqual(-10 * weightOf(l, 'tax') - 1e-9);
       expect(next - prev).toBeCloseTo((goal - prev) / 4, 4);
+      checked += 1;
     }
+    expect(checked).toBeGreaterThan(0);
   });
 
   it('支持率 = Σ 層の支持 × 18 歳以上の人数 ÷ 18 歳以上の人数の合計。内訳（要因 × 層）の合計 + 50 と一致する', () => {

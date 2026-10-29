@@ -3,19 +3,21 @@ import type { Terrain } from '@/city/terrain';
 import type { Building, City, Point } from '@/city/types';
 import { employersOf, salesOf, settleBusinesses, type Employer } from './businesses';
 import { commuteOf, type Commute } from './commute';
-import { landFieldOf, landTermsAt, noiseTermsAt, parkAt, type LandField, type Source } from './land';
+import { COVERAGE_KINDS, FACILITY_DEFS, type CoverageKind } from '@/city/facilities';
+import { landFieldOf, landTermsAt, noiseTermsAt, parkAt, serviceAt, type LandField, type Source } from './land';
 import {
   adultsOf, AGE_SHARE, ageOf, FACTOR_COUNT, FACTORS, INCOME_SHARE, incomeOf, incomeYenOf, LAYER_COUNT, LAYER_SHARE, LAYERS, MONTHLY_INCOME, sizeOf, WEIGHTS,
   workersOf, type FactorId,
 } from './layers';
 import { networkOf, type Network } from './network';
 import { petitionModsOf, type PetitionMods } from './petitionMods';
+import { stoppedNow } from './power';
 import {
-  AFFORD_POINTS, BURDEN_LEAVE, BURDEN_LIVABLE, COMMUTE_POINTS, GREEN_POINTS, JOBS_POINTS, LEAVE_RATE, NOISE_POINTS, PEOPLE_PER_UNIT, piecewise,
+  AFFORD_POINTS, BURDEN_LEAVE, BURDEN_LIVABLE, COMMUTE_POINTS, GREEN_POINTS, JOBS_POINTS, LEAVE_RATE, NOISE_POINTS, PEOPLE_PER_UNIT, piecewise, POWER_POINTS, SERVICE_POINTS,
   RENT_FACTOR, RENT_TYPE, RENT_YEN_PER_VALUE, SPENDING_RATE, SUPPORT_EASE, TAX_BUSINESS, TAX_RESIDENT, taxPoints, TRUST_WEEKLY_KEEP,
   WEEKS_PER_TERM,
 } from './rules';
-import { DISTRICT_COUNT, spaceOf, type Space } from './space';
+import { DISTRICT_COUNT, districtCenter, spaceOf, type Space } from './space';
 import { NO_RULES, type Cause, type PoliticsRules, type SimHistory, type WeeklyBreakdown, type WeeklySample, type World } from './types';
 
 /**
@@ -31,6 +33,13 @@ const COMMUTE = F('commute');
 const NOISE = F('noise');
 const GREEN = F('green');
 const TAX = F('tax');
+const POWER = F('power');
+const SERVICE_FACTORS: readonly { kind: CoverageKind; f: number }[] = COVERAGE_KINDS.map((kind) => ({ kind, f: F(kind) }));
+/** 定員で数える世帯の年齢の帯（学校は子育て、診療所は高齢。24.2） */
+const CAPACITY_AGE: Partial<Record<CoverageKind, number>> = { school: 1, clinic: 3 };
+/** 公共サービスの点（13.8）。学校は子育ての層だけ */
+const servicePoints = (kind: CoverageKind, layer: number, c: number): number =>
+  kind === 'school' && ageOf(layer) !== 1 ? 0 : SERVICE_POINTS[kind].base + SERVICE_POINTS[kind].slope * c;
 const TRUST = F('trust');
 
 /** 住宅の戸数（CAPACITY ÷ 2.3） */
@@ -102,9 +111,11 @@ function firstHalf(world: World, terrain: Terrain, week: number, rules: Politics
   const space = spaceOf(city, terrain);
   // 受理した請願の中身（家賃の補助・騒音の制限・バス。22.1）
   const mods = petitionModsOf(world, space, rules, week);
+  // 今の週に停電している地区（24.1）
+  const stopped = stoppedNow(sim.power);
 
-  // 1. 事業者と雇い手
-  const synced = employersOf(space, sim.businesses, sim.vacant, week);
+  // 1. 事業者と雇い手（停電した地区の IT 施設は雇用に数えない）
+  const synced = employersOf(space, sim.businesses, sim.vacant, week, stopped);
   const employers = synced.employers;
 
   // 2. 働く人と仕事（[地区 × 3 + 帯]）
@@ -139,8 +150,8 @@ function firstHalf(world: World, terrain: Terrain, week: number, rules: Politics
   const commute = commuteOf(space, net, workers, jobs, trafficWeight, mods.bus);
 
   // 4. 騒音・公園・地価
-  const field = landFieldOf(space, commute.minutes, mods.noise);
-  return { space, synced, employers, households, workers, jobs, net, commute, field, mods };
+  const field = landFieldOf(space, commute.minutes, mods.noise, world.budget.treasury < 0);
+  return { space, synced, employers, households, workers, jobs, net, commute, field, mods, stopped };
 }
 
 /** 申請の見込み（docs/game-design.md 16.2）に使う、週の計算の途中の値（騒音・通勤の混み具合・家賃）。世界は変えない */
@@ -167,13 +178,35 @@ export function weekStep(world: World, terrain: Terrain, init = false, rules: Po
   let city: City = world.city;
   const week = init ? sim.week : sim.week + 1;
   const taxRate = budget.taxRate;
-  const { space, synced, employers, households, workers, jobs, net, commute, field, mods } = firstHalf(world, terrain, week, rules);
+  const { space, synced, employers, households, workers, jobs, net, commute, field, mods, stopped } = firstHalf(world, terrain, week, rules);
   const anyJobs = jobs.some((j) => j > 0);
 
   // 5〜6. 家賃と負担、要因の点（建物 × 層）
   const rent = new Map<string, { rent: number; burden: number[] }>();
   const points = new Map<string, number[][]>();
   const tax = taxPoints(taxRate);
+  // 公共サービスの行き届き（建物ごと・種類ごと）。定員のある施設は、行き届く世帯が定員を超えた分だけ下がる（24.2）
+  const served = new Map<number, number>();
+  const raw = new Map<string, { value: number; src: number }[]>();
+  for (const zb of space.residential) {
+    const list = SERVICE_FACTORS.map((s) => serviceAt(field, s.kind, zb.building.cell.x, zb.building.cell.y));
+    raw.set(zb.building.id, list);
+    const hh = households[zb.building.id] as number[];
+    SERVICE_FACTORS.forEach((s, k) => {
+      const age = CAPACITY_AGE[s.kind];
+      const sv = list[k] as { value: number; src: number };
+      if (age === undefined || sv.src < 0) return;
+      const n = (hh[age * 3] as number) + (hh[age * 3 + 1] as number) + (hh[age * 3 + 2] as number);
+      served.set(sv.src, (served.get(sv.src) ?? 0) + n);
+    });
+  }
+  const capFactor = (src: number): number => {
+    const cap = src >= 0 ? FACILITY_DEFS[(space.civic[src] as { facility: { type: keyof typeof FACILITY_DEFS } }).facility.type].coverage?.capacity : undefined;
+    const n = served.get(src) ?? 0;
+    return cap === undefined || n <= cap ? 1 : cap / n;
+  };
+  const coverage = new Map<string, { value: number; src: number }[]>();
+  for (const [id, list] of raw) coverage.set(id, list.map((sv) => ({ value: sv.value * capFactor(sv.src), src: sv.src })));
   for (const zb of space.residential) {
     const b = zb.building;
     const land = field.land[zb.cell] as number;
@@ -181,6 +214,7 @@ export function weekStep(world: World, terrain: Terrain, init = false, rules: Po
     const burden = burdenOf(r, zb.district, mods);
     rent.set(b.id, { rent: r, burden });
     const noise = noisePoints(field.noise[zb.cell] as number);
+    const outage = Math.min(28, sim.power.outageDays[zb.district] ?? 0) / 28;
     const green = parkAt(field, b.cell.x, b.cell.y).value * GREEN_POINTS;
     const minutes = commute.minutes[zb.district] as number;
     const commuteP = !anyJobs ? 0 : Number.isFinite(minutes) ? commutePoints(minutes) : (COMMUTE_POINTS[COMMUTE_POINTS.length - 1] as readonly [number, number])[1];
@@ -194,6 +228,11 @@ export function weekStep(world: World, terrain: Terrain, init = false, rules: Po
       row[GREEN] = green;
       row[TAX] = tax;
       row[TRUST] = sim.trust[l] as number;
+      const cover = coverage.get(b.id) as { value: number }[];
+      SERVICE_FACTORS.forEach((s, k) => {
+        row[s.f] = servicePoints(s.kind, l, (cover[k] as { value: number }).value);
+      });
+      row[POWER] = POWER_POINTS * outage;
       const w = WEIGHTS[l] as readonly number[];
       for (let f = 0; f < FACTOR_COUNT; f += 1) row[f] = (row[f] as number) * (w[f] as number);
       return clampTarget(row);
@@ -339,6 +378,20 @@ export function weekStep(world: World, terrain: Terrain, init = false, rules: Po
         const p = space.parks[park.park];
         if (p) addCause(GREEN, { kind: 'facility', id: p.facility.id, at: p.center }, sum[GREEN] as number);
       }
+      // 公共サービス: 点 = 行き届き 0 の時の点（base）+ 行き届きの分（slope × 行き届き）。足し算なので、行き届きの分を施設へ、残りを「行き届かないこと」へ分ける
+      const cover = coverage.get(zb.building.id) as { value: number; src: number }[];
+      SERVICE_FACTORS.forEach((s, k) => {
+        const v = sum[s.f] as number;
+        if (v === 0) return;
+        const c = cover[k] as { value: number; src: number };
+        const sp = SERVICE_POINTS[s.kind];
+        const total = sp.base + sp.slope * c.value;
+        const af = c.src >= 0 ? space.civic[c.src] : undefined;
+        const part = af && total !== 0 ? (v * sp.slope * c.value) / total : 0;
+        if (af && part !== 0) addCause(s.f, { kind: 'facility', id: af.facility.id, at: af.center }, part);
+        if (v - part !== 0) addCause(s.f, { kind: 'demand', id: s.kind, at }, v - part);
+      });
+      if (sum[POWER] !== 0) addCause(POWER, { kind: 'demand', id: 'power', at: districtCenter(zb.district) }, sum[POWER] as number);
       // 仕事・通勤・税・信頼の原因は都市に 1 つずつ。建物ごとに鍵を作らず、足してから 1 度だけ入れる（場所は最初に足した建物）
       for (const s of whole) {
         const v = sum[s.factor] as number;
@@ -368,7 +421,7 @@ export function weekStep(world: World, terrain: Terrain, init = false, rules: Po
     }
     if (s > 0) spending.set(zb.front, (spending.get(zb.front) ?? 0) + s);
   }
-  const sales = salesOf(space, employers, spending, city.techPower, population, taxRate, mods.noise);
+  const sales = salesOf(space, employers, spending, city.techPower, population, taxRate, mods.noise, stopped);
   let businesses = synced.businesses;
   let vacant = synced.vacant;
   if (!init) {

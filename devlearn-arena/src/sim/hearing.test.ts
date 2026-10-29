@@ -3,7 +3,7 @@ import { POLITICS_RULES, REASONS } from '@/content/politics';
 import { applyOp, type Op } from './commands';
 import { closeHearing, handOptions, issuesOf, playHand, pushCost, PUSH_TRUST, WRONG_TRUST, type Hand, type SkillValues } from './hearing';
 import { previewOf } from './week';
-import { concernFactor, explainCut, PARTIAL_CUT, WRONG_RAISE } from './opposition';
+import { concernFactor, explainCut, oppositionOf, PARTIAL_CUT, WRONG_RAISE } from './opposition';
 import { persuade } from './council';
 import { STAGE_DAYS } from './permits';
 import { indexOf } from './space';
@@ -39,6 +39,9 @@ function inHearing(): { world: World; id: string } {
   return { world: w, id };
 }
 const HEARING = inHearing();
+
+/** 公聴会の日の都市で計算し直した理由（受付の終わりから都市が育っているので、手の前と後は同じ日の値で比べる） */
+const recomputed = (w: World, reasonId: string, id = HEARING.id) => oppositionOf(w, T, appOf(w, id), POLITICS_RULES).objections.find((o) => o.reasonId === reasonId);
 
 function hand(world: World, reasonId: string, h: Hand, skills: SkillValues = {}, id = HEARING.id): ReturnType<typeof playHand> {
   return playHand(world, T, POLITICS_RULES, id, reasonId, h, skills, today(world));
@@ -97,7 +100,7 @@ describe('譲歩する（17.1）', () => {
     expect(problem).toBeUndefined();
     const after = appOf(world, HEARING.id);
     expect(after.mods).toEqual({ power: 0.6, tech: 0.85 });
-    const p0 = before.objections.find((o) => o.reasonId === 'dc-power');
+    const p0 = recomputed(HEARING.world, 'dc-power');
     const p1 = after.objections.find((o) => o.reasonId === 'dc-power');
     expect(p1?.strength).toBeCloseTo((p0?.strength ?? 0) * 0.6, 3);
     expect(after.opposition).toBeLessThan(before.opposition);
@@ -161,7 +164,7 @@ describe('説明する（17.2）', () => {
   it('確かな説明で、その理由の割合が下がる。スキルが足りない説明は出せない', () => {
     expect(hand(HEARING.world, 'dc-jobs', { kind: 'explain', explanationId: 'dc-jobs-number' }, { db: 30 }).problem).toBe('skill');
     const { world } = hand(HEARING.world, 'dc-jobs', { kind: 'explain', explanationId: 'dc-jobs-number' }, { db: 50 });
-    const before = appOf(HEARING.world, HEARING.id).objections.find((o) => o.reasonId === 'dc-jobs');
+    const before = recomputed(HEARING.world, 'dc-jobs');
     const after = appOf(world, HEARING.id).objections.find((o) => o.reasonId === 'dc-jobs');
     expect(after?.share).toBeLessThan(before?.share ?? 0);
     expect(after?.strength).toBe(before?.strength);
@@ -171,7 +174,7 @@ describe('説明する（17.2）', () => {
   it('誤った説明は、懸念が増え、反対した層の信頼が 2 下がる', () => {
     const { world } = hand(HEARING.world, 'dc-power', { kind: 'explain', explanationId: 'dc-power-cloud' }, { cloud: 10 });
     const o = appOf(world, HEARING.id).objections.find((x) => x.reasonId === 'dc-power');
-    const before = appOf(HEARING.world, HEARING.id).objections.find((x) => x.reasonId === 'dc-power');
+    const before = recomputed(HEARING.world, 'dc-power');
     expect(o?.share).toBeGreaterThanOrEqual(before?.share ?? 0);
     expect(o?.layers?.length).toBeGreaterThan(0);
     for (const l of o?.layers ?? []) expect(world.sim.trust[l]).toBeCloseTo((HEARING.world.sim.trust[l] ?? 0) + WRONG_TRUST, 9);
@@ -206,11 +209,11 @@ describe('公聴会の終わり（17.4）と議会の採決', () => {
     expect(w.city.funds).toBe(funds + 650);
   });
 
-  it('スキル 0 のまま、譲歩と政治資本（一番大きな論点を押し切り、1 人を説得する）で可決させ、譲歩の費用が取り分けに足される（S3）', () => {
+  it('スキル 0 のまま、譲歩と政治資本（雇用の論点を押し切り、1 人を説得する）で可決させ、譲歩の費用が取り分けに足される（S3）', () => {
     let w = HEARING.world;
     const issues = [...issuesOf(appOf(w, HEARING.id))].sort((a, b) => b.share - a.share);
-    issues.forEach((o, i) => {
-      if (i === 0) {
+    issues.forEach((o) => {
+      if (o.reasonId === 'dc-jobs') {
         w = hand(w, o.reasonId, { kind: 'push' }).world;
         return;
       }
@@ -220,8 +223,8 @@ describe('公聴会の終わり（17.4）と議会の採決', () => {
     const pending = appOf(w, HEARING.id).pendingCost ?? 0;
     expect(pending).toBeGreaterThan(0);
     w = closeHearing(w, HEARING.id, today(w));
-    // 反対の向きで一番 0 に近い議員を説得する（政治資本 3）
-    const r = persuade(w, POLITICS_RULES, HEARING.id, 'michishita', today(w));
+    // 反対の向きで 0 に近い議員を説得する（政治資本 3）
+    const r = persuade(w, POLITICS_RULES, HEARING.id, 'nadamoto', today(w));
     expect(r.problem).toBeUndefined();
     w = r.world;
     const funds = w.city.funds;
@@ -254,7 +257,10 @@ describe('譲歩した申請が完成すると、その性質が模擬の値に�
       }
       w = days(w, 80);
       expect(appOf(w, id).stage).toBe('done');
-      return w;
+      // 住宅のそばのマス（50, 46）に建ち終わった工場を置いて比べる（工業の需要しだいで、そこに建つ日が変わるため。工場の騒音は区画の性質で決まる）
+      const zone = w.city.zones.at(-1) as World['city']['zones'][number];
+      const others = w.city.buildings.filter((b) => b.zoneId !== zone.id);
+      return { ...w, city: { ...w.city, buildings: [...others, { id: 'b-test', zoneId: zone.id, cell: { x: 50, y: 46 }, variant: 'industrial:1', level: 1, builtDay: today(w) - 30 }] } };
     };
     const plain = finish(false);
     const light = finish(true);

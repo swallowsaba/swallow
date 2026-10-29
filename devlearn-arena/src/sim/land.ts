@@ -1,7 +1,9 @@
+import { COVERAGE_KINDS, FACILITY_DEFS, type CoverageKind } from '@/city/facilities';
 import type { Point } from '@/city/types';
 import { reach } from './network';
 import {
-  LAND_BASE, LAND_FACILITY, LAND_HILL_STEP, LAND_JOBS, LAND_NOISE, LAND_PARK_MAX, LAND_ROAD, LAND_WATER, NIGHT_FACILITIES, NOISE, PARK_REACH, GREEN_REACH,
+  LAND_BASE, LAND_FACILITY, LAND_HILL_STEP, LAND_JOBS, LAND_NOISE, LAND_PARK_MAX, LAND_ROAD, LAND_SERVICE_MAX, LAND_WATER, NIGHT_FACILITIES, NOISE, PARK_REACH, GREEN_REACH,
+  SERVICE_DEFICIT,
   piecewise,
 } from './rules';
 import { CELLS, DISTRICT_COUNT, districtOfIndex, hillLevels, indexOf, inMap, nearWater, NEIGHBORS, ROAD_KINDS, SIZE, type Space } from './space';
@@ -32,6 +34,8 @@ export interface LandField {
   /** 道路のマス → 公園の行き届き（0〜1）と、一番効いている公園の番号 */
   parkRoad: Float32Array;
   parkRoadSrc: Int32Array;
+  /** 公共サービスの種類 → 道路のマスの行き届き（0〜1。定員の前）と、一番効いている施設の番号（space.civic の番号） */
+  service: Record<CoverageKind, { road: Float32Array; src: Int32Array }>;
   /** マスごとの地価 */
   land: Float32Array;
 }
@@ -58,6 +62,11 @@ export function noiseSourcesOf(space: Space, limit?: ReadonlyMap<string, number>
   for (const i of space.roadCells) {
     if (ROAD_KINDS[space.roadKind[i] as number] !== 'avenue') continue;
     out.push({ kind: 'road', id: space.roadId[i] ?? '', at: { x: (i % SIZE) + 0.5, y: Math.floor(i / SIZE) + 0.5 }, value: NOISE.avenue, radius: NOISE.avenueRadius });
+  }
+  // 騒音を出す公共の建物（火力の発電所 25、半径 5。13.4）
+  for (const af of space.civic) {
+    const n = FACILITY_DEFS[af.facility.type].noise;
+    if (n) out.push({ kind: 'facility', id: af.facility.id, at: af.center, value: n.value * noiseFactor(af.facility.mods), radius: n.radius });
   }
   for (const af of space.facilities) {
     const f = af.facility;
@@ -95,6 +104,47 @@ function stampNoise(sources: readonly NoiseSource[]): { noise: Float32Array; byD
   }
   for (let i = 0; i < CELLS; i += 1) noise[i] = Math.min(100, noise[i] as number);
   return { noise, byDistrict };
+}
+
+/**
+ * 道路のマスごとの、公共サービスの行き届き（道路の距離で 1 → 行き届く距離で 0。同じ種類が重なれば大きい方。docs/game-design.md 24.2）。
+ * 財政が赤字の間は半分（22.2）
+ */
+function serviceCoverage(space: Space, deficit: boolean): LandField['service'] {
+  const out = Object.fromEntries(COVERAGE_KINDS.map((k) => [k, { road: new Float32Array(CELLS), src: new Int32Array(CELLS).fill(-1) }])) as LandField['service'];
+  space.civic.forEach((af, n) => {
+    const cov = FACILITY_DEFS[af.facility.type].coverage;
+    if (!cov || af.fronts.length === 0) return;
+    const t = out[cov.kind];
+    const k = deficit ? SERVICE_DEFICIT : 1;
+    for (const [i, d] of reach(space, af.fronts, cov.distance)) {
+      const v = falloff(d, cov.distance) * k;
+      if (v > (t.road[i] as number)) {
+        t.road[i] = v;
+        t.src[i] = n;
+      }
+    }
+  });
+  return out;
+}
+
+/** マスの前の道路の、公共サービスの行き届き（面している道路のうち一番大きい物）と、その施設の番号 */
+export function serviceAt(field: Pick<LandField, 'service'>, kind: CoverageKind, x: number, y: number): { value: number; src: number } {
+  const t = field.service[kind];
+  let value = 0;
+  let src = -1;
+  for (const [dx, dy] of NEIGHBORS) {
+    const nx = x + dx;
+    const ny = y + dy;
+    if (!inMap(nx, ny)) continue;
+    const i = indexOf(nx, ny);
+    const v = t.road[i] as number;
+    if (v > value) {
+      value = v;
+      src = t.src[i] as number;
+    }
+  }
+  return { value, src };
 }
 
 /** 道路のマスごとの、公園の類の行き届き（道路の距離で 1 → 行き届く距離で 0。重なれば大きい方） */
@@ -172,7 +222,7 @@ export interface LandTerm {
  * マスの地価の項を全て並べる（13.4 の式の順）。合計が地価。
  * commute: 地区ごとの平均の通勤時間（分）
  */
-export function landTermsAt(space: Space, field: Pick<LandField, 'parkRoad' | 'parkRoadSrc' | 'noise' | 'noiseByDistrict'>, commute: Float32Array, x: number, y: number, zoneId: string): LandTerm[] {
+export function landTermsAt(space: Space, field: Pick<LandField, 'parkRoad' | 'parkRoadSrc' | 'noise' | 'noiseByDistrict' | 'service'>, commute: Float32Array, x: number, y: number, zoneId: string): LandTerm[] {
   const at = { x: x + 0.5, y: y + 0.5 };
   const here: Source = { kind: 'zone', id: zoneId, at };
   const terms: LandTerm[] = [{ source: here, value: LAND_BASE }];
@@ -181,6 +231,12 @@ export function landTermsAt(space: Space, field: Pick<LandField, 'parkRoad' | 'p
   const park = parkAt(field, x, y);
   const parkFacility = park.park >= 0 ? space.parks[park.park] : undefined;
   if (park.value > 0 && parkFacility) terms.push({ source: { kind: 'facility', id: parkFacility.facility.id, at: parkFacility.center }, value: park.value * LAND_PARK_MAX });
+  // 公共サービスの行き届きの平均（4 種。最大 +30）。項は種類ごとに、一番効いている施設へ
+  for (const kind of COVERAGE_KINDS) {
+    const sv = serviceAt(field, kind, x, y);
+    const af = sv.src >= 0 ? space.civic[sv.src] : undefined;
+    if (sv.value > 0 && af) terms.push({ source: { kind: 'facility', id: af.facility.id, at: af.center }, value: (sv.value * LAND_SERVICE_MAX) / COVERAGE_KINDS.length });
+  }
   const jobs = jobsNearValue(commute[districtOfIndex(indexOf(x, y))] ?? Infinity);
   if (jobs > 0) terms.push({ source: { kind: 'demand', id: 'jobs-near', at }, value: jobs });
   if (nearWater(space.terrain, LAND_WATER.range)[indexOf(x, y)]) terms.push({ source: here, value: LAND_WATER.value });
@@ -214,11 +270,12 @@ export function noiseTermsAt(field: Pick<LandField, 'noise' | 'noiseByDistrict'>
 }
 
 /** 騒音・公園の行き届き・地価を、全てのマスで計算する */
-export function landFieldOf(space: Space, commute: Float32Array, noiseLimit?: ReadonlyMap<string, number>): LandField {
+export function landFieldOf(space: Space, commute: Float32Array, noiseLimit?: ReadonlyMap<string, number>, deficit = false): LandField {
   const noiseSources = noiseSourcesOf(space, noiseLimit);
   const { noise, byDistrict } = stampNoise(noiseSources);
   const { cover, src } = parkCoverage(space);
-  const field = { noise, noiseByDistrict: byDistrict, parkRoad: cover, parkRoadSrc: src };
+  const service = serviceCoverage(space, deficit);
+  const field = { noise, noiseByDistrict: byDistrict, parkRoad: cover, parkRoadSrc: src, service };
   const land = new Float32Array(CELLS);
   const water = nearWater(space.terrain, LAND_WATER.range);
   const hills = hillLevels(space.terrain);
@@ -238,6 +295,9 @@ export function landFieldOf(space: Space, commute: Float32Array, noiseLimit?: Re
     for (let x = 0; x < SIZE; x += 1) {
       const i = indexOf(x, y);
       let v = LAND_BASE + roadFront(space, x, y).value + parkAt(field, x, y).value * LAND_PARK_MAX;
+      let sv = 0;
+      for (const kind of COVERAGE_KINDS) sv += serviceAt(field, kind, x, y).value;
+      v += (sv * LAND_SERVICE_MAX) / COVERAGE_KINDS.length;
       v += jobsNearValue(commute[districtOfIndex(i)] ?? Infinity);
       if (water[i]) v += LAND_WATER.value;
       v += (hills[i] as number) * LAND_HILL_STEP;

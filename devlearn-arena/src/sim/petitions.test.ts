@@ -18,8 +18,10 @@ const T = village().terrain;
 
 /** 見本の都市は請願の候補を入れて動かしてあるので、受信箱を空にしてから使う */
 const fresh = (g: { world: World }): { world: World } => ({ world: { ...g.world, petitions: { inbox: [], handled: {}, effects: [] } } });
-const RENT = fresh(grownVillage(400));
-const SMALL = fresh(grownVillage(120));
+/** 家賃の高い町: 400 日育てた村の需給の倍率を上げてある（空き室が減り続けた町。13.5 の倍率は 1 週に ±3% しか動かない） */
+const highRent = (g: { world: World }): { world: World } => ({ world: { ...g.world, sim: { ...g.world.sim, rentFactor: 1.6 } } });
+const RENT = fresh(highRent(grownVillage(400)));
+const SMALL = fresh(grownVillage(200));
 
 function days(world: World, n: number, rules: PoliticsRules = POLITICS_RULES): { world: World; view: WeekView | null } {
   let w = world;
@@ -181,7 +183,8 @@ describe('受理・拒否・保留（22.1）', () => {
       w = toWeekEnd(w, rules).world;
       expect(w.petitions.inbox).toEqual([]);
     }
-    w = toWeekEnd(w, rules).world;
+    // 26 週の間に家賃の倍率は下がっていくので、家賃の高い町に戻してから 26 週目を進める
+    w = toWeekEnd(highRent({ world: w }).world, rules).world;
     expect(w.petitions.inbox.map((i) => i.petitionId)).toEqual(['rent-low']);
   });
 

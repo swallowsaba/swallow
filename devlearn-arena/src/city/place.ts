@@ -18,7 +18,9 @@ export type ReasonCode =
   | 'fog' | 'sea' | 'hill' | 'overlap' | 'road-overlap' | 'no-road' | 'entrance' | 'funds' | 'stage'
   | 'bridge-stage' | 'bridge-long' | 'short'
   /** 申請を出せない（docs/game-design.md 15.2） */
-  | 'permit-many' | 'permit-site' | 'permit-retry';
+  | 'permit-many' | 'permit-site' | 'permit-retry' | 'permit-deficit'
+  /** 公共サービスと発電所は財政で建てる（docs/game-design.md 2 章） */
+  | 'treasury';
 
 export interface Reason {
   code: ReasonCode;
@@ -40,6 +42,8 @@ const TEXT: Record<Exclude<ReasonCode, 'stage'>, string> = {
   'permit-many': '審議中の申請が多すぎる（6 件まで）',
   'permit-site': '申請中・工事中の敷地と重なる',
   'permit-retry': '否決から 28 日たつまで、同じ場所に同じ物は出せない',
+  'permit-deficit': '財政が赤字の間は、公共サービスと発電所の申請を出せない',
+  treasury: '財政が足りない',
 };
 
 /** 理由の文（配置の判定の外から理由を足す時） */
@@ -184,7 +188,8 @@ export function checkZone(city: City, terrain: Terrain, kind: ZoneKind, a: Point
 
 /* ---------- 施設と公園 ---------- */
 
-export function checkFacility(city: City, terrain: Terrain, type: FacilityType, origin: Point, rotation: Facility['rotation']): PlanCheck {
+/** treasury: 財政の今の残り（公共サービスと発電所は財政で建てる。渡さなければ財政の足りる・足りないを見ない） */
+export function checkFacility(city: City, terrain: Terrain, type: FacilityType, origin: Point, rotation: Facility['rotation'], treasury?: number): PlanCheck {
   const reasons = new Reasons();
   const def = FACILITY_DEFS[type];
   if (city.stage < def.minStage) reasons.add(stageReason(def.minStage));
@@ -202,7 +207,11 @@ export function checkFacility(city: City, terrain: Terrain, type: FacilityType, 
   if (!front.some((c) => occ.roads.has(cellKey(c.x, c.y)))) {
     reasons.add(needsEntrance && aroundCells(shape).some((c) => occ.roads.has(cellKey(c.x, c.y))) ? reason('entrance') : reason('no-road'));
   }
-  if (def.cost > city.funds) reasons.add(reason('funds'));
+  if (def.wallet === 'treasury') {
+    if (treasury !== undefined && def.cost > treasury) reasons.add(reason('treasury'));
+  } else if (def.cost > city.funds) {
+    reasons.add(reason('funds'));
+  }
   return { ok: reasons.items.length === 0, cost: def.cost, reasons: reasons.items, cells: marks };
 }
 

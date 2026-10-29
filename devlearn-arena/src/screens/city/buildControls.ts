@@ -93,7 +93,7 @@ export function attachBuildControls(canvas: HTMLCanvasElement, renderer: CityRen
       const size = footprintOf(tool.type, rotation);
       const origin = { x: cell.x - Math.floor((size.w - 1) / 2), y: cell.y - Math.floor((size.d - 1) / 2) };
       const op: Op = { kind: 'facility', type: tool.type, origin, rotation, ...(tool.landmark ? { landmark: tool.landmark } : {}) };
-      const { check, note } = withPermit(checkFacility(city, terrain, tool.type, origin, rotation), op);
+      const { check, note } = withPermit(checkFacility(city, terrain, tool.type, origin, rotation, store.getState().world.budget.treasury), op);
       const name = tool.landmark ? (landmarkOf(tool.landmark)?.name ?? FACILITY_DEFS[tool.type].name) : FACILITY_DEFS[tool.type].name;
       const ghost = { type: tool.type, origin, rotation, ...(tool.landmark ? { landmark: tool.landmark } : {}) };
       show(check, `${name}（R で回す）${note}`, { cells: check.cells, ghost, ok: check.ok });

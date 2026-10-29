@@ -17,8 +17,8 @@ const DIR = join(__dirname, 'facilities');
 const files = readdirSync(DIR).flatMap((type) => readdirSync(join(DIR, type)).map((f) => ({ type, file: join(DIR, type, f), name: f })));
 
 describe('施設の SVG', () => {
-  it('全ての施設と公園の類（ミッションの報酬の記念碑を除く）の Lv1 がある', () => {
-    const types = Object.values(FACILITY_DEFS).filter((d) => d.group !== 'reward').map((d) => d.type);
+  it('全ての施設と公園の類（ミッションの報酬の記念碑を除く）の Lv1 がある（公共サービスと発電所は src/city/assets/civic/。docs/city-design.md 9.6）', () => {
+    const types = Object.values(FACILITY_DEFS).filter((d) => d.group === 'facility' || d.group === 'park').map((d) => d.type);
     expect(types).toHaveLength(19);
     for (const type of types) {
       expect(files.some((f) => f.type === type && f.name === 'lv1.svg'), type).toBe(true);

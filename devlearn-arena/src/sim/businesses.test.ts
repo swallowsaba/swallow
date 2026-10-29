@@ -109,6 +109,15 @@ describe('事業者の成長と撤退（docs/game-design.md 13.3）', () => {
     // 事務所の売上（(20 + 0 + 0) × 2.2 = 44 を 1 つで受ける）は税率で変わらない
     expect(salesOf(space, [office()], new Map(), 0, 0, 20).revenue.get('b-o')).toBeCloseTo(44, 9);
   });
+
+  it('停電している地区の事業者は売上 0（docs/game-design.md 24.1）。費用はかかる', () => {
+    const space = { roadCells: [], facilities: [] } as unknown as Space;
+    const o = office();
+    const dark = salesOf(space, [o], new Map(), 0, 0, 10, undefined, new Set([o.district]));
+    expect(dark.revenue.get('b-o')).toBe(0);
+    expect(dark.cost.get('b-o')).toBeCloseTo(20, 9);
+    expect(salesOf(space, [o], new Map(), 0, 0, 10, undefined, new Set([o.district + 1])).revenue.get('b-o')).toBeCloseTo(44, 9);
+  });
 });
 
 describe('税収（docs/game-design.md 22.2。G1 は計算して記録するだけ）', () => {

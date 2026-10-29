@@ -1,3 +1,4 @@
+import { FACILITY_DEFS } from '@/city/facilities';
 import { powerUse } from './power';
 import type { Budget, PoliticsRules, World } from './types';
 
@@ -23,21 +24,32 @@ export function setTaxRate(world: World, rate: number): World {
   return { ...world, budget };
 }
 
-/** 週の支出（公共サービスの維持と発電所の維持は G10 で足す） */
-export function weeklySpend(world: World, rules: PoliticsRules, petitions = 0): Budget['ledger'][number]['spend'] {
-  const external = round2(Math.min(powerUse(world.city, rules), world.sim.power.externalCapMW) * EXTERNAL_PRICE);
-  return { services: 0, power: 0, external, petitions: round2(petitions) };
+/**
+ * 週の支出: 完成した公共サービスと発電所の維持費・外からの電気の代金（買った量 × 週 2）・受理した請願の費用。
+ * externalMW は道路網ごとの送電（power.ts の powerGridOf）で決めた、外から買った量。渡さなければ、使う量（上限まで）
+ */
+export function weeklySpend(world: World, rules: PoliticsRules, petitions = 0, externalMW?: number): Budget['ledger'][number]['spend'] {
+  let services = 0;
+  let power = 0;
+  for (const f of world.city.facilities) {
+    if (f.state !== 'active') continue;
+    const def = FACILITY_DEFS[f.type];
+    if (def.group === 'civic') services += def.upkeep ?? 0;
+    else if (def.group === 'power') power += def.upkeep ?? 0;
+  }
+  const bought = externalMW ?? Math.min(powerUse(world.city, rules), world.sim.power.externalCapMW);
+  return { services, power, external: round2(bought * EXTERNAL_PRICE), petitions: round2(petitions) };
 }
 
 /**
  * 週の終わりの払い（週の計算の直後に呼ぶ）: 財政 = 前の週 + 税収 − 支出。赤字の続いた週。待っている税率をここで今の税率にする
  * （決めた週の税収は前の税率のまま、次の週から新しい税率）。税率が変わった週は、グラフに印を付ける
  */
-export function settleWeek(world: World, rules: PoliticsRules, petitions = 0): World {
+export function settleWeek(world: World, rules: PoliticsRules, petitions = 0, externalMW?: number): World {
   const { budget } = world;
   const row = budget.ledger.at(-1);
   if (!row || row.week !== world.sim.week) return world;
-  const spend = weeklySpend(world, rules, petitions);
+  const spend = weeklySpend(world, rules, petitions, externalMW);
   const treasury = round2(budget.treasury - spend.services - spend.power - spend.external - spend.petitions);
   const changed = budget.pendingTaxRate !== undefined && budget.pendingTaxRate !== budget.taxRate;
   const next: Budget = {

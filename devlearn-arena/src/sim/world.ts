@@ -3,13 +3,14 @@ import { growDay } from '@/city/growth';
 import { newCity } from '@/city/newCity';
 import { createRandom } from '@/city/random';
 import { START_AREA, type Terrain } from '@/city/terrain';
-import type { City } from '@/city/types';
+import type { City, Facility } from '@/city/types';
 import { LAYER_COUNT, LAYER_SHARE, MEAN_HOUSEHOLD_SIZE } from './layers';
-import { DAYS_PER_WEEK, EXTERNAL_POWER_CAP, INITIAL_TAX_RATE, INITIAL_TREASURY } from './rules';
+import { DAYS_PER_WEEK, EXTERNAL_POWER_CAP, INITIAL_TAX_RATE, INITIAL_TREASURY, MIGRATION_POWER_MARGIN } from './rules';
 import { START_CAPITAL, stepPolitics } from './election';
 import { settleWeek } from './budget';
 import { withNews } from './news';
 import { petitionSpend, stepPetitions } from './petitions';
+import { facilityPowerDistrict, powerGridOf, powerUse, stepPower, stoppedNow } from './power';
 import { DISTRICT_COUNT, landingOf, spaceOf } from './space';
 import { NO_RULES, type Difficulty, type Politics, type PoliticsRules, type SimState, type World } from './types';
 import { stepApplications } from './permits';
@@ -92,7 +93,7 @@ export function newWorld(terrain: Terrain, names: NameParts, seed?: number, diff
  * - 住宅の建物ごとに、建物の大きさで住む人数を、初めの分布の世帯に分けて入れる（移行の前と後で都市規模が変わらない）
  * - 商業・オフィス・工業の建物に、働き口を埋めた事業者を入れる。工事中の施設は完成にする
  * - 支持は、始めの週の目標の値で埋める（1/4 ずつ近づけずに始める）。信頼は 0、需給の倍率は 1
- * - 電力: 外からの電気の上限を max(8, 今の使う量 × 1.2) にする（G10 で使う量を数える。今は 8）
+ * - 電力: 外からの電気の上限を max(8, 今の使う量 × 1.2) にする（移行した瞬間に停電させない。docs/data-model.md 12 章）
  */
 export function worldFromCity(city: City, terrain: Terrain, names: NameParts, difficulty: Difficulty = 'normal'): World {
   const day = Math.floor(city.day);
@@ -109,7 +110,8 @@ export function worldFromCity(city: City, terrain: Terrain, names: NameParts, di
     households[zb.building.id] = LAYER_SHARE.map((s) => count * s);
     people += persons;
   }
-  const seeded: World = { ...world, city: { ...settled, population: Math.round(people) }, sim: { ...world.sim, households } };
+  const cap = Math.max(EXTERNAL_POWER_CAP, Math.ceil(powerUse(settled, NO_RULES) * MIGRATION_POWER_MARGIN * 100) / 100);
+  const seeded: World = { ...world, city: { ...settled, population: Math.round(people) }, sim: { ...world.sim, households, power: { ...world.sim.power, externalCapMW: cap } } };
   const { world: started } = weekStep(seeded, terrain, true);
   return {
     ...started,
@@ -156,17 +158,24 @@ export function stepDayView(world: World, terrain: Terrain, rules: PoliticsRules
   const day = Math.floor(world.city.day) + 1;
   // 申請の段階と工事（毎日。docs/game-design.md 13.1）
   const permitted = stepApplications(world, day, terrain, rules);
+  // 停電している地区の施設は、技術力に数えない（24.1。学習には効かない）
+  const stopped = stoppedNow(world.sim.power);
   const city = growDay(permitted.city, day, {
     unemployedLowMid: world.sim.lastWeek.unemployedLowMid,
     upgradeKinds: ['residential'],
     simPopulation: true,
+    ...(stopped.size > 0 ? { facilityOff: (f: Facility) => stopped.has(facilityPowerDistrict(f)) } : {}),
   });
   const next: World = { ...permitted, city };
   const weekly = day % DAYS_PER_WEEK === 0 ? weekStep(next, terrain, false, rules) : null;
-  // 週の終わりの払い（税収から支出を引いて財政に。待っている税率は次の週から。docs/game-design.md 22.2）と、請願（期限・届く。22.1）
-  const stepped = weekly
-    ? { world: stepPetitions(settleWeek(weekly.world, rules, petitionSpend(weekly.world, rules, weekly.world.sim.week)), terrain, weekly.view, rules), view: weekly.view }
-    : { world: next, view: null };
+  // 週の終わりの払い（税収から支出を引いて財政に。待っている税率は次の週から。docs/game-design.md 22.2）と、
+  // 次の週の輪番の停電（払った後の財政で、発電所の出力を決める。24.1）と、請願（期限・届く。22.1）
+  let stepped: { world: World; view: WeekView | null } = { world: next, view: null };
+  if (weekly) {
+    const bought = powerGridOf(weekly.world, weekly.view.space, rules).external;
+    const settled = settleWeek(weekly.world, rules, petitionSpend(weekly.world, rules, weekly.world.sim.week), bought);
+    stepped = { world: stepPetitions(stepPower(settled, weekly.view.space, rules), terrain, weekly.view, rules), view: weekly.view };
+  }
   // 市政（週の終わりの公約と支持率の上昇・選挙の日。docs/game-design.md 21 章）。この日の出来事を新聞の記事に（22.3）
   return { world: withNews(world, stepPolitics(stepped.world, day, rules), rules), view: stepped.view };
 }

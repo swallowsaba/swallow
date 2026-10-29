@@ -97,7 +97,7 @@ function applyOpCore(world: World, op: Op, terrain: Terrain, rules: PoliticsRule
       return permitProblems(world, draft, day).length > 0 ? world : file(world, draft, cost, day, terrain, rules);
     }
     case 'facility': {
-      const check = checkFacility(city, terrain, op.type, op.origin, op.rotation);
+      const check = checkFacility(city, terrain, op.type, op.origin, op.rotation, world.budget.treasury);
       if (!check.ok) return world;
       if (needsApplication(op.type)) {
         const draft: Pick<Application, 'kind' | 'target'> = { kind: 'facility', target: { type: op.type, origin: { ...op.origin }, rotation: op.rotation } };

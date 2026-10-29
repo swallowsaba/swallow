@@ -147,14 +147,19 @@ function answer(plan: (o: ObjectionState, rank: number) => Hand | null, skills: 
 }
 const firstConcession = (w: World, reasonId: string): string =>
   handOptions(w, appOf(w, H.id), reasonId, {}, POLITICS_RULES)?.concessions.find((c) => !c.concession.requires)?.concession.id ?? '';
+/** 雇用の論点（雇用を重く見る議員の主な論点）を押し切り、ほかには譲歩する */
+const pushJobs = (x: ObjectionState): Hand => (x.reasonId === 'dc-jobs' ? { kind: 'push' } : { kind: 'concede', concessionId: firstConcession(H.world, x.reasonId) });
 
 describe('同じ申請で、公聴会の答え方を変えると、賛否と 1 行が変わる（G6 の完成条件）', () => {
   it('答えない / 譲歩する / 押し切って説得する で、賛成の数と各人の理由が変わる', () => {
     const silent = appOf(answer(() => null), H.id);
     const conceded = appOf(answer((x) => ({ kind: 'concede', concessionId: firstConcession(H.world, x.reasonId) })), H.id);
-    const pushed = appOf(answer((x, i) => (i === 0 ? { kind: 'push' } : { kind: 'concede', concessionId: firstConcession(H.world, x.reasonId) }), {}, 'michishita'), H.id);
+    const pushed = appOf(answer(pushJobs, {}, 'nadamoto'), H.id);
     const yes = (a: Application): number => a.vote?.members.filter((m) => m.yes).length ?? -1;
-    expect(yes(silent)).toBeLessThan(yes(conceded));
+    const score = (a: Application): number => a.vote?.members.reduce((s, m) => s + m.score, 0) ?? 0;
+    // 譲歩すると点が上がり（賛否の数は同じこともある）、押し切って説得すると賛成が増える
+    expect(yes(silent)).toBeLessThanOrEqual(yes(conceded));
+    expect(score(silent)).toBeLessThan(score(conceded));
     expect(yes(conceded)).toBeLessThan(yes(pushed));
     expect(silent.stage).toBe('rejected');
     expect(yes(pushed)).toBeGreaterThanOrEqual(4);
@@ -166,8 +171,7 @@ describe('同じ申請で、公聴会の答え方を変えると、賛否と 1 �
   });
 
   it('決定性: 同じ答え方を 2 回流すと、採決が深く等しい', () => {
-    const plan = (x: ObjectionState, i: number): Hand => (i === 0 ? { kind: 'push' } : { kind: 'concede', concessionId: firstConcession(H.world, x.reasonId) });
-    expect(appOf(answer(plan), H.id).vote).toEqual(appOf(answer(plan), H.id).vote);
+    expect(appOf(answer(pushJobs), H.id).vote).toEqual(appOf(answer(pushJobs), H.id).vote);
   });
 });
 
@@ -217,17 +221,17 @@ describe('異議申し立て（19 章）', () => {
 
   /** 押し切って説得し、可決したが申し立てが立った申請 */
   function appealed(): World {
-    const w = answer((x, i) => (i === 0 ? { kind: 'push' } : { kind: 'concede', concessionId: firstConcession(H.world, x.reasonId) }), {}, 'michishita');
+    const w = answer(pushJobs, {}, 'nadamoto');
     const a = appOf(w, H.id);
     if (a.stage === 'appeal') return w;
     // 境の手前で可決した時は、採決の前に申し立ての境を手ごわい町（25%）にして立てる（反対率は公聴会の時のまま）
     let x = H.world;
     const issues = [...issuesOf(appOf(x, H.id))].sort((p, q) => q.share - p.share);
-    issues.forEach((y, i) => {
-      x = playHand(x, T, POLITICS_RULES, H.id, y.reasonId, i === 0 ? { kind: 'push' } : { kind: 'concede', concessionId: firstConcession(H.world, y.reasonId) }, {}, today(x)).world;
+    issues.forEach((y) => {
+      x = playHand(x, T, POLITICS_RULES, H.id, y.reasonId, pushJobs(y), {}, today(x)).world;
     });
     x = closeHearing(x, H.id, today(x));
-    x = persuade(x, POLITICS_RULES, H.id, 'michishita', today(x)).world;
+    x = persuade(x, POLITICS_RULES, H.id, 'nadamoto', today(x)).world;
     x = { ...x, politics: { ...x.politics, difficulty: 'tough' } };
     return days(x, 15);
   }

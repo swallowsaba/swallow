@@ -89,6 +89,11 @@ const DEMAND_NAMES: Record<string, string> = {
   commute: '通勤の道のり',
   rent: '住まいの需給',
   'jobs-near': '仕事への近さ',
+  police: '警察の届かなさ',
+  fire: '消防の届かなさ',
+  school: '学校の届かなさ',
+  clinic: '診療所の届かなさ',
+  power: '停電',
 };
 
 /** 原因の言い表し（「北浜町の工業区画」） */

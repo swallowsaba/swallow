@@ -29,6 +29,8 @@ export interface PowerState {
   rotation: number;
   /** [地区 144] 直近 28 日に止まった日の数 */
   outageDays: number[];
+  /** 直近 4 週の、週ごとに止まった地区（最後が今の週。outageDays はここから数える。docs/data-model.md 8 章） */
+  recent?: number[][];
 }
 
 export interface SimState {

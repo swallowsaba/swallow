@@ -32,6 +32,7 @@ export const simStateSchema = z.object({
     externalCapMW: num,
     rotation: z.number().int().min(0),
     outageDays: z.array(num).length(144),
+    recent: z.array(z.array(z.number().int().min(0).max(143))).max(4).optional(),
   }).strict(),
   employed: z.record(z.string(), num),
   lastWeek: z.object({ unemployedLowMid: num, approval: num, jobs: num, unemployment: num }).strict(),

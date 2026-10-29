@@ -206,6 +206,7 @@ interface PowerState {
   externalCapMW: number;                 // 外からの電気の上限（新しい都市は 8。移行した都市は 12 章）
   rotation: number;                      // 輪番の停電で次に止める地区の番号
   outageDays: number[];                  // [地区 144] 直近 28 日に止まった日の数
+  recent?: number[][];                   // 直近 4 週の、週ごとに止まった地区（最後が今の週）。outageDays はここから数える（止まった週 × 7 日）
 }
 ```
 

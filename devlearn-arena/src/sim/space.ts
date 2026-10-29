@@ -67,6 +67,8 @@ export interface Space {
   workplaces: ZoneBuilding[];
   facilities: ActiveFacility[];
   parks: ActiveFacility[];
+  /** 公共サービスと発電所（docs/city-design.md 9.2・9.4。道路に面している完成した物） */
+  civic: ActiveFacility[];
   /** 区画の ID → 譲歩で変わった性質（用途地域の変更の申請で塗った区画だけ） */
   zoneMods: Map<string, Record<string, number>>;
   /** 建物の ID → 区画の建物 */
@@ -147,6 +149,7 @@ export function spaceOf(city: City, terrain: Terrain): Space {
   }
   const facilities: ActiveFacility[] = [];
   const parks: ActiveFacility[] = [];
+  const civic: ActiveFacility[] = [];
   const roadSet = occ.roads;
   for (const f of city.facilities) {
     const def = FACILITY_DEFS[f.type];
@@ -156,12 +159,13 @@ export function spaceOf(city: City, terrain: Terrain): Space {
     const first = fronts[0];
     const af: ActiveFacility = { facility: f, center, district: first !== undefined ? districtOfIndex(first) : districtOf(Math.floor(center.x), Math.floor(center.y)), fronts };
     if (def.group === 'facility') facilities.push(af);
+    if (def.group === 'civic' || def.group === 'power') civic.push(af);
     // 敷地の中に緑地を持つ施設（譲歩の green）は、公園の類と同じく行き届きを足す
     if (def.group === 'park' || (def.group === 'facility' && (f.mods?.green ?? 0) > 0)) parks.push(af);
   }
   const zoneMods = new Map<string, Record<string, number>>();
   for (const z of city.zones) if (z.mods) zoneMods.set(z.id, z.mods);
-  return { city, terrain, occ, roadKind, roadId, roadCells, residential, workplaces, facilities, parks, zoneMods, byBuilding };
+  return { city, terrain, occ, roadKind, roadId, roadCells, residential, workplaces, facilities, parks, civic, zoneMods, byBuilding };
 }
 
 /* ---------- 地形から決まる物（地形ごとに 1 回） ---------- */

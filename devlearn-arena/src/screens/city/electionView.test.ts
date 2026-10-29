@@ -72,7 +72,9 @@ describe('選挙の見込み（上の帯の任期の残りから。10.6 と同�
   });
 
   it('選挙までの週と、選んだ公約の今の値（果たした物は「果たした」）', () => {
-    const w0 = beforeElection(GROWN.world, 7 * 38);
+    // 失業のある町（失業率が 5% 以下の町では「失業率を 5% 以下にする」は選ぶ時に果たしている）
+    const b = beforeElection(GROWN.world, 7 * 38);
+    const w0 = { ...b, sim: { ...b.sim, lastWeek: { ...b.sim.lastWeek, unemployment: 0.2 } } };
     const chosen = applyOp(w0, { kind: 'pledges', ids: ['pop-grow', 'unemployment-low'] }, T, POLITICS_RULES);
     const m = electionModel(chosen, 'preview');
     expect(m?.weeksLeft).toBe(38);

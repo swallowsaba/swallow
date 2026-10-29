@@ -58,9 +58,15 @@ export const STAGE_LABEL: Record<ApplicationStage, string> = {
 export const isReviewing = (a: Pick<Application, 'stage'>): boolean => REVIEW_STAGES.includes(a.stage);
 export const isOpen = (a: Pick<Application, 'stage'>): boolean => isReviewing(a) || a.stage === 'construction';
 
-/** 施設を置くと申請になるか（IT 施設 15 種。公園の類と記念碑は今までどおり即時。15.1） */
+/** 施設を置くと申請になるか（IT 施設 15 種・公共サービス・発電所。公園の類と記念碑は今までどおり即時。15.1） */
 export function needsApplication(type: FacilityType): boolean {
-  return FACILITY_DEFS[type].group === 'facility';
+  const g = FACILITY_DEFS[type].group;
+  return g === 'facility' || g === 'civic' || g === 'power';
+}
+
+/** 申請の費用を出す財布（公共サービスと発電所は財政。docs/game-design.md 2 章） */
+export function walletOf(app: Pick<Application, 'kind' | 'target'>): Application['wallet'] {
+  return app.kind === 'facility' && app.target.type && FACILITY_DEFS[app.target.type].wallet === 'treasury' ? 'treasury' : 'funds';
 }
 
 /** 着工から完成までの日数（15.2）。施設は大きさ、アップグレードは 21、用途地域の変更は 0 */
@@ -105,9 +111,9 @@ export function applicationName(app: Pick<Application, 'kind' | 'target'>, city:
 }
 
 /** 申請を出せない理由（置く物の判定とは別。docs/city-design.md 8 章の「審議中の申請が多すぎる」など） */
-export type PermitProblem = 'too-many' | 'site' | 'rejected-recently';
+export type PermitProblem = 'too-many' | 'site' | 'rejected-recently' | 'deficit';
 /** 理由の文は配置の理由と同じ所（src/city/place.ts）に置く */
-export const PERMIT_REASON = { 'too-many': 'permit-many', site: 'permit-site', 'rejected-recently': 'permit-retry' } as const satisfies Record<PermitProblem, ReasonCode>;
+export const PERMIT_REASON = { 'too-many': 'permit-many', site: 'permit-site', 'rejected-recently': 'permit-retry', deficit: 'permit-deficit' } as const satisfies Record<PermitProblem, ReasonCode>;
 
 /** 審議中・工事中の敷地のマス（他の物を置けない） */
 export function occupiedSites(world: Pick<World, 'applications' | 'city'>): Set<string> {
@@ -119,9 +125,10 @@ export function occupiedSites(world: Pick<World, 'applications' | 'city'>): Set<
   return out;
 }
 
-/** 申請を出せるか（6 件まで・敷地が重ならない・否決から 28 日）。出せなければ理由 */
-export function permitProblems(world: Pick<World, 'applications' | 'city'>, draft: Pick<Application, 'kind' | 'target'>, day: number): PermitProblem[] {
+/** 申請を出せるか（6 件まで・敷地が重ならない・否決から 28 日・財政が赤字の間の公共サービスと発電所（22.2））。出せなければ理由 */
+export function permitProblems(world: Pick<World, 'applications' | 'city' | 'budget'>, draft: Pick<Application, 'kind' | 'target'>, day: number): PermitProblem[] {
   const out: PermitProblem[] = [];
+  if (walletOf(draft) === 'treasury' && world.budget.treasury < 0) out.push('deficit');
   if (world.applications.filter(isReviewing).length >= MAX_PENDING) out.push('too-many');
   const sites = occupiedSites(world);
   const cells = siteCells(draft, world.city);
@@ -179,15 +186,18 @@ export function exceptionOf(app: Pick<Application, 'kind' | 'target'>, city: Cit
   return false;
 }
 
-/** 申請を出す。費用を取り分け（開発資金から引き）、敷地に囲いと看板が立つ（用途地域の審査から始める。アップグレードは反対の受付から） */
+/** 申請を出す。費用を取り分け（開発資金か財政から引き）、敷地に囲いと看板が立つ（用途地域の審査から始める。アップグレードは反対の受付から） */
 export function file(world: World, draft: Pick<Application, 'kind' | 'target'>, cost: number, day: number, terrain?: Terrain, rules: PoliticsRules = NO_RULES): World {
   const id = nextId('a', world.applications.map((a) => a.id));
   const stage: ApplicationStage = draft.kind === 'upgrade' ? 'objection' : 'zoning';
+  const wallet = walletOf(draft);
   let app: Application = {
-    id, kind: draft.kind, target: draft.target, stage, stageDay: day, filedDay: day, wallet: 'funds', reserved: cost,
+    id, kind: draft.kind, target: draft.target, stage, stageDay: day, filedDay: day, wallet, reserved: cost,
     exception: false, objections: [], opposition: 0, mods: {},
   };
-  const reserved: World = { ...world, city: { ...world.city, funds: world.city.funds - cost } };
+  const reserved: World = wallet === 'funds'
+    ? { ...world, city: { ...world.city, funds: world.city.funds - cost } }
+    : { ...world, budget: { ...world.budget, treasury: world.budget.treasury - cost } };
   // アップグレードは、出した日から反対の受付（費用を取り分けた後の都市で、反対を計算する）
   if (stage === 'objection' && terrain) app = { ...app, objections: oppositionOf(reserved, terrain, app, rules).objections.map((o) => ({ ...o, share: 0 })) };
   return { ...reserved, applications: [...world.applications, app] };
@@ -200,6 +210,7 @@ export function withdraw(world: World, id: string, day: number): World {
   return {
     ...world,
     city: { ...world.city, funds: world.city.funds + (app.wallet === 'funds' ? app.reserved : 0) },
+    budget: app.wallet === 'treasury' ? { ...world.budget, treasury: world.budget.treasury + app.reserved } : world.budget,
     applications: world.applications.map((a) => (a.id === id ? { ...a, stage: 'withdrawn' as const, stageDay: day } : a)),
   };
 }

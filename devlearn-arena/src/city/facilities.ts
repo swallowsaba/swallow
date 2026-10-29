@@ -10,8 +10,11 @@ export interface FacilityDef {
   type: FacilityType;
   name: string;
   domain?: DomainId;
-  /** facility = 分野の施設 / park = 公園の類（建設メニューの「公園」）/ reward = ミッションの報酬（建設メニューに出さない） */
-  group: 'facility' | 'park' | 'reward';
+  /**
+   * facility = 分野の施設（IT 施設）/ park = 公園の類（建設メニューの「公園」）/ reward = ミッションの報酬（建設メニューに出さない）/
+   * civic = 公共サービス / power = 発電所（建設メニューの「公共」。docs/city-design.md 9.2〜9.4）
+   */
+  group: 'facility' | 'park' | 'reward' | 'civic' | 'power';
   /** 建設メニューの棚（分野の施設だけ。1 つの棚に 5 つまで並べる） */
   shelf?: FacilityShelf;
   /** 回す前の敷地の大きさ（マス） */
@@ -23,19 +26,31 @@ export interface FacilityDef {
   minStage: 1 | 2 | 3 | 4 | 5;
   /** Lv が上がると加わる見た目（docs/city-design.md 4 章。[0] が Lv1 の姿） */
   looks?: string[];
-  /** 使う電力（MW / Lv。docs/game-design.md 24.1・docs/content-spec.md 7.9） */
+  /** 使う電力（MW / Lv。docs/game-design.md 24.1・docs/content-spec.md 7.9）。発電所は負の値で作る量 */
   powerMW?: number;
+  /** 建てる財布（無ければ開発資金。公共サービスと発電所は財政。docs/game-design.md 2 章） */
+  wallet?: 'funds' | 'treasury';
+  /** 週の維持費（財政。docs/game-design.md 22.2） */
+  upkeep?: number;
+  /** 行き届き（docs/game-design.md 24.2）。距離は道路のマス、定員は世帯 */
+  coverage?: { kind: CoverageKind; distance: number; capacity?: number };
+  /** 騒音（docs/game-design.md 13.4。火力の発電所） */
+  noise?: { value: number; radius: number };
   /** 譲歩で変えられる性質の初めの値（Lv を掛けて使う。docs/content-spec.md 7.1.1） */
   traits?: { coolingWater?: number };
 }
 
 export type FacilityShelf = 'base' | 'dev' | 'ops';
+/** 公共サービスの行き届きの種類（公園の類の緑地は land.ts の別の計算） */
+export type CoverageKind = 'police' | 'fire' | 'school' | 'clinic';
+export const COVERAGE_KINDS: readonly CoverageKind[] = ['police', 'fire', 'school', 'clinic'];
 export const SHELF_NAMES: Record<FacilityShelf, string> = { base: '学びと基盤', dev: 'Web と開発', ops: 'クラウドと運用' };
 
 export const FACILITY_TYPES = [
   'academy', 'server', 'network', 'web', 'security', 'devoffice', 'deploy', 'container',
   'cluster', 'datacenter', 'cloud', 'monitor', 'devops', 'incident', 'research',
   'park', 'treerow', 'plaza', 'fountain', 'monument',
+  'police', 'fire', 'school', 'clinic', 'power-thermal', 'power-solar',
 ] as const satisfies readonly FacilityType[];
 
 const DOMAINS = [
@@ -47,14 +62,18 @@ const schema = z.object({
     type: z.enum(FACILITY_TYPES),
     name: z.string().min(1),
     domain: z.enum(DOMAINS).optional(),
-    group: z.enum(['facility', 'park', 'reward']),
+    group: z.enum(['facility', 'park', 'reward', 'civic', 'power']),
     shelf: z.enum(['base', 'dev', 'ops']).optional(),
     w: z.number().int().min(1).max(3),
     d: z.number().int().min(1).max(3),
     cost: z.number().int().min(0),
     minStage: z.union([z.literal(1), z.literal(2), z.literal(3), z.literal(4), z.literal(5)]),
     looks: z.array(z.string().min(1)).min(2).optional(),
-    powerMW: z.number().min(0).optional(),
+    powerMW: z.number().optional(),
+    wallet: z.enum(['funds', 'treasury']).optional(),
+    upkeep: z.number().min(0).optional(),
+    coverage: z.object({ kind: z.enum(['police', 'fire', 'school', 'clinic']), distance: z.number().int().min(1), capacity: z.number().int().min(1).optional() }).strict().optional(),
+    noise: z.object({ value: z.number().min(0), radius: z.number().min(1) }).strict().optional(),
     traits: z.object({ coolingWater: z.number().min(0).max(1).optional() }).strict().optional(),
   })),
 });
@@ -70,6 +89,9 @@ export function parseFacilities(raw: unknown): Record<FacilityType, FacilityDef>
   for (const t of FACILITY_TYPES) if (!out[t]) throw new Error(`施設の定義が無い: ${t}`);
   for (const f of list) if ((f.group === 'facility') !== (f.shelf !== undefined)) throw new Error(`施設の棚は分野の施設だけに付ける: ${f.type}`);
   for (const f of list) if ((f.group === 'facility') !== (f.looks !== undefined)) throw new Error(`Lv ごとの見た目は分野の施設だけに付ける: ${f.type}`);
+  for (const f of list) if ((f.group === 'power') !== ((f.powerMW ?? 0) < 0)) throw new Error(`作る電力（負の値）は発電所だけ: ${f.type}`);
+  for (const f of list) if ((f.group === 'civic' || f.group === 'power') !== (f.wallet === 'treasury')) throw new Error(`財政で建てるのは公共サービスと発電所だけ: ${f.type}`);
+  for (const f of list) if ((f.group === 'civic') !== (f.coverage !== undefined)) throw new Error(`行き届きは公共サービスだけ: ${f.type}`);
   return out;
 }
 

@@ -1,6 +1,7 @@
 import { facilityJobs, zoneCapacity } from '@/city/rules';
 import type { ZoneKind } from '@/city/types';
 import { reach } from './network';
+import { facilityPowerDistrict } from './power';
 import {
   CLOSE_WEEKS, FACTORY_REVENUE, GROW_FILL, GROW_WEEKS, IT_BONUS_PER_LEVEL, IT_RANGE, JOB_BANDS, OFFICE_REVENUE, REOPEN_WEEKS, SHOP_RANGE,
   TAX_COST, WAGE, type BusinessKind,
@@ -42,7 +43,7 @@ const split = (total: number, bands: readonly [number, number, number]): [number
  * 建物と事業者を合わせる: 新しい建物に事業者を入れ（撤退して 8 週たたない建物には入れない）、無くなった建物の事業者を消す。
  * 返すのは、今週の雇い手の一覧と、合わせた後の事業者
  */
-export function employersOf(space: Space, businesses: Record<string, BusinessState>, vacant: Record<string, number>, week: number): {
+export function employersOf(space: Space, businesses: Record<string, BusinessState>, vacant: Record<string, number>, week: number, stopped: ReadonlySet<number> = new Set()): {
   employers: Employer[];
   businesses: Record<string, BusinessState>;
   vacant: Record<string, number>;
@@ -63,8 +64,13 @@ export function employersOf(space: Space, businesses: Record<string, BusinessSta
     const total = zoneCapacity(place.kind, place.building.level, space.zoneMods.get(place.zoneId));
     employers.push({ id, kind, district: place.district, slots: split(total, JOB_BANDS[kind]), place });
   }
+  // 停電した地区の IT 施設は雇用に数えない（docs/game-design.md 24.1。学習には効かない）。公共サービスと発電所の職員も雇い手（13.3）
   for (const af of space.facilities) {
+    if (stopped.has(facilityPowerDistrict(af.facility))) continue;
     employers.push({ id: af.facility.id, kind: 'staff', district: af.district, slots: split(facilityJobs(af.facility), JOB_BANDS.staff), facility: af });
+  }
+  for (const af of space.civic) {
+    employers.push({ id: af.facility.id, kind: 'staff', district: af.district, slots: split(facilityJobs({ level: 1 }), JOB_BANDS.staff), facility: af });
   }
   return { employers, businesses: next, vacant: nextVacant };
 }
@@ -86,8 +92,11 @@ const slotsOf = (e: Employer): number => e.slots[0] + e.slots[1] + e.slots[2];
  * - 工場・倉庫: 道路網の大きさ × 0.5 × 2.2 を、工場の働き口で分ける
  * homeSpending: 道路のマス → そこに面する住宅の住民の買い物の量
  */
-/** noiseLimit: 工業の建物 ID → 騒音の倍率。受理した請願で騒音を抑えた工場は、売上も同じ割合で下がる（docs/content-spec.md 7.3） */
-export function salesOf(space: Space, employers: readonly Employer[], homeSpending: Map<number, number>, techPower: number, population: number, taxRate: number, noiseLimit?: ReadonlyMap<string, number>): Sales {
+/**
+ * noiseLimit: 工業の建物 ID → 騒音の倍率。受理した請願で騒音を抑えた工場は、売上も同じ割合で下がる（docs/content-spec.md 7.3）。
+ * stopped: 停電している地区。その地区の事業者の売上は 0（docs/game-design.md 24.1）
+ */
+export function salesOf(space: Space, employers: readonly Employer[], homeSpending: Map<number, number>, techPower: number, population: number, taxRate: number, noiseLimit?: ReadonlyMap<string, number>, stopped?: ReadonlySet<number>): Sales {
   const revenue = new Map<string, number>();
   const cost = new Map<string, number>();
   const taxFactor = 1 + (taxRate - 10) * TAX_COST;
@@ -127,6 +136,7 @@ export function salesOf(space: Space, employers: readonly Employer[], homeSpendi
       revenue.set(e.id, (factorySlots > 0 ? (factoryPool * slots) / factorySlots : 0) * (noiseLimit?.get(e.id) ?? 1));
     }
   }
+  if (stopped && stopped.size > 0) for (const e of employers) if (e.kind !== 'staff' && stopped.has(e.district)) revenue.set(e.id, 0);
   return { revenue, cost };
 }
 
