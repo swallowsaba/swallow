@@ -232,12 +232,12 @@ interface WeeklySample {
 }
 interface WeeklyBreakdown {              // 支持率の内訳（docs/game-design.md 13.8）
   week: number;
-  factors: number[][];                   // [要因 12][層 12] の点（重みを掛けた後）
+  factors: number[][];                   // [要因 13][層 12] の点（重みを掛けた後）。要因が 12 の古い物は、読む時に 13 番目を 0 で埋める（docs/decisions.md U-14）
   causes: Cause[];                       // 原因ごとの点の上位 20 件
   layers?: number[];                     // [層 12] 層の支持の都市全体の平均（18 歳以上の人数で重み。住む人がいなければ −1）。説明の 2 行目（一番効いた層。docs/game-design.md 14 章）
 }
 interface Cause {
-  factor: FactorId;                      // 'afford' | 'jobs' | 'commute' | 'noise' | 'green' | 'police' | 'school' | 'clinic' | 'fire' | 'power' | 'tax' | 'trust'
+  factor: FactorId;                      // 'afford' | 'jobs' | 'commute' | 'noise' | 'green' | 'police' | 'school' | 'clinic' | 'fire' | 'power' | 'tax' | 'trust' | 'event'
   source: { kind: 'facility' | 'zone' | 'road' | 'building' | 'decision' | 'demand'; id: string; at?: Point };
   points: number;                        // 支持率への寄与（人数で重みを付けた後）
 }

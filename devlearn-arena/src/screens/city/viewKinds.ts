@@ -10,7 +10,7 @@ import { HEAT_INFO } from './heatScale';
 export const FACTOR_VIEW: Record<FactorId, ViewKind> = {
   afford: 'rent', jobs: 'jobs', commute: 'traffic', noise: 'noise', green: 'park',
   police: 'police', school: 'school', clinic: 'clinic', fire: 'fire', power: 'power',
-  tax: 'approval', trust: 'approval',
+  tax: 'approval', trust: 'approval', event: 'event',
 };
 
 export const CITY_KINDS: { id: OverlayKind; label: string }[] = [

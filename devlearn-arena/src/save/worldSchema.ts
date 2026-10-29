@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import { FACILITY_TYPES } from '@/city/facilities';
 import { DOMAIN_IDS } from '@/content/schema';
-import { FACTORS } from '@/sim/layers';
+import { FACTOR_COUNT, FACTORS } from '@/sim/layers';
 
 /**
  * 版 4 で足した、都市の模擬と市政の形（docs/data-model.md 8〜12 章）。
@@ -12,6 +12,12 @@ const point = z.object({ x: z.number(), y: z.number() }).strict();
 const num = z.number();
 const layers = z.array(num).length(12);
 const factorId = z.enum(FACTORS);
+/** 要因の行の長さ（13）。競技場の「催し」の前の物（12）は、13 番目を 0 で埋めて読む（docs/decisions.md U-14） */
+const padFactors = (row: number[]): number[] => (row.length < FACTOR_COUNT ? [...row, ...new Array<number>(FACTOR_COUNT - row.length).fill(0)] : row);
+/** [層 12][要因] の点 */
+const partsByLayer = z.array(z.array(num).min(12).max(FACTOR_COUNT).transform(padFactors)).length(12);
+/** [要因][層 12] の点 */
+const factorsByLayer = z.array(layers).min(12).max(FACTOR_COUNT).transform((rows) => (rows.length < FACTOR_COUNT ? [...rows, ...Array.from({ length: FACTOR_COUNT - rows.length }, () => new Array<number>(12).fill(0))] : rows));
 
 export const simStateSchema = z.object({
   week: z.number().int().min(0),
@@ -25,7 +31,7 @@ export const simStateSchema = z.object({
   vacant: z.record(z.string(), z.number().int()),
   rentFactor: num,
   support: z.array(z.array(num).length(12)).length(144),
-  supportParts: z.record(z.string(), z.array(z.array(num).length(12)).length(12)),
+  supportParts: z.record(z.string(), partsByLayer),
   trust: layers,
   power: z.object({
     landing: point,
@@ -52,7 +58,7 @@ export const historySchema = z.object({
   weekly: z.array(z.object({
     week: z.number().int(), population: num, funds: num, treasury: num, approval: num, jobs: num, unemployment: num, marks: z.array(z.string()),
   }).strict()),
-  breakdown: z.array(z.object({ week: z.number().int(), factors: z.array(z.array(num).length(12)).length(12), causes: z.array(causeSchema), approval: num, layers: z.array(num).length(12).optional() }).strict()),
+  breakdown: z.array(z.object({ week: z.number().int(), factors: factorsByLayer, causes: z.array(causeSchema), approval: num, layers: z.array(num).length(12).optional() }).strict()),
   news: z.array(z.object({
     id: z.string(), week: z.number().int(), day: num,
     kind: z.enum(['application', 'approved', 'rejected', 'appeal', 'completed', 'election', 'term-end', 'closure', 'outage', 'tax', 'petition', 'mission', 'reward', 'scandal', 'start']),

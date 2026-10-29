@@ -6,7 +6,8 @@ import {
   SERVICE_DEFICIT,
   piecewise,
 } from './rules';
-import { CELLS, DISTRICT_COUNT, districtOfIndex, hillLevels, indexOf, inMap, nearWater, NEIGHBORS, ROAD_KINDS, SIZE, type Space } from './space';
+import { STADIUM } from './awards';
+import { CELLS, DISTRICT_COUNT, districtOfIndex, hillLevels, indexOf, inMap, nearWater, NEIGHBORS, ROAD_KINDS, SIZE, type ActiveFacility, type Space } from './space';
 import type { CauseKind } from './types';
 
 /**
@@ -48,8 +49,11 @@ function noiseFactor(mods: Record<string, number> | undefined, night = false): n
   return (mods?.noise ?? 1) * (night ? (mods?.nightNoise ?? 1) : 1);
 }
 
-/** limit: 工業の建物 ID → 騒音の倍率（受理した請願の騒音の制限。docs/content-spec.md 7.3） */
-export function noiseSourcesOf(space: Space, limit?: ReadonlyMap<string, number>): NoiseSource[] {
+/**
+ * limit: 工業の建物 ID → 騒音の倍率（受理した請願の騒音の制限。docs/content-spec.md 7.3）
+ * matches: この週に試合の日がある競技場（騒音 20、半径 5。docs/decisions.md U-14）
+ */
+export function noiseSourcesOf(space: Space, limit?: ReadonlyMap<string, number>, matches: readonly ActiveFacility[] = []): NoiseSource[] {
   const out: NoiseSource[] = [];
   for (const w of space.workplaces) {
     const b = w.building;
@@ -67,6 +71,10 @@ export function noiseSourcesOf(space: Space, limit?: ReadonlyMap<string, number>
   for (const af of space.civic) {
     const n = FACILITY_DEFS[af.facility.type].noise;
     if (n) out.push({ kind: 'facility', id: af.facility.id, at: af.center, value: n.value * noiseFactor(af.facility.mods), radius: n.radius });
+  }
+  for (const af of matches) {
+    const value = STADIUM.noise.value * noiseFactor(af.facility.mods);
+    if (value > 0) out.push({ kind: 'facility', id: af.facility.id, at: af.center, value, radius: STADIUM.noise.radius });
   }
   for (const af of space.facilities) {
     const f = af.facility;
@@ -278,9 +286,9 @@ export function noiseTermsAt(field: Pick<LandField, 'noise' | 'noiseByDistrict'>
   return out;
 }
 
-/** 騒音・公園の行き届き・地価を、全てのマスで計算する */
-export function landFieldOf(space: Space, commute: Float32Array, noiseLimit?: ReadonlyMap<string, number>, deficit = false): LandField {
-  const noiseSources = noiseSourcesOf(space, noiseLimit);
+/** 騒音・公園の行き届き・地価を、全てのマスで計算する。matches: この週に試合の日がある競技場 */
+export function landFieldOf(space: Space, commute: Float32Array, noiseLimit?: ReadonlyMap<string, number>, deficit = false, matches: readonly ActiveFacility[] = []): LandField {
+  const noiseSources = noiseSourcesOf(space, noiseLimit, matches);
   const { noise, byDistrict } = stampNoise(noiseSources);
   const { cover, src } = parkCoverage(space);
   const service = serviceCoverage(space, deficit);

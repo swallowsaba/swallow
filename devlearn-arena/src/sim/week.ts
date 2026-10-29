@@ -9,7 +9,8 @@ import {
   adultsOf, AGE_SHARE, ageOf, FACTOR_COUNT, FACTORS, INCOME_SHARE, incomeOf, incomeYenOf, LAYER_COUNT, LAYER_SHARE, LAYERS, MONTHLY_INCOME, sizeOf, WEIGHTS,
   workersOf, type FactorId,
 } from './layers';
-import { networkOf, type Network } from './network';
+import { eventSourceAt, matchInWeek, STADIUM } from './awards';
+import { networkOf, reach, type Network } from './network';
 import { demandTermsOf } from './demand';
 import { petitionModsOf, type PetitionMods } from './petitionMods';
 import { stoppedNow } from './power';
@@ -18,7 +19,7 @@ import {
   RENT_FACTOR, RENT_TYPE, RENT_YEN_PER_VALUE, SPENDING_RATE, SUPPORT_EASE, TAX_BUSINESS, TAX_RESIDENT, taxPoints, TRUST_WEEKLY_KEEP,
   WEEKS_PER_TERM,
 } from './rules';
-import { DISTRICT_COUNT, districtCenter, spaceOf, type Space } from './space';
+import { CELLS, DISTRICT_COUNT, districtCenter, spaceOf, type ActiveFacility, type Space } from './space';
 import { NO_RULES, type Cause, type PoliticsRules, type SimHistory, type WeeklyBreakdown, type WeeklySample, type World } from './types';
 
 /**
@@ -42,6 +43,7 @@ const CAPACITY_AGE: Partial<Record<CoverageKind, number>> = { school: 1, clinic:
 const servicePoints = (kind: CoverageKind, layer: number, c: number): number =>
   kind === 'school' && ageOf(layer) !== 1 ? 0 : SERVICE_POINTS[kind].base + SERVICE_POINTS[kind].slope * c;
 const TRUST = F('trust');
+const EVENT = F('event');
 
 /** 住宅の戸数（CAPACITY ÷ 2.3） */
 export const unitsOf = (b: Pick<Building, 'level'>, mods?: Record<string, number>): number => zoneCapacity('residential', b.level, mods) / PEOPLE_PER_UNIT;
@@ -108,10 +110,33 @@ function partsOf(parts: Record<string, number[][]>, d: number): number[][] {
 }
 
 /** 1 週分を計算する。init は版 4 への移行と新しい都市の始め（支持を目標の値で埋め、引っ越し・成長をしない） */
-/** 週の計算の前半（1〜4: 事業者と雇い手 → 働く人と仕事 → 雇用と通勤 → 騒音・公園・地価） */
-function firstHalf(world: World, terrain: Terrain, week: number, rules: PoliticsRules) {
+/**
+ * 試合の日の観客の流れ（docs/decisions.md U-13）: 面する道路から道路で 15 マス以内の道路のマスに、2,000 × (1 − 距離 ÷ 15)。
+ * 譲歩の traffic（臨時のバス）を掛ける
+ */
+function matchTraffic(space: Space, matches: readonly ActiveFacility[]): Float32Array | undefined {
+  if (matches.length === 0) return undefined;
+  const out = new Float32Array(CELLS);
+  for (const af of matches) {
+    const k = STADIUM.traffic.value * (af.facility.mods?.traffic ?? 1);
+    for (const [i, d] of reach(space, af.fronts, STADIUM.traffic.reach)) {
+      const v = k * (1 - d / STADIUM.traffic.reach);
+      if (v > 0) out[i] = (out[i] as number) + v;
+    }
+  }
+  return out;
+}
+
+/**
+ * 週の計算の前半（1〜4: 事業者と雇い手 → 働く人と仕事 → 雇用と通勤 → 騒音・公園・地価）。
+ * allMatches: 完成した競技場を全て試合の日として数える（申請の見込み。週の偶奇で反対率が揺れないように、試合の日の値で見る）
+ */
+function firstHalf(world: World, terrain: Terrain, week: number, rules: PoliticsRules, allMatches = false) {
   const { sim, city } = world;
   const space = spaceOf(city, terrain);
+  // この週に試合の日がある競技場（完成した日から 14 日ごと。docs/decisions.md U-14）
+  const day = Math.floor(city.day);
+  const matches = space.awards.filter((af) => af.facility.type === 'stadium' && (allMatches || matchInWeek(af.facility, day)));
   // 受理した請願の中身（家賃の補助・騒音の制限・バス。22.1）
   const mods = petitionModsOf(world, space, rules, week);
   // 今の週に停電している地区（24.1）
@@ -150,18 +175,21 @@ function firstHalf(world: World, terrain: Terrain, week: number, rules: Politics
     }
     trafficWeight = weighted.map((v, d) => ((sum[d] as number) > 0 ? v / (sum[d] as number) : 1));
   }
-  const commute = commuteOf(space, net, workers, jobs, trafficWeight, mods.bus);
+  const commute = commuteOf(space, net, workers, jobs, trafficWeight, mods.bus, matchTraffic(space, matches));
 
   // 4. 騒音・公園・地価
-  const field = landFieldOf(space, commute.minutes, mods.noise, world.budget.treasury < 0);
+  const field = landFieldOf(space, commute.minutes, mods.noise, world.budget.treasury < 0, matches);
   return { space, synced, employers, households, workers, jobs, net, commute, field, mods, stopped };
 }
 
-/** 申請の見込み（docs/game-design.md 16.2）に使う、週の計算の途中の値（騒音・通勤の混み具合・家賃）。世界は変えない */
+/**
+ * 申請の見込み（docs/game-design.md 16.2）に使う、週の計算の途中の値（騒音・通勤の混み具合・家賃）。世界は変えない。
+ * 競技場は試合の日の値で見る（反対の理由「試合の日の渋滞」「歓声と場内放送」は試合の日の論点で、週の偶奇で反対率を揺らさない）
+ */
 export type PreviewView = Pick<WeekView, 'space' | 'commute' | 'field' | 'rent'>;
 
 export function previewOf(world: World, terrain: Terrain, rules: PoliticsRules = NO_RULES): PreviewView {
-  const { space, commute, field, mods } = firstHalf(world, terrain, world.sim.week, rules);
+  const { space, commute, field, mods } = firstHalf(world, terrain, world.sim.week, rules, true);
   const rent = new Map<string, { rent: number; burden: number[] }>();
   for (const zb of space.residential) {
     const r = rentOf(field.land[zb.cell] as number, zb.building.level, world.sim.rentFactor);
@@ -237,6 +265,8 @@ export function weekStep(world: World, terrain: Terrain, init = false, rules: Po
     const green = parkAt(field, b.cell.x, b.cell.y).value * GREEN_POINTS;
     const minutes = commute.minutes[zb.district] as number;
     const commuteP = !anyJobs ? 0 : Number.isFinite(minutes) ? commutePoints(minutes) : (COMMUTE_POINTS[COMMUTE_POINTS.length - 1] as readonly [number, number])[1];
+    // 催し（競技場から直線で 15 マス以内。若者と子育ての層だけ）
+    const event = eventSourceAt(space, b.cell.x, b.cell.y) ? STADIUM.event.points : 0;
     // 毎週、建物 × 層の数だけ作るので、行は 1 つの配列の中で重みを掛ける（作る物を減らす）
     const rows = LAYERS.map((l) => {
       const row = emptyRow();
@@ -252,6 +282,7 @@ export function weekStep(world: World, terrain: Terrain, init = false, rules: Po
         row[s.f] = servicePoints(s.kind, l, (cover[k] as { value: number }).value);
       });
       row[POWER] = POWER_POINTS * outage;
+      if (STADIUM.event.ages.includes(ageOf(l))) row[EVENT] = event;
       const w = WEIGHTS[l] as readonly number[];
       for (let f = 0; f < FACTOR_COUNT; f += 1) row[f] = (row[f] as number) * (w[f] as number);
       return clampTarget(row);
@@ -411,6 +442,10 @@ export function weekStep(world: World, terrain: Terrain, init = false, rules: Po
         if (v - part !== 0) addCause(s.f, { kind: 'demand', id: s.kind, at }, v - part);
       });
       if (sum[POWER] !== 0) addCause(POWER, { kind: 'demand', id: 'power', at: districtCenter(zb.district) }, sum[POWER] as number);
+      if (sum[EVENT] !== 0) {
+        const st = eventSourceAt(space, zb.building.cell.x, zb.building.cell.y);
+        if (st) addCause(EVENT, { kind: 'facility', id: st.facility.id, at: st.center }, sum[EVENT] as number);
+      }
       // 仕事・通勤・税・信頼の原因は都市に 1 つずつ。建物ごとに鍵を作らず、足してから 1 度だけ入れる（場所は最初に足した建物）
       for (const s of whole) {
         const v = sum[s.factor] as number;

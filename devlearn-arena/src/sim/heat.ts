@@ -1,5 +1,6 @@
 import { cellKindAt, facilityCells } from '@/city/cells';
 import { COVERAGE_KINDS } from '@/city/facilities';
+import { eventNear } from './awards';
 import { parkAt, serviceAt } from './land';
 import { adultsOf, LAYERS, sizeOf } from './layers';
 import { facilityPowerDistrict, stoppedNow } from './power';
@@ -13,7 +14,7 @@ import type { WeekView } from './week';
  * Worker は週に 1 回これを作って画面へ移し（写さない）、画面は画面の外の Canvas に 1 回だけ塗る（docs/architecture.md 9.3）。
  */
 
-export const HEAT_KINDS = ['land', 'rent', 'density', 'noise', 'jobs', 'service', 'police', 'fire', 'school', 'clinic', 'park', 'power', 'approval'] as const;
+export const HEAT_KINDS = ['land', 'rent', 'density', 'noise', 'jobs', 'service', 'police', 'fire', 'school', 'clinic', 'park', 'power', 'event', 'approval'] as const;
 export type HeatKind = (typeof HEAT_KINDS)[number];
 
 /** 公共サービスの行き届きの 5 種（平均 service はこの 5 つの平均。docs/game-design.md 14 章） */
@@ -53,6 +54,8 @@ export function heatOf(world: World, view: WeekView): HeatFields {
   const density = blank();
   const jobs = blank();
   const approval = blank();
+  // 催し（docs/decisions.md U-14）: 住宅のマスに、競技場から直線で 15 マス以内なら 1、外なら 0
+  const event = blank();
   const mask = landMask(view);
   for (let i = 0; i < CELLS; i += 1) {
     if (!mask[i] || view.space.roadKind[i] !== -1) continue;
@@ -63,6 +66,7 @@ export function heatOf(world: World, view: WeekView): HeatFields {
     const hh = world.sim.households[zb.building.id];
     const r = view.rent.get(zb.building.id);
     if (r) rent[zb.cell] = r.rent;
+    event[zb.cell] = eventNear(view.space, zb.building.cell.x, zb.building.cell.y) ? 1 : 0;
     if (!hh) continue;
     let people = 0;
     let s = 0;
@@ -101,7 +105,7 @@ export function heatOf(world: World, view: WeekView): HeatFields {
     unemployment[d] = all > 0 ? 1 - employed / all : 0;
   }
   for (const zb of view.space.residential) jobless[zb.cell] = unemployment[zb.district] as number;
-  return { week: world.sim.week, cells: { land, rent, density, noise, jobs, approval, ...serviceHeat(view, mask), power: powerHeat(world, view) }, jobless };
+  return { week: world.sim.week, cells: { land, rent, density, noise, jobs, approval, event, ...serviceHeat(view, mask), power: powerHeat(world, view) }, jobless };
 }
 
 /**

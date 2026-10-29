@@ -47,15 +47,18 @@ export const LAYER_SHARE: readonly number[] = LAYERS.map((l) => (AGE_SHARE[ageOf
 /** 初めの分布の 1 世帯の平均の人数 */
 export const MEAN_HOUSEHOLD_SIZE = LAYERS.reduce((s, l) => s + (LAYER_SHARE[l] as number) * sizeOf(l), 0);
 
-/** 満足の要因（docs/game-design.md 13.8。docs/data-model.md 9 章の FactorId と同じ並び） */
-export const FACTORS = ['afford', 'jobs', 'commute', 'noise', 'green', 'police', 'school', 'clinic', 'fire', 'power', 'tax', 'trust'] as const;
+/**
+ * 満足の要因（docs/game-design.md 13.8。docs/data-model.md 9 章の FactorId と同じ並び）。
+ * 13 番目の「催し」は競技場の効き（docs/decisions.md U-14）。要因が 12 の保存データは、読む時に 13 番目を 0 で埋める
+ */
+export const FACTORS = ['afford', 'jobs', 'commute', 'noise', 'green', 'police', 'school', 'clinic', 'fire', 'power', 'tax', 'trust', 'event'] as const;
 export type FactorId = (typeof FACTORS)[number];
 export const FACTOR_COUNT = FACTORS.length;
 export const factorIndex = (f: FactorId): number => FACTORS.indexOf(f);
 
 export const FACTOR_NAMES: Record<FactorId, string> = {
   afford: '手頃さ', jobs: '仕事', commute: '通勤', noise: '騒音', green: '緑地', police: '治安',
-  school: '教育', clinic: '医療', fire: '防災', power: '電力', tax: '税', trust: '市政への信頼',
+  school: '教育', clinic: '医療', fire: '防災', power: '電力', tax: '税', trust: '市政への信頼', event: '催し',
 };
 
 /**
@@ -80,7 +83,7 @@ export function weightOf(layer: number, factor: FactorId): number {
   return a * i;
 }
 
-/** [層 12][要因 12] の重み（毎週の計算で使い回す） */
+/** [層 12][要因 13] の重み（毎週の計算で使い回す） */
 export const WEIGHTS: readonly (readonly number[])[] = LAYERS.map((l) => FACTORS.map((f) => weightOf(l, f)));
 
 /** 空の層の配列（長さ 12） */

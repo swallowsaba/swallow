@@ -76,7 +76,7 @@ export const HEAT_INFO: Record<HeatKind, HeatInfo> = {
     label: '騒音', good: 'low', range: [0, 100],
     format: (v) => `騒音 ${int(v)}（0〜100）`,
     span: () => '0〜100（20 を超えると住民の満足が下がる）',
-    note: '工場・大通り・夜も動く施設・店から。離れるほど小さい',
+    note: '工場・大通り・夜も動く施設・店と、試合の日の競技場から。離れるほど小さい',
   },
   jobs: {
     label: '雇用', good: 'high',
@@ -90,6 +90,12 @@ export const HEAT_INFO: Record<HeatKind, HeatInfo> = {
     format: (v) => (v >= 0.5 ? '電気が来ている' : '停電している（輪番で止まった地区）'),
     span: () => '来ている／止まった',
     note: '電気は道路に沿って届く。足りない週は、地区を番号の順に止める',
+  },
+  event: {
+    label: '催し', good: 'high', range: [0, 1], ends: ['届かない', '届く'],
+    format: (v) => (v >= 0.5 ? '競技場の催しが届く（若者と子育ての満足 +3）' : '競技場の催しは届かない'),
+    span: () => '届く／届かない',
+    note: '競技場から 15 マス以内の住宅。若者と子育ての層の満足が上がる',
   },
   approval: {
     label: '支持率', good: 'high', range: [0, 100],

@@ -267,6 +267,29 @@ describe('版 3 → 版 4 の移行（docs/data-model.md 12 章・docs/acceptanc
     expect(read.ok && fromSaveData(read.data)).toEqual(saved);
   });
 
+  it('要因が 12 の版 4 の保存データ（競技場の「催し」の前）も読め、13 番目の要因を 0 で埋める（docs/decisions.md U-14）', () => {
+    const read = readSave(JSON.stringify(v3Save()));
+    if (!read.ok) throw new Error('読めない');
+    const data = read.data;
+    expect(data.history.breakdown.length).toBeGreaterThan(0);
+    expect(Object.keys(data.sim.supportParts).length).toBeGreaterThan(0);
+    // 12 の要因の形に戻す（要因の行の最後を落とす）
+    const old = {
+      ...data,
+      sim: { ...data.sim, supportParts: Object.fromEntries(Object.entries(data.sim.supportParts).map(([d, rows]) => [d, rows.map((r) => r.slice(0, 12))])) },
+      history: { ...data.history, breakdown: data.history.breakdown.map((b) => ({ ...b, factors: b.factors.slice(0, 12) })) },
+    };
+    const again = readSave(JSON.stringify(old));
+    if (!again.ok) throw new Error(`読めない: ${String(again.detail)}`);
+    for (const b of again.data.history.breakdown) {
+      expect(b.factors.length).toBe(13);
+      expect(b.factors[12]).toEqual(new Array(12).fill(0));
+    }
+    for (const rows of Object.values(again.data.sim.supportParts)) for (const r of rows) expect([r.length, r[12]]).toEqual([13, 0]);
+    // 13 の要因の物はそのまま
+    expect(readSave(JSON.stringify(data))).toEqual({ ok: true, data });
+  });
+
   it('版 4 の保存・読み込みで、模擬と市政の状態が全て元に戻る', () => {
     const read = readSave(JSON.stringify(v3Save()));
     if (!read.ok) throw new Error('読めない');

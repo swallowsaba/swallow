@@ -33,8 +33,9 @@ export interface Commute {
  * workers・jobs: [地区 × 3 + 帯] の働く人と仕事の数
  * trafficWeight: [地区] 行き先の地区の、道路に出る流れの倍率（譲歩の traffic。駐車場を増やす・送迎の車を出す。無ければ 1）
  * bus: [地区] 住む地区から通う人の通勤の時間の倍率（受理した請願のバス。docs/content-spec.md 7.3。無ければ 1）
+ * extra: [道路のマス] 通勤のほかの流れ（試合の日の競技場の観客。docs/decisions.md U-13）。混み具合に入る
  */
-export function commuteOf(space: Space, net: Network, workers: Float64Array, jobs: Float64Array, trafficWeight?: Float64Array, bus?: Float64Array): Commute {
+export function commuteOf(space: Space, net: Network, workers: Float64Array, jobs: Float64Array, trafficWeight?: Float64Array, bus?: Float64Array, extra?: Float32Array): Commute {
   const n = DISTRICT_COUNT;
   const needWork = Float64Array.from(workers);
   const openJobs = Float64Array.from(jobs);
@@ -57,7 +58,7 @@ export function commuteOf(space: Space, net: Network, workers: Float64Array, job
     }
   }
   // 道路の流れ（道のりの各マスに、通る人を足す）
-  const traffic = new Float32Array(CELLS);
+  const traffic = extra ? Float32Array.from(extra) : new Float32Array(CELLS);
   const paths = new Map<number, number[]>();
   const pathFor = (from: number, to: number): number[] => {
     const key = from * n + to;

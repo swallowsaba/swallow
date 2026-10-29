@@ -4,6 +4,7 @@ import { nextId } from '@/city/place';
 import { CAPACITY, FACILITY_JOBS_PER_LEVEL, levelCap, mergeMods } from '@/city/rules';
 import type { Terrain } from '@/city/terrain';
 import type { Building, City, Facility, FacilityType, Point, Zone } from '@/city/types';
+import { STADIUM } from './awards';
 import { ageOf, factorIndex, incomeOf, LAYERS, sizeOf, WEIGHTS, type FactorId } from './layers';
 import { powerSupply, powerUse, zonePowerOf } from './power';
 import { siteCells } from './permits';
@@ -242,7 +243,9 @@ export function strengthOf(reason: ObjectionReason, c: Ctx): Strength {
       return { strength: clamp01((mine - lowest) / SUNLIGHT_SPAN), basis: { value: mine, ref: lowest } };
     }
     case 'traffic': {
-      const flow = jobsOf(app, city) * mod(app, 'traffic');
+      // 競技場は、職員の通勤に試合の日の観客の流れ 2,000 を足す（docs/decisions.md U-13）
+      const crowd = app.kind === 'facility' && app.target.type === 'stadium' ? STADIUM.traffic.value : 0;
+      const flow = (jobsOf(app, city) + crowd) * mod(app, 'traffic');
       const before = c.before();
       // 敷地に面した道路のうち、一番余りのある道路（通勤の流れはそこから出入りする）
       const inSite = new Set(c.site.map((s) => cellKey(s.x, s.y)));

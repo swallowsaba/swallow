@@ -34,7 +34,7 @@ export type NameParts = z.infer<typeof nameSchema>;
 export const NAME_PARTS: NameParts = nameSchema.parse(namesData);
 
 /** 説明と判断の 1 行の型の文（7.6）。全ての要因と原因の種類に文がある */
-const FACTOR_IDS = ['afford', 'jobs', 'commute', 'noise', 'green', 'police', 'school', 'clinic', 'fire', 'power', 'tax', 'trust'] as const;
+const FACTOR_IDS = ['afford', 'jobs', 'commute', 'noise', 'green', 'police', 'school', 'clinic', 'fire', 'power', 'tax', 'trust', 'event'] as const;
 const CAUSE_KINDS = ['facility', 'zone', 'building', 'road', 'decision', 'demand'] as const;
 export const MEMBER_KEYS = ['gain', 'concern', 'unanswered', 'explained', 'wrong', 'pushed', 'approval', 'persuaded', 'stance'] as const satisfies readonly MemberLineKey[];
 export const ISSUES = ['afford', 'environment', 'jobs', 'finance', 'safety', 'traffic', 'tech'] as const satisfies readonly IssueId[];
