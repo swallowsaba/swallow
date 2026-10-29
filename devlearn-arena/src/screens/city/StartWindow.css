@@ -1,0 +1,99 @@
+/* 始め方の選択（docs/ui-design.md 10.12）。選挙の窓と同じ枠（ElectionWindow.css）の中に、3 つを横に並べる。
+   カードの羅列にせず、細い縦の罫で区切った 3 列にする（docs/visual-design.md V7） */
+.start-lead {
+  margin: 0;
+  font-size: var(--fs-13);
+  line-height: 1.6;
+  color: var(--hud-text-sub);
+}
+
+.start-modes {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  border-top: 1px solid var(--hud-line);
+  border-bottom: 1px solid var(--hud-line);
+}
+
+.start-mode {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px 14px 14px;
+  border: none;
+  border-left: 1px solid var(--hud-line);
+  background: var(--transparent);
+  color: var(--hud-text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.start-mode:first-child {
+  border-left: none;
+}
+.start-mode:hover,
+.start-mode:focus-visible {
+  background: var(--hud-bg);
+  outline: none;
+}
+.start-mode.is-picked {
+  background: var(--hud-bg);
+  box-shadow: inset 0 3px 0 var(--gold);
+}
+
+.start-name {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  font-family: var(--font-heading);
+  font-weight: 800;
+  font-size: var(--fs-16);
+}
+.start-mode.is-picked .start-name {
+  color: var(--gold-light);
+}
+.start-default {
+  padding: 0 6px;
+  border: 1px solid var(--hud-line);
+  border-radius: 2px 6px 2px 6px;
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: var(--fs-12);
+  color: var(--hud-text-sub);
+}
+
+.start-mood {
+  min-height: 4.7em;
+  font-size: var(--fs-12);
+  line-height: 1.55;
+  color: var(--hud-text-sub);
+}
+
+.start-facts {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+}
+.start-facts dt {
+  font-size: var(--fs-12);
+  color: var(--hud-text-sub);
+}
+.start-facts dd {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin: 0;
+}
+.start-facts dd span {
+  font-size: var(--fs-12);
+  line-height: 1.4;
+  color: var(--hud-text-sub);
+}
+.start-num {
+  flex: none;
+  min-width: 3.2em;
+  font-family: var(--font-number);
+  font-size: var(--fs-22);
+  line-height: 1;
+  color: var(--hud-text);
+}

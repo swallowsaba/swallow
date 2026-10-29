@@ -651,6 +651,8 @@ export async function openCity(browser, root, size = { width: 1920, height: 1080
   await page.goto(root, { waitUntil: 'load' });
   await page.waitForFunction(() => document.body.dataset.cityReady === '1', null, { timeout: 60000 });
   await page.evaluate(() => document.fonts.ready);
+  // 初回の始め方の選択（docs/ui-design.md 10.12）は「ふつう」で閉じ、操作説明は飛ばす
+  await page.locator('[data-testid="start-go"]').click({ timeout: 5000 }).catch(() => {});
   await page.locator('[data-testid="intro"] .intro-skip').click({ timeout: 10000 }).catch(() => {});
   return { context, page };
 }

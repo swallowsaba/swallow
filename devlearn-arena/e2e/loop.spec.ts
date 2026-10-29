@@ -71,6 +71,17 @@ test('都市を作り、施設から学び、7 段を通して都市へ戻ると
   await page.goto('./');
   await expect(page.getByTestId('city-screen')).toBeVisible();
   await page.waitForFunction(() => document.body.dataset.cityReady === '1');
+  // 初回は始め方の選択（docs/ui-design.md 10.12）が都市の上に出る。後ろに都市が見え、操作説明はこの窓の後
+  await expect(page.getByTestId('start-window')).toBeVisible();
+  await expect(page.getByTestId('intro')).toHaveCount(0);
+  const behind = await page.evaluate(() => {
+    const r = document.querySelector('[data-testid="start-window"]')?.getBoundingClientRect();
+    return r ? (r.width * r.height) / (window.innerWidth * window.innerHeight) : 1;
+  });
+  expect(behind).toBeLessThan(0.6);
+  // 選ばずに閉じると「ふつう」で始まる
+  await page.getByTestId('start-window').getByRole('button', { name: '閉じる（ふつうで始める）' }).click();
+  await expect(page.getByTestId('start-window')).toHaveCount(0);
 
   // 初回の操作説明（docs/ui-design.md 9 章）: 3 回に分けて、Enter で読み進める
   for (const n of ['1', '2', '3']) {

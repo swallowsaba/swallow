@@ -12,7 +12,8 @@ import { setTaxRate } from './budget';
 import { withNews } from './news';
 import { handlePetition, type PetitionChoice } from './petitions';
 import { closeHearing, playHand, type Hand } from './hearing';
-import { NO_RULES, type Application, type PoliticsRules, type World } from './types';
+import { chooseStart } from './startMode';
+import { NO_RULES, type Application, type Difficulty, type PoliticsRules, type World } from './types';
 
 /**
  * 日付付きの命令（docs/architecture.md 9.1）。画面の操作は、全てこの形で模擬へ送る。
@@ -51,7 +52,9 @@ export type Op =
   /** 税率を決める（5〜20%。次の週から効く。docs/game-design.md 22.2） */
   | { kind: 'taxRate'; rate: number }
   /** 請願を扱う（受理・拒否・保留。docs/game-design.md 22.1） */
-  | { kind: 'petition'; inboxId: string; choice: PetitionChoice };
+  | { kind: 'petition'; inboxId: string; choice: PetitionChoice }
+  /** 始め方を選ぶ（新しく始めた都市でだけ。docs/game-design.md 27 章） */
+  | { kind: 'startMode'; difficulty: Difficulty };
 
 export interface Command {
   /** 出した順の番号（画面が付ける。模擬が当てた所までを返す） */
@@ -148,6 +151,8 @@ function applyOpCore(world: World, op: Op, terrain: Terrain, rules: PoliticsRule
       return setTaxRate(world, op.rate);
     case 'petition':
       return handlePetition(world, terrain, rules, op.inboxId, op.choice);
+    case 'startMode':
+      return chooseStart(world, op.difficulty);
   }
 }
 

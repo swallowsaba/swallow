@@ -1,4 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
+import { closeStart } from './start';
 
 /**
  * ミニマップ（docs/ui-design.md 3 章、docs/decisions.md D-18、docs/acceptance-criteria.md U7）。
@@ -10,6 +11,7 @@ const camera = (page: Page) => page.evaluate(() => (window as unknown as CityWin
 async function openCity(page: Page): Promise<void> {
   await page.goto('./#/city');
   await page.waitForFunction(() => document.body.dataset.cityReady === '1');
+  await closeStart(page);
 }
 
 test('左下のミニマップを押すと、押した所へカメラが動く。回すとミニマップも回る', async ({ page }) => {
@@ -50,5 +52,6 @@ test('設定で「出さない」にすると消え、リロードしても消�
   await page.waitForTimeout(2600);
   await page.reload();
   await page.waitForFunction(() => document.body.dataset.cityReady === '1');
+  await closeStart(page);
   await expect(page.getByTestId('minimap')).toHaveCount(0);
 });

@@ -7,7 +7,7 @@ import './Intro.css';
 
 /**
  * 初回の操作説明（docs/ui-design.md 9 章: 都市の作り方と学び方を、画面の該当箇所を示しながら 3 回に分けて説明する。いつでも飛ばせる）。
- * 初めて遊ぶ市長にだけ出す。見終えた・飛ばしたことは市長の記録（introSeen）に残し、次からは出さない。
+ * 初めて遊ぶ市長にだけ、始め方の選択の後に出す。見終えた・飛ばしたことは市長の記録（introSeen）に残し、次からは出さない。
  * Enter で次へ、Esc で飛ばす。
  */
 
@@ -31,7 +31,10 @@ function placeCallout(target: Rect | undefined): { left: number; top?: number; b
 }
 
 export function Intro({ session }: { session: Session }) {
-  const seen = useStore(session.player, (s) => s.player.introSeen);
+  // 始め方の選択の窓（docs/ui-design.md 10.12）を閉じてから出す
+  const introSeen = useStore(session.player, (s) => s.player.introSeen);
+  const starting = useStore(session.city, (s) => s.starting);
+  const seen = introSeen || starting;
   const [step, setStep] = useState(0);
   const [rects, setRects] = useState<Rect[]>([]);
   const current = INTRO_STEPS[step];

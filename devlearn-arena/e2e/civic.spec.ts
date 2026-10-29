@@ -1,4 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
+import { closeStart } from './start';
 import { runLesson } from '../tools/scenarios/domain.mjs';
 
 /**
@@ -60,6 +61,7 @@ test.setTimeout(180_000);
 async function town(page: Page): Promise<void> {
   await page.goto('./');
   await page.waitForFunction(() => document.body.dataset.cityReady === '1');
+  await closeStart(page);
   for (let i = 0; i < 3; i += 1) await page.keyboard.press('Enter');
   await expect(page.getByTestId('intro')).toHaveCount(0);
   // 1 期目の公約を選ぶ窓（G8）。この E2E では選ばずに閉じる（上の帯の任期の残りから、後で選べる）

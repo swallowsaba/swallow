@@ -132,7 +132,8 @@ export function attachBuildControls(canvas: HTMLCanvasElement, renderer: CityRen
     }
     const s = store.getState();
     // 一番上の窓から閉じる（大きな窓 → 確認 → 道具 → 小さな窓 → 選択 → 建設メニュー）
-    if (s.hearingId) s.leaveHearing();
+    if (s.starting) s.chooseStart(null, performance.now());
+    else if (s.hearingId) s.leaveHearing();
     else if (s.councilId) s.leaveCouncil();
     else if (s.election) s.leaveElection();
     else if (s.confirm) s.askDemolish(null);

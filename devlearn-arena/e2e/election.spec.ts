@@ -1,4 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
+import { closeStart } from './start';
 
 /**
  * 選挙・任期・公約・政治資本（docs/development-plan.md G8・docs/game-design.md 21 章・docs/acceptance-criteria.md S16・S17）。
@@ -14,7 +15,7 @@ import { expect, test, type Page } from '@playwright/test';
  */
 
 type Politics = {
-  capital: number; defeated?: true;
+  capital: number; defeated?: true; difficulty: 'gentle' | 'normal' | 'tough';
   term: { no: number; startDay: number; pledges: { pledgeId: string }[] };
   pastTerms: { no: number; won: boolean; voteShare: number; causes?: unknown[] }[];
 };
@@ -122,6 +123,7 @@ test('G8: 4 年が過ぎると選挙。落選すると敗因が出て、同じ�
   page.on('pageerror', (e) => errors.push(String(e)));
   await page.goto('./');
   await page.waitForFunction(() => document.body.dataset.cityReady === '1');
+  await closeStart(page);
   for (let i = 0; i < 3; i += 1) await page.keyboard.press('Enter');
   await expect(page.getByTestId('intro')).toHaveCount(0);
 
@@ -210,6 +212,14 @@ test('G8: 4 年が過ぎると選挙。落選すると敗因が出て、同じ�
   expect(fresh.politics.defeated).toBeUndefined();
   expect(await progress(page)).toBe(learned);
   await expect(page.getByTestId('city-notice')).toContainText('学習の記録');
+  // 新しい都市は始め方を選んでから（docs/ui-design.md 10.12）。開いている間は時間が止まり、公約の窓は後
+  await expect(page.getByTestId('start-window')).toBeVisible();
+  await expect(page.getByTestId('election-window')).toHaveCount(0);
+  await page.getByTestId('start-mode-tough').click();
+  await page.getByTestId('start-go').click();
+  await expect(page.getByTestId('start-window')).toHaveCount(0);
+  const tough = await world(page);
+  expect([tough.politics.difficulty, tough.politics.capital]).toEqual(['tough', 7]);
   // 新しい都市の 1 期目の公約を選ぶ窓（操作説明は 1 度見たので出ない）
   await expect(page.getByTestId('intro')).toHaveCount(0);
   await expect(page.locator('#election-title')).toHaveText('1 期目の公約を選ぶ');

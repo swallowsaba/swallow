@@ -1,4 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
+import { closeStart } from './start';
 
 /**
  * 動きを減らす設定（OS の prefers-reduced-motion）では、実戦の画面の動きを止める（VERIFY-ALL.txt【4】、REWORK-PRACTICE.txt 原則 4）。
@@ -15,6 +16,7 @@ test.use({ viewport: { width: 1920, height: 1080 }, contextOptions: { reducedMot
 async function openPractice(page: Page, id: string): Promise<void> {
   await page.goto('./#/city');
   await page.waitForFunction(() => document.body.dataset.cityReady === '1');
+  await closeStart(page);
   await page.locator('[data-testid="intro"] .intro-skip').click({ timeout: 5000 }).catch(() => undefined);
   await page.evaluate((lessonId) => {
     const store = (window as unknown as GameWindow).__game.store;

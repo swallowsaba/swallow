@@ -1,4 +1,5 @@
 import { mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
+import { closeStart } from './start';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { expect, test, type Page } from '@playwright/test';
@@ -38,6 +39,7 @@ const stateOf = (page: Page) =>
 async function open(page: Page): Promise<void> {
   await page.goto('#/city');
   await page.waitForFunction(() => document.body.dataset.cityReady === '1');
+  await closeStart(page);
   // 初回の操作説明は飛ばす（飛ばしたことも保存の対象）
   const intro = page.getByTestId('intro');
   if (await intro.count()) await page.keyboard.press('Escape');
@@ -60,6 +62,7 @@ test('自動保存の後にリロードすると、同じ状態に戻る', async
   const before = await played(page);
   await page.reload();
   await page.waitForFunction(() => document.body.dataset.cityReady === '1');
+  await closeStart(page);
   expect(await stateOf(page)).toBe(before);
   expect(JSON.parse(before)).toMatchObject({ progress: { lessons: { 'linux.b.01': { status: 'completed' } } } });
 });
@@ -82,6 +85,7 @@ test('書き出したファイルを別のブラウザで読み込むと同じ�
   await expect(page2.getByTestId('import-preview')).toContainText('修了');
   await Promise.all([page2.waitForEvent('load'), page2.getByRole('button', { name: '置き換える' }).click()]);
   await page2.waitForFunction(() => document.body.dataset.cityReady === '1');
+  await closeStart(page2);
   expect(await stateOf(page2)).toBe(before);
   await expect(page2.getByText('保存データを読み込んだ')).toBeVisible();
 
@@ -93,6 +97,7 @@ test('書き出したファイルを別のブラウザで読み込むと同じ�
   await expect(page2.getByTestId('import-error')).toContainText('JSON');
   await page2.reload();
   await page2.waitForFunction(() => document.body.dataset.cityReady === '1');
+  await closeStart(page2);
   expect(await stateOf(page2)).toBe(before);
   await other.close();
 });
@@ -104,6 +109,12 @@ test('最初からやり直すと、確かめた後に新しい都市で始ま�
   await expect(page.getByTestId('reset-confirm')).toBeVisible();
   await Promise.all([page.waitForEvent('load'), page.getByRole('button', { name: 'やり直す', exact: true }).click()]);
   await page.waitForFunction(() => document.body.dataset.cityReady === '1');
+  // やり直した都市は、始め方を選んでから（docs/ui-design.md 10.12）。穏やかな町を選ぶと政治資本 14
+  await expect(page.getByTestId('start-window')).toBeVisible();
+  await page.getByTestId('start-mode-gentle').click();
+  await page.getByTestId('start-go').click();
+  await expect(page.getByTestId('start-window')).toHaveCount(0);
+  await expect(page.getByTestId('topbar-capital')).toContainText('14');
   const after = JSON.parse(await stateOf(page)) as { progress: { xp: number; lessons: object } };
   expect(after.progress.xp).toBe(0);
   expect(after.progress.lessons).toEqual({});

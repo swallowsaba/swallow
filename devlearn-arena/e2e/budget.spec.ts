@@ -1,4 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
+import { closeStart } from './start';
 
 /**
  * 請願・予算・税率・市内新聞（docs/development-plan.md G9・docs/game-design.md 22 章）。
@@ -57,6 +58,7 @@ test.setTimeout(180_000);
 async function town(page: Page): Promise<void> {
   await page.goto('./');
   await page.waitForFunction(() => document.body.dataset.cityReady === '1');
+  await closeStart(page);
   for (let i = 0; i < 3; i += 1) await page.keyboard.press('Enter');
   await expect(page.getByTestId('intro')).toHaveCount(0);
   await expect(page.getByTestId('election-window')).toBeVisible();

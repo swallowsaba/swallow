@@ -51,6 +51,8 @@ describe('リロードしても進捗が消えない', () => {
   it('学習・都市・プレイヤーの状態は、操作の 2 秒後に保存され、開き直すと全て元に戻る', async () => {
     const backend = memoryBackend();
     const first = await openSession(backend, { now, newId: () => 'p-1' });
+    // 保存データが無い初回は、新しく始めた都市（始め方の選択の窓を出す。docs/ui-design.md 10.12）
+    expect(first.isNew).toBe(true);
     const saver = startAutosave(first, backend, { now });
 
     // レッスンを修了した（段が進んだので、すぐ書く）
@@ -72,6 +74,7 @@ describe('リロードしても進捗が消えない', () => {
     // リロード（同じ保存先から開き直す）
     const second = await openSession(backend, { now, newId: () => 'p-other' });
     expect(second.problem).toBeUndefined();
+    expect(second.isNew).toBeUndefined();
     expect(second.session.player.getState().player.id).toBe('p-1');
     expect(second.session.progress.getState().progress).toEqual(first.session.progress.getState().progress);
     expect(second.session.progress.getState().progress.lessons['linux.b.01']?.status).toBe('completed');

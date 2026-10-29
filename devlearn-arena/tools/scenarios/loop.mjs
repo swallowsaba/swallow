@@ -75,7 +75,8 @@ export async function runLoop(page, shot = async () => {}) {
     await page.waitForFunction(() => document.body.dataset.cityReady === '1', null, { timeout: 60000 });
     const first = await page.evaluate(() => ({ hash: window.location.hash, lesson: !!document.querySelector('[data-testid="lesson-screen"]'), learn: !!document.querySelector('[data-testid="learn-screen"]') }));
     check('G1 起動直後に都市の画面', !first.lesson && !first.learn && ['', '#/', '#/city'].includes(first.hash), `場所 ${first.hash || '(なし)'}・レッスンの画面 ${first.lesson ? 'あり' : 'なし'}・学習ライブラリ ${first.learn ? 'あり' : 'なし'}`);
-    // 初回の操作説明は、Enter で読み進める（撮影の道具から動かした時は、もう閉じている）
+    // 初回は始め方の選択（docs/ui-design.md 10.12）を「ふつう」で閉じてから、操作説明を Enter で読み進める（撮影の道具から動かした時は、もう閉じている）
+    await page.locator('[data-testid="start-go"]').click({ timeout: 5000 }).catch(() => {});
     for (let i = 0; i < 3 && (await page.$('[data-testid="intro"]')); i += 1) {
       await page.keyboard.press('Enter');
       await wait(page, 200);

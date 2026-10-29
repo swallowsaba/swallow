@@ -25,6 +25,8 @@ export interface Opened {
   problem?: string;
   /** false なら保存しない（読めなかった保存データの写しを残せず、上書きすると失うため） */
   canSave: boolean;
+  /** 保存データが無く（読めず）新しい都市で始めた。始め方の選択の窓を出す（docs/ui-design.md 10.12） */
+  isNew?: true;
 }
 
 export interface OpenOptions {
@@ -41,6 +43,7 @@ export async function openSession(backend: SaveBackend, options: OpenOptions): P
   const fresh = (problem?: string, canSave = true): Opened => ({
     session: createSession(undefined, { player: newPlayer(options.newId(), options.now()) }),
     canSave,
+    isNew: true,
     ...(problem === undefined ? {} : { problem }),
   });
   let raw: unknown;

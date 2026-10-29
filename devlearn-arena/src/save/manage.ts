@@ -61,7 +61,7 @@ export function checkImport(text: string, options?: ReadOptions): ImportCheck {
 export const nextIslandSeed = (seed: number): number => (Math.imul(seed, 1664525) + 1013904223) >>> 0;
 
 /**
- * 落選の後に新しい都市で始める時の保存データ（docs/game-design.md 21.2）: 新しい島で、村から・開発資金 1,500・1 期目（始め方は「ふつう」。選ぶのは G11）。
+ * 落選の後に新しい都市で始める時の保存データ（docs/game-design.md 21.2）: 新しい島で、村から・開発資金 1,500・1 期目（始め方は「ふつう」。開き直した後の始め方の選択の窓で選ぶ。docs/ui-design.md 10.12）。
  * 学習の記録（XP・スキル・レッスンの進み・ミッション・途中の実戦）・市長・設定は、そのまま写す
  */
 export function newCitySave(current: SaveData, now: string): SaveData {

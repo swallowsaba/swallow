@@ -39,6 +39,7 @@ import { BudgetWindow, InboxWindow, NewsWindow, RewardsWindow } from './CivicWin
 import { CouncilWindow } from './CouncilWindow';
 import { HearingWindow } from './HearingWindow';
 import { ElectionWindow } from './ElectionWindow';
+import { StartWindow } from './StartWindow';
 import { electionDayOf } from '@/sim/election';
 import { DAYS_PER_WEEK } from '@/sim/rules';
 import { mayorCount, sitesOf } from './permitView';
@@ -113,9 +114,10 @@ export function CityScreen({ session, active = true, covered = false, current, d
   // 公約を選んでいない任期なら、公約を選ぶ窓を出す（初回の操作説明の後。移行した都市の 1 期目も。docs/data-model.md 12 章）
   const introSeen = useStore(session.player, (p) => p.player.introSeen);
   const noPledges = useStore(store, (s) => s.world.politics.term.pledges.length === 0);
+  const starting = useStore(store, (s) => s.starting);
   useEffect(() => {
-    if (active && !covered && introSeen && noPledges) store.getState().askPledges();
-  }, [store, active, covered, introSeen, noPledges]);
+    if (active && !covered && introSeen && noPledges && !starting) store.getState().askPledges();
+  }, [store, active, covered, introSeen, noPledges, starting]);
   // 受け取ったが、まだ置いていない記念碑（建設メニューの公園の引き出しに並ぶ）
   const facilities = useStore(store, (s) => s.city.facilities);
   const landmarks = useMemo(() => unplacedLandmarks(progress, facilities), [progress, facilities]);
@@ -387,6 +389,7 @@ export function CityScreen({ session, active = true, covered = false, current, d
           <HearingWindow store={store} skills={skillValues} {...(onCard ? { onLearn: onCard } : {})} />
           <CouncilWindow store={store} />
           <ElectionWindow store={store} {...(onNewCity ? { onNewCity } : {})} />
+          <StartWindow store={store} />
           <HeatHover store={store} canvas={canvasRef} renderer={rendererRef} />
           <BuildMenu state={state} landmarks={landmarks} treasury={state.treasury} demand={state.demand} awards={awards} />
           <PlacementHint hint={state.confirm ? null : state.hint} />

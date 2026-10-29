@@ -1,4 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
+import { closeStart } from './start';
 
 /**
  * 電力・公共サービス・需要（docs/development-plan.md G10・docs/game-design.md 23・24 章）。
@@ -57,6 +58,7 @@ test.setTimeout(180_000);
 async function town(page: Page): Promise<void> {
   await page.goto('./');
   await page.waitForFunction(() => document.body.dataset.cityReady === '1');
+  await closeStart(page);
   for (let i = 0; i < 3; i += 1) await page.keyboard.press('Enter');
   await expect(page.getByTestId('intro')).toHaveCount(0);
   await expect(page.getByTestId('election-window')).toBeVisible();

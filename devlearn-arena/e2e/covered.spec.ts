@@ -1,4 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
+import { closeStart } from './start';
 
 /**
  * 性能（docs/development-plan.md Phase 12）: レッスンの画面が都市を覆っている間は、見えない都市を描かない。
@@ -10,6 +11,7 @@ const stats = (page: Page) => page.evaluate(() => ({ ...(window as unknown as Ci
 test('レッスンの間は都市を描かず、戻るとすぐ描き直す', async ({ page }) => {
   await page.goto('./#/city');
   await page.waitForFunction(() => document.body.dataset.cityReady === '1');
+  await closeStart(page);
   for (let i = 0; i < 3; i += 1) await page.keyboard.press('Enter');
 
   await page.evaluate(() => { window.location.hash = '#/lesson/linux.b.01'; });

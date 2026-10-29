@@ -19,8 +19,8 @@ function mount(introSeen: boolean) {
   const session = createSession(undefined, { player: { ...newPlayer('p-1', '2026-10-09T10:00:00+09:00'), introSeen } });
   const host = document.createElement('div');
   document.body.append(host);
-  // 示す所（建設メニュー・おすすめの欄・上の帯）
-  host.innerHTML = '<div data-testid="build-menu"><div class="build-bar"></div></div><aside data-testid="recommend"></aside><header data-testid="topbar"><button data-testid="topbar-xp"></button><nav class="topbar-entries"></nav></header>';
+  // 示す所（建設メニュー・おすすめの欄・上の帯の XP と入口と支持率と市政）
+  host.innerHTML = '<div data-testid="build-menu"><div class="build-bar"></div></div><aside data-testid="recommend"></aside><header data-testid="topbar"><button data-testid="topbar-xp"></button><nav class="topbar-entries"></nav><button data-testid="topbar-approval"></button><button data-testid="topbar-civic"></button></header>';
   const mountAt = document.createElement('div');
   host.append(mountAt);
   const root = createRoot(mountAt);
@@ -47,8 +47,11 @@ describe('初回の操作説明（docs/ui-design.md 9 章）', () => {
       marks.push(intro(host)?.querySelectorAll('.intro-mark').length ?? 0);
       key('Enter');
     }
-    // 建設メニュー・おすすめの欄・上の帯の XP と入口
-    expect(marks).toEqual([1, 1, 2]);
+    // 建設メニュー・おすすめの欄・上の帯の XP と入口と支持率と市政
+    expect(marks).toEqual([1, 1, 4]);
+    // 市政（申請の看板・上の帯の支持率・市政の入口）を説明に足す（docs/ui-design.md 10.12）
+    const text = INTRO_STEPS.flatMap((s) => s.lines).join('');
+    for (const word of ['申請', '看板', '支持率', '「市政」']) expect(text).toContain(word);
     expect(intro(host)).toBeNull();
     expect(session.player.getState().player.introSeen).toBe(true);
   });

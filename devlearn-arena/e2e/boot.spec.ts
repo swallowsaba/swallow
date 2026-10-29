@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test';
+import { closeStart } from './start';
 
 /**
  * 読み込み中の演出（docs/ui-design.md 9 章）。本体が届く前から出て、都市が描けたら消える。
@@ -14,6 +15,7 @@ test('本体が届く前から都市の輪郭を描き、都市が描けたら�
   await expect(boot).toBeVisible();
   await expect(boot).toHaveAttribute('aria-label', '都市を読み込んでいる');
   await page.waitForFunction(() => document.body.dataset.cityReady === '1');
+  await closeStart(page);
   await expect(boot).toHaveCount(0);
   await expect(page.getByTestId('topbar')).toBeVisible();
 });

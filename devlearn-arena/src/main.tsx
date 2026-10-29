@@ -8,6 +8,7 @@ import { openSession, startAutosave } from './save/autosave';
 import { idbBackend } from './save/idb';
 import { freshSave, newCitySave } from './save/manage';
 import type { SaveControls } from './screens/settings/SettingsScreen';
+import type { SaveData } from './save/schema';
 import { nowIso } from './screens/clock';
 import { useSaveStatus } from './screens/saveStatus';
 import { applySettings } from './screens/settingsContext';
@@ -31,6 +32,8 @@ for (const [name, value] of Object.entries({ ...cssVariables(), ...cityCssVariab
 sqlConfig.locateFile = () => sqlWasm;
 
 const AFTER_REOPEN = 'devlearn-arena:after-reopen';
+/** 開き直した後に、始め方の選択の窓を出す（最初からやり直す・新しい都市で始める。docs/ui-design.md 10.12） */
+const CHOOSE_START = 'devlearn-arena:choose-start';
 function putAfterReopen(message: string): void {
   try {
     sessionStorage.setItem(AFTER_REOPEN, message);
@@ -45,6 +48,22 @@ function takeAfterReopen(): string | null {
     return message;
   } catch {
     return null;
+  }
+}
+function putChooseStart(): void {
+  try {
+    sessionStorage.setItem(CHOOSE_START, '1');
+  } catch {
+    // 窓が出ないだけで、新しい都市は「ふつう」で始まる
+  }
+}
+function takeChooseStart(): boolean {
+  try {
+    const on = sessionStorage.getItem(CHOOSE_START) === '1';
+    sessionStorage.removeItem(CHOOSE_START);
+    return on;
+  } catch {
+    return false;
   }
 }
 
@@ -68,14 +87,23 @@ void openSession(backend, { now: nowIso, newId: () => crypto.randomUUID() }).the
   // 読み込み・やり直しの後に開き直した時は、何をしたかを都市画面で知らせる
   const after = takeAfterReopen();
   if (after) opened.session.city.getState().notify(after, performance.now());
+  // 新しく始めた都市（初回・最初からやり直す・新しい都市で始める）は、始め方を選んでから遊ぶ
+  if (takeChooseStart() || opened.isNew) opened.session.city.getState().openStart();
+  // 最初からやり直す・新しい都市で始める時に作った保存データ（開き直した後に始め方を選ぶ）
+  const starts = new WeakSet<SaveData>();
+  const started = (data: SaveData): SaveData => {
+    starts.add(data);
+    return data;
+  };
   // 書き出し・読み込み・やり直し（設定）。置き換えたら保存先から開き直し、都市画面から始める
   const saves: SaveControls = {
     snapshot: saver.snapshot,
-    fresh: () => freshSave({ id: crypto.randomUUID(), now: nowIso(), settings: opened.session.settings.getState().settings }),
-    newCity: () => newCitySave(saver.snapshot(), nowIso()),
+    fresh: () => started(freshSave({ id: crypto.randomUUID(), now: nowIso(), settings: opened.session.settings.getState().settings })),
+    newCity: () => started(newCitySave(saver.snapshot(), nowIso())),
     replace: async (data, message) => {
       await saver.replace(data);
       putAfterReopen(message);
+      if (starts.has(data)) putChooseStart();
       window.history.replaceState(null, '', '#/city');
       window.location.reload();
     },

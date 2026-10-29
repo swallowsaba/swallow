@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test';
+import { closeStart } from './start';
 import { runLesson } from '../tools/scenarios/domain.mjs';
 
 /**
@@ -22,6 +23,7 @@ for (const id of LESSONS) {
     page.on('pageerror', (e) => errors.push(String(e)));
     await page.goto('./#/city');
     await page.waitForFunction(() => document.body.dataset.cityReady === '1');
+    await closeStart(page);
     await page.locator('[data-testid="intro"] .intro-skip').click();
 
     const out = await runLesson(page, id);

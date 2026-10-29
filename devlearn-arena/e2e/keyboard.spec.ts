@@ -1,4 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
+import { closeStart } from './start';
 
 /**
  * キーボードだけでの操作（docs/ui-design.md 4 章・docs/acceptance-criteria.md U5・docs/testing-strategy.md 5 章）。
@@ -19,6 +20,7 @@ const focused = (page: Page) => page.evaluate(() => {
 test('マウスを使わずに、都市の操作から学習まで進められる', async ({ page }) => {
   await page.goto('./#/city');
   await page.waitForFunction(() => document.body.dataset.cityReady === '1');
+  await closeStart(page);
 
   // 初回の操作説明は Enter で読み進める
   for (let i = 0; i < 3; i += 1) await page.keyboard.press('Enter');

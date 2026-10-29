@@ -45,8 +45,9 @@ try {
   await page.goto(url, { waitUntil: 'networkidle' });
   await page.waitForFunction(() => document.body.dataset.cityReady === '1' || !document.querySelector('[data-testid="city-screen"]'), null, { timeout: 30000 });
   await page.evaluate(() => document.fonts.ready);
-  // 初めて開いた時の操作説明は、それを撮る時のほかは閉じる（閉じたことは保存され、次からは出ない）
-  if (!process.env.SHOOT_INTRO) await page.evaluate(() => document.querySelector('[data-testid="intro"] .intro-skip')?.click());
+  // 初めて開いた時の始め方の選択と操作説明は、それを撮る時のほかは閉じる（始め方は「ふつう」。閉じたことは保存され、次からは出ない）
+  if (!process.env.SHOOT_START) await page.evaluate(() => document.querySelector('[data-testid="start-go"]')?.click());
+  if (!process.env.SHOOT_INTRO && !process.env.SHOOT_START) await page.evaluate(() => document.querySelector('[data-testid="intro"] .intro-skip')?.click());
   if (process.env.SHOOT_EVAL) await page.evaluate(process.env.SHOOT_EVAL);
   if (process.env.SHOOT_SCRIPT) {
     const script = await import(pathToFileURL(process.env.SHOOT_SCRIPT).href);

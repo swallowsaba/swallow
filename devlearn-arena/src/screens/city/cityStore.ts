@@ -12,6 +12,7 @@ import { checkUpgrade } from '@/city/upgrade';
 import { EXPLAIN, NAME_PARTS, POLITICS_RULES } from '@/content/politics';
 import { explainApproval } from '@/sim/explain';
 import { AWARD_TYPES } from '@/sim/awards';
+import { canChooseStart, START_MODES } from '@/sim/startMode';
 import type { Hand } from '@/sim/hearing';
 import { newAnswerNotes, reactionLesson, reactionText } from './hearingView';
 import { groupName } from './permitView';
@@ -22,7 +23,7 @@ import { electionDayOf, electionOf, WARN_DAYS } from '@/sim/election';
 import { workerHost, type SimHost } from '@/sim/host';
 import { dateOf, SECONDS_PER_DAY, type Speed } from '@/sim/rules';
 import { terrainOf, type StateMessage } from '@/sim/runner';
-import type { Application, Article, World } from '@/sim/types';
+import type { Application, Article, Difficulty, World } from '@/sim/types';
 import { newWorld, withCity, worldFromCity } from '@/sim/world';
 
 /**
@@ -117,6 +118,8 @@ export interface CityGameState {
   election: ElectionView | null;
   /** 公約を選ぶ窓を自分から出した任期（閉じたら、その任期はもう自分からは出さない） */
   pledgeAsked: number;
+  /** 始め方の選択の大きな窓を出している（新しく始めた時。docs/ui-design.md 10.12） */
+  starting: boolean;
   /** 最後に出した手の、住民と議員の受け取り方の 1 行 */
   reaction: { reasonId: string; text: string; lesson: { id: string; title: string } | null } | null;
   /** 学習に出た時の都市とスキル（戻った時に変化を比べる） */
@@ -188,6 +191,10 @@ export interface CityGameState {
   /** 選挙の窓を開く（大きな窓は 1 つまで。時間を止める）。結果は選挙の後だけ */
   openElection: (view: ElectionView) => void;
   leaveElection: () => void;
+  /** 始め方の選択の窓を出す（新しく始めた都市でだけ。時間を止める。docs/ui-design.md 10.12） */
+  openStart: () => void;
+  /** 始め方を決めて窓を閉じる。選ばずに閉じる時は「ふつう」のまま（difficulty を渡さない） */
+  chooseStart: (difficulty: Difficulty | null, now: number) => void;
   /** 公約を選んでいない任期なら、公約を選ぶ窓を出す（任期の初めに 1 度。移行した都市の 1 期目も。docs/data-model.md 12 章） */
   askPledges: () => void;
   /** 公約を 2 つ選ぶ（任期の初めに 1 度。docs/game-design.md 21.4）。選べたら窓を閉じて知らせる */
@@ -338,6 +345,7 @@ export function createCityStore(seed?: number, initial?: City, options: CityStor
       appealId: null,
       election: null,
       pledgeAsked: 0,
+      starting: false,
       reaction: null,
       away: null,
       focus: null,
@@ -513,10 +521,24 @@ export function createCityStore(seed?: number, initial?: City, options: CityStor
         set({ election: null });
         get().hold('window', false);
       },
+      openStart: () => {
+        if (!canChooseStart(get().world)) return;
+        set({ starting: true, election: null, hearingId: null, councilId: null, reaction: null });
+        get().hold('window', true);
+      },
+      chooseStart: (difficulty, now) => {
+        if (!get().starting) return;
+        if (difficulty) get().dispatch({ kind: 'startMode', difficulty });
+        set({ starting: false });
+        get().hold('window', false);
+        const p = get().world.politics;
+        const name = START_MODES.find((m) => m.id === p.difficulty)?.name ?? '';
+        get().notify(`「${name}」で始めた。政治資本 ${String(p.capital)}。どのレッスンも、いつでも始められる`, now);
+      },
       askPledges: () => {
         const s = get();
         const p = s.world.politics;
-        if (p.defeated || p.term.pledges.length > 0 || s.pledgeAsked === p.term.no || s.election || s.hearingId || s.councilId) return;
+        if (p.defeated || p.term.pledges.length > 0 || s.pledgeAsked === p.term.no || s.election || s.hearingId || s.councilId || s.starting) return;
         set({ pledgeAsked: p.term.no });
         get().openElection('term');
       },

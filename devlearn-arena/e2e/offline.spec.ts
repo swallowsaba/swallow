@@ -1,4 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
+import { closeStart } from './start';
 
 /**
  * オフライン（docs/product-spec.md 5 章・docs/architecture.md 4 章）。
@@ -8,6 +9,7 @@ import { expect, test, type Page } from '@playwright/test';
 
 async function city(page: Page): Promise<void> {
   await page.waitForFunction(() => document.body.dataset.cityReady === '1');
+  await closeStart(page);
   if (await page.getByTestId('intro').count()) await page.keyboard.press('Escape');
   await expect(page.getByTestId('intro')).toHaveCount(0);
 }
