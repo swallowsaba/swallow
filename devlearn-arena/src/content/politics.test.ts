@@ -16,8 +16,9 @@ describe('反対の理由のデータ（content/politics/objections/。7.1）', 
     expect(validateReasons(REASONS, ctx)).toEqual([]);
   });
 
-  it('今ある全ての申請の種類（IT 施設 15・そのアップグレード・用途地域の変更 4）に、理由が 2 つ以上ある', () => {
-    expect(objectionTargets()).toHaveLength(15 * 2 + 4);
+  it('今ある全ての申請の種類（IT 施設 15・そのアップグレード・用途地域の変更 4・公共サービス 4・発電所 2）に、理由が 2 つ以上ある', () => {
+    expect(objectionTargets()).toHaveLength(15 * 2 + 4 + 4 + 2);
+    expect(objectionTargets()).toEqual(expect.arrayContaining(['civic:police', 'civic:fire', 'civic:school', 'civic:clinic', 'civic:power-thermal', 'civic:power-solar']));
     for (const t of objectionTargets()) expect(REASONS.filter((r) => r.targets.includes(t)).length, t).toBeGreaterThanOrEqual(2);
   });
 

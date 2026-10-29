@@ -1,3 +1,4 @@
+import type { Terrain } from '@/city/terrain';
 import { FACILITY_DEFS, footprintOf } from '@/city/facilities';
 import { crowdCount, crowdSpots, placardTone } from '@/city/crowd';
 import type { SiteView } from '@/city/render/CityRenderer';
@@ -201,7 +202,8 @@ export interface PermitDetail extends PermitRow {
   refund: number;
 }
 
-export function permitDetail(world: World, id: string): PermitDetail | null {
+/** terrain: 公共サービスと発電所の得（行き届きの見込み）を数えるために渡す */
+export function permitDetail(world: World, id: string, terrain?: Terrain): PermitDetail | null {
   const a = world.applications.find((x) => x.id === id);
   if (!a) return null;
   const day = Math.floor(world.city.day);
@@ -209,13 +211,14 @@ export function permitDetail(world: World, id: string): PermitDetail | null {
   if (a.target.zone) gains.push({ label: '区画', value: `${ZONE_RULES[a.target.zone.kind].name} ${String(a.target.zone.cells.length)} マス` });
   // 議員が見る得（申請が完成した形を入れて数える）。審議中だけ（完成した後は都市に入っている）
   if (isReviewing(a)) {
-    const g = gainsOf(world, a).raw;
+    const g = gainsOf(world, a, terrain).raw;
     const n = (v: number): string => (Math.round(v * 10) / 10).toLocaleString('ja-JP');
     if (g.jobs > 0) gains.push({ label: '雇用', value: `+${n(g.jobs)} 人分の仕事` });
     if (g.afford > 0) gains.push({ label: '戸数', value: `+${n(g.afford)} 戸` });
-    if (g.tech > 0) gains.push({ label: '技術力', value: `+${n(g.tech)}` });
+    if (g.tech > 0) gains.push({ label: a.target.type === 'school' ? '教育' : '技術力', value: `+${n(g.tech)}` });
     if (g.finance > 0) gains.push({ label: '税収', value: `週に +${n(g.finance)}` });
     if (g.environment > 0) gains.push({ label: '緑地', value: `${n(g.environment)} マス` });
+    if (g.safety > 0) gains.push({ label: '暮らしの備え', value: `+${n(g.safety)}（行き届き・電力）` });
   }
   return {
     ...rowOf(a, world, day),

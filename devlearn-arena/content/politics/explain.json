@@ -45,6 +45,6 @@
     "finance": "税収が週に {value} 増える",
     "safety": "暮らしの備えが {value} 増える",
     "traffic": "道の流れが {value} 良くなる",
-    "tech": "技術力が {value} 上がる"
+    "tech": "技術と教育が {value} 伸びる"
   }
 }

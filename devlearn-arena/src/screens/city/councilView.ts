@@ -1,3 +1,4 @@
+import type { Terrain } from '@/city/terrain';
 import { COUNCIL, EXPLAIN, POLITICS_RULES, REASONS } from '@/content/politics';
 import { APPEAL_BORDER, openIssues, SUPPRESS } from '@/sim/appeal';
 import { judgeAll, PASS_VOTES, PERSUADE } from '@/sim/council';
@@ -64,7 +65,8 @@ export interface CouncilModel {
   persuade: { cost: number; ok: boolean; used: string | null } | null;
 }
 
-export function councilModel(world: World, id: string): CouncilModel | null {
+/** terrain: 公共サービスと発電所の得（行き届きの見込み）を数えるために渡す */
+export function councilModel(world: World, id: string, terrain?: Terrain): CouncilModel | null {
   const app = world.applications.find((a) => a.id === id);
   if (!app) return null;
   const day = Math.floor(world.city.day);
@@ -82,7 +84,7 @@ export function councilModel(world: World, id: string): CouncilModel | null {
   }
   // 同意の案件は採決の画面を出さない（docs/ui-design.md 10.4）
   if (app.stage !== 'council' || isConsent(app)) return null;
-  const seats = judgeAll(world, app, POLITICS_RULES).flatMap((j): SeatModel[] => {
+  const seats = judgeAll(world, app, POLITICS_RULES, terrain).flatMap((j): SeatModel[] => {
     const m = byId.get(j.memberId);
     return m ? [{ id: m.id, name: m.name, profile: m.profile, icon: m.icon, main: m.main, mainName: ISSUE_NAMES[m.main], yes: j.yes, line: memberLine(m, j.reasonKey), persuaded: j.persuaded }] : [];
   });

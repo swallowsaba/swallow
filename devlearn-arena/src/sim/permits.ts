@@ -309,7 +309,7 @@ export function stepApplications(world: World, day: number, terrain?: Terrain, r
           if (day >= nextCouncilDay(a.stageDay)) {
             // 同意の案件は採決なしに可決。公聴会を経た申請は、7 人の採決（18 章）
             const consent = isConsent(a);
-            const vote = consent ? { day, consent: true, members: [], passed: true } : voteOf({ ...world, city, sim: { ...world.sim, trust } }, a, rules, day);
+            const vote = consent ? { day, consent: true, members: [], passed: true } : voteOf({ ...world, city, sim: { ...world.sim, trust } }, a, rules, day, terrain);
             const voted: Application = { ...a, vote };
             if (!vote.passed) {
               // 否決: 申請は終わり、費用は全て戻る（譲歩の費用はまだ取り分けていない）

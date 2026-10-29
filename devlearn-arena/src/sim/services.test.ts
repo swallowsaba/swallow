@@ -6,7 +6,8 @@ import { applyOp } from './commands';
 import { ageOf, factorIndex, LAYERS } from './layers';
 import { serviceAt } from './land';
 import { reach } from './network';
-import { permitProblems } from './permits';
+import { gainsOf } from './council';
+import { permitProblems, STAGE_DAYS } from './permits';
 import { LAND_SERVICE_MAX, SERVICE_DEFICIT, SERVICE_POINTS } from './rules';
 import type { World } from './types';
 import { previewOf, weekStep } from './week';
@@ -143,5 +144,33 @@ describe('財政で建てる申請（15.1・22.2）', () => {
     expect(next.city.techPower).toBe(stepDay(GROWN.world, T, POLITICS_RULES).city.techPower);
     const jobs = (x: World): number => weekStep(x, T, true, POLITICS_RULES).view.jobs;
     expect(jobs(w) - jobs(GROWN.world)).toBeCloseTo(15, 6);
+  });
+});
+
+describe('公共サービスと発電所の反対と得（16 章・18.1）', () => {
+  const T2 = T;
+  it('火力の発電所を住宅のそばに出すと、タービンの音と費用の理由が立つ。発電所は議員の「安全」の得になる', () => {
+    let w = applyOp(GROWN.world, { kind: 'facility', type: 'power-thermal', origin: { x: 53, y: 48 }, rotation: 0 }, T2, POLITICS_RULES);
+    const id = w.applications.at(-1)?.id ?? '';
+    for (let i = 0; i < STAGE_DAYS.zoning + 1; i += 1) w = stepDay(w, T2, POLITICS_RULES);
+    const app = w.applications.find((a) => a.id === id);
+    const reasons = app?.objections.map((o) => o.reasonId) ?? [];
+    expect(reasons).toEqual(expect.arrayContaining(['cv-thermal-noise', 'cv-thermal-cost']));
+    const g = app ? gainsOf(w, app, T2) : null;
+    // 出力 40 MW ÷ 10 = 4（行き届きは持たない）
+    expect(g?.raw.safety).toBeCloseTo(4, 1);
+    // 譲歩で出力を絞ると、得も下がる
+    const trimmed = app ? gainsOf(w, { ...app, mods: { power: 0.75, noise: 0.7 } }, T2) : null;
+    expect(trimmed?.raw.safety).toBeCloseTo(3, 1);
+    // 財政の得は、税収（職員 15 人分）から維持費 40 を引くと負なので 0
+    expect(g?.raw.finance).toBe(0);
+  });
+
+  it('警察署は、住民の行き届きが増えた分だけ「安全」の得になる。地形を渡さなければ数えない', () => {
+    const w = applyOp(GROWN.world, { kind: 'facility', type: 'police', origin: { x: 53, y: 48 }, rotation: 0 }, T2, POLITICS_RULES);
+    const app = w.applications.at(-1);
+    if (!app) throw new Error('申請が無い');
+    expect(gainsOf(w, app, T2).raw.safety).toBeGreaterThan(0);
+    expect(gainsOf(w, app).raw.safety).toBe(0);
   });
 });

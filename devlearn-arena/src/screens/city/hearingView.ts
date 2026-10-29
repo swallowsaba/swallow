@@ -94,6 +94,8 @@ export interface HandsModel {
   title: string;
   concessions: { id: string; label: string; effects: string[]; cost: number; ok: boolean; why?: string; tech?: string; loss?: string }[];
   explanations: { id: string; text: string }[];
+  /** 理由に説明の候補が 1 つでもあるか（無い論点は、学んでも説明は増えない。公共サービスと用途地域の変更の論点） */
+  explainable: boolean;
   /** 伏せた候補（「データベース 中級で出せる説明が 1 つある」「データベース 上級で出せる技術の代案が 1 つある」） */
   hidden: string[];
   /** この論点を学べるレッスン（理由の lessons の順。押すと入口の札。docs/learning-design.md 12.3） */
@@ -119,11 +121,12 @@ export function handsModel(world: World, app: Application, reasonId: string, ski
       effects: modsText(c.concession.mods),
       cost: c.cost,
       ok: c.ok,
-      ...(c.why === 'funds' ? { why: '資金が足りない' } : {}),
+      ...(c.why === 'funds' ? { why: app.wallet === 'treasury' ? '財政が足りない' : '資金が足りない' } : {}),
       ...(c.concession.requires ? { tech: `${domainName(c.concession.requires.domain)} ${SKILL_STAGE_NAMES[c.concession.requires.stage as SkillStage]}の技術の代案` } : {}),
       ...(c.concession.loss ? { loss: c.concession.loss } : {}),
     })),
     explanations: opt.explanations.map((e) => ({ id: e.id, text: e.text })),
+    explainable: r.explanations.length > 0,
     hidden: [
       ...opt.hidden.map((h) => `${domainName(h.domain)} ${SKILL_STAGE_NAMES[h.stage as SkillStage]}で出せる説明が ${String(h.count)} つある`),
       ...opt.hiddenTech.map((h) => `${domainName(h.domain)} ${SKILL_STAGE_NAMES[h.stage as SkillStage]}で出せる技術の代案が ${String(h.count)} つある`),

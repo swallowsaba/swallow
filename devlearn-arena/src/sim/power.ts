@@ -30,10 +30,10 @@ export function facilityPowerOf(f: Pick<Facility, 'type' | 'level' | 'mods'>, ru
   return mw > 0 ? mw * f.level * (f.mods?.power ?? 1) : 0;
 }
 
-/** 発電所の出力（MW。財政が赤字の間は 7 割） */
-export function plantOutput(f: Pick<Facility, 'type'>, deficit: boolean): number {
+/** 発電所の出力（MW。譲歩の power で出力を絞った発電所はその割合。財政が赤字の間は 7 割） */
+export function plantOutput(f: Pick<Facility, 'type'> & Partial<Pick<Facility, 'mods'>>, deficit: boolean): number {
   const mw = FACILITY_DEFS[f.type].powerMW ?? 0;
-  return mw < 0 ? -mw * (deficit ? DEFICIT_OUTPUT : 1) : 0;
+  return mw < 0 ? -mw * (f.mods?.power ?? 1) * (deficit ? DEFICIT_OUTPUT : 1) : 0;
 }
 
 /** 都市の使う量（MW） */

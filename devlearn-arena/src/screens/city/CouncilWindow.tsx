@@ -25,7 +25,7 @@ export function CouncilWindow({ store }: { store: CityStore }) {
   const s = useStore(store, useShallow((x) => ({ id: x.councilId, apps: x.world.applications, capital: x.world.politics.capital, leave: x.leaveCouncil, persuade: x.persuade })));
   const { reduceMotion } = useSettings();
   const world = store.getState().world;
-  const m = s.id ? councilModel(world, s.id) : null;
+  const m = s.id ? councilModel(world, s.id, store.getState().terrain) : null;
   const [pick, setPick] = useState<string | null>(null);
   const total = m?.seats.length ?? 0;
   const result = m?.mode === 'result';

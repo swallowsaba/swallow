@@ -317,7 +317,9 @@ export const POLITICS_RULES: PoliticsRules = {
 /** 反対の理由が立つ申請の種類（今ある物: IT 施設 15・そのアップグレード・用途地域の変更の 4 つの区画。公共サービス・発電所・褒賞は G10・G11 で足す） */
 export function objectionTargets(): string[] {
   const it = Object.values(FACILITY_DEFS).filter((d) => d.group === 'facility').map((d) => d.type);
-  return [...it, ...it.map((t) => `upgrade:${t}`), ...['residential', 'commercial', 'office', 'industrial'].map((k) => `rezone:${k}`)];
+  // 公共サービスと発電所（Lv が無いのでアップグレードは無い。docs/city-design.md 9.2）
+  const civic = Object.values(FACILITY_DEFS).filter((d) => d.group === 'civic' || d.group === 'power').map((d) => `civic:${d.type}`);
+  return [...it, ...it.map((t) => `upgrade:${t}`), ...['residential', 'commercial', 'office', 'industrial'].map((k) => `rezone:${k}`), ...civic];
 }
 
 /** 理由の強さ（measure）の元の値を、その譲歩の性質が下げるか（docs/content-spec.md 7.1.1 の対応） */

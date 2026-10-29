@@ -1,0 +1,207 @@
+{
+  "reasons": [
+    {
+      "id": "cv-police-cars",
+      "title": "パトカーの出入り",
+      "targets": ["civic:police"],
+      "group": "neighbors",
+      "issue": "traffic",
+      "measure": { "kind": "traffic" },
+      "radius": 5,
+      "misconception": 0.3,
+      "claim": "交代の時間ごとにパトカーが車庫を出入りし、届け出に来る人の車が路肩に並ぶ。朝の通学路で、子どもが車の間をすり抜けることになる。",
+      "concessions": [
+        { "id": "cv-police-back", "label": "車庫の出入口を裏の道に向け、来庁の車は庁舎の中の駐車場に入れる", "mods": { "traffic": 0.6 }, "cost": { "ratio": 0.1 } }
+      ],
+      "explanations": [],
+      "lessons": ["found.b.01"]
+    },
+    {
+      "id": "cv-police-cost",
+      "title": "庁舎の維持費",
+      "targets": ["civic:police"],
+      "group": "taxpayers",
+      "issue": "finance",
+      "measure": { "kind": "cost" },
+      "misconception": 0.2,
+      "claim": "建てる 500 に、毎週 30 の人件費と燃料代が税から出ていく。この大きさの町に、2 階建ての庁舎と車庫まで要るのか。",
+      "concessions": [
+        { "id": "cv-police-box", "label": "車庫を省いた平屋の分署にして、夜は本署の車が回る", "mods": { "height": -1 }, "cost": { "ratio": -0.25 }, "loss": "届く範囲はそのまま。建物は 1 段低くなる" }
+      ],
+      "explanations": [],
+      "lessons": ["found.b.01"]
+    },
+    {
+      "id": "cv-fire-route",
+      "title": "出動の通り道",
+      "targets": ["civic:fire"],
+      "group": "neighbors",
+      "issue": "traffic",
+      "measure": { "kind": "traffic" },
+      "radius": 5,
+      "misconception": 0.3,
+      "claim": "消防車が出るたびに、前の道の車が一斉に止められる。訓練の日には放水の車が道をふさぎ、店の荷下ろしもできなくなる。",
+      "concessions": [
+        { "id": "cv-fire-yard", "label": "訓練は敷地の中の訓練場だけで行い、出動の時だけ表の道を使う", "mods": { "traffic": 0.5 }, "cost": { "ratio": 0.15 } }
+      ],
+      "explanations": [],
+      "lessons": ["found.b.01"]
+    },
+    {
+      "id": "cv-fire-cost",
+      "title": "車と人の費用",
+      "targets": ["civic:fire"],
+      "group": "taxpayers",
+      "issue": "finance",
+      "measure": { "kind": "cost" },
+      "misconception": 0.2,
+      "claim": "はしご車 1 台の値段と、24 時間交代で詰める隊員の給料を、毎週の税収でまかない続けられるのか。火事の少ない町で、車庫の扉を開けない日の方が多い。",
+      "concessions": [
+        { "id": "cv-fire-small", "label": "はしご車を置かず、ポンプ車 2 台の小さな出張所にする", "mods": { "height": -1 }, "cost": { "ratio": -0.2 }, "loss": "高い建物の火事は、隣の町の応援を待つことになる" }
+      ],
+      "explanations": [],
+      "lessons": ["found.b.01"]
+    },
+    {
+      "id": "cv-school-pickup",
+      "title": "朝夕の送り迎え",
+      "targets": ["civic:school"],
+      "group": "neighbors",
+      "issue": "traffic",
+      "measure": { "kind": "traffic" },
+      "radius": 6,
+      "misconception": 0.3,
+      "claim": "8 時前の 20 分間、送り迎えの車が校門の前で二重に止まり、通勤の車がその後ろに列を作る。自転車の高校生が車道にはみ出して避けている。",
+      "concessions": [
+        { "id": "cv-school-drop", "label": "校庭の脇に送り迎えの車寄せを作り、校門の前の道は朝だけ車を入れない", "mods": { "traffic": 0.55 }, "cost": { "ratio": 0.1 } }
+      ],
+      "explanations": [],
+      "lessons": ["found.b.01"]
+    },
+    {
+      "id": "cv-school-shade",
+      "title": "校舎の日陰",
+      "targets": ["civic:school"],
+      "group": "neighbors",
+      "issue": "environment",
+      "measure": { "kind": "sunlight" },
+      "radius": 3,
+      "misconception": 0.2,
+      "claim": "3 階建ての校舎が南に建つと、冬の午後は庭に日が届かなくなる。洗濯物が乾かず、植えたばかりの野菜も育たない。",
+      "concessions": [
+        { "id": "cv-school-low", "label": "校舎を 2 階建てに抑え、体育館を住宅の側から離して建てる", "mods": { "height": -1 } }
+      ],
+      "explanations": [],
+      "lessons": ["found.b.01"]
+    },
+    {
+      "id": "cv-school-cost",
+      "title": "校舎と教員の費用",
+      "targets": ["civic:school"],
+      "group": "taxpayers",
+      "issue": "finance",
+      "measure": { "kind": "cost" },
+      "misconception": 0.2,
+      "claim": "700 をかけて校舎を建てても、子どもの数が増えなければ教室が余る。隣の学区の学校にバスで通わせる方が安いのではないか。",
+      "concessions": [
+        { "id": "cv-school-wing", "label": "体育館を後回しにし、普通教室の棟だけを先に建てる", "mods": { "height": -1 }, "cost": { "ratio": -0.2 }, "loss": "雨の日の体育と集会は、教室を片付けて行う" }
+      ],
+      "explanations": [],
+      "lessons": ["found.b.01"]
+    },
+    {
+      "id": "cv-clinic-ambulance",
+      "title": "救急車と通院の車",
+      "targets": ["civic:clinic"],
+      "group": "neighbors",
+      "issue": "traffic",
+      "measure": { "kind": "traffic" },
+      "radius": 4,
+      "misconception": 0.35,
+      "claim": "午前の診療の前に、通院の人の車が道沿いに並んで待つ。そこへ救急車が入ってくると、誰も避けられない。",
+      "concessions": [
+        { "id": "cv-clinic-bay", "label": "敷地の奥に車寄せと待合の駐車場を作り、受付は予約の時間で分ける", "mods": { "traffic": 0.6 }, "cost": { "ratio": 0.15 } }
+      ],
+      "explanations": [],
+      "lessons": ["found.b.01"]
+    },
+    {
+      "id": "cv-clinic-cost",
+      "title": "医師を呼ぶ費用",
+      "targets": ["civic:clinic"],
+      "group": "taxpayers",
+      "issue": "finance",
+      "measure": { "kind": "cost" },
+      "misconception": 0.25,
+      "claim": "建物を建てても、来てくれる医師がいなければ空き家になる。島の外から医師を呼ぶ手当まで、税で出し続けることになる。",
+      "concessions": [
+        { "id": "cv-clinic-days", "label": "まず週 3 日の外来に絞り、2 階の病床は医師が決まってから入れる", "mods": { "height": -1 }, "cost": { "ratio": -0.2 }, "loss": "夜と休みの日の急病は、隣の町の病院へ運ぶ" }
+      ],
+      "explanations": [],
+      "lessons": ["found.b.01"]
+    },
+    {
+      "id": "cv-thermal-noise",
+      "title": "タービンの低い音",
+      "targets": ["civic:power-thermal"],
+      "group": "neighbors",
+      "issue": "environment",
+      "measure": { "kind": "noise" },
+      "radius": 5,
+      "misconception": 0.15,
+      "claim": "発電機のタービンは夜も止まらず、窓を閉めても低いうなりが床から伝わる。煙突の白い煙が、洗濯物の上を流れていく。",
+      "concessions": [
+        { "id": "cv-thermal-hall", "label": "発電機を厚い壁の建屋に入れ、吸気口を住宅と反対の側に付ける", "mods": { "noise": 0.5 }, "cost": { "ratio": 0.2 } },
+        { "id": "cv-thermal-night", "label": "夜は出力を絞り、足りない分は外の電気で補う", "mods": { "noise": 0.7, "power": 0.75 }, "loss": "作る電気が 4 分の 3 になる（40 MW → 30 MW）" }
+      ],
+      "explanations": [],
+      "lessons": ["found.b.01"]
+    },
+    {
+      "id": "cv-thermal-cost",
+      "title": "燃料と建設の費用",
+      "targets": ["civic:power-thermal"],
+      "group": "taxpayers",
+      "issue": "finance",
+      "measure": { "kind": "cost" },
+      "misconception": 0.2,
+      "claim": "800 の建設費に、毎週 40 の燃料と点検の費用。外の電気を買い続けた方が、町の財布には軽いのではないか。",
+      "concessions": [
+        { "id": "cv-thermal-one", "label": "発電機を 2 基から 1 基にして、敷地の半分は将来のために空けておく", "mods": { "height": -1, "power": 0.6 }, "cost": { "ratio": -0.3 }, "loss": "作る電気が 6 割になる（40 MW → 24 MW）" }
+      ],
+      "explanations": [],
+      "lessons": ["found.b.01"]
+    },
+    {
+      "id": "cv-solar-land",
+      "title": "広い土地に働く人が少ない",
+      "targets": ["civic:power-solar"],
+      "group": "neighbors",
+      "issue": "jobs",
+      "measure": { "kind": "jobs-density" },
+      "radius": 6,
+      "misconception": 0.3,
+      "claim": "3 マス四方の土地を板で埋めても、働くのは管理棟の数人だけ。同じ土地に店や工場が来れば、もっと多くの人が働けた。",
+      "concessions": [
+        { "id": "cv-solar-local", "label": "板の洗浄と草刈りと点検を、市内の会社に年中まかせる", "mods": { "jobs": 1.6 }, "cost": { "ratio": 0.1 } }
+      ],
+      "explanations": [],
+      "lessons": ["found.b.01"]
+    },
+    {
+      "id": "cv-solar-cost",
+      "title": "曇りの日の高い買い物",
+      "targets": ["civic:power-solar"],
+      "group": "taxpayers",
+      "issue": "finance",
+      "measure": { "kind": "cost" },
+      "misconception": 0.3,
+      "claim": "900 も出して、作れるのは火力の半分にも届かない 15 MW。曇りと雨の多い冬に、本当に町の電気の足しになるのか。",
+      "concessions": [
+        { "id": "cv-solar-half", "label": "まず敷地の半分に板を並べ、残りは様子を見てから足す", "mods": { "height": -1, "power": 0.5 }, "cost": { "ratio": -0.35 }, "loss": "作る電気が半分になる（15 MW → 7.5 MW）" }
+      ],
+      "explanations": [],
+      "lessons": ["found.b.01"]
+    }
+  ]
+}

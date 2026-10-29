@@ -198,7 +198,7 @@ export function PermitDetailWindow({ store, stack, shifted, skills = {} }: { sto
     if (confirm) confirmRef.current?.scrollIntoView?.({ block: 'nearest' });
   }, [confirm]);
   const world = store.getState().world;
-  const d = s.id ? permitDetail(world, s.id) : null;
+  const d = s.id ? permitDetail(world, s.id, store.getState().terrain) : null;
   if (!d) return null;
   const goSite = (): void => {
     const a = world.applications.find((x) => x.id === d.id);

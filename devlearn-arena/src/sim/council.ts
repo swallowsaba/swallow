@@ -1,11 +1,15 @@
-import { FACILITY_DEFS } from '@/city/facilities';
+import { FACILITY_DEFS, type CoverageKind } from '@/city/facilities';
 import { CAPACITY, facilityJobs, facilityTech } from '@/city/rules';
+import type { Terrain } from '@/city/terrain';
 import type { City } from '@/city/types';
-import { MONTHLY_INCOME } from './layers';
+import { serviceAt } from './land';
+import { ageOf, LAYERS, MONTHLY_INCOME } from './layers';
 import { completedCity } from './opposition';
 import { isConsent, siteCells } from './permits';
+import { plantOutput } from './power';
 import { PEOPLE_PER_UNIT, TAX_BUSINESS, TAX_RESIDENT } from './rules';
 import type { Application, CouncilMember, IssueId, MemberLineKey, PoliticsRules, VoteRecord, World } from './types';
+import { previewOf } from './week';
 
 /**
  * 議会 7 席の採決（docs/game-design.md 18 章）。7 人が、それぞれ重く見る論点で賛否を出す。**乱数で決めない。**
@@ -30,11 +34,18 @@ export const PERSUADE = { points: 4, capital: 3 } as const;
 export const PASS_VOTES = 4;
 
 /**
- * 得（0〜10）に直す倍率（18.1 の「申請の得」。仕様は 0〜10 の幅だけを決める。決めた値は docs/progress/phase-g6.md）。
- *   雇用: 10 人で 1（60 人で 6）/ 技術力: 1 で 2.5 / 財政: 週の税収 1 で 2 / 手頃さ: 5 戸で 1 / 環境: 緑地 1 マスで 2
- *   安全（公共サービスの行き届き・電力の余裕）は G10、交通は得を持たない
+ * 得（0〜10）に直す倍率（18.1 の「申請の得」。仕様は 0〜10 の幅だけを決める。決めた値は docs/progress/phase-g6.md・phase-g10.md）。
+ *   雇用: 10 人で 1（60 人で 6）/ 技術と教育: 1 で 2.5 / 財政: 週の税収 1 で 2 / 手頃さ: 5 戸で 1 / 環境: 緑地 1 マスで 2 /
+ *   安全: 備え 1 で 1（下の SAFETY_PER）。交通は得を持たない
  */
-export const GAIN_SCALE: Record<IssueId, number> = { jobs: 0.1, tech: 2.5, finance: 2, afford: 0.2, environment: 2, safety: 0, traffic: 0 };
+export const GAIN_SCALE: Record<IssueId, number> = { jobs: 0.1, tech: 2.5, finance: 2, afford: 0.2, environment: 2, safety: 1, traffic: 0 };
+/**
+ * 安全の得の元（暮らしの備え）: 住民の行き届きの平均（警察・消防・診療所。0〜100）の増えた分 ÷ 10 + 発電所の出力（MW）÷ 10。
+ * 技術と教育の得の元: 技術力の増えた分 + 子育ての世帯の学校の行き届きの平均（0〜100）の増えた分 ÷ 25
+ */
+export const SAFETY_PER = { coverage: 10, mw: 10 } as const;
+export const SCHOOL_PER_TECH = 25;
+const SAFETY_KINDS: readonly CoverageKind[] = ['police', 'fire', 'clinic'];
 export const ISSUE_IDS: readonly IssueId[] = ['afford', 'environment', 'jobs', 'finance', 'safety', 'traffic', 'tech'];
 
 export function weightOf(m: Pick<CouncilMember, 'main' | 'second'>, issue: IssueId): number {
@@ -69,20 +80,67 @@ export interface Gains {
   raw: Record<IssueId, number>;
 }
 
-/** 申請の得（18.1）。申請が完成した形を入れた都市と、今の都市を比べる（16.2 と同じ） */
-export function gainsOf(world: World, app: Application): Gains {
+/** 住民の行き届きの平均（0〜100。種類ごと。学校は子育ての世帯だけで数える） */
+function coverageMeans(world: World, terrain: Terrain): Record<CoverageKind, number> {
+  const view = previewOf(world, terrain);
+  const out: Record<CoverageKind, number> = { police: 0, fire: 0, school: 0, clinic: 0 };
+  for (const kind of [...SAFETY_KINDS, 'school'] as const) {
+    let s = 0;
+    let n = 0;
+    for (const zb of view.space.residential) {
+      const hh = world.sim.households[zb.building.id] ?? [];
+      const count = LAYERS.reduce((a, l) => a + (kind === 'school' && ageOf(l) !== 1 ? 0 : (hh[l] ?? 0)), 0);
+      if (count <= 0) continue;
+      s += count * serviceAt(view.field, kind, zb.building.cell.x, zb.building.cell.y).value;
+      n += count;
+    }
+    out[kind] = n > 0 ? (s / n) * 100 : 0;
+  }
+  return out;
+}
+
+const gainCache = new WeakMap<World, Map<string, Gains>>();
+
+/**
+ * 申請の得（18.1）。申請が完成した形を入れた都市と、今の都市を比べる（16.2 と同じ）。
+ * 公共サービスと発電所の得（安全・学校）は行き届きの見込みで決まるので、地形を渡した時だけ数える（議会の採決と画面は渡す）
+ */
+export function gainsOf(world: World, app: Application, terrain?: Terrain): Gains {
+  const key = `${app.id}|${JSON.stringify(app.mods)}|${terrain ? 't' : ''}`;
+  let byApp = gainCache.get(world);
+  const hit = byApp?.get(key);
+  if (hit) return hit;
+  const done = completedCity(world.city, app);
   const before = capacityOf(world.city);
-  const after = capacityOf(completedCity(world.city, app));
+  const after = capacityOf(done);
   const jobs = Math.max(0, after.jobs - before.jobs);
   const units = Math.max(0, after.units - before.units);
-  const tech = Math.max(0, after.tech - before.tech);
+  let tech = Math.max(0, after.tech - before.tech);
   const rate = world.budget.taxRate;
-  // 週の税収の増え方（22.2）: 新しい住まいは中の収入の帯で数える
-  const finance = jobs * TAX_BUSINESS * (rate / 10) + units * (MONTHLY_INCOME[1] as number) * (rate / 100) * TAX_RESIDENT;
+  // 週の税収の増え方 − 維持費（22.2）: 新しい住まいは中の収入の帯で数える。負なら得は 0
+  const type = app.kind === 'facility' ? app.target.type : undefined;
+  const upkeep = type ? (FACILITY_DEFS[type].upkeep ?? 0) : 0;
+  const finance = Math.max(0, jobs * TAX_BUSINESS * (rate / 10) + units * (MONTHLY_INCOME[1] as number) * (rate / 100) * TAX_RESIDENT - upkeep);
   const green = Math.round((app.mods.green ?? 0) * siteCells(app, world.city).length);
-  const raw: Record<IssueId, number> = { jobs, tech, finance, afford: units, environment: green, safety: 0, traffic: 0 };
+  let safety = 0;
+  const civic = type !== undefined && (FACILITY_DEFS[type].group === 'civic' || FACILITY_DEFS[type].group === 'power');
+  if (civic && terrain) {
+    const b = coverageMeans(world, terrain);
+    const a = coverageMeans({ ...world, city: done }, terrain);
+    for (const k of SAFETY_KINDS) safety += Math.max(0, a[k] - b[k]) / SAFETY_PER.coverage;
+    safety += plantOutput({ type, mods: app.mods }, world.budget.treasury < 0) / SAFETY_PER.mw;
+    tech += Math.max(0, a.school - b.school) / SCHOOL_PER_TECH;
+  }
+  const r1 = (v: number): number => Math.round(v * 10) / 10;
+  const raw: Record<IssueId, number> = { jobs, tech: r1(tech), finance, afford: units, environment: green, safety: r1(safety), traffic: 0 };
   const values = Object.fromEntries(ISSUE_IDS.map((i) => [i, Math.min(10, raw[i] * GAIN_SCALE[i])])) as Record<IssueId, number>;
-  return { values, raw };
+  const gains = { values, raw };
+  if (!byApp) {
+    byApp = new Map();
+    gainCache.set(world, byApp);
+  }
+  byApp.set(key, gains);
+  return gains;
 }
 
 /** 点の項（議員の 1 行の元）。ref は理由の ID・論点と得の元の値（「jobs:15」）・支持率 */
@@ -144,15 +202,15 @@ export function judge(member: CouncilMember, app: Application, gains: Gains, app
 }
 
 /** 議会の見込み（採決の前に開いた時。docs/ui-design.md 10.4）と、採決そのもの */
-export function judgeAll(world: World, app: Application, rules: PoliticsRules): Judgement[] {
-  const gains = gainsOf(world, app);
+export function judgeAll(world: World, app: Application, rules: PoliticsRules, terrain?: Terrain): Judgement[] {
+  const gains = gainsOf(world, app, terrain);
   const approval = world.sim.lastWeek.approval;
   return rules.council.map((m) => judge(m, app, gains, approval, rules));
 }
 
 /** 採決する（18.2）。賛成 4 以上で可決 */
-export function voteOf(world: World, app: Application, rules: PoliticsRules, day: number): VoteRecord {
-  const members = judgeAll(world, app, rules).map(({ memberId, score, yes, reasonKey, persuaded }) => ({ memberId, score, yes, reasonKey, persuaded }));
+export function voteOf(world: World, app: Application, rules: PoliticsRules, day: number, terrain?: Terrain): VoteRecord {
+  const members = judgeAll(world, app, rules, terrain).map(({ memberId, score, yes, reasonKey, persuaded }) => ({ memberId, score, yes, reasonKey, persuaded }));
   return { day, consent: false, members, passed: members.filter((m) => m.yes).length >= PASS_VOTES };
 }
 

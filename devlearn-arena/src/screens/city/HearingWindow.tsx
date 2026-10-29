@@ -116,7 +116,7 @@ export function HearingWindow({ store, skills, onLearn }: { store: CityStore; sk
                       ))}
                     </ul>
                   ) : (
-                    <p className="hearing-empty" data-testid="hearing-no-explain">今出せる説明は無い。学ぶと増える</p>
+                    <p className="hearing-empty" data-testid="hearing-no-explain">{hands.explainable ? '今出せる説明は無い。学ぶと増える' : 'この論点に、知識で出せる説明は無い。譲歩か押し切るで答える'}</p>
                   )}
                   {hands.hidden.length > 0 ? (
                     <ul className="hearing-hidden" data-testid="hearing-hidden">
