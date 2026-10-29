@@ -49,9 +49,14 @@ export async function facility(page, type, cell, turns = 0) {
 
 /**
  * 都市の時計を n 日進める（1 倍で 1 日 2 秒。docs/game-design.md 13.1）。
- * 模擬は Worker で動くので、進めた日まで模擬が追いつくのを待つ
+ * 模擬は Worker で動くので、進めた日まで模擬が追いつくのを待つ。
+ * 公約を選ぶ窓（任期の窓）が開いていると時間が止まるので、選ばずに閉じてから進める（上の帯の任期から後で選べる）
  */
 export async function days(page, n) {
+  if (await page.$('[data-testid="election-window"][data-mode="term"]')) {
+    await page.click('[data-testid="election-window"] .election-close');
+    await page.waitForSelector('[data-testid="election-window"]', { state: 'detached' });
+  }
   const target = await page.evaluate((d) => {
     const s = window.__cityStore.getState();
     if (s.paused) s.togglePause();
