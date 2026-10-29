@@ -42,7 +42,16 @@ test('7 段の途中で中断し、リロードしてから開き直すと、進
   // 中断して都市へ（Esc）
   await page.keyboard.press('Escape');
   await expect(page).toHaveURL(/#\/city$/);
-  // 段が進んだ時はすぐ保存する。リロードして、同じレッスンを開き直す
+  // 段が進んだ時はすぐ保存する（2 秒の自動保存を待たない）。保存先に理解の段が書かれたのを確かめてから、リロードして同じレッスンを開き直す
+  // （書き込みの途中でページを離れると、IndexedDB の取引はそこで止まる。人がリロードするまでの間より短い）
+  const saved = () => page.evaluate(() => new Promise<string | null>((resolve) => {
+    const open = indexedDB.open('devlearn-arena');
+    open.onsuccess = () => {
+      const get = open.result.transaction('save').objectStore('save').get('current');
+      get.onsuccess = () => resolve((get.result as { lessons?: Record<string, { stage?: string }> } | undefined)?.lessons?.['found.b.04']?.stage ?? null);
+    };
+  }));
+  await expect.poll(saved, { timeout: 1500 }).toBe('understand');
   await page.reload();
   await expect(page.locator('#boot')).toHaveCount(0);
   await page.evaluate(() => { window.location.hash = '#/lesson/found.b.04'; });
