@@ -58,10 +58,15 @@ export const STAGE_LABEL: Record<ApplicationStage, string> = {
 export const isReviewing = (a: Pick<Application, 'stage'>): boolean => REVIEW_STAGES.includes(a.stage);
 export const isOpen = (a: Pick<Application, 'stage'>): boolean => isReviewing(a) || a.stage === 'construction';
 
-/** 施設を置くと申請になるか（IT 施設 15 種・公共サービス・発電所。公園の類と記念碑は今までどおり即時。15.1） */
+/** 施設を置くと申請になるか（IT 施設 15 種・公共サービス・発電所・褒賞の建物。公園の類と記念碑は今までどおり即時。15.1） */
 export function needsApplication(type: FacilityType): boolean {
   const g = FACILITY_DEFS[type].group;
-  return g === 'facility' || g === 'civic' || g === 'power';
+  return g === 'facility' || g === 'civic' || g === 'power' || g === 'award';
+}
+
+/** その褒賞の建物が、もう建っているか（工事中も）、審議中か（各 1 つまで。25 章） */
+export function awardTaken(world: Pick<World, 'applications' | 'city'>, type: FacilityType): boolean {
+  return world.city.facilities.some((f) => f.type === type) || world.applications.some((a) => isOpen(a) && a.kind === 'facility' && a.target.type === type);
 }
 
 /** 申請の費用を出す財布（公共サービスと発電所は財政。docs/game-design.md 2 章） */
@@ -111,9 +116,11 @@ export function applicationName(app: Pick<Application, 'kind' | 'target'>, city:
 }
 
 /** 申請を出せない理由（置く物の判定とは別。docs/city-design.md 8 章の「審議中の申請が多すぎる」など） */
-export type PermitProblem = 'too-many' | 'site' | 'rejected-recently' | 'deficit';
+export type PermitProblem = 'too-many' | 'site' | 'rejected-recently' | 'deficit' | 'award-locked' | 'award-once';
 /** 理由の文は配置の理由と同じ所（src/city/place.ts）に置く */
-export const PERMIT_REASON = { 'too-many': 'permit-many', site: 'permit-site', 'rejected-recently': 'permit-retry', deficit: 'permit-deficit' } as const satisfies Record<PermitProblem, ReasonCode>;
+export const PERMIT_REASON = {
+  'too-many': 'permit-many', site: 'permit-site', 'rejected-recently': 'permit-retry', deficit: 'permit-deficit', 'award-locked': 'award-locked', 'award-once': 'award-once',
+} as const satisfies Record<PermitProblem, ReasonCode>;
 
 /** 審議中・工事中の敷地のマス（他の物を置けない） */
 export function occupiedSites(world: Pick<World, 'applications' | 'city'>): Set<string> {
@@ -125,9 +132,17 @@ export function occupiedSites(world: Pick<World, 'applications' | 'city'>): Set<
   return out;
 }
 
-/** 申請を出せるか（6 件まで・敷地が重ならない・否決から 28 日・財政が赤字の間の公共サービスと発電所（22.2））。出せなければ理由 */
-export function permitProblems(world: Pick<World, 'applications' | 'city' | 'budget'>, draft: Pick<Application, 'kind' | 'target'>, day: number): PermitProblem[] {
+/**
+ * 申請を出せるか（6 件まで・敷地が重ならない・否決から 28 日・財政が赤字の間の公共サービスと発電所と褒賞の建物（22.2）・
+ * 褒賞の建物は節目に届いた物を 1 つずつ（25 章））。出せなければ理由
+ */
+export function permitProblems(world: Pick<World, 'applications' | 'city' | 'budget'> & Partial<Pick<World, 'rewards'>>, draft: Pick<Application, 'kind' | 'target'>, day: number): PermitProblem[] {
   const out: PermitProblem[] = [];
+  const type = draft.kind === 'facility' ? draft.target.type : undefined;
+  if (type && FACILITY_DEFS[type].group === 'award') {
+    if (world.rewards?.unlocked[type] === undefined) out.push('award-locked');
+    else if (awardTaken(world, type)) out.push('award-once');
+  }
   if (walletOf(draft) === 'treasury' && world.budget.treasury < 0) out.push('deficit');
   if (world.applications.filter(isReviewing).length >= MAX_PENDING) out.push('too-many');
   const sites = occupiedSites(world);

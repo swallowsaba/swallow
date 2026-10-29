@@ -100,6 +100,10 @@ export const LAND_WATER = { value: 15, range: 3 } as const;
 export const LAND_HILL_STEP = 5;
 /** 施設: Lv × 4、半径 6 マスで薄まる */
 export const LAND_FACILITY = { perLevel: 4, radius: 6 } as const;
+/** 褒賞の建物の地価（docs/game-design.md 25 章）: 市民記念館は半径 6 の地価 +20（施設の項と同じく、中心から半径で薄まる） */
+export const LAND_AWARD: Partial<Record<string, { value: number; radius: number }>> = { memorial: { value: 20, radius: 6 } };
+/** 褒賞の建物の商業の需要（市民記念館 +10。25 章・23 章） */
+export const DEMAND_AWARD: Partial<Record<string, number>> = { memorial: 10 };
 /** 騒音 × この値を地価から引く（G2 で 0.8 から下げた。docs/game-design.md 13.4） */
 export const LAND_NOISE = 0.4;
 

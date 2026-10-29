@@ -2,7 +2,7 @@ import { COVERAGE_KINDS, FACILITY_DEFS, type CoverageKind } from '@/city/facilit
 import type { Point } from '@/city/types';
 import { reach } from './network';
 import {
-  LAND_BASE, LAND_FACILITY, LAND_HILL_STEP, LAND_JOBS, LAND_NOISE, LAND_PARK_MAX, LAND_ROAD, LAND_SERVICE_MAX, LAND_WATER, NIGHT_FACILITIES, NOISE, PARK_REACH, GREEN_REACH,
+  LAND_AWARD, LAND_BASE, LAND_FACILITY, LAND_HILL_STEP, LAND_JOBS, LAND_NOISE, LAND_PARK_MAX, LAND_ROAD, LAND_SERVICE_MAX, LAND_WATER, NIGHT_FACILITIES, NOISE, PARK_REACH, GREEN_REACH,
   SERVICE_DEFICIT,
   piecewise,
 } from './rules';
@@ -114,7 +114,7 @@ function serviceCoverage(space: Space, deficit: boolean): LandField['service'] {
   const out = Object.fromEntries(COVERAGE_KINDS.map((k) => [k, { road: new Float32Array(CELLS), src: new Int32Array(CELLS).fill(-1) }])) as LandField['service'];
   space.civic.forEach((af, n) => {
     const cov = FACILITY_DEFS[af.facility.type].coverage;
-    if (!cov || af.fronts.length === 0) return;
+    if (!cov || cov.kind === 'park' || af.fronts.length === 0) return;
     const t = out[cov.kind];
     const k = deficit ? SERVICE_DEFICIT : 1;
     for (const [i, d] of reach(space, af.fronts, cov.distance)) {
@@ -153,9 +153,12 @@ function parkCoverage(space: Space): { cover: Float32Array; src: Int32Array } {
   const src = new Int32Array(CELLS).fill(-1);
   space.parks.forEach((p, n) => {
     // 公園の類は種類の距離。施設は敷地の中の緑地（譲歩の green）の分だけ
+    // 中央公園は、データの緑地の行き届きの距離（docs/game-design.md 25 章・docs/content-spec.md 7.9）
     const green = p.facility.mods?.green ?? 0;
-    const range = PARK_REACH[p.facility.type] ?? (green > 0 ? GREEN_REACH : 0);
-    const scale = PARK_REACH[p.facility.type] !== undefined ? 1 : Math.min(1, green);
+    const cov = FACILITY_DEFS[p.facility.type].coverage;
+    const own = PARK_REACH[p.facility.type] ?? (cov?.kind === 'park' ? cov.distance : undefined);
+    const range = own ?? (green > 0 ? GREEN_REACH : 0);
+    const scale = own !== undefined ? 1 : Math.min(1, green);
     if (range <= 0 || p.fronts.length === 0) return;
     for (const [i, d] of reach(space, p.fronts, range)) {
       const v = falloff(d, range) * scale;
@@ -247,6 +250,12 @@ export function landTermsAt(space: Space, field: Pick<LandField, 'parkRoad' | 'p
     const v = af.facility.level * LAND_FACILITY.perLevel * falloff(d, LAND_FACILITY.radius);
     if (v > 0) terms.push({ source: { kind: 'facility', id: af.facility.id, at: af.center }, value: v });
   }
+  // 褒賞の建物（市民記念館。25 章）
+  for (const af of space.awards) {
+    const l = LAND_AWARD[af.facility.type];
+    const v = l ? l.value * falloff(Math.hypot(at.x - af.center.x, at.y - af.center.y), l.radius) : 0;
+    if (v > 0) terms.push({ source: { kind: 'facility', id: af.facility.id, at: af.center }, value: v });
+  }
   const i = indexOf(x, y);
   if ((field.noise[i] as number) > 0) {
     for (const s of field.noiseByDistrict[districtOfIndex(i)] ?? []) {
@@ -281,15 +290,19 @@ export function landFieldOf(space: Space, commute: Float32Array, noiseLimit?: Re
   const hills = hillLevels(space.terrain);
   // 全てのマスの地価（ヒートマップ用）。原因は持たず、値だけを足す
   const facilityBoost = new Float32Array(CELLS);
-  for (const af of space.facilities) {
-    const r = LAND_FACILITY.radius;
-    for (let y = Math.floor(af.center.y - r); y <= Math.ceil(af.center.y + r); y += 1) {
-      for (let x = Math.floor(af.center.x - r); x <= Math.ceil(af.center.x + r); x += 1) {
+  const boost = (center: Point, value: number, r: number): void => {
+    for (let y = Math.floor(center.y - r); y <= Math.ceil(center.y + r); y += 1) {
+      for (let x = Math.floor(center.x - r); x <= Math.ceil(center.x + r); x += 1) {
         if (!inMap(x, y)) continue;
-        const v = af.facility.level * LAND_FACILITY.perLevel * falloff(Math.hypot(x + 0.5 - af.center.x, y + 0.5 - af.center.y), r);
+        const v = value * falloff(Math.hypot(x + 0.5 - center.x, y + 0.5 - center.y), r);
         if (v > 0) facilityBoost[indexOf(x, y)] = (facilityBoost[indexOf(x, y)] as number) + v;
       }
     }
+  };
+  for (const af of space.facilities) boost(af.center, af.facility.level * LAND_FACILITY.perLevel, LAND_FACILITY.radius);
+  for (const af of space.awards) {
+    const l = LAND_AWARD[af.facility.type];
+    if (l) boost(af.center, l.value, l.radius);
   }
   for (let y = 0; y < SIZE; y += 1) {
     for (let x = 0; x < SIZE; x += 1) {

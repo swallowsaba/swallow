@@ -26,7 +26,7 @@ describe('需要の式（23 章）', () => {
     expect(spendingPerShopJob(10)).toBe(2);
     expect(spendingPerShopJob(20)).toBeCloseTo(3, 9);
     const t = demandTermsOf({ ...ZERO, spending: 90, shopJobs: 30 });
-    expect(t.commercial).toEqual([45, -30]);
+    expect(t.commercial).toEqual([45, -30, 0]);
     expect(demandOfTerms(demandTermsOf({ ...ZERO, spending: 90, shopJobs: 30, taxRate: 20 })).commercial).toBe(0);
   });
 

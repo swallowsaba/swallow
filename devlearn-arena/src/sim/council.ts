@@ -2,6 +2,7 @@ import { FACILITY_DEFS, type CoverageKind } from '@/city/facilities';
 import { CAPACITY, facilityJobs, facilityTech } from '@/city/rules';
 import type { Terrain } from '@/city/terrain';
 import type { City } from '@/city/types';
+import { PERSUADE_CAPITAL, persuadeCostOf } from './awards';
 import { serviceAt } from './land';
 import { ageOf, LAYERS, MONTHLY_INCOME } from './layers';
 import { completedCity } from './opposition';
@@ -19,7 +20,7 @@ import { previewOf } from './week';
  *     懸念 = その論点の理由の割合（%）× 0.3。押し切った理由は × 0.3
  *     説明の効き: 確か +2 / 誤り −3（その論点の重みが 1.5 以上の議員）
  *     支持率の効き: 60% 以上 +2・40% 以下 −2
- *     説得: +4（政治資本 3。1 件の申請で 1 人まで）
+ *     説得: +4（政治資本 3。新しい市庁舎が建っていれば 2。1 件の申請で 1 人まで）
  *   賛成 = 点が 0 以上。賛成 4 以上で可決
  *
  * 各議員の 1 行は、点に最も効いた項（賛成なら一番大きな正の項、反対なら一番大きな負の項）を言い表す。
@@ -30,7 +31,7 @@ export const CONCERN_PER_SHARE = 0.3;
 export const PUSHED_CONCERN = 0.3;
 export const EXPLAIN_POINTS = { sound: 2, wrong: -3 } as const;
 export const APPROVAL_POINTS = { high: 60, low: 40, points: 2 } as const;
-export const PERSUADE = { points: 4, capital: 3 } as const;
+export const PERSUADE = { points: 4, capital: PERSUADE_CAPITAL } as const;
 export const PASS_VOTES = 4;
 
 /**
@@ -226,14 +227,16 @@ export function persuade(world: World, rules: PoliticsRules, appId: string, memb
   if (app.persuaded) return { world, problem: 'used' };
   const member = rules.council.find((m) => m.id === memberId);
   if (!member) return { world, problem: 'member' };
-  if (world.politics.capital < PERSUADE.capital) return { world, problem: 'capital' };
+  // 新しい市庁舎が建っていれば 2 で済む（docs/game-design.md 25 章）
+  const cost = persuadeCostOf(world.city);
+  if (world.politics.capital < cost) return { world, problem: 'capital' };
   return {
     world: {
       ...world,
       politics: {
         ...world.politics,
-        capital: world.politics.capital - PERSUADE.capital,
-        capitalLog: [...world.politics.capitalLog, { day, amount: -PERSUADE.capital, why: `議員を説得する（${member.name}）` }],
+        capital: world.politics.capital - cost,
+        capitalLog: [...world.politics.capitalLog, { day, amount: -cost, why: `議員を説得する（${member.name}）` }],
       },
       applications: world.applications.map((a) => (a.id === appId ? { ...a, persuaded: memberId } : a)),
     },

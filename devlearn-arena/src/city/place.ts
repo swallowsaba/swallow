@@ -19,6 +19,8 @@ export type ReasonCode =
   | 'bridge-stage' | 'bridge-long' | 'short'
   /** 申請を出せない（docs/game-design.md 15.2） */
   | 'permit-many' | 'permit-site' | 'permit-retry' | 'permit-deficit'
+  /** 褒賞の建物（docs/game-design.md 25 章）: 節目に届いていない・各 1 つまで */
+  | 'award-locked' | 'award-once'
   /** 公共サービスと発電所は財政で建てる（docs/game-design.md 2 章） */
   | 'treasury';
 
@@ -42,7 +44,9 @@ const TEXT: Record<Exclude<ReasonCode, 'stage'>, string> = {
   'permit-many': '審議中の申請が多すぎる（6 件まで）',
   'permit-site': '申請中・工事中の敷地と重なる',
   'permit-retry': '否決から 28 日たつまで、同じ場所に同じ物は出せない',
-  'permit-deficit': '財政が赤字の間は、公共サービスと発電所の申請を出せない',
+  'permit-deficit': '財政が赤字の間は、公共サービスと発電所と褒賞の建物の申請を出せない',
+  'award-locked': 'まだ節目に届いていない（褒賞の一覧で条件を見られる）',
+  'award-once': '褒賞の建物は 1 つずつまで（もう建っているか、申請中）',
   treasury: '財政が足りない',
 };
 

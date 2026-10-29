@@ -15,6 +15,7 @@ import { facilityPowerDistrict, powerGridOf, powerUse, stepPower, stoppedNow } f
 import { DISTRICT_COUNT, landingOf, spaceOf } from './space';
 import { NO_RULES, type Difficulty, type Politics, type PoliticsRules, type SimState, type World } from './types';
 import { stepApplications } from './permits';
+import { stepRewards } from './rewards';
 import { weekStep, type WeekView } from './week';
 
 /**
@@ -179,6 +180,7 @@ export function stepDayView(world: World, terrain: Terrain, rules: PoliticsRules
     const settled = settleWeek(weekly.world, rules, petitionSpend(weekly.world, rules, weekly.world.sim.week), bought);
     stepped = { world: stepPetitions(stepPower(settled, weekly.view.space, rules), terrain, weekly.view, rules), view: weekly.view };
   }
-  // 市政（週の終わりの公約と支持率の上昇・選挙の日。docs/game-design.md 21 章）。この日の出来事を新聞の記事に（22.3）
-  return { world: withNews(world, stepPolitics(stepped.world, day, rules), rules), view: stepped.view };
+  // 市政（週の終わりの公約と支持率の上昇・選挙の日。docs/game-design.md 21 章）と褒賞（節目・建った褒賞の建物。25 章）。
+  // この日の出来事を新聞の記事に（22.3）
+  return { world: withNews(world, stepRewards(stepPolitics(stepped.world, day, rules), day), rules), view: stepped.view };
 }

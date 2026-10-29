@@ -559,6 +559,7 @@ type MemberLineKey = 'gain' | 'concern' | 'unanswered' | 'explained' | 'wrong' |
 | `coverage.<police|fire|school|clinic|park>` | 住民の行き届きの平均（0〜100） |
 | `facilities.it` `facilities.civic` | 完成した IT 施設・公共サービスの数 |
 | `missionsDone` | 達成したミッションの数（公約に使ってよい） |
+| `highApprovalWeeks` | 支持率 65% 以上が続いた週（褒賞の市民ホールの節目。`docs/data-model.md` 11 章の `Rewards.highApprovalWeeks`） |
 | `any:<語>` | 地区ごとの値の、どこかの地区で満たす（請願だけ。満たした地区に届く） |
 | `start.<語>` | 任期の初めの値（公約だけ） |
 

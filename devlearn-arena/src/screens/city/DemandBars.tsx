@@ -59,9 +59,10 @@ export function DemandBars({ demand }: { demand?: DemandTerms | undefined }) {
           {(ROWS.find((r) => r.id === open)?.kinds ?? []).map((k) => (
             <dl key={k} className="demand-terms">
               <dt className="demand-terms-head">{DEMAND_NAMES[k]}<span className="num">{signed(totals[k])}</span></dt>
-              {DEMAND_TERMS[k].map((t, i) => (
+              {/* 褒賞の建物の項は、建てた時だけ並べる */}
+              {DEMAND_TERMS[k].map((t, i) => (t === 'award' && !demand[k][i] ? null : (
                 <dd key={t}><span>{DEMAND_TERM_NAMES[t]}</span><span className="num">{signed(demand[k][i] ?? 0)}</span></dd>
-              ))}
+              )))}
             </dl>
           ))}
           <p className="demand-pop-note">正ならその区画に建物が建ち・育つ。負なら空きが出る</p>

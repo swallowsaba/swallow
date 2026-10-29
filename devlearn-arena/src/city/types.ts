@@ -43,7 +43,8 @@ export type FacilityType =
   | 'academy' | 'server' | 'network' | 'web' | 'security' | 'devoffice' | 'deploy' | 'container'
   | 'cluster' | 'datacenter' | 'cloud' | 'monitor' | 'devops' | 'incident' | 'research'
   | 'park' | 'treerow' | 'plaza' | 'fountain' | 'monument'
-  | 'police' | 'fire' | 'school' | 'clinic' | 'power-thermal' | 'power-solar';
+  | 'police' | 'fire' | 'school' | 'clinic' | 'power-thermal' | 'power-solar'
+  | 'city-hall' | 'memorial' | 'stadium' | 'civic-hall' | 'central-park';
 
 export type DomainId =
   | 'found' | 'linux' | 'net' | 'web' | 'sec' | 'git' | 'cicd' | 'ctr' | 'docker' | 'k8s'

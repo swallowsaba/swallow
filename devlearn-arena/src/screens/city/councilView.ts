@@ -1,7 +1,8 @@
 import type { Terrain } from '@/city/terrain';
 import { COUNCIL, EXPLAIN, POLITICS_RULES, REASONS } from '@/content/politics';
 import { APPEAL_BORDER, openIssues, SUPPRESS } from '@/sim/appeal';
-import { judgeAll, PASS_VOTES, PERSUADE } from '@/sim/council';
+import { judgeAll, PASS_VOTES } from '@/sim/council';
+import { persuadeCostOf } from '@/sim/awards';
 import type { SkillValues } from '@/sim/hearing';
 import { COUNCIL_EVERY, applicationName, daysLeft, isConsent, nextCouncilDay } from '@/sim/permits';
 import type { Application, CouncilMember, IssueId, MemberLineKey, World } from '@/sim/types';
@@ -95,7 +96,7 @@ export function councilModel(world: World, id: string, terrain?: Terrain): Counc
     verdict: passed ? 'このままなら可決' : 'このままなら否決',
     passed,
     daysLeft: daysLeft(app, day),
-    persuade: { cost: PERSUADE.capital, ok: !app.persuaded && world.politics.capital >= PERSUADE.capital, used: app.persuaded ?? null },
+    persuade: { cost: persuadeCostOf(world.city), ok: !app.persuaded && world.politics.capital >= persuadeCostOf(world.city), used: app.persuaded ?? null },
   };
 }
 

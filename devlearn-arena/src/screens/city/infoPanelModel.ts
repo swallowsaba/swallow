@@ -1,5 +1,5 @@
 import { frontOf, occupancyOf } from '@/city/cells';
-import { FACILITY_DEFS, type CoverageKind } from '@/city/facilities';
+import { FACILITY_DEFS, serviceCoverageOf, type CoverageKind } from '@/city/facilities';
 import { domainsOfFacility, facilityCondition, nextLevelOf, parkReach } from '@/city/facilityInfo';
 import { amenityAt } from '@/city/growth';
 import { buildingName } from '@/city/place';
@@ -103,7 +103,7 @@ export function panelModel(city: City, sel: Selection, skills: Skills = {}, prog
         : { text: '止まっている: 道路に面していない', tone: 'bad' as const };
     const permit = applications.find((a) => isOpen(a) && a.target.facilityId === f.id);
     if (def.group === 'civic' || def.group === 'power') {
-      const cov = def.coverage;
+      const cov = serviceCoverageOf(def);
       const upkeep = `財政から毎週 ${String(def.upkeep ?? 0)}`;
       const who = cov ? (CAPACITY_OF[cov.kind] && cov.capacity ? `${CAPACITY_OF[cov.kind] ?? ''}（${cov.capacity.toLocaleString('ja-JP')} 世帯まで）` : '住民') : '';
       return {

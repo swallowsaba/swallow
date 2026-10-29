@@ -14,7 +14,7 @@ import { demandTermsOf } from './demand';
 import { petitionModsOf, type PetitionMods } from './petitionMods';
 import { stoppedNow } from './power';
 import {
-  AFFORD_POINTS, BURDEN_LEAVE, BURDEN_LIVABLE, COMMUTE_POINTS, GREEN_POINTS, JOBS_POINTS, LEAVE_RATE, NOISE_POINTS, PEOPLE_PER_UNIT, piecewise, POWER_POINTS, SERVICE_POINTS,
+  AFFORD_POINTS, BURDEN_LEAVE, DEMAND_AWARD, BURDEN_LIVABLE, COMMUTE_POINTS, GREEN_POINTS, JOBS_POINTS, LEAVE_RATE, NOISE_POINTS, PEOPLE_PER_UNIT, piecewise, POWER_POINTS, SERVICE_POINTS,
   RENT_FACTOR, RENT_TYPE, RENT_YEN_PER_VALUE, SPENDING_RATE, SUPPORT_EASE, TAX_BUSINESS, TAX_RESIDENT, taxPoints, TRUST_WEEKLY_KEEP,
   WEEKS_PER_TERM,
 } from './rules';
@@ -570,6 +570,7 @@ export function weekStep(world: World, terrain: Terrain, init = false, rules: Po
   const demand = demandTermsOf({
     openJobs, attraction, vacantPeople, spending: spendingTotal, taxRate, shopJobs: slotsBy(['shop']), techPower: city.techPower,
     officeJobs: slotsBy(['office', 'it']), unemployedLowMid, roadCells: space.roadCells.length, factoryJobs: slotsBy(['factory']),
+    awardShop: space.awards.reduce((sum, af) => sum + (DEMAND_AWARD[af.facility.type] ?? 0), 0),
   });
   const treasury = init ? budget.treasury : round2(budget.treasury + income.residents + income.businesses);
   city = { ...city, population: Math.round(peopleAfter) };

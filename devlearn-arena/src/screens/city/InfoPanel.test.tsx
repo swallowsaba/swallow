@@ -34,7 +34,7 @@ function cityWithEverything(): City {
   let x = rows[0]?.x ?? 38;
   for (const type of FACILITY_TYPES) {
     const def = FACILITY_DEFS[type];
-    if (def.group === 'reward' || def.minStage > base.stage) continue;
+    if (def.group === 'reward' || def.group === 'award' || def.minStage > base.stage) continue;
     for (;;) {
       const r = rows[row];
       if (!r) throw new Error(`置く所が無い: ${type}`);

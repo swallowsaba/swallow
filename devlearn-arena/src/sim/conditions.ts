@@ -9,7 +9,7 @@ export const CONDITION_WORDS = [
   'rentBurden.低', 'rentBurden.中', 'rentBurden.高',
   'outageDays', 'noiseAtHome',
   'coverage.police', 'coverage.fire', 'coverage.school', 'coverage.clinic', 'coverage.park',
-  'facilities.it', 'facilities.civic', 'missionsDone',
+  'facilities.it', 'facilities.civic', 'missionsDone', 'highApprovalWeeks',
 ] as const;
 export type ConditionWord = (typeof CONDITION_WORDS)[number];
 

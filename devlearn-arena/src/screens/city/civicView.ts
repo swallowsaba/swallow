@@ -1,5 +1,5 @@
 import type { Point } from '@/city/types';
-import { CAPITAL_CAP } from '@/sim/election';
+import { capitalCapOf } from '@/sim/awards';
 import { factorIndex, layerName, LAYERS, WEIGHTS } from '@/sim/layers';
 import { parseCondition } from '@/sim/conditions';
 import { groupName } from '@/sim/news';
@@ -217,7 +217,7 @@ export function capitalModel(world: World): CapitalModel {
     }
     return [...by.values()].sort((a, b) => Math.abs(b.amount) - Math.abs(a.amount));
   };
-  return { value: world.politics.capital, cap: CAPITAL_CAP, gains: sum(1), uses: sum(-1) };
+  return { value: world.politics.capital, cap: capitalCapOf(world.city), gains: sum(1), uses: sum(-1) };
 }
 
 /* ---------- 市内新聞（10.10） ---------- */

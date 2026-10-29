@@ -5,7 +5,7 @@ import { TAX_COST, WAGE } from './rules';
  * 需要（RCI。docs/game-design.md 23 章）。13 章の模擬の週の値から計算する。区画を塗る判断の手がかりで、毎日の区画の建物の建ち方もこれに従う。
  *
  *   住宅 = 空いた仕事の数 × 1.2 + 都市の魅力（満足の平均 − 50）× 2 − 空いている戸に住める人の数
- *   商業 = 住民の買い物の量 ÷ 1 店の売り場あたりの量 − 店の雇う人の数
+ *   商業 = 住民の買い物の量 ÷ 1 店の売り場あたりの量 − 店の雇う人の数 + 褒賞の建物（市民記念館 +10。25 章）
  *   オフィス = 20 + 技術力 × 15 − 事務所と IT 企業の雇う人の数
  *   工業 = 低と中の帯の失業者の数 + 道路網の大きさ（マス）× 0.5 − 工場・倉庫の雇う人の数
  *
@@ -16,7 +16,7 @@ import { TAX_COST, WAGE } from './rules';
 /** 区画の種類ごとの項の並び（docs/ui-design.md 11.4 の内訳の小窓に、この順で出す） */
 export const DEMAND_TERMS = {
   residential: ['openJobs', 'attraction', 'vacant'],
-  commercial: ['spending', 'shopJobs'],
+  commercial: ['spending', 'shopJobs', 'award'],
   office: ['base', 'tech', 'officeJobs'],
   industrial: ['unemployed', 'roads', 'factoryJobs'],
 } as const satisfies Record<ZoneKind, readonly string[]>;
@@ -32,6 +32,7 @@ export const DEMAND_TERM_NAMES: Record<DemandTermId, string> = {
   vacant: '空いている戸に住める人',
   spending: '住民の買い物で賄える店の働き口',
   shopJobs: '店の働き口',
+  award: '市民記念館の来訪',
   base: '基本',
   tech: '技術力 × 15',
   officeJobs: '事務所と IT 企業の働き口',
@@ -60,6 +61,8 @@ export interface DemandInput {
   unemployedLowMid: number;
   roadCells: number;
   factoryJobs: number;
+  /** 褒賞の建物が足す商業の需要（市民記念館 +10。docs/game-design.md 25 章） */
+  awardShop?: number;
 }
 
 /** 100 分の 1 に丸める（−0 は 0 にする。保存の JSON で −0 は 0 になり、読み込んだ後と比べられなくなる） */
@@ -72,7 +75,7 @@ export const spendingPerShopJob = (taxRate: number): number => WAGE * (1 + (taxR
 export function demandTermsOf(d: DemandInput): DemandTerms {
   return {
     residential: [d.openJobs * 1.2, d.attraction * 2, -d.vacantPeople].map(r2),
-    commercial: [d.spending / spendingPerShopJob(d.taxRate), -d.shopJobs].map(r2),
+    commercial: [d.spending / spendingPerShopJob(d.taxRate), -d.shopJobs, d.awardShop ?? 0].map(r2),
     office: [20, d.techPower * 15, -d.officeJobs].map(r2),
     industrial: [d.unemployedLowMid, d.roadCells * 0.5, -d.factoryJobs].map(r2),
   };

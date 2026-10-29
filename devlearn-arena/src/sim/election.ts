@@ -1,6 +1,7 @@
 import { FACILITY_DEFS } from '@/city/facilities';
 import type { DomainId } from '@/city/types';
 import { moveTrust } from './appeal';
+import { capitalCapOf } from './awards';
 import { evalCondition, parseCondition, startWordOf } from './conditions';
 import { adultsOf, ageOf, FACTOR_COUNT, FACTORS, incomeOf, LAYER_COUNT, LAYERS } from './layers';
 import { isReviewing, withdraw } from './permits';
@@ -16,8 +17,8 @@ import type { CauseKind, Difficulty, Politics, PoliticsRules, Term, TermSummary,
 export const TERM_DAYS = WEEKS_PER_TERM * DAYS_PER_WEEK;
 /** 「選挙が近い」と知らせる日（8 週前） */
 export const WARN_DAYS = 8 * DAYS_PER_WEEK;
-/** 政治資本の上限（21.5。褒賞の新しい市庁舎で上がるのは G11） */
-export const CAPITAL_CAP = 30;
+/** 政治資本の上限（21.5。新しい市庁舎が建つと +5。src/sim/awards.ts） */
+export { CAPITAL_CAP } from './awards';
 /** 政治資本を得る（21.5） */
 export const GAIN = { pledge: 5, mission: 3, rise: 1, win: 5 } as const;
 /** 支持率の上昇: 4 週ごとに、4 週前より 3 以上高ければ */
@@ -156,9 +157,9 @@ export function conditionValues(world: World): Record<(typeof COUNTED_WORDS)[num
   };
 }
 
-/** 政治資本を足す（上限 30）。この任期の得と使いに残す */
-function addCapital(politics: Politics, amount: number, why: string, day: number): Politics {
-  const capital = Math.min(CAPITAL_CAP, politics.capital + amount);
+/** 政治資本を足す（上限 30。新しい市庁舎が建っていれば 35）。この任期の得と使いに残す。上限を超えて持っている分は減らさない */
+function addCapital(world: Pick<World, 'city'>, politics: Politics, amount: number, why: string, day: number): Politics {
+  const capital = Math.max(politics.capital, Math.min(capitalCapOf(world.city), politics.capital + amount));
   const delta = capital - politics.capital;
   return delta === 0 ? politics : { ...politics, capital, capitalLog: [...politics.capitalLog, { day, amount: delta, why }] };
 }
@@ -220,7 +221,7 @@ function checkPledges(world: World, day: number, rules: PoliticsRules): World {
     const def = (rules.pledges ?? []).find((x) => x.id === p.pledgeId);
     const clauses = def ? parseCondition(def.goal) : null;
     if (!def || !clauses || !evalCondition(clauses, values, p.startValue)) return p;
-    politics = addCapital(politics, GAIN.pledge, `公約を果たした（${def.title}）`, day);
+    politics = addCapital(world, politics, GAIN.pledge, `公約を果たした（${def.title}）`, day);
     trust = moveTrust(trust, def.layers, PLEDGE_TRUST.done);
     return { ...p, doneDay: day };
   });
@@ -233,7 +234,7 @@ function approvalRise(world: World, day: number): World {
   if (week % RISE.weeks !== 0) return world;
   const before = world.history.breakdown.find((b) => b.week === week - RISE.weeks);
   if (!before || world.sim.lastWeek.approval - before.approval < RISE.points) return world;
-  return { ...world, politics: addCapital(world.politics, GAIN.rise, '支持率の上昇', day) };
+  return { ...world, politics: addCapital(world, world.politics, GAIN.rise, '支持率の上昇', day) };
 }
 
 /** 任期の一覧（21.3） */
@@ -277,7 +278,7 @@ function holdElection(world: World, day: number, rules: PoliticsRules): World {
   const base: World = { ...world, sim: { ...world.sim, trust }, politics: { ...world.politics, pastTerms: [...world.politics.pastTerms, summary] } };
   if (!result.won) return { ...base, politics: { ...base.politics, defeated: true } };
   const politics: Politics = { ...base.politics, term: newTerm(base, world.politics.term.no + 1, day + 1), capitalLog: [], pushesThisTerm: 0, wrongExplanations: 0, expiredPetitions: 0 };
-  return { ...base, politics: addCapital(politics, GAIN.win, '当選', day) };
+  return { ...base, politics: addCapital(base, politics, GAIN.win, '当選', day) };
 }
 
 /** 1 日の終わりの市政（週の終わりの公約と支持率の上昇・選挙の日） */
@@ -293,7 +294,7 @@ export function stepPolitics(world: World, day: number, rules: PoliticsRules): W
 export function creditMission(world: World, missionId: string, day: number): World {
   if (world.politics.missions?.includes(missionId)) return world;
   const term = world.politics.term;
-  const politics = addCapital({ ...world.politics, missions: [...(world.politics.missions ?? []), missionId], term: { ...term, missions: [...(term.missions ?? []), missionId] } }, GAIN.mission, 'ミッションの達成', day);
+  const politics = addCapital(world, { ...world.politics, missions: [...(world.politics.missions ?? []), missionId], term: { ...term, missions: [...(term.missions ?? []), missionId] } }, GAIN.mission, 'ミッションの達成', day);
   return { ...world, politics };
 }
 

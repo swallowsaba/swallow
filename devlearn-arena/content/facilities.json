@@ -25,7 +25,12 @@
     { "type": "school", "name": "学校", "group": "civic", "w": 3, "d": 2, "cost": 700, "minStage": 1, "wallet": "treasury", "upkeep": 30, "coverage": { "kind": "school", "distance": 10, "capacity": 600 } },
     { "type": "clinic", "name": "診療所", "group": "civic", "w": 1, "d": 2, "cost": 400, "minStage": 1, "wallet": "treasury", "upkeep": 30, "coverage": { "kind": "clinic", "distance": 8, "capacity": 400 } },
     { "type": "power-thermal", "name": "火力の発電所", "group": "power", "w": 2, "d": 2, "cost": 800, "minStage": 1, "wallet": "treasury", "upkeep": 40, "powerMW": -40, "noise": { "value": 25, "radius": 5 } },
-    { "type": "power-solar", "name": "太陽光の発電所", "group": "power", "w": 3, "d": 3, "cost": 900, "minStage": 1, "wallet": "treasury", "upkeep": 15, "powerMW": -15 }
+    { "type": "power-solar", "name": "太陽光の発電所", "group": "power", "w": 3, "d": 3, "cost": 900, "minStage": 1, "wallet": "treasury", "upkeep": 15, "powerMW": -15 },
+    { "type": "city-hall", "name": "新しい市庁舎", "group": "award", "w": 2, "d": 2, "cost": 1000, "minStage": 1, "wallet": "treasury", "unlock": "population >= 1000" },
+    { "type": "memorial", "name": "市民記念館", "group": "award", "w": 2, "d": 2, "cost": 900, "minStage": 1, "wallet": "treasury", "unlock": "population >= 5000 && approval >= 55" },
+    { "type": "stadium", "name": "競技場", "group": "award", "w": 3, "d": 3, "cost": 2000, "minStage": 1, "wallet": "treasury", "unlock": "population >= 15000" },
+    { "type": "civic-hall", "name": "市民ホール", "group": "award", "w": 2, "d": 2, "cost": 900, "minStage": 1, "wallet": "treasury", "unlock": "highApprovalWeeks >= 8" },
+    { "type": "central-park", "name": "中央公園", "group": "award", "w": 4, "d": 4, "cost": 1200, "minStage": 1, "wallet": "treasury", "unlock": "population >= 30000", "coverage": { "kind": "park", "distance": 12 } }
   ],
   "landmarks": [
     { "id": "beacon", "name": "灯台の記念碑", "about": "市の案内ページを初めて公開した記念。夜も灯りを絶やさない" },
