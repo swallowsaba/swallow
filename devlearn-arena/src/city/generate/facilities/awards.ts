@@ -201,13 +201,14 @@ export function stadium(): Model {
   // 正面の屋根（記者席と貴賓席の上の庇）
   parts.push(box({ x0: cx - 0.55, y0: cy + outer.ry - 0.28, z0: wallH + 0.12, x1: cx + 0.55, y1: cy + outer.ry + 0.02, z1: wallH + 0.15, wall: shade(city.lineWhite, 0.9), top: city.lineWhite }));
   for (const x of [cx - 0.5, cx, cx + 0.5]) parts.push(rod([x, cy + outer.ry - 0.02, wallH], [x, cy + outer.ry - 0.02, wallH + 0.12], 0.012, city.curb));
-  // 照明の塔 4 本（細い柱と、灯りの枠）。灯りは窓の灯りの色で描き、試合の日でない日は描く時に消す（docs/city-design.md 9.5）
+  // 照明の塔 4 本（細い柱と、灯りの枠）。灯りは窓の灯りの色で描き、試合の日でない日は描く時に消す（docs/city-design.md 9.5）。
+  // 灯りの面は枠の表と裏の両方に置き、どの向きから見ても見える側の 1 面が描かれる（面の点の順で外向きを決める）
   for (const [x, y] of [[0.22, 0.2], [2.78, 0.2], [0.22, 2.08], [2.78, 2.08]] as [number, number][]) {
     const top = 1.25;
     parts.push(rod([x, y, 0], [x, y, top], 0.022, mix(city.curb, city.lineWhite, 0.3)));
-    const toward = x < cx ? 0.03 : -0.03;
     parts.push(box({ x0: x - 0.09, y0: y - 0.03, z0: top, x1: x + 0.09, y1: y + 0.03, z1: top + 0.11, wall: shade(city.curb, 0.85) }, [
-      { kind: 'poly', pts: [[x - 0.08 + toward, y + 0.031, top + 0.02], [x + 0.08 + toward, y + 0.031, top + 0.02], [x + 0.08 + toward, y + 0.031, top + 0.1], [x - 0.08 + toward, y + 0.031, top + 0.1]], color: city.windowLit, lit: true, layer: 1 },
+      { kind: 'poly', pts: [[x + 0.08, y + 0.031, top + 0.02], [x - 0.08, y + 0.031, top + 0.02], [x - 0.08, y + 0.031, top + 0.1], [x + 0.08, y + 0.031, top + 0.1]], color: city.windowLit, lit: true, layer: 1 },
+      { kind: 'poly', pts: [[x - 0.08, y - 0.031, top + 0.02], [x + 0.08, y - 0.031, top + 0.02], [x + 0.08, y - 0.031, top + 0.1], [x - 0.08, y - 0.031, top + 0.1]], color: city.windowLit, lit: true, layer: 1 },
     ]));
   }
   // 駐車場の車と、街灯・木
