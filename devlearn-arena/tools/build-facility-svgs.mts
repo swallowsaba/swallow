@@ -8,6 +8,7 @@ import { FACILITY_DEFS, landmarkOf } from '../src/city/facilities';
 import { MONUMENT_IDS, monumentModel } from '../src/city/generate/facilities/monuments';
 import { CAR_COLORS, carModel, PERSON_COLORS, personModel } from '../src/city/generate/agents';
 import { facilityModel, MODELED_FACILITIES } from '../src/city/generate/facilityModels';
+import { landing } from '../src/city/generate/facilities/civic';
 import { INTERIOR_FACILITIES, interiorModel } from '../src/city/generate/interiors';
 import { meshModel } from '../src/city/generate/mesh';
 import { drawingToSvg, singleViewSvg } from '../src/city/generate/svg';
@@ -24,9 +25,21 @@ function createdFor(file: string, make: (created: string) => string): string {
   return make(today);
 }
 
-// 分野の施設は Lv1〜Lv5、公園の類は 1 枚（docs/visual-design.md 6.1）
+// 分野の施設は Lv1〜Lv5、公園の類は 1 枚（docs/visual-design.md 6.1）。公共サービスと発電所は civic/ に 1 枚ずつ（docs/city-design.md 9.6）
+const civicDir = 'src/city/assets/civic';
+mkdirSync(civicDir, { recursive: true });
 for (const type of MODELED_FACILITIES) {
-  const levels = FACILITY_DEFS[type].group === 'facility' ? [1, 2, 3, 4, 5] : [1];
+  const group = FACILITY_DEFS[type].group;
+  if (group === 'civic' || group === 'power') {
+    const model = facilityModel(type, 1);
+    if (!model) continue;
+    const file = `${civicDir}/${type}.svg`;
+    const svg = createdFor(file, (created) => drawingToSvg(meshModel(model, 0), meshModel(model, 2), FACILITY_DEFS[type].name, created, 'src/city/generate/facilities/civic.ts'));
+    writeFileSync(file, svg);
+    console.log(`${file} ${String(Math.round(svg.length / 102.4) / 10)}KB`);
+    continue;
+  }
+  const levels = group === 'facility' ? [1, 2, 3, 4, 5] : [1];
   for (const level of levels) {
     const model = facilityModel(type, level);
     if (!model) continue;
@@ -37,6 +50,15 @@ for (const type of MODELED_FACILITIES) {
     writeFileSync(file, svg);
     console.log(`${file} ${String(Math.round(svg.length / 102.4) / 10)}KB`);
   }
+}
+
+// 陸揚げ所（docs/city-design.md 9.4。施設ではなく、模擬の陸揚げ所の場所に描く）
+{
+  const file = `${civicDir}/landing.svg`;
+  const model = landing();
+  const svg = createdFor(file, (created) => drawingToSvg(meshModel(model, 0), meshModel(model, 2), '陸揚げ所', created, 'src/city/generate/facilities/civic.ts'));
+  writeFileSync(file, svg);
+  console.log(`${file} ${String(Math.round(svg.length / 102.4) / 10)}KB`);
 }
 
 // 記念碑（ミッションの報酬。docs/visual-design.md 6.1 の props）

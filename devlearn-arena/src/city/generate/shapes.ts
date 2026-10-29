@@ -327,6 +327,22 @@ export function streetLamp(x: number, y: number, arm: Side): Part[] {
   ];
 }
 
+/** 低い電柱（docs/city-design.md 9.4: 道路の下の送電を、道路の縁の電柱で見せる）。腕木と 2 つの碍子。腕木は道路に沿う向き */
+export function utilityPole(x: number, y: number, along: 'x' | 'y'): Part[] {
+  const wood = mix(city.curb, city.roofTile, 0.25);
+  const h = 0.7;
+  const t = 0.012;
+  const [dx, dy] = along === 'x' ? [0.09, 0] : [0, 0.09];
+  return [
+    box({ x0: x - t, y0: y - t, z0: 0, x1: x + t, y1: y + t, z1: h, wall: wood }),
+    box({ x0: x - dx - t, y0: y - dy - t, z0: h - 0.07, x1: x + dx + t, y1: y + dy + t, z1: h - 0.05, wall: shade(wood, 0.85) }),
+    part([
+      { kind: 'blob', center: [x - dx * 0.8, y - dy * 0.8, h - 0.035], r: 0.014, squash: 1, color: city.lineWhite },
+      { kind: 'blob', center: [x + dx * 0.8, y + dy * 0.8, h - 0.035], r: 0.014, squash: 1, color: city.lineWhite },
+    ], [x - dx - 0.015, y - dy - 0.015, h - 0.05], [x + dx + 0.015, y + dy + 0.015, h - 0.02]),
+  ];
+}
+
 /** 屋上の空調機（箱と、上の丸いファン） */
 export function rooftopUnit(x: number, y: number, z: number, s = 1): Part {
   const body = mix(city.wallStone, city.curb, 0.35);

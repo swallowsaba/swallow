@@ -179,6 +179,19 @@ export function outageOf(grid: PowerGrid, rotation: number): { stopped: number[]
   return { stopped: [...stopped].sort((a, b) => a - b), rotation: last >= 0 ? (last + 1) % DISTRICT_COUNT : rotation };
 }
 
+/**
+ * 今の週に停電している区画の建物と施設の ID（窓の灯りを消して描く。docs/city-design.md 9.4）。
+ * 区画の建物は前の道路のマスの地区、施設は敷地の中心のマスの地区で決める（週の計算と同じ）
+ */
+export function poweredOffIds(world: Pick<World, 'city' | 'sim'>, space: Pick<Space, 'residential' | 'workplaces'>): Set<string> {
+  const stopped = stoppedNow(world.sim.power);
+  const out = new Set<string>();
+  if (stopped.size === 0) return out;
+  for (const zb of [...space.residential, ...space.workplaces]) if (stopped.has(zb.district)) out.add(zb.building.id);
+  for (const f of world.city.facilities) if (f.state === 'active' && stopped.has(facilityPowerDistrict(f))) out.add(f.id);
+  return out;
+}
+
 /** 今の週に止まっている地区 */
 export function stoppedNow(power: Pick<PowerState, 'recent'>): ReadonlySet<number> {
   return new Set(power.recent?.at(-1) ?? []);

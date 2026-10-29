@@ -40,7 +40,7 @@ export type Tool =
   | { kind: 'facility'; type: FacilityType; landmark?: string }
   | { kind: 'demolish' };
 
-export type MenuGroup = 'road' | 'zone' | 'facility' | 'park' | 'demolish';
+export type MenuGroup = 'road' | 'zone' | 'facility' | 'park' | 'civic' | 'demolish';
 
 /** 表示切替で重ねる物（今ある 4 つと、模擬のヒートマップ。docs/ui-design.md 11.1） */
 export type ViewKind = OverlayKind | HeatKind;

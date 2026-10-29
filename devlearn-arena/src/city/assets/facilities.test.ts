@@ -167,3 +167,18 @@ describe('記念碑の SVG（ミッションの報酬。docs/visual-design.md 6.
     }
   });
 });
+
+describe('公共サービス・発電所・陸揚げ所の SVG（docs/city-design.md 9.6）', () => {
+  const CIVIC = join(__dirname, 'civic');
+  const civic = readdirSync(CIVIC);
+  it('公共サービス 4・発電所 2・陸揚げ所の 1 枚ずつが src/city/assets/civic/ にあり、30KB 以内で viewBox を持つ', () => {
+    const types = Object.values(FACILITY_DEFS).filter((d) => d.group === 'civic' || d.group === 'power').map((d) => d.type);
+    expect(types).toHaveLength(6);
+    for (const name of [...types, 'landing']) {
+      expect(civic, name).toContain(`${name}.svg`);
+      const text = readFileSync(join(CIVIC, `${name}.svg`), 'utf8');
+      expect(text.length, name).toBeLessThan(30 * 1024);
+      expect(text, name).toMatch(/viewBox="/);
+    }
+  });
+});

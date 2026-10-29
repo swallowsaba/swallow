@@ -3,6 +3,7 @@ import type { FacilityType } from '../types';
 import { fencedLot } from './buildings';
 import { band, beacon, solarPanels } from './facilityKit';
 import { cloud, cluster, research } from './facilities/campus';
+import { clinic, fire, police, powerSolar, powerThermal, school } from './facilities/civic';
 import { container, datacenter, deploy } from './facilities/industry';
 import { devoffice, devops, incident, monitor, security, web } from './facilities/offices';
 import { fountain, park, plaza, treerow } from './facilities/parks';
@@ -362,9 +363,10 @@ function network(level: number): Model {
 const MODELS: Partial<Record<FacilityType, (level: number) => Model>> = {
   academy, server, network, web, security, devoffice, deploy, container, cluster, datacenter, cloud, monitor, devops, incident, research,
   park, treerow, plaza, fountain,
+  police, fire, school, clinic, 'power-thermal': powerThermal, 'power-solar': powerSolar,
 };
 
-/** 模型のある施設（Phase 2 で 15 施設と公園の類の Lv1） */
+/** 模型のある施設（Phase 2 で 15 施設と公園の類の Lv1。G10 で公共サービスと発電所） */
 export const MODELED_FACILITIES = Object.keys(MODELS) as FacilityType[];
 
 export function facilityModel(type: FacilityType, level: number): Model | null {

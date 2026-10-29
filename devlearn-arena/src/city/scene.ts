@@ -4,7 +4,7 @@ import { zoneBuildingModel } from './generate/buildings';
 import { foundationModel, frameModel } from './generate/construction';
 import { facilityModel } from './generate/facilityModels';
 import type { Model } from './generate/mesh';
-import { broadleafTree, conifer, streetLamp } from './generate/shapes';
+import { broadleafTree, conifer, streetLamp, utilityPole } from './generate/shapes';
 import type { Rotation } from './projection';
 import { seedOf } from './random';
 import { resample } from './roadGeometry';
@@ -97,6 +97,27 @@ export function buildScene(cityState: City, terrain: Terrain): SceneObject[] {
           source: { kind: 'model', key: `lamp:${spot.arm}`, model: () => ({ w: 0.1, d: 0.1, parts: streetLamp(0.05, 0.05, spot.arm), shadowHeight: 0 }) },
         });
       }
+    }
+  }
+
+  // 電柱: 細い道と一般道の縁に 4 マスごと（大通りは地中線なので立てない。docs/city-design.md 9.4）。街灯と反対の向きにずらし、交差点には立てない
+  for (const road of cityState.roads) {
+    if (road.kind !== 'street' && road.kind !== 'lane') continue;
+    const [a, b] = road.path;
+    if (!a || !b || road.path.length !== 2) continue;
+    const alongX = Math.abs(b.x - a.x) > Math.abs(b.y - a.y);
+    const len = Math.round(Math.hypot(b.x - a.x, b.y - a.y));
+    const side = road.kind === 'street' ? 0.45 : 0.36;
+    for (let i = 2; i < len; i += 4) {
+      const t = (i + 0.5) / len;
+      const spot = alongX ? { x: a.x + (b.x - a.x) * t, y: a.y + side } : { x: a.x - side, y: a.y + (b.y - a.y) * t };
+      if (!roads.has(key(Math.floor(spot.x), Math.floor(spot.y)))) continue;
+      if (cityState.roads.some((o) => o.id !== road.id && distanceToPolyline(spot, o.path).dist < 1.1)) continue;
+      const along = alongX ? 'x' : 'y';
+      out.push({
+        id: `pole-${road.id}-${String(i)}`, x: spot.x - 0.1, y: spot.y - 0.1, w: 0.2, d: 0.2, z: 0, height: 0.7, facing: 0,
+        source: { kind: 'model', key: `pole:${along}`, model: () => ({ w: 0.2, d: 0.2, parts: utilityPole(0.1, 0.1, along), shadowHeight: 0 }) },
+      });
     }
   }
 

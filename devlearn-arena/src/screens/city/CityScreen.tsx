@@ -9,7 +9,9 @@ import { CityRenderer } from '@/city/render/CityRenderer';
 import { RANK_NAMES, rankOf } from '@/game/rank';
 import { STAGE_NAMES } from '@/game/stage';
 import { HEAT_KINDS, type HeatKind } from '@/sim/heat';
+import { poweredOffIds } from '@/sim/power';
 import { dateOf } from '@/sim/rules';
+import { spaceOf } from '@/sim/space';
 import type { WeeklyBreakdown } from '@/sim/types';
 import { TopBar, type EntryId } from '@/ui/TopBar';
 import { finishBoot } from '@/ui/boot';
@@ -85,7 +87,7 @@ export function CityScreen({ session, active = true, covered = false, current, d
     name: s.city.name, funds: s.city.funds, population: s.city.population, stage: s.city.stage,
     tool: s.tool, menu: s.menu, hint: s.hint, confirm: s.confirm, notice: s.notice, paused: s.paused,
     openMenu: s.openMenu, setTool: s.setTool, selected: s.selected, overlay: s.overlay, setOverlay: s.setOverlay, select: s.select,
-    techPower: s.city.techPower,
+    techPower: s.city.techPower, demand: s.world.sim.lastWeek.demand,
     day: Math.floor(s.city.day), speed: s.speed, held: s.holds.length > 0, togglePause: s.togglePause, setSpeed: s.setSpeed,
     approval: s.world.city.population > 0 ? s.world.sim.lastWeek.approval : null,
     approvalDelta: approvalDeltaOf(s.world.history.breakdown),
@@ -172,8 +174,14 @@ export function CityScreen({ session, active = true, covered = false, current, d
       renderer.setCity(s.city);
       // 申請の囲いと看板（模擬の世界が変わった時だけ作り直す。docs/city-design.md 9.1）
       if (s.world !== sitesWorld) {
+        const prev = sitesWorld;
         sitesWorld = s.world;
         renderer.setSites(sitesOf(s.world));
+        // 陸揚げ所と停電している建物（停電は週ごとに変わる。docs/city-design.md 9.4）
+        if (!prev || prev.sim.power !== s.world.sim.power || prev.city.buildings !== s.world.city.buildings || prev.city.facilities !== s.world.city.facilities) {
+          const off = (s.world.sim.power.recent?.at(-1)?.length ?? 0) > 0 ? poweredOffIds(s.world, spaceOf(s.world.city, s.terrain)) : new Set<string>();
+          renderer.setPower({ landing: s.world.sim.power.landing, off });
+        }
       }
       // 学習から戻った時の変化の場所へカメラを寄せ、光の輪で示す
       if (s.focus && s.focus.seq !== focusSeq) {
@@ -353,7 +361,7 @@ export function CityScreen({ session, active = true, covered = false, current, d
           <CouncilWindow store={store} />
           <ElectionWindow store={store} {...(onNewCity ? { onNewCity } : {})} />
           <HeatHover store={store} canvas={canvasRef} renderer={rendererRef} />
-          <BuildMenu state={state} landmarks={landmarks} />
+          <BuildMenu state={state} landmarks={landmarks} treasury={state.treasury} demand={state.demand} />
           <PlacementHint hint={state.confirm ? null : state.hint} />
           <DemolishConfirm target={state.confirm} onYes={onYes} onNo={onNo} />
           <Intro session={session} />

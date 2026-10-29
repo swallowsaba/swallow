@@ -1,3 +1,4 @@
+import { city as cityColors, shade } from '@/ui/tokens';
 import { meshModel, type DrawOp, type Model } from '../generate/mesh';
 import { svgView, viewForRotation } from '../generate/svg';
 import type { Rotation } from '../projection';
@@ -37,6 +38,15 @@ export function drawOps(ctx: CanvasRenderingContext2D, ops: readonly DrawOp[]): 
 // 施設の SVG（src/city/assets/facilities/<施設>/lv<N>.svg）
 const SVG_FILES = import.meta.glob('../assets/facilities/*/lv*.svg', { query: '?raw', import: 'default', eager: true });
 
+// 公共サービス・発電所・陸揚げ所の SVG（src/city/assets/civic/<建物>.svg。Lv は無い。docs/city-design.md 9.6）
+const CIVIC_FILES = import.meta.glob('../assets/civic/*.svg', { query: '?raw', import: 'default', eager: true });
+
+/** 公共サービス・発電所・陸揚げ所の絵（name は施設の種類か 'landing'） */
+export function civicAsset(name: string): { key: string; svg: string } | null {
+  const text = CIVIC_FILES[`../assets/civic/${name}.svg`];
+  return typeof text === 'string' ? { key: `civic:${name}`, svg: text } : null;
+}
+
 // 記念碑の SVG（src/city/assets/props/monument-<ID>.svg。ミッションの報酬）
 const PROP_FILES = import.meta.glob('../assets/props/*.svg', { query: '?raw', import: 'default', eager: true });
 
@@ -52,6 +62,8 @@ export function monumentAsset(landmark: string): { key: string; svg: string } | 
  */
 export function facilityAsset(type: FacilityType, level: number, landmark?: string): { key: string; svg: string } | null {
   if (type === 'monument') return landmark ? monumentAsset(landmark) : null;
+  const civic = civicAsset(type);
+  if (civic) return civic;
   for (let lv = level; lv >= 1; lv -= 1) {
     const text = SVG_FILES[`../assets/facilities/${type}/lv${String(lv)}.svg`];
     if (typeof text === 'string') return { key: `${type}:${String(lv)}`, svg: text };
@@ -87,12 +99,22 @@ export function allFacilitySvgs(): { key: string; svg: string }[] {
     const m = /facilities\/([a-z]+)\/lv(\d)\.svg$/.exec(path);
     if (m && typeof text === 'string') out.push({ key: `${m[1] as string}:${m[2] as string}`, svg: text });
   }
+  for (const [path, text] of Object.entries(CIVIC_FILES)) {
+    const m = /civic\/([a-z-]+)\.svg$/.exec(path);
+    if (m && typeof text === 'string') out.push({ key: `civic:${m[1] as string}`, svg: text });
+  }
   for (const [path, text] of Object.entries(PROP_FILES)) {
     const m = /props\/monument-([a-z0-9-]+)\.svg$/.exec(path);
     if (m && typeof text === 'string') out.push({ key: `monument:${m[1] as string}`, svg: text });
   }
   return out;
 }
+
+/** 停電した建物の窓（灯りの色を、灯りの無いガラスの暗い色に替える。docs/city-design.md 9.4） */
+export const DARK_WINDOW = shade(cityColors.wallGlass, 0.5);
+const LIT = cityColors.windowLit.toLowerCase();
+/** 灯りの色を消した SVG（停電した施設の絵） */
+export const darkenSvg = (svg: string): string => svg.replace(new RegExp(LIT, 'gi'), DARK_WINDOW);
 
 export class SpriteCache {
   private readonly sprites = new Map<string, Sprite>();
@@ -105,12 +127,13 @@ export class SpriteCache {
     this.sprites.clear();
   }
 
-  /** 模型の絵 */
-  model(key: string, model: () => Model, rotation: Rotation, zoom: number): Sprite {
-    const id = `${key}|${String(rotation)}|${String(zoom)}`;
+  /** 模型の絵。off なら窓の灯りを消した絵（停電した地区の建物） */
+  model(key: string, model: () => Model, rotation: Rotation, zoom: number, off = false): Sprite {
+    const id = `${key}|${String(rotation)}|${String(zoom)}${off ? '|off' : ''}`;
     const hit = this.sprites.get(id);
     if (hit) return hit;
     const drawing = meshModel(model(), rotation);
+    if (off) drawing.ops = drawing.ops.map((op) => (op.fill.toLowerCase() === LIT ? { ...op, fill: DARK_WINDOW } : op));
     const b = drawing.bounds;
     const pad = 2;
     const w = Math.ceil((b.maxX - b.minX) * zoom + pad * 2);
@@ -153,6 +176,17 @@ export class SpriteCache {
     });
     this.loading.set(key, p);
     return p;
+  }
+
+  /** 窓の灯りを消した施設の絵を読み込む（停電した地区の施設。読み終えたら解決する） */
+  preloadOff(key: string, svg: string): Promise<void> {
+    const dark = darkenSvg(svg);
+    return Promise.all((['front', 'back'] as const).map((view) => this.loadImage(`${key}:off:${view}`, svgView(dark, view).svg))).then(() => undefined);
+  }
+
+  /** 読み込みを終えた、窓の灯りを消した施設の絵（まだなら null） */
+  facilityOff(key: string, svg: string, rotation: Rotation, zoom: number): Sprite | null {
+    return this.images.has(`${key}:off:${viewForRotation(rotation).view}`) ? this.facility(`${key}:off`, darkenSvg(svg), rotation, zoom) : null;
   }
 
   /**

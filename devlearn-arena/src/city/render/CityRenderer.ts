@@ -17,6 +17,7 @@ import { MAP_SIZE, generateTerrain, type Terrain } from '../terrain';
 import type { City, Facility, FacilityType, Point, Road } from '../types';
 import { drawGround, prepareGround, toLayer, type GroundData, type LayerSpace } from './ground';
 import { agentSvg, allAgentSvgs, allFacilitySvgs, facilityAsset, SpriteCache } from './sprites';
+import { landing as landingModel } from '../generate/facilities/civic';
 import { DEFAULT_DISPLAY, type Display } from './display';
 
 /**
@@ -99,6 +100,11 @@ export class CityRenderer {
   private cityObjects: SceneObject[];
   private sites: SiteView[] = [];
   private siteObjects: SceneObject[] = [];
+  /** 陸揚げ所（docs/city-design.md 9.4）と、停電している建物・施設の ID（窓の灯りを消し、屋根に止まった記号） */
+  private power: { landing: Point | null; off: ReadonlySet<string> } = { landing: null, off: new Set() };
+  private powerObjects: SceneObject[] = [];
+  /** 最後に描いた止まった記号（撮影と確かめの道具が読む） */
+  lastPlugs: { id: string; x: number; y: number }[] = [];
   private sitesKey = '';
   private preview: (Preview & { shapes: RoadShape[] }) | null = null;
   private sprites: SpriteCache;
@@ -231,8 +237,35 @@ export class CityRenderer {
     if (signature !== this.signature) {
       this.signature = signature;
       this.cityObjects = buildScene(next, this.terrain);
-      this.objects = [...this.cityObjects, ...this.siteObjects];
+      this.objects = [...this.cityObjects, ...this.siteObjects, ...this.powerObjects];
       this.order = null;
+    }
+    this.dirty = true;
+  }
+
+  /**
+   * 電力の見た目（docs/city-design.md 9.4）: 陸揚げ所の場所と、停電している建物・施設の ID。
+   * 止まった建物は窓の灯りを消し、屋根の上に「止まった」記号（差し込みの抜けたプラグ）を出す
+   */
+  setPower(power: { landing: Point | null; off: ReadonlySet<string> }): void {
+    const sameLanding = power.landing?.x === this.power.landing?.x && power.landing?.y === this.power.landing?.y;
+    const sameOff = power.off.size === this.power.off.size && [...power.off].every((id) => this.power.off.has(id));
+    if (sameLanding && sameOff) return;
+    this.power = power;
+    if (!sameLanding) {
+      const at = power.landing;
+      this.powerObjects = at ? [{
+        id: 'landing', x: at.x, y: at.y, w: 1, d: 1, z: 0, height: 0.45, facing: 0,
+        source: { kind: 'model', key: 'landing', model: landingModel },
+      }] : [];
+      this.objects = [...this.cityObjects, ...this.siteObjects, ...this.powerObjects];
+      this.order = null;
+    }
+    // 止まった施設の絵（窓の灯りを消した SVG）を先に読み込む。読み終えたら描き直す
+    for (const f of this.cityState.facilities) {
+      if (!power.off.has(f.id)) continue;
+      const asset = facilityAsset(f.type, f.level, f.landmark);
+      if (asset) void this.sprites.preloadOff(asset.key, asset.svg).then(() => { this.dirty = true; });
     }
     this.dirty = true;
   }
@@ -251,7 +284,7 @@ export class CityRenderer {
         select: { kind: 'application', id: s.id },
       };
     });
-    this.objects = [...this.cityObjects, ...this.siteObjects];
+    this.objects = [...this.cityObjects, ...this.siteObjects, ...this.powerObjects];
     this.order = null;
     this.dirty = true;
   }
@@ -570,6 +603,7 @@ export class CityRenderer {
     // ヒートマップを重ねている間は、建物を薄くして色を見せる（docs/ui-design.md 11.1）
     if (this.heat) ctx.globalAlpha = 0.5;
     const agents = this.placeAgents(order);
+    const plugs: { id: string; x: number; y: number }[] = [];
     this.drawAgents(ctx, o, agents.get(-1));
     for (let pos = 0; pos < order.list.length; pos += 1) {
       const index = order.list[pos] as number;
@@ -582,19 +616,22 @@ export class CityRenderer {
       const reach = (Math.max(obj.w, obj.d) * 64 + 160) * this.camera.zoom;
       if (sx < -reach || sx > width + reach || sy < -reach || sy > height + reach * 0.5) continue;
       const rot = ((obj.facing + this.camera.rotation) % 4) as Rotation;
+      const off = obj.select !== undefined && obj.select.kind !== 'application' && this.power.off.has(obj.select.id);
       let sprite;
       if (obj.source.kind === 'facility') {
         const asset = facilityAsset(obj.source.type, obj.source.level, obj.source.landmark);
-        sprite = asset ? this.sprites.facility(asset.key, asset.svg, rot, this.camera.zoom) : null;
+        sprite = asset ? ((off ? this.sprites.facilityOff(asset.key, asset.svg, rot, this.camera.zoom) : null) ?? this.sprites.facility(asset.key, asset.svg, rot, this.camera.zoom)) : null;
       } else {
-        sprite = this.sprites.model(obj.source.key, obj.source.model, rot, this.camera.zoom);
+        sprite = this.sprites.model(obj.source.key, obj.source.model, rot, this.camera.zoom, off);
       }
       if (!sprite) continue;
       ctx.drawImage(sprite.canvas, Math.round(sx - sprite.ox), Math.round(sy - sprite.oy), sprite.w, sprite.h);
+      if (off) plugs.push({ id: obj.id, x: Math.round(sx), y: Math.round(sy - sprite.oy) });
       drawn += 1;
     }
     this.drawAgents(ctx, o, agents.get(order.list.length - 1));
     ctx.globalAlpha = 1;
+    this.drawPlugs(plugs);
     this.stats.drawnObjects = drawn;
     this.stats.agents = this.agents.length;
     this.drawFog(o);
@@ -606,6 +643,56 @@ export class CityRenderer {
       this.onReady = undefined;
       done();
     }
+  }
+
+  /**
+   * 停電した建物の屋根の上の「止まった」記号（自作の形: 差し込みの抜けたプラグ。docs/city-design.md 9.4）。
+   * 紺の丸い札に、2 本の刃のある差し込みと、離れた口を白で描く。遠くでは小さくし、近くの記号どうしは間引く
+   */
+  private drawPlugs(plugs: readonly { id: string; x: number; y: number }[]): void {
+    const ctx = this.ctx;
+    const r = Math.max(6, Math.min(10, 9 * this.camera.zoom));
+    const placed: { id: string; x: number; y: number }[] = [];
+    for (const p of plugs) {
+      const y = p.y - r - 2;
+      if (placed.some((q) => Math.abs(q.x - p.x) < r * 2 && Math.abs(q.y - y) < r * 2)) continue;
+      placed.push({ id: p.id, x: p.x, y });
+    }
+    const ink = cityColors.lineWhite;
+    for (const p of placed) {
+      ctx.save();
+      ctx.translate(p.x, p.y);
+      ctx.fillStyle = rgbaOf(hud.bg, 0.92);
+      ctx.strokeStyle = state.bad;
+      ctx.lineWidth = 1.6;
+      ctx.beginPath();
+      ctx.arc(0, 0, r, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+      const s = r / 9;
+      ctx.strokeStyle = ink;
+      ctx.fillStyle = ink;
+      ctx.lineWidth = 1.6 * Math.max(0.8, s);
+      ctx.lineCap = 'round';
+      // 差し込み（左下）: 本体と 2 本の刃と、出ていく線
+      ctx.beginPath();
+      ctx.roundRect(-6 * s, -1 * s, 5 * s, 5 * s, 1.2 * s);
+      ctx.fill();
+      ctx.beginPath();
+      ctx.moveTo(-1 * s, 0.5 * s);
+      ctx.lineTo(1.2 * s, 0.5 * s);
+      ctx.moveTo(-1 * s, 2.5 * s);
+      ctx.lineTo(1.2 * s, 2.5 * s);
+      ctx.moveTo(-3.5 * s, 4 * s);
+      ctx.lineTo(-3.5 * s, 6.5 * s);
+      ctx.stroke();
+      // 口（右上）: 離れた所の 2 つの穴の受け口
+      ctx.beginPath();
+      ctx.roundRect(2.8 * s, -5.5 * s, 3.4 * s, 5 * s, 1 * s);
+      ctx.stroke();
+      ctx.restore();
+    }
+    this.lastPlugs = placed;
   }
 
   /**
