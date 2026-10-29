@@ -17,7 +17,7 @@
 // 時間だけは都市の時計を早回しする（審議と工事が終わるのを待つ。tools/scenarios/town.mjs の days・untilBuilt）。
 import { readFileSync } from 'node:fs';
 import { pathToFileURL } from 'node:url';
-import { at, drag, facility, pick, untilBuilt } from './town.mjs';
+import { at, closePledges, drag, facility, pick, untilBuilt } from './town.mjs';
 import { readLesson, siteRoot, verifyLesson } from './verify-lesson.mjs';
 
 const wait = (page, ms = 300) => page.waitForTimeout(ms);
@@ -81,6 +81,8 @@ export async function runLoop(page, shot = async () => {}) {
       await page.keyboard.press('Enter');
       await wait(page, 200);
     }
+    // 1 期目の公約を選ぶ窓（G8）は選ばずに閉じる（上の帯の任期から後で選べる）
+    await closePledges(page);
     await shot('loop-g1');
 
     // G2: 移動・拡大縮小・回転。同じマスの画面の位置が変わる

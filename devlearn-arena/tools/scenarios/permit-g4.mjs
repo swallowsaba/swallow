@@ -10,7 +10,7 @@
 // 住宅から離した所に同じデータセンターを置き、反対率が下がることを数で比べる。
 // 最後に、公聴会の段で待つ申請の敷地から、ここで学ぶ → レッスンへ行けること（学習にロックが無い）を確かめる。
 import { fundBy } from './learning.mjs';
-import { at, days, drag, facility, pick } from './town.mjs';
+import { at, closePledges, days, drag, facility, pick } from './town.mjs';
 
 /** 常時の UI の面積（docs/visual-design.md V9） */
 async function uiShare(page) {
@@ -90,6 +90,8 @@ async function until(page, id, stage, max = 80) {
 const lastId = (page) => page.evaluate(() => window.__cityStore.getState().world.applications.at(-1)?.id ?? '');
 
 export default async function permitG4(page, shot) {
+  // 1 期目の公約を選ぶ窓（G8）は選ばずに閉じる（窓が都市を覆っていると、建設メニューの操作が届かない)
+  await closePledges(page);
   const size = await page.evaluate(() => String(window.innerWidth));
   const tag = size === '1920' ? '' : `-${size}`;
   await fundBy(page, 9000);

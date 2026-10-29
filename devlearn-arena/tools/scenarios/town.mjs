@@ -48,15 +48,23 @@ export async function facility(page, type, cell, turns = 0) {
 }
 
 /**
+ * 1 期目の公約を選ぶ窓（G8。初回の操作説明の後に出る）を、選ばずに閉じる（上の帯の任期から後で選べる）。
+ * 窓が都市を覆っている間は、建設メニューの操作が都市に届かない。出なければ何もしない
+ */
+export async function closePledges(page) {
+  const w = await page.waitForSelector('[data-testid="election-window"][data-mode="term"]', { timeout: 3000 }).catch(() => null);
+  if (!w) return;
+  await page.click('[data-testid="election-window"] .election-close');
+  await page.waitForSelector('[data-testid="election-window"]', { state: 'detached' });
+}
+
+/**
  * 都市の時計を n 日進める（1 倍で 1 日 2 秒。docs/game-design.md 13.1）。
  * 模擬は Worker で動くので、進めた日まで模擬が追いつくのを待つ。
  * 公約を選ぶ窓（任期の窓）が開いていると時間が止まるので、選ばずに閉じてから進める（上の帯の任期から後で選べる）
  */
 export async function days(page, n) {
-  if (await page.$('[data-testid="election-window"][data-mode="term"]')) {
-    await page.click('[data-testid="election-window"] .election-close');
-    await page.waitForSelector('[data-testid="election-window"]', { state: 'detached' });
-  }
+  if (await page.$('[data-testid="election-window"][data-mode="term"]')) await closePledges(page);
   const target = await page.evaluate((d) => {
     const s = window.__cityStore.getState();
     if (s.paused) s.togglePause();
@@ -100,6 +108,7 @@ async function state(page) {
 
 /** 画面の操作だけで村から町を作る（撮影はしない）。shot を渡すと途中の画面も撮る */
 export async function buildTown(page, shot = async () => {}) {
+  await closePledges(page);
   // 初めの資金は 1,500（docs/game-design.md 2 章）。町を作る前に、模擬の学習記録で資金を得る
   await fundBy(page, 12000);
   // 少し引いて、初めの範囲を全部見る

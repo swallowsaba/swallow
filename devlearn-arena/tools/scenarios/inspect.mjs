@@ -1,7 +1,7 @@
 // 建物の選択・情報パネル・名札・表示切替を確かめる台本（docs/development-plan.md Phase 3）。
 //
 //   SHOOT_SCRIPT=tools/scenarios/inspect.mjs npm run shoot -- p3-end
-import { at, buildTown, days, drag, facility, pick } from './town.mjs';
+import { at, buildTown, drag, facility, pick, untilSettled } from './town.mjs';
 
 /** 名札どうし・名札と建物の重なりを数える（描画器が最後に置いた名札で） */
 async function labelReport(page) {
@@ -40,12 +40,15 @@ async function centerOn(page, x, y) {
   await page.waitForTimeout(200);
 }
 
-/** 施設を置き、置けなかったら理由を出す */
+/** 施設を置き（IT 施設は申請になる。docs/game-design.md 15 章）、置けなかったら理由を出す */
 async function place(page, type, cell, turns = 0) {
-  const before = await page.evaluate(() => window.__cityStore.getState().city.facilities.length);
+  const count = () => page.evaluate(() => {
+    const w = window.__cityStore.getState().world;
+    return w.city.facilities.length + w.applications.length;
+  });
+  const before = await count();
   await facility(page, type, cell, turns);
-  const after = await page.evaluate(() => window.__cityStore.getState().city.facilities.length);
-  if (after === before) console.log('置けない', type, await page.evaluate(() => JSON.stringify(window.__cityStore.getState().hint)));
+  if ((await count()) === before) console.log('置けない', type, await page.evaluate(() => JSON.stringify(window.__cityStore.getState().hint)));
 }
 
 export default async function inspect(page, shot) {
@@ -128,20 +131,28 @@ export default async function inspect(page, shot) {
   await pick(page, 'road', 'build-road-street');
   await drag(page, [34, 63], [56, 63]);
   console.log('道路', await page.evaluate(() => window.__cityStore.getState().city.roads.length));
+  // 審議中の申請は 6 件まで（docs/game-design.md 15 章）。5 件ずつ置き、審議と工事が終わるまで時間を進める
   await place(page, 'research', [35, 61]);
   await place(page, 'datacenter', [39, 61]);
   await place(page, 'deploy', [43, 61]);
   await place(page, 'container', [47, 61]);
   await place(page, 'cluster', [51, 61]);
+  await page.keyboard.press('Escape');
+  await page.keyboard.press('Escape');
+  console.log('審議と工事（1 組目）', await untilSettled(page));
+  await centerOn(page, 45, 62);
   await place(page, 'cloud', [55, 61]);
   await place(page, 'devops', [35, 64], 2);
   await place(page, 'monitor', [38, 64], 2);
   await place(page, 'incident', [41, 64], 2);
   await page.keyboard.press('Escape');
   await page.keyboard.press('Escape');
-  await page.evaluate(() => window.__cityStore.getState().togglePause());
-  await days(page, 3);
-  await page.evaluate(() => window.__cityStore.getState().togglePause());
+  console.log('審議と工事（2 組目）', await untilSettled(page));
+  console.log('申請の結果', await page.evaluate(() => window.__cityStore.getState().world.applications.map((a) => `${a.target.type ?? a.target.kind}:${a.stage}`).join(' ')));
+  await page.evaluate(() => {
+    const s = window.__cityStore.getState();
+    if (!s.paused) s.togglePause();
+  });
   const every = await page.evaluate(async () => {
     const s = window.__cityStore;
     const types = new Map();

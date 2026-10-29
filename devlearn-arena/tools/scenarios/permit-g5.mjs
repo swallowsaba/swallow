@@ -17,7 +17,7 @@
 // 最後に、譲歩した工業の区画が建った後の騒音（ヒートマップの値）を、譲歩の無い工業の区画と比べる。
 import { readFileSync } from 'node:fs';
 import { learn, mockRecords } from './learning.mjs';
-import { at, days, drag, facility, pick } from './town.mjs';
+import { at, closePledges, days, drag, facility, pick } from './town.mjs';
 
 const LESSONS = JSON.parse(readFileSync(new URL('../../content/catalog.json', import.meta.url), 'utf8')).lessons;
 const SIZE = 96;
@@ -206,6 +206,8 @@ async function hearingFps(page) {
 }
 
 export default async function permitG5(page, shot) {
+  // 1 期目の公約を選ぶ窓（G8）は選ばずに閉じる（窓が都市を覆っていると、建設メニューの操作が届かない)
+  await closePledges(page);
   const size = await page.evaluate(() => String(window.innerWidth));
   const tag = size === '1920' ? '' : `-${size}`;
   // データベースとクラウド以外を学んで資金を得る

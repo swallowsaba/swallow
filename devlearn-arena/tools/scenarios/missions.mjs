@@ -5,7 +5,7 @@
 // 小さな村（住宅の区画・サーバ施設・Web 施設）を画面の操作で作る → 上の帯の「ミッション」から一覧 →
 // 「Web サーバを構築せよ」を受け、仮想端末で打つ（わざと誤ってエラーの小窓も撮る）→ 結果と報酬 → 都市へ戻る →
 // 建設メニューの公園から記念碑を置く → サーバ施設の情報パネルのミッション → 施設の Lv1 と Lv5 を並べる。
-import { at, days, drag, facility, pick } from './town.mjs';
+import { at, closePledges, days, drag, facility, pick } from './town.mjs';
 
 const text = (page, sel) => page.evaluate((s) => document.querySelector(s)?.innerText.replace(/\s+/g, ' ') ?? null, sel);
 const wait = (page, ms = 300) => page.waitForTimeout(ms);
@@ -17,6 +17,8 @@ async function type(page, line) {
 }
 
 export default async function missions(page, shot) {
+  // 1 期目の公約を選ぶ窓（G8）は選ばずに閉じる（窓が都市を覆っていると、建設メニューの操作が届かない)
+  await closePledges(page);
   const w = String(page.viewportSize()?.width ?? 0);
   const tag = w === '1920' ? '' : `-${w}`;
   page.on('pageerror', (e) => console.log('PAGEERROR', String(e)));

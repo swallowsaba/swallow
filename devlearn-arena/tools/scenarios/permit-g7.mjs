@@ -11,7 +11,7 @@
 import { readFileSync } from 'node:fs';
 import { runLesson } from './domain.mjs';
 import { learn, mockRecords } from './learning.mjs';
-import { at, days, drag, facility, pick } from './town.mjs';
+import { at, closePledges, days, drag, facility, pick } from './town.mjs';
 
 const LESSONS = JSON.parse(readFileSync(new URL('../../content/catalog.json', import.meta.url), 'utf8')).lessons;
 
@@ -62,6 +62,8 @@ async function hearingFps(page) {
 }
 
 export default async function permitG7(page, shot) {
+  // 1 期目の公約を選ぶ窓（G8）は選ばずに閉じる（窓が都市を覆っていると、建設メニューの操作が届かない)
+  await closePledges(page);
   const size = await page.evaluate(() => String(window.innerWidth));
   const tag = size === '1920' ? '' : `-${size}`;
   const others = LESSONS.filter((l) => l.domain !== 'db' && l.domain !== 'cloud').map((l) => l.id);

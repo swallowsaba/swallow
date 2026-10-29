@@ -16,7 +16,7 @@
 //      そのミッションの最初の分野の施設を置いて Lv1 と Lv3 で見る。Lv は記録を書き換えて上げる）
 // 結果は shots/verify-mission/results.json と table.md。不合格の画面は shots/verify-mission/<ID>-<通り>.png。
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
-import { at, days, facility } from './town.mjs';
+import { at, days, facility, untilBuilt } from './town.mjs';
 import { openCity, siteRoot } from './verify-lesson.mjs';
 
 const DIR = 'shots/verify-mission';
@@ -170,7 +170,8 @@ async function verifyMission(page, m, path) {
       await facility(page, type, [41, 45]);
       await page.keyboard.press('Escape');
       await page.keyboard.press('Escape');
-      await days(page, 4);
+      // 置くと申請になる。審議と工事が終わるまで時間を進める（docs/game-design.md 15 章）
+      if (!(await untilBuilt(page, type))) throw fail(`施設 ${type} の申請が完成しない`);
       const count = async (level) => {
         await page.evaluate(([t, lv]) => {
           const s = window.__cityStore.getState();

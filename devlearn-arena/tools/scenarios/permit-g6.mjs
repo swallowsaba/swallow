@@ -13,7 +13,7 @@
 // 最後に、動きを減らす設定で採決の結果を開き、賛否が一度に出ることを撮る。
 import { readFileSync } from 'node:fs';
 import { learn, mockRecords } from './learning.mjs';
-import { at, days, drag, facility, pick } from './town.mjs';
+import { at, closePledges, days, drag, facility, pick } from './town.mjs';
 
 /** 2 件目の施設（環境変数で変えられる） */
 const SECOND = process.env.G6_SECOND ?? 'rezone';
@@ -213,6 +213,8 @@ async function result(page, id, tag, name) {
 let shot = async () => {};
 
 export default async function permitG6(page, shoot) {
+  // 1 期目の公約を選ぶ窓（G8）は選ばずに閉じる（窓が都市を覆っていると、建設メニューの操作が届かない)
+  await closePledges(page);
   shot = shoot;
   const size = await page.evaluate(() => String(window.innerWidth));
   const tag = size === '1920' ? '' : `-${size}`;

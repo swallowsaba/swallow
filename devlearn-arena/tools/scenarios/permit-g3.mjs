@@ -9,7 +9,7 @@
 // 間に、申請中の敷地を押した時の情報パネルと申請の詳細、許認可の一覧、上の帯の市政の引き出しを撮る。
 // 最後に 6 件を並べて看板どうし・看板と名札が重ならないことを数え、7 件目が理由付きで断られる所を撮る。
 import { fundBy } from './learning.mjs';
-import { at, days, drag, facility, pick } from './town.mjs';
+import { at, closePledges, days, drag, facility, pick } from './town.mjs';
 
 async function uiShare(page) {
   return page.evaluate(() => {
@@ -95,6 +95,8 @@ async function until(page, id, stage, max = 80) {
 }
 
 export default async function permitG3(page, shot) {
+  // 1 期目の公約を選ぶ窓（G8）は選ばずに閉じる（窓が都市を覆っていると、建設メニューの操作が届かない)
+  await closePledges(page);
   const size = await page.evaluate(() => String(window.innerWidth));
   const tag = size === '1920' ? '' : `-${size}`;
   await fundBy(page, 9000);
