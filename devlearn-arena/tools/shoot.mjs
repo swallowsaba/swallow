@@ -10,6 +10,7 @@
 //                         公開した所を撮る（docs/deployment.md 7 章）
 //   SHOOT_DPR=2           画素の倍率（小さい部品を細かく撮る。ミニマップなど）
 //   SHOOT_FPS=1           都市を毎フレーム描き直させ、3 秒間の fps を測って表示する
+//   SHOOT_GPU=1           画面の絵を PC の GPU で描く（既定のヘッドレスは GPU を使わずソフトウェアで描くので、fps が実際より低く出る）
 //   SHOOT_EVAL='...'      撮る前にページで実行する式（カメラを動かすなど）
 //   SHOOT_TWICE=2000      その間隔で 2 枚撮る（動きの確認。<名前>-2.png）
 //   SHOOT_INTRO=1         初回の操作説明を閉じずに撮る（既定では閉じてから撮る）
@@ -33,7 +34,7 @@ const port = typeof address === 'object' && address ? address.port : 5173;
 const root = site ? (site.endsWith('/') ? site : `${site}/`) : `http://localhost:${String(port)}/`;
 const url = `${root}${path.startsWith('#') ? path : path.replace(/^\//, '')}`;
 
-const browser = await chromium.launch();
+const browser = await chromium.launch(process.env.SHOOT_GPU ? { args: ['--enable-gpu', '--use-angle=d3d11', '--ignore-gpu-blocklist'] } : {});
 try {
   mkdirSync('shots', { recursive: true });
   const page = await browser.newPage({ viewport: { width, height }, deviceScaleFactor: Number(process.env.SHOOT_DPR ?? 1) });

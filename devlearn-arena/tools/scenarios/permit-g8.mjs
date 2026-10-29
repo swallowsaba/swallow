@@ -109,6 +109,8 @@ export default async function permitG8(page, shot) {
 
   // 8 週前の知らせ → 押すと選挙の見込み
   await until(page, 'warn');
+  // 同じ日に届いた請願（G9）などの知らせが先に出ていれば、順に出て選挙の知らせになるのを待つ
+  await page.waitForFunction(() => document.querySelector('[data-testid="city-notice"]')?.textContent?.startsWith('選挙まで 8 週'), null, { timeout: 60000 });
   console.log('8 週前の知らせ', await text(page, '[data-testid="city-notice"]'));
   await page.click('[data-testid="city-notice"]');
   await page.waitForSelector('[data-testid="election-window"][data-mode="preview"]');
