@@ -71,12 +71,13 @@ export function concernFactor(reason: Pick<ObjectionReason, 'misconception' | 'e
   return 1 - reason.misconception * explainCut(stage);
 }
 
-/** 申請の種類の鍵（理由の targets と比べる）: 'datacenter'・'upgrade:datacenter'・'rezone:industrial'・'civic:police'・'civic:power-thermal' */
+/** 申請の種類の鍵（理由の targets と比べる）: 'datacenter'・'upgrade:datacenter'・'rezone:industrial'・'civic:police'・'civic:power-thermal'・'reward:city-hall' */
 export function targetOf(app: Pick<Application, 'kind' | 'target'>, city: Pick<City, 'facilities'>): string {
   if (app.kind === 'rezone') return `rezone:${app.target.zone?.kind ?? ''}`;
   if (app.kind === 'upgrade') return `upgrade:${city.facilities.find((f) => f.id === app.target.facilityId)?.type ?? ''}`;
   const type = app.target.type;
   if (type && (FACILITY_DEFS[type].group === 'civic' || FACILITY_DEFS[type].group === 'power')) return `civic:${type}`;
+  if (type && FACILITY_DEFS[type].group === 'award') return `reward:${type}`;
   return type ?? '';
 }
 

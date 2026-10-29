@@ -1,0 +1,191 @@
+{
+  "reasons": [
+    {
+      "id": "rw-hall-cost",
+      "title": "建て替えの費用",
+      "targets": ["reward:city-hall"],
+      "group": "taxpayers",
+      "issue": "finance",
+      "measure": { "kind": "cost" },
+      "misconception": 0.25,
+      "claim": "今の庁舎はまだ雨漏りもしない。1,000 をかけて時計の塔と議場の丸屋根を建てても、窓口の待ち時間は 1 分も縮まらない。",
+      "concessions": [
+        { "id": "rw-hall-plain", "label": "時計の塔と丸屋根をやめ、議場は庁舎の 2 階の大きな会議室に置く", "mods": { "height": -1 }, "cost": { "ratio": -0.3 }, "loss": "見た目の塔と丸屋根の分だけ低くなる（政治資本の上限と議員の説得の効きは変わらない）" }
+      ],
+      "explanations": [],
+      "lessons": ["found.b.01"]
+    },
+    {
+      "id": "rw-hall-visitors",
+      "title": "窓口に来る車",
+      "targets": ["reward:city-hall"],
+      "group": "neighbors",
+      "issue": "traffic",
+      "measure": { "kind": "traffic" },
+      "radius": 5,
+      "misconception": 0.3,
+      "claim": "届け出の締め切りの月末には、窓口に来る車が前の道に列を作る。職員の通勤の車も加わって、朝はバスが交差点を曲がれなくなる。",
+      "concessions": [
+        { "id": "rw-hall-parking", "label": "庁舎の裏に職員の駐車場を設け、窓口の受付を曜日で分ける", "mods": { "traffic": 0.6 }, "cost": { "ratio": 0.1 } }
+      ],
+      "explanations": [],
+      "lessons": ["found.b.01"]
+    },
+    {
+      "id": "rw-hall-tower",
+      "title": "時計の塔の影",
+      "targets": ["reward:city-hall"],
+      "group": "neighbors",
+      "issue": "environment",
+      "measure": { "kind": "sunlight" },
+      "radius": 3,
+      "misconception": 0.2,
+      "claim": "塔のてっぺんは、まわりの 2 階建ての屋根の倍の高さになる。冬の昼過ぎ、塔の細長い影が北の家並みを端から順に横切っていく。",
+      "concessions": [
+        { "id": "rw-hall-low", "label": "塔の上の鐘楼を省き、時計は正面の壁に掛ける", "mods": { "height": -1 } }
+      ],
+      "explanations": [],
+      "lessons": ["found.b.01"]
+    },
+    {
+      "id": "rw-memorial-cost",
+      "title": "石の列柱にかける額",
+      "targets": ["reward:memorial"],
+      "group": "taxpayers",
+      "issue": "finance",
+      "measure": { "kind": "cost" },
+      "misconception": 0.3,
+      "claim": "列柱と石の壁に 900。人が集まるのは記念の式典の日だけで、残りの日は広場の掃き掃除と植え込みの手入れが続くだけだ。",
+      "concessions": [
+        { "id": "rw-memorial-small", "label": "列柱を正面の 4 本だけにし、広場は芝のまま残す", "mods": { "height": -1 }, "cost": { "ratio": -0.25 }, "loss": "建物は 1 段低くなる（地価と店の需要の効きは変わらない）" }
+      ],
+      "explanations": [],
+      "lessons": ["found.b.01"]
+    },
+    {
+      "id": "rw-memorial-wall",
+      "title": "通りに続く石の壁",
+      "targets": ["reward:memorial"],
+      "group": "neighbors",
+      "issue": "environment",
+      "measure": { "kind": "sunlight" },
+      "radius": 3,
+      "misconception": 0.15,
+      "claim": "窓の無い石の壁が、通りに面して長く続く。夕方には壁の影で向かいの家の 1 階が暗くなり、夜は人の通らない暗がりになる。",
+      "concessions": [
+        { "id": "rw-memorial-open", "label": "壁の高さを抑え、通りの側に窓と入口を増やす", "mods": { "height": -1 }, "cost": { "ratio": 0.05 } }
+      ],
+      "explanations": [],
+      "lessons": ["found.b.01"]
+    },
+    {
+      "id": "rw-stadium-cost",
+      "title": "2,000 の大きな買い物",
+      "targets": ["reward:stadium"],
+      "group": "taxpayers",
+      "issue": "finance",
+      "measure": { "kind": "cost" },
+      "misconception": 0.2,
+      "claim": "競技場ひとつに 2,000。警察署なら 4 つ建つ額だ。試合の無い 13 日の間、観客席は空のまま風にさらされている。",
+      "concessions": [
+        { "id": "rw-stadium-stands", "label": "観客席の屋根を片側だけにし、反対側は芝の土手で見る席にする", "mods": { "height": -1 }, "cost": { "ratio": -0.3 }, "loss": "観客席が 1 段低くなる" }
+      ],
+      "explanations": [],
+      "lessons": ["found.b.01"]
+    },
+    {
+      "id": "rw-stadium-traffic",
+      "title": "試合の日の渋滞",
+      "targets": ["reward:stadium"],
+      "group": "neighbors",
+      "issue": "traffic",
+      "measure": { "kind": "traffic" },
+      "radius": 8,
+      "misconception": 0.2,
+      "claim": "試合の始まる前の 1 時間に、何千人もの観客が同じ道へ押し寄せる。帰りの車の列は夜遅くまで続き、住宅地の細い道が抜け道にされる。",
+      "concessions": [
+        { "id": "rw-stadium-shuttle", "label": "試合の日は臨時のバスを出し、住宅地の細い道に観客の車を入れない", "mods": { "traffic": 0.6 }, "cost": { "ratio": 0.1 } }
+      ],
+      "explanations": [],
+      "lessons": ["found.b.01"]
+    },
+    {
+      "id": "rw-stadium-noise",
+      "title": "歓声と場内放送",
+      "targets": ["reward:stadium"],
+      "group": "neighbors",
+      "issue": "environment",
+      "measure": { "kind": "noise" },
+      "radius": 5,
+      "misconception": 0.1,
+      "claim": "点が入るたびの歓声と場内放送が、窓を閉めても届く。夜の試合では、照明の光が寝室のカーテンを白く照らす。",
+      "concessions": [
+        { "id": "rw-stadium-roof", "label": "観客席の屋根を住宅の側へ延ばし、スピーカーをグラウンドの内へ向ける", "mods": { "noise": 0.6 }, "cost": { "ratio": 0.15 } }
+      ],
+      "explanations": [],
+      "lessons": ["found.b.01"]
+    },
+    {
+      "id": "rw-civic-cost",
+      "title": "使い道の決まらないホール",
+      "targets": ["reward:civic-hall"],
+      "group": "taxpayers",
+      "issue": "finance",
+      "measure": { "kind": "cost" },
+      "misconception": 0.3,
+      "claim": "大きなガラスのホールに 900。何に使うのか、誰が借りられるのかが決まっていない。決まらないまま建てて、鍵の掛かった日ばかりにならないか。",
+      "concessions": [
+        { "id": "rw-civic-share", "label": "ホールを小さくし、昼は子どもの読書室、夜は町内会の集まりに貸す", "mods": { "height": -1 }, "cost": { "ratio": -0.25 }, "loss": "建物は 1 段低くなる（信頼の効きは変わらない）" }
+      ],
+      "explanations": [],
+      "lessons": ["found.b.01"]
+    },
+    {
+      "id": "rw-civic-glare",
+      "title": "ガラスの照り返し",
+      "targets": ["reward:civic-hall"],
+      "group": "neighbors",
+      "issue": "environment",
+      "measure": { "kind": "sunlight" },
+      "radius": 3,
+      "misconception": 0.25,
+      "claim": "西を向いた大きなガラスの面が、夕方の日を向かいの家々へ跳ね返す。夏は照り返しで部屋が暑くなり、前の道を走る人の目もくらむ。",
+      "concessions": [
+        { "id": "rw-civic-eaves", "label": "ガラスの面を 1 階分低くし、深い庇で西日をさえぎる", "mods": { "height": -1 }, "cost": { "ratio": 0.05 } }
+      ],
+      "explanations": [],
+      "lessons": ["found.b.01"]
+    },
+    {
+      "id": "rw-park-cost",
+      "title": "一等地を芝生にする",
+      "targets": ["reward:central-park"],
+      "group": "taxpayers",
+      "issue": "finance",
+      "measure": { "kind": "cost" },
+      "misconception": 0.25,
+      "claim": "町の真ん中の 16 マスに、1,200 をかけて芝を張る。同じ土地に区画を塗れば家も店も建ち、毎週の税が入ってきたはずだ。",
+      "concessions": [
+        { "id": "rw-park-plain", "label": "遊歩道は砂利のまま、池の縁も石を積まずに土のまま造る", "mods": { "height": -1 }, "cost": { "ratio": -0.3 }, "loss": "見た目が少し質素になる（緑地の行き届きは変わらない）" }
+      ],
+      "explanations": [],
+      "lessons": ["found.b.01"]
+    },
+    {
+      "id": "rw-park-jobs",
+      "title": "16 マスに職員 15 人",
+      "targets": ["reward:central-park"],
+      "group": "merchants",
+      "issue": "jobs",
+      "measure": { "kind": "jobs-density" },
+      "radius": 8,
+      "misconception": 0.3,
+      "claim": "公園の 16 マスで働くのは、芝を刈り池を掃除する職員だけだ。同じ広さに店が並べば、何十もの働き口と、通りのにぎわいが生まれる。",
+      "concessions": [
+        { "id": "rw-park-kiosk", "label": "園内の売店と貸しボートを、市内の店に任せる", "mods": { "jobs": 1.8 }, "cost": { "ratio": 0.05 } }
+      ],
+      "explanations": [],
+      "lessons": ["found.b.01"]
+    }
+  ]
+}

@@ -50,6 +50,16 @@ describe('定義の値（docs/content-spec.md 6 章: facilities.json が game-de
   });
 });
 
+describe('職員（13.3）', () => {
+  it('公共サービスと発電所の職員は 15 人。譲歩で雇う人を増やした発電所（太陽光の点検を市内の会社に）は、その分だけ雇う', async () => {
+    const { employersOf } = await import('./businesses');
+    const solar = { ...active('ps', 'power-solar', 53, 48), mods: { jobs: 1.6 } };
+    const view = previewOf(withFacilities(GROWN.world, solar), T);
+    const e = employersOf(view.space, {}, {}, 0, new Set()).employers.find((x) => x.id === 'ps');
+    expect(e?.slots.reduce((s, v) => s + v, 0)).toBeCloseTo(24, 9);
+  });
+});
+
 describe('行き届き（24.2）', () => {
   it('道路の距離が 0 で 1、行き届く距離で 0 の直線。道路の届かない所には届かない', () => {
     const w = withFacilities(GROWN.world, active('p', 'police', 53, 48));

@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { checkFacility } from '@/city/place';
 import { NEWS, POLITICS_RULES, validateNews } from '@/content/politics';
 import { applyOp } from './commands';
-import { fill, SCANDAL, withNews } from './news';
+import { fill, milestoneText, SCANDAL, withNews } from './news';
 import type { Application, Article, World } from './types';
 import { stepDay } from './world';
 import { grownVillage, village } from './__fixtures__/cities';
@@ -183,5 +183,23 @@ describe('停電の記事（22.3・24.1）', () => {
     const w2 = days(w1, 7);
     const count = (w: World): number => w.history.news.filter((a) => a.kind === 'outage').length;
     if ((w2.sim.power.recent?.at(-1)?.length ?? 0) <= stopped.length) expect(count(w2)).toBe(count(w1));
+  });
+});
+
+describe('褒賞の記事（22.3・25 章）', () => {
+  it('節目に届いた日に、建てられるようになった建物と節目の入った記事。届いたままの週は載せない', () => {
+    const w0 = BASE;
+    const w1 = withNews(w0, { ...w0, rewards: { ...w0.rewards, unlocked: { 'city-hall': 140 } } }, R);
+    const a = last(w1);
+    expect(a?.kind).toBe('reward');
+    expect(a?.headline).toContain('人口 1,000');
+    expect(a?.body).toContain('新しい市庁舎');
+    const w2 = withNews(w1, { ...w1, city: { ...w1.city, day: w1.city.day + 7 } }, R);
+    expect(w2.history.news.filter((x) => x.kind === 'reward')).toHaveLength(1);
+  });
+
+  it('節目は式から言い表す（人口と支持率・支持率の続いた週）', () => {
+    expect(milestoneText('memorial')).toBe('人口 5,000・支持率 55%');
+    expect(milestoneText('civic-hall')).toBe('支持率 65% 以上が 8 週');
   });
 });

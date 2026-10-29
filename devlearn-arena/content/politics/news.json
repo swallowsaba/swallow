@@ -42,6 +42,12 @@
 
     { "kind": "mission", "headline": "ミッション達成、これで {n} 本目", "body": "市のエンジニアがミッションをやり遂げた。学んだ技術が、{city}の仕組みとして形になりつつある。" },
 
+    { "kind": "reward", "variant": "city-hall", "headline": "{value}の{city}、新しい市庁舎の計画が動き出す", "body": "人が増え、古い庁舎の窓口は朝から列が絶えなくなった。時計の塔と議場を備えた{facility}を、財政で建てられるようになった。場所を選んで申請を出せば、審議が始まる。" },
+    { "kind": "reward", "variant": "memorial", "headline": "{value}、{facility}を建てる時が来た", "body": "町の歩みを石に刻む{facility}の構想が、市役所の机に戻ってきた。前の広場には人が集まり、通りの店にも客が流れると見込まれている。" },
+    { "kind": "reward", "variant": "stadium", "headline": "{value}を超えた{city}に{facility}を", "body": "週末の試合を見に、隣の町まで出かける人が増えていた。照明の塔が立つ{facility}を建てられる大きさに、町が育った。ただ、試合の日の人の波を心配する声も早くも出ている。" },
+    { "kind": "reward", "variant": "civic-hall", "headline": "{value}、市政への厚い信頼に{facility}の話", "body": "支持が高いまま続き、市民の集まる場所を求める声が形になった。ガラス張りの{facility}を建てられるようになった。建てば、市と住民の距離がまた一つ縮まる。" },
+    { "kind": "reward", "variant": "central-park", "headline": "{value}の都市に、{facility}の用地を", "body": "ビルが建ち並ぶ町に、池と木立のある広い緑を残したいという声が強まった。4 マス四方の{facility}を、財政で建てられるようになった。" },
+
     { "kind": "scandal", "variant": "push", "headline": "反対の押し切り、この任期で {n} 回目", "body": "市長はまた公聴会で反対を押し切った。議会の外では「話を聞く場が形だけになっている」との批判が出ている。押し切られた側の信頼は、さらに下がった。" },
     { "kind": "scandal", "variant": "wrong", "headline": "公聴会の説明に誤り、{n} 回目", "body": "公聴会で市が示した説明が、またも事実と違っていたことが分かった。聞いていた住民は「分かったふりで言いくるめられた」と憤っている。" },
     { "kind": "scandal", "variant": "expired", "headline": "請願の放置、この任期で {n} 通", "body": "市民から届いた請願が、返事のないまま期限を迎え続けている。受信箱の中で止まった声は {n} 通になった。" },

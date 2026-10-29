@@ -8,7 +8,9 @@ import { AWARD_TYPES, CAPITAL_CAP, capitalCapOf, CITY_HALL, CIVIC_HALL_TRUST, HI
 import { CONDITION_WORDS, parseCondition } from './conditions';
 import { creditMission } from './election';
 import { parkAt } from './land';
+import { oppositionOf, targetOf } from './opposition';
 import { permitProblems } from './permits';
+import { employersOf } from './businesses';
 import { awardStatus, milestoneParts, stepRewards } from './rewards';
 import { DEMAND_AWARD, LAND_AWARD } from './rules';
 import type { World } from './types';
@@ -192,6 +194,18 @@ describe('効き（25 章）', () => {
   });
 });
 
+describe('施設の職員（13.3）', () => {
+  it('褒賞の建物も市の施設として職員 15 人を雇う（中 60%・高 40%）。譲歩の jobs が効く', () => {
+    const hall = placed(GROWN.world, 'h1', 'city-hall');
+    const staff = (f: Facility) => {
+      const view = previewOf(withFacilities(GROWN.world, f), T);
+      return employersOf(view.space, {}, {}, 0, new Set()).employers.find((e) => e.id === f.id)?.slots;
+    };
+    expect(staff(hall)).toEqual([0, 9, 6]);
+    expect(staff({ ...hall, mods: { jobs: 2 } })).toEqual([0, 18, 12]);
+  });
+});
+
 describe('申請（15 章）: 褒賞の建物も申請になり、費用は財政', () => {
   it('節目に届いた市庁舎を置くと、財政から 1,000 を取り分けた申請になる', () => {
     const d = weekEnd(GROWN.world);
@@ -202,6 +216,11 @@ describe('申請（15 章）: 褒賞の建物も申請になり、費用は財�
     expect(app?.target.type).toBe('city-hall');
     expect([app?.wallet, app?.reserved]).toEqual(['treasury', 1000]);
     expect(w.budget.treasury).toBe(4000);
+    // 反対の理由は褒賞の建物の物（建て替えの費用）。費用の強さは、財政から取り分けた額の割合
+    expect(app && targetOf(app, w.city)).toBe('reward:city-hall');
+    const opp = app ? oppositionOf(w, T, app, POLITICS_RULES) : null;
+    expect(opp?.objections.map((o) => o.reasonId)).toContain('rw-hall-cost');
+    expect(opp?.objections.find((o) => o.reasonId === 'rw-hall-cost')?.basis).toEqual({ value: 1000, ref: 5000 });
     // 届いていなければ置けない
     const locked = applyOp(at({ ...GROWN.world, budget: { ...GROWN.world.budget, treasury: 5000 } }, 1200), { kind: 'facility', type: 'city-hall', origin, rotation: 0 }, T, POLITICS_RULES);
     expect(locked.applications.length).toBe(GROWN.world.applications.length);

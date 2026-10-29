@@ -64,13 +64,14 @@ export function employersOf(space: Space, businesses: Record<string, BusinessSta
     const total = zoneCapacity(place.kind, place.building.level, space.zoneMods.get(place.zoneId));
     employers.push({ id, kind, district: place.district, slots: split(total, JOB_BANDS[kind]), place });
   }
-  // 停電した地区の IT 施設は雇用に数えない（docs/game-design.md 24.1。学習には効かない）。公共サービスと発電所の職員も雇い手（13.3）
+  // 停電した地区の IT 施設は雇用に数えない（docs/game-design.md 24.1。学習には効かない）。公共サービス・発電所・褒賞の建物の職員も雇い手（13.3）
   for (const af of space.facilities) {
     if (stopped.has(facilityPowerDistrict(af.facility))) continue;
     employers.push({ id: af.facility.id, kind: 'staff', district: af.district, slots: split(facilityJobs(af.facility), JOB_BANDS.staff), facility: af });
   }
-  for (const af of space.civic) {
-    employers.push({ id: af.facility.id, kind: 'staff', district: af.district, slots: split(facilityJobs({ level: 1 }), JOB_BANDS.staff), facility: af });
+  // 公共サービス・発電所・褒賞の建物は Lv 1 のまま（譲歩で雇う人を変えた分は数える。docs/content-spec.md 7.1.1）
+  for (const af of [...space.civic, ...space.awards]) {
+    employers.push({ id: af.facility.id, kind: 'staff', district: af.district, slots: split(facilityJobs({ level: 1, ...(af.facility.mods ? { mods: af.facility.mods } : {}) }), JOB_BANDS.staff), facility: af });
   }
   return { employers, businesses: next, vacant: nextVacant };
 }

@@ -1,4 +1,7 @@
-import type { Point } from '@/city/types';
+import { FACILITY_DEFS } from '@/city/facilities';
+import type { FacilityType, Point } from '@/city/types';
+import { AWARD_TYPES, HIGH_APPROVAL } from './awards';
+import { parseCondition } from './conditions';
 import { electionDayOf, electionOf, WARN_DAYS } from './election';
 import { moveTrust } from './hearing';
 import { LAYERS } from './layers';
@@ -39,6 +42,12 @@ export const NEWS_SLOTS: Record<string, readonly NewsSlot[]> = {
   'petition:reject': ['reason', 'group', 'district'],
   'petition:expire': ['reason', 'group', 'district'],
   mission: ['n'],
+  // 褒賞の節目に届いた（docs/game-design.md 25 章）。value は節目（「人口 1,000」）
+  'reward:city-hall': ['facility', 'value'],
+  'reward:memorial': ['facility', 'value'],
+  'reward:stadium': ['facility', 'value'],
+  'reward:civic-hall': ['facility', 'value'],
+  'reward:central-park': ['facility', 'value'],
   'scandal:push': ['n'],
   'scandal:pledge': ['n'],
   'scandal:deficit': ['n'],
@@ -57,6 +66,18 @@ export const SCANDAL = { push: 3, wrong: 3, expired: 5, deficit: 8 } as const;
 export const SCANDAL_TRUST = -1;
 
 const GROUP_NAMES: Record<GroupId, string> = { neighbors: '住民', merchants: '商店会', environment: '環境の会', taxpayers: '納税者の会', workers: '働く人の会' };
+
+/** 褒賞の節目の言い表し（「人口 5,000・支持率 55%」「支持率 65% 以上が 8 週」）。節目の式（content/facilities.json の unlock）から作る */
+export function milestoneText(type: FacilityType): string {
+  const words: Record<string, (v: number) => string> = {
+    population: (v) => `人口 ${v.toLocaleString('ja-JP')}`,
+    approval: (v) => `支持率 ${String(v)}%`,
+    highApprovalWeeks: (v) => `支持率 ${String(HIGH_APPROVAL)}% 以上が ${String(v)} 週`,
+  };
+  return (parseCondition(FACILITY_DEFS[type].unlock ?? '') ?? [])
+    .flatMap((c) => ('value' in c ? [(words[c.word] ?? ((v: number) => `${c.word} ${String(v)}`))(c.value)] : []))
+    .join('・');
+}
 
 /** 反対する集団の呼び名（近くの集団は地区の名前で呼ぶ。docs/game-design.md 16.1） */
 export function groupName(o: Pick<ObjectionState, 'group' | 'district'>, world: Pick<World, 'sim'>): string {
@@ -211,6 +232,11 @@ function cityEvents(before: World, after: World, rules: PoliticsRules): Event[] 
   }
   if (after.budget.taxRate !== before.budget.taxRate) {
     out.push({ kind: 'tax', variant: after.budget.taxRate > before.budget.taxRate ? 'up' : 'down', values: { rate: after.budget.taxRate, value: before.budget.taxRate } });
+  }
+  // 褒賞の節目に届いた（25 章。建設メニューに現れる）
+  for (const type of AWARD_TYPES) {
+    if (after.rewards.unlocked[type] === undefined || before.rewards.unlocked[type] !== undefined) continue;
+    out.push({ kind: 'reward', variant: type, values: { facility: FACILITY_DEFS[type].name, value: milestoneText(type) } });
   }
   const missions = after.politics.missions?.length ?? 0;
   if (missions > (before.politics.missions?.length ?? 0)) out.push({ kind: 'mission', values: { n: missions } });
