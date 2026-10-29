@@ -42,3 +42,25 @@ describe('建設メニューの記念碑（ミッションの報酬。docs/city-
     expect(show('facility', ['beacon']).querySelector('[data-testid="build-monument-beacon"]')).toBeNull();
   });
 });
+
+describe('区画の引き出しの需要の棒（docs/ui-design.md 11.4）', () => {
+  const host = (): HTMLElement => {
+    const el = document.createElement('div');
+    document.body.append(el);
+    root = createRoot(el);
+    const demand = { residential: [24, -46, -112], commercial: [30, -23], office: [20, 15, -15], industrial: [130, 4, -10] };
+    act(() => root?.render(<BuildMenu state={{ stage: 1, menu: 'zone', tool: { kind: 'none' }, openMenu: vi.fn(), setTool: vi.fn() }} demand={demand} />));
+    return el;
+  };
+
+  it('棒の数は −100〜+100 に収め、押すと項ごとの内訳（項の合計）を出す', () => {
+    const el = host();
+    const value = (k: string): string | null | undefined => el.querySelector(`[data-testid="demand-value-${k}"]`)?.textContent;
+    expect(value('residential')).toBe('−100');
+    expect(value('commercial')).toBe('+7');
+    expect(value('office')).toBe('+20');
+    expect(value('industrial')).toBe('+100');
+    act(() => el.querySelector<HTMLButtonElement>('[data-testid="demand-residential"]')?.click());
+    expect(el.querySelector('[data-testid="demand-pop"]')?.textContent).toContain('住宅−134');
+  });
+});

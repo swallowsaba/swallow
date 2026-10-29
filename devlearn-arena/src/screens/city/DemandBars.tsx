@@ -48,7 +48,7 @@ export function DemandBars({ demand }: { demand?: DemandTerms | undefined }) {
               <span key={k} className="demand-line">
                 <span className="demand-sub">{row.kinds.length > 1 ? DEMAND_NAMES[k] : ''}</span>
                 <Bar value={totals[k]} kind={k} />
-                <span className="demand-value num" data-testid={`demand-value-${k}`}>{signed(totals[k])}</span>
+                <span className="demand-value num" data-testid={`demand-value-${k}`}>{signed(demandBar(totals[k]))}</span>
               </span>
             ))}
           </span>
