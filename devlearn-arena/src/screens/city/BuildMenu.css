@@ -247,3 +247,123 @@
   background: linear-gradient(180deg, var(--gold-light), var(--gold));
   color: var(--navy);
 }
+
+/* 需要（RCI）の棒 3 本（docs/ui-design.md 11.4）。−100〜+100 で中央が 0 の線 */
+.demand {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 3px;
+  min-width: 220px;
+  padding-left: 10px;
+  margin-left: 4px;
+  border-left: 1px solid var(--hud-line);
+}
+.demand-row {
+  display: grid;
+  grid-template-columns: 34px 1fr;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 4px;
+  border: none;
+  border-radius: 2px;
+  background: var(--transparent);
+  color: var(--hud-text);
+  font-size: var(--fs-12);
+  font-weight: 700;
+  cursor: pointer;
+}
+.demand-row:hover,
+.demand-row.is-open {
+  background: var(--hud-bg);
+}
+.demand-label {
+  text-align: left;
+}
+.demand-bars {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.demand-line {
+  display: grid;
+  grid-template-columns: auto 1fr 40px;
+  align-items: center;
+  gap: 6px;
+}
+.demand-sub {
+  min-width: 42px;
+  font-weight: 400;
+  color: var(--hud-text-sub);
+  text-align: left;
+}
+.demand-track {
+  position: relative;
+  display: block;
+  height: 8px;
+  min-width: 96px;
+  background: var(--hud-bg-strong);
+  border: 1px solid var(--hud-line);
+}
+.demand-zero {
+  position: absolute;
+  top: -3px;
+  bottom: -3px;
+  left: 50%;
+  width: 1px;
+  background: var(--hud-text-sub);
+}
+.demand-fill {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  background: var(--ok);
+}
+.demand-fill.is-minus {
+  background: var(--bad);
+}
+.demand-value {
+  text-align: right;
+}
+/* 内訳の小窓。.build の transform が包む箱になるので、引き出しの横の送りに切られない */
+.demand-pop {
+  position: fixed;
+  left: 50%;
+  bottom: calc(100% + 8px);
+  transform: translateX(-50%);
+  display: flex;
+  gap: 18px;
+  padding: 10px 14px;
+  background: var(--hud-bg-strong);
+  border: 2px solid var(--hud-line);
+  border-radius: 4px 14px 4px 14px;
+  box-shadow: var(--shadow-window);
+  color: var(--hud-text);
+  font-size: var(--fs-12);
+  white-space: nowrap;
+}
+.demand-terms {
+  display: grid;
+  grid-template-columns: auto auto;
+  column-gap: 14px;
+  row-gap: 2px;
+  margin: 0;
+}
+.demand-terms-head {
+  display: contents;
+  font-weight: 700;
+  color: var(--gold-light);
+}
+.demand-terms dd {
+  display: contents;
+}
+.demand-terms .num {
+  text-align: right;
+}
+.demand-pop-note {
+  align-self: flex-end;
+  max-width: 180px;
+  margin: 0;
+  white-space: normal;
+  color: var(--hud-text-sub);
+}

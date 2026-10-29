@@ -6,10 +6,10 @@ import { HEAT_INFO } from './heatScale';
 
 /** 表示切替で重ねる物の名前と、説明を押した時に切り替えるヒートマップ（docs/ui-design.md 11 章） */
 
-/** 要因 → その要因を見るヒートマップ（公共サービスと電力は G10 で足す） */
+/** 要因 → その要因を見るヒートマップ */
 export const FACTOR_VIEW: Record<FactorId, ViewKind> = {
-  afford: 'rent', jobs: 'jobs', commute: 'traffic', noise: 'noise', green: 'land',
-  police: 'approval', school: 'approval', clinic: 'approval', fire: 'approval', power: 'approval',
+  afford: 'rent', jobs: 'jobs', commute: 'traffic', noise: 'noise', green: 'park',
+  police: 'police', school: 'school', clinic: 'clinic', fire: 'fire', power: 'power',
   tax: 'approval', trust: 'approval',
 };
 

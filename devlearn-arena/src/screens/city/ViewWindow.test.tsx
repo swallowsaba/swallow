@@ -80,6 +80,30 @@ describe('表示切替の窓（docs/ui-design.md 11 章）', () => {
     expect(store.getState().windows).toEqual([]);
   });
 
+  it('公共サービスの行き届きは 1 行で、押すと平均を重ね、警察・消防・学校・診療所・公園・平均を切り替えられる。電力も 1 行（11.1）', () => {
+    const store = createCityStore(1);
+    store.getState().openWindow('view');
+    const el = document.createElement('div');
+    document.body.append(el);
+    const root = createRoot(el);
+    roots.push(root);
+    act(() => root.render(<ViewWindow store={store} stack={0} shifted={false} />));
+    expect(el.querySelector('[data-testid="overlay-police"]')).toBeNull();
+    expect(el.querySelector('[data-testid="view-services"]')).toBeNull();
+    act(() => el.querySelector<HTMLButtonElement>('[data-testid="overlay-service"]')?.click());
+    expect(store.getState().overlay).toBe('service');
+    const names = [...el.querySelectorAll('[data-testid="view-services"] button')].map((b) => b.textContent);
+    expect(names).toEqual(['平均', '警察', '消防', '学校', '診療所', '公園']);
+    act(() => el.querySelector<HTMLButtonElement>('[data-testid="service-school"]')?.click());
+    expect(store.getState().overlay).toBe('school');
+    // 種類を選んでいる間も、公共サービスの行は点いていて、押すと外れる
+    expect(el.querySelector('[data-testid="overlay-service"]')?.getAttribute('aria-pressed')).toBe('true');
+    act(() => el.querySelector<HTMLButtonElement>('[data-testid="overlay-service"]')?.click());
+    expect(store.getState().overlay).toBeNull();
+    act(() => el.querySelector<HTMLButtonElement>('[data-testid="overlay-power"]')?.click());
+    expect(store.getState().overlay).toBe('power');
+  });
+
   it('支持率が 4 週で 3 以上動いた週は、説明の 1 行目を知らせにも出す（11.3）', () => {
     const { host, send } = manualHost();
     const store = createCityStore(1, undefined, { host });

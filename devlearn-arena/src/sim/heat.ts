@@ -1,6 +1,9 @@
 import { cellKindAt, facilityCells } from '@/city/cells';
+import { COVERAGE_KINDS } from '@/city/facilities';
+import { parkAt, serviceAt } from './land';
 import { adultsOf, LAYERS, sizeOf } from './layers';
-import { CELLS, DISTRICT_COUNT, indexOf, inMap } from './space';
+import { facilityPowerDistrict, stoppedNow } from './power';
+import { CELLS, DISTRICT_COUNT, indexOf, inMap, SIZE } from './space';
 import type { World } from './types';
 import type { WeekView } from './week';
 
@@ -10,8 +13,12 @@ import type { WeekView } from './week';
  * Worker は週に 1 回これを作って画面へ移し（写さない）、画面は画面の外の Canvas に 1 回だけ塗る（docs/architecture.md 9.3）。
  */
 
-export const HEAT_KINDS = ['land', 'rent', 'density', 'noise', 'jobs', 'approval'] as const;
+export const HEAT_KINDS = ['land', 'rent', 'density', 'noise', 'jobs', 'service', 'police', 'fire', 'school', 'clinic', 'park', 'power', 'approval'] as const;
 export type HeatKind = (typeof HEAT_KINDS)[number];
+
+/** 公共サービスの行き届きの 5 種（平均 service はこの 5 つの平均。docs/game-design.md 14 章） */
+export const SERVICE_HEAT = [...COVERAGE_KINDS, 'park'] as const satisfies readonly HeatKind[];
+export type ServiceHeat = (typeof SERVICE_HEAT)[number];
 
 export interface HeatFields {
   /** どの週の値か */
@@ -94,7 +101,43 @@ export function heatOf(world: World, view: WeekView): HeatFields {
     unemployment[d] = all > 0 ? 1 - employed / all : 0;
   }
   for (const zb of view.space.residential) jobless[zb.cell] = unemployment[zb.district] as number;
-  return { week: world.sim.week, cells: { land, rent, density, noise, jobs, approval }, jobless };
+  return { week: world.sim.week, cells: { land, rent, density, noise, jobs, approval, ...serviceHeat(view, mask), power: powerHeat(world, view) }, jobless };
+}
+
+/**
+ * 公共サービスの行き届き（0〜100%）: 道路の外の陸のマスに、面する道路の行き届き × 定員の余り（住民の満足と同じ値。24.2）。
+ * 平均は 5 種（警察・消防・学校・診療所・公園）の平均
+ */
+function serviceHeat(view: WeekView, mask: Uint8Array): Record<ServiceHeat | 'service', Float32Array> {
+  const out = { police: blank(), fire: blank(), school: blank(), clinic: blank(), park: blank(), service: blank() };
+  for (let i = 0; i < CELLS; i += 1) {
+    if (!mask[i] || view.space.roadKind[i] !== -1) continue;
+    const x = i % SIZE;
+    const y = Math.floor(i / SIZE);
+    let sum = 0;
+    for (const kind of COVERAGE_KINDS) {
+      const sv = serviceAt(view.field, kind, x, y);
+      const v = sv.value > 0 ? sv.value * (sv.src >= 0 ? view.capFactor(sv.src) : 1) * 100 : 0;
+      out[kind][i] = v;
+      sum += v;
+    }
+    const park = parkAt(view.field, x, y).value * 100;
+    out.park[i] = park;
+    out.service[i] = (sum + park) / SERVICE_HEAT.length;
+  }
+  return out;
+}
+
+/** 電力（docs/city-design.md 9.4）: 建物と施設のマスに、来ていれば 1、今の週に止まった地区なら 0 */
+function powerHeat(world: Pick<World, 'sim'>, view: WeekView): Float32Array {
+  const out = blank();
+  const stopped = stoppedNow(world.sim.power);
+  for (const zb of [...view.space.residential, ...view.space.workplaces]) out[zb.cell] = stopped.has(zb.district) ? 0 : 1;
+  for (const af of [...view.space.facilities, ...view.space.civic]) {
+    const v = stopped.has(facilityPowerDistrict(af.facility)) ? 0 : 1;
+    for (const c of facilityCells(af.facility)) if (inMap(c.x, c.y)) out[indexOf(c.x, c.y)] = v;
+  }
+  return out;
 }
 
 /** 移す（transfer）物の一覧 */

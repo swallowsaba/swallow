@@ -3,10 +3,10 @@ import { useStore } from 'zustand';
 import { useShallow } from 'zustand/react/shallow';
 import { EXPLAIN } from '@/content/politics';
 import { explainApproval, type Explanation } from '@/sim/explain';
-import { HEAT_KINDS } from '@/sim/heat';
+import { HEAT_KINDS, SERVICE_HEAT } from '@/sim/heat';
 import { SmallWindow } from '@/ui/SmallWindow';
 import type { CityStore, ViewKind } from './cityStore';
-import { HEAT_INFO, stepColors } from './heatScale';
+import { HEAT_INFO, SERVICE_NAMES, stepColors } from './heatScale';
 import { CITY_KINDS, FACTOR_VIEW } from './viewKinds';
 import { SERIES, SERIES_INFO, type SeriesId } from './graphSeries';
 import { WeeklyGraph } from './WeeklyGraph';
@@ -23,6 +23,9 @@ function Bold({ text }: { text: string }) {
   return <>{text.split(/(\d+)/).map((part, i) => (/^\d+$/.test(part) ? <b key={i} className="num">{part}</b> : part))}</>;
 }
 
+/** 公共サービスの行き届きの一行で切り替える 6 つ（平均が先） */
+const SERVICE_ALL = ['service', ...SERVICE_HEAT] as const;
+
 export function ViewWindow({ store, stack, shifted }: { store: CityStore; stack: number; shifted: boolean }) {
   const s = useStore(store, useShallow((x) => ({
     overlay: x.overlay, setOverlay: x.setOverlay, closeWindow: x.closeWindow, openWindow: x.openWindow, focusAt: x.focusAt,
@@ -35,21 +38,25 @@ export function ViewWindow({ store, stack, shifted }: { store: CityStore; stack:
     s.setOverlay(FACTOR_VIEW[e.reason.factor]);
     if (e.reason.at) s.focusAt(e.reason.at);
   };
-  const row = (id: ViewKind, label: string, colors: string[] | null) => (
-    <button
-      key={id}
-      type="button"
-      className={`view-kind${s.overlay === id ? ' is-on' : ''}`}
-      data-testid={`overlay-${id}`}
-      aria-pressed={s.overlay === id}
-      onClick={() => s.setOverlay(s.overlay === id ? null : id)}
-    >
-      <span className="view-kind-ramp" aria-hidden="true">
-        {(colors ?? []).map((c, i) => <span key={i} style={{ background: c }} />)}
-      </span>
-      <span>{label}</span>
-    </button>
-  );
+  const serviceOn = s.overlay !== null && (SERVICE_ALL as readonly string[]).includes(s.overlay);
+  const row = (id: ViewKind, label: string, colors: string[] | null) => {
+    const on = id === 'service' ? serviceOn : s.overlay === id;
+    return (
+      <button
+        key={id}
+        type="button"
+        className={`view-kind${on ? ' is-on' : ''}`}
+        data-testid={`overlay-${id}`}
+        aria-pressed={on}
+        onClick={() => s.setOverlay(on ? null : id)}
+      >
+        <span className="view-kind-ramp" aria-hidden="true">
+          {(colors ?? []).map((c, i) => <span key={i} style={{ background: c }} />)}
+        </span>
+        <span>{label}</span>
+      </button>
+    );
+  };
   return (
     <SmallWindow testId="view-window" icon="heat" title="表示切替" stack={stack} shifted={shifted} onClose={() => s.closeWindow('view')} onFront={() => s.openWindow('view')}>
       <section className="view-why" aria-label="支持率が動いた理由">
@@ -64,9 +71,16 @@ export function ViewWindow({ store, stack, shifted }: { store: CityStore; stack:
       <section className="view-section" aria-label="ヒートマップ">
         <h3 className="view-heading">ヒートマップ<span className="view-heading-sub">選ぶと都市の地面に色を重ねる</span></h3>
         <div className="view-kinds">
-          {HEAT_KINDS.map((k) => row(k, HEAT_INFO[k].label, stepColors(k)))}
+          {HEAT_KINDS.filter((k) => !(SERVICE_HEAT as readonly string[]).includes(k)).map((k) => row(k, HEAT_INFO[k].label, stepColors(k)))}
           {CITY_KINDS.map((k) => row(k.id, k.label, null))}
         </div>
+        {serviceOn ? (
+          <div className="window-switch view-series view-services" role="group" aria-label="公共サービスの種類" data-testid="view-services">
+            {SERVICE_ALL.map((k) => (
+              <button key={k} type="button" aria-pressed={s.overlay === k} data-testid={`service-${k}`} onClick={() => s.setOverlay(k)}>{SERVICE_NAMES[k]}</button>
+            ))}
+          </div>
+        ) : null}
       </section>
       <section className="view-section" aria-label="グラフ">
         <h3 className="view-heading">グラフ<span className="view-heading-sub">週ごとの変化</span></h3>

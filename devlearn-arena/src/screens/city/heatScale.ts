@@ -1,4 +1,4 @@
-import type { HeatKind } from '@/sim/heat';
+import { SERVICE_HEAT, type HeatKind, type ServiceHeat } from '@/sim/heat';
 import { accent, mix, parseColor, state } from '@/ui/tokens';
 
 /**
@@ -22,6 +22,34 @@ export interface HeatInfo {
 
 const int = (v: number): string => Math.round(v).toLocaleString('ja-JP');
 const man = (yen: number): string => (yen / 10000).toFixed(1);
+
+/** 公共サービスの行き届きの名前（docs/ui-design.md 11.1: 警察・消防・学校・診療所・公園・平均） */
+export const SERVICE_NAMES: Record<ServiceHeat | 'service', string> = {
+  service: '平均', police: '警察', fire: '消防', school: '学校', clinic: '診療所', park: '公園',
+};
+
+const SERVICE_NOTES: Record<ServiceHeat | 'service', string> = {
+  service: '警察・消防・学校・診療所・公園の行き届きの平均',
+  police: '警察署から道路で 12 マスまで。近いほど治安の点が上がる',
+  fire: '消防署から道路で 10 マスまで。近いほど防災の点が上がる',
+  school: '学校から道路で 10 マスまで。子育ての世帯 600 を超えると下がる',
+  clinic: '診療所から道路で 8 マスまで。高齢の世帯 400 を超えると下がる',
+  park: '公園 6・広場 5・噴水 3・並木 2 マスまで（道路で）',
+};
+
+function coverageInfo(): Record<ServiceHeat | 'service', HeatInfo> {
+  const out = {} as Record<ServiceHeat | 'service', HeatInfo>;
+  for (const k of ['service', ...SERVICE_HEAT] as const) {
+    const name = k === 'service' ? '公共サービス' : SERVICE_NAMES[k];
+    out[k] = {
+      label: k === 'service' ? '公共サービスの行き届き' : `行き届き（${SERVICE_NAMES[k]}）`, good: 'high', range: [0, 100],
+      format: (v) => `${name}の行き届き ${int(v)}%`,
+      span: () => '0〜100%（距離で薄まる）',
+      note: SERVICE_NOTES[k],
+    };
+  }
+  return out;
+}
 
 export const HEAT_INFO: Record<HeatKind, HeatInfo> = {
   land: {
@@ -53,6 +81,13 @@ export const HEAT_INFO: Record<HeatKind, HeatInfo> = {
     format: (v) => `仕事 ${int(v)} 人分`,
     span: (lo, hi) => `${int(lo)}〜${int(hi)} 人分の仕事`,
     note: '働き口の数。住宅を指すと、その地区の失業率も出す',
+  },
+  ...coverageInfo(),
+  power: {
+    label: '電力', good: 'high', range: [0, 1],
+    format: (v) => (v >= 0.5 ? '電気が来ている' : '停電している（輪番で止まった地区）'),
+    span: () => '来ている／止まった',
+    note: '電気は道路に沿って届く。足りない週は、地区を番号の順に止める',
   },
   approval: {
     label: '支持率', good: 'high', range: [0, 100],

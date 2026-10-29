@@ -8,8 +8,11 @@ import { Intro } from './Intro';
 import { CityRenderer } from '@/city/render/CityRenderer';
 import { RANK_NAMES, rankOf } from '@/game/rank';
 import { STAGE_NAMES } from '@/game/stage';
-import { HEAT_KINDS, type HeatKind } from '@/sim/heat';
-import { poweredOffIds } from '@/sim/power';
+import { HEAT_KINDS, SERVICE_HEAT, type HeatKind } from '@/sim/heat';
+import { reachAreaOf } from '@/sim/reachArea';
+import { POLITICS_RULES } from '@/content/politics';
+import { powerLine } from './civicView';
+import { facilityPowerDistrict, poweredOffIds, stoppedNow } from '@/sim/power';
 import { dateOf } from '@/sim/rules';
 import { spaceOf } from '@/sim/space';
 import type { WeeklyBreakdown } from '@/sim/types';
@@ -24,7 +27,8 @@ import { panelModel } from './infoPanelModel';
 import { OverlayToggle, type OverlayLegend } from './OverlayToggle';
 import { RecommendPanel } from './RecommendPanel';
 import { unplacedLandmarks } from '@/learning/missions';
-import type { DomainId } from '@/city/types';
+import type { City, DomainId } from '@/city/types';
+import { FACILITY_DEFS } from '@/city/facilities';
 import type { CityGameState, CityStore, ViewKind } from './cityStore';
 import { HEAT_INFO, heatImage, heatLegend } from './heatScale';
 import { VIEW_LABELS } from './viewKinds';
@@ -88,6 +92,8 @@ export function CityScreen({ session, active = true, covered = false, current, d
     tool: s.tool, menu: s.menu, hint: s.hint, confirm: s.confirm, notice: s.notice, paused: s.paused,
     openMenu: s.openMenu, setTool: s.setTool, selected: s.selected, overlay: s.overlay, setOverlay: s.setOverlay, select: s.select,
     techPower: s.city.techPower, demand: s.world.sim.lastWeek.demand,
+    // 発電所を選んでいる間は、上の帯の下に電力の使う量と来る量（docs/ui-design.md 11.5）
+    powerLine: s.tool.kind === 'facility' && FACILITY_DEFS[s.tool.type].group === 'power' ? powerLine(s.world, POLITICS_RULES) : null,
     day: Math.floor(s.city.day), speed: s.speed, held: s.holds.length > 0, togglePause: s.togglePause, setSpeed: s.setSpeed,
     approval: s.world.city.population > 0 ? s.world.sim.lastWeek.approval : null,
     approvalDelta: approvalDeltaOf(s.world.history.breakdown),
@@ -111,7 +117,12 @@ export function CityScreen({ session, active = true, covered = false, current, d
   const panelKey = useStore(store, (s) => (s.selected ? panelKeyOf(s) : ''));
   const panel = useMemo(() => {
     const s = store.getState();
-    return s.selected ? panelModel(s.city, s.selected, skills, progress, s.world.applications) : null;
+    if (!s.selected) return null;
+    // 停電している地区の施設（状態に出す。学習には効かない。docs/game-design.md 24.1）
+    const stopped = stoppedNow(s.world.sim.power);
+    const f = s.selected.kind === 'facility' ? s.city.facilities.find((x) => x.id === s.selected?.id) : undefined;
+    const off = f && f.state === 'active' && stopped.has(facilityPowerDistrict(f)) ? new Set([f.id]) : undefined;
+    return panelModel(s.city, s.selected, skills, progress, s.world.applications, off);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [panelKey, store, skills, progress]);
   // L で学習ライブラリ、G で知識グラフ（都市画面が前にある時だけ）
@@ -170,6 +181,7 @@ export function CityScreen({ session, active = true, covered = false, current, d
     let overlayKey = '';
     let focusSeq = store.getState().focus?.seq ?? 0;
     let sitesWorld: World | null = null;
+    let areaFor: { city: City; id: string } | null = null;
     const sync = (s: ReturnType<CityStore['getState']>): void => {
       renderer.setCity(s.city);
       // 申請の囲いと看板（模擬の世界が変わった時だけ作り直す。docs/city-design.md 9.1）
@@ -194,6 +206,15 @@ export function CityScreen({ session, active = true, covered = false, current, d
       // 模擬のヒートマップは、週に 1 回だけ画面の外の絵を作り直す（docs/architecture.md 9.3）
       const heatKind = s.overlay && isHeat(s.overlay) ? s.overlay : null;
       renderer.setHeat(heatKind && s.heat ? { key: `${heatKind}|${String(s.heat.week)}`, image: heatImage(heatKind, s.heat.cells[heatKind]) } : null);
+      // 行き届き・電力のヒートマップで公共サービス・公園・発電所を押すと、その届く範囲を縁で示す（docs/ui-design.md 11.1）
+      const picked = s.selected?.kind === 'facility' ? s.city.facilities.find((f) => f.id === s.selected?.id) : undefined;
+      const group = picked ? FACILITY_DEFS[picked.type].group : null;
+      const shows = heatKind === 'power' ? group === 'power' : heatKind !== null && (SERVICE_KINDS as readonly string[]).includes(heatKind) && (group === 'civic' || group === 'park');
+      const area = shows && picked ? { city: s.city, id: picked.id } : null;
+      if (area?.city !== areaFor?.city || area?.id !== areaFor?.id) {
+        areaFor = area;
+        renderer.setArea(area && picked ? reachAreaOf(spaceOf(s.city, s.terrain), picked) : null);
+      }
       const plain = s.overlay && !isHeat(s.overlay) ? s.overlay : null;
       const values = Object.fromEntries(Object.entries(skillsRef.current).map(([d, v]) => [d, v.value]));
       const key = plain ? `${plain}|${overlayKeyOf(s)}|${JSON.stringify(values)}` : '';
@@ -325,6 +346,7 @@ export function CityScreen({ session, active = true, covered = false, current, d
         <>
           <CityNotice
             text={state.notice?.text ?? null}
+            power={state.powerLine}
             paused={state.paused}
             shifted={panel !== null}
             windows={state.windows.length}
@@ -379,7 +401,7 @@ function panelKeyOf(s: ReturnType<CityStore['getState']>): string {
     ? [c.facilities.find((f) => f.id === sel.id), s.world.applications.filter((a) => a.target.facilityId === sel.id).map((a) => a.stage)]
     : sel.kind === 'application' ? s.world.applications.find((a) => a.id === sel.id) : c.buildings.find((b) => b.id === sel.id);
   // 状態（建設の段階・道路・周りの施設）と、アップグレードの条件（資金・発展段階）が変わったら作り直す
-  return `${sel.id}|${JSON.stringify(target)}|${String(Math.floor(c.day))}|${String(c.roads.length)}|${String(c.facilities.length)}|${String(c.buildings.length)}|${String(c.funds)}|${String(c.stage)}`;
+  return `${sel.id}|${JSON.stringify(target)}|${String(s.world.sim.power.recent?.at(-1) ?? '')}|${String(Math.floor(c.day))}|${String(c.roads.length)}|${String(c.facilities.length)}|${String(c.buildings.length)}|${String(c.funds)}|${String(c.stage)}`;
 }
 
 function overlayKeyOf(s: ReturnType<CityStore['getState']>): string {
@@ -388,6 +410,8 @@ function overlayKeyOf(s: ReturnType<CityStore['getState']>): string {
 }
 
 const isHeat = (k: ViewKind): k is HeatKind => (HEAT_KINDS as readonly string[]).includes(k);
+/** 公共サービスの行き届きのヒートマップ（平均と 5 種） */
+const SERVICE_KINDS = ['service', ...SERVICE_HEAT] as const;
 
 /** 4 週前からの支持率の増減（上の帯の矢印。記録が足りなければ null） */
 function approvalDeltaOf(breakdown: readonly WeeklyBreakdown[]): number | null {

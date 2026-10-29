@@ -1,10 +1,14 @@
 import { describe, expect, it } from 'vitest';
+import type { Facility } from '@/city/types';
+import { POLITICS_RULES } from '@/content/politics';
 import { adultsOf, LAYERS, sizeOf } from './layers';
-import { heatOf } from './heat';
+import { parkAt, serviceAt } from './land';
+import { heatOf, SERVICE_HEAT } from './heat';
 import { SimRunner } from './runner';
-import { indexOf } from './space';
+import { DISTRICT_COUNT, indexOf } from './space';
+import type { World } from './types';
 import { thin, weekStep } from './week';
-import { town } from './__fixtures__/cities';
+import { grownVillage, town } from './__fixtures__/cities';
 
 /**
  * ヒートマップの値（docs/testing-strategy.md 10.2: ヒートマップの値がマスの模擬の値と一致する）。
@@ -80,5 +84,49 @@ describe('雇用のヒートマップで住宅を指した時の失業率', () =
       all += view.workers[zb.district * 3 + b] as number;
     }
     expect(heat.jobless[zb.cell]).toBeCloseTo(all > 0 ? 1 - employed / all : 0, 5);
+  });
+});
+
+describe('公共サービスの行き届きと電力のヒートマップ（docs/ui-design.md 11.1・docs/city-design.md 9.4）', () => {
+  const GROWN = grownVillage(120);
+  const T = GROWN.terrain;
+  const active = (id: string, type: Facility['type'], x: number, y: number): Facility => ({ id, type, origin: { x, y }, rotation: 0, level: 1, state: 'active', builtDay: 0 });
+  const withFacilities = (w: World, ...fs: Facility[]): World => ({ ...w, city: { ...w.city, facilities: [...w.city.facilities, ...fs] } });
+
+  it('行き届き（0〜100%）は、道路の外の陸のマスと住宅のマスに、面する道路の行き届き × 定員の余り。平均は 5 種の平均', () => {
+    const w0 = withFacilities(GROWN.world, active('p', 'police', 53, 48), active('s', 'school', 58, 48));
+    const { world: w, view } = weekStep(w0, T, false, POLITICS_RULES);
+    const heat = heatOf(w, view);
+    const zb = view.space.residential.find((r) => serviceAt(view.field, 'police', r.building.cell.x, r.building.cell.y).value > 0);
+    if (!zb) throw new Error('警察署の届く住宅が無い');
+    const { x, y } = zb.building.cell;
+    for (const kind of ['police', 'fire', 'school', 'clinic'] as const) {
+      const sv = serviceAt(view.field, kind, x, y);
+      expect(heat.cells[kind][zb.cell], kind).toBeCloseTo(sv.value * (sv.src >= 0 ? view.capFactor(sv.src) : 1) * 100, 3);
+    }
+    expect(heat.cells.police[zb.cell]).toBeGreaterThan(0);
+    expect(heat.cells.park[zb.cell]).toBeCloseTo(parkAt(view.field, x, y).value * 100, 3);
+    const mean = SERVICE_HEAT.reduce((s, k) => s + (heat.cells[k][zb.cell] as number), 0) / SERVICE_HEAT.length;
+    expect(heat.cells.service[zb.cell]).toBeCloseTo(mean, 3);
+    // 道路と海には塗らない
+    expect(Number.isNaN(heat.cells.police[view.space.roadCells[0] as number])).toBe(true);
+    expect(Number.isNaN(heat.cells.police[indexOf(0, 0)])).toBe(true);
+    // 遠い陸のマスは 0
+    expect(heat.cells.police[indexOf(20, 20)]).toBe(0);
+  });
+
+  it('電力: 来ている建物は 1、今の週に止まった地区の建物は 0。止まっていない時は全て 1', () => {
+    const { world: w, view } = weekStep(GROWN.world, T, false, POLITICS_RULES);
+    const lit = heatOf(w, view);
+    const zb = view.space.residential[0];
+    if (!zb) throw new Error('住宅が無い');
+    expect(lit.cells.power[zb.cell]).toBe(1);
+    expect(Number.isNaN(lit.cells.power[view.space.roadCells[0] as number])).toBe(true);
+    expect(Number.isNaN(lit.cells.power[indexOf(20, 20)])).toBe(true);
+    const off: World = { ...w, sim: { ...w.sim, power: { ...w.sim.power, recent: [[zb.district]], outageDays: new Array<number>(DISTRICT_COUNT).fill(0) } } };
+    const dark = heatOf(off, view);
+    expect(dark.cells.power[zb.cell]).toBe(0);
+    const other = view.space.residential.find((r) => r.district !== zb.district);
+    if (other) expect(dark.cells.power[other.cell]).toBe(1);
   });
 });

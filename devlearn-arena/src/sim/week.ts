@@ -84,6 +84,8 @@ export interface WeekView {
   employers: Employer[];
   /** 住宅の建物 ID → 家賃（円・月）と、層ごとの負担 */
   rent: Map<string, { rent: number; burden: number[] }>;
+  /** 公共サービスの施設（space.civic の番号）→ 定員の余りの倍率（定員を超えた分だけ 1 より小さい。24.2） */
+  capFactor: (src: number) => number;
   /** 住宅の建物 ID → [層 12] 重みを掛けた要因の点（目標。clamp 後） */
   points: Map<string, number[][]>;
   population: number;
@@ -616,7 +618,7 @@ export function weekStep(world: World, terrain: Terrain, init = false, rules: Po
   };
   return {
     world: next,
-    view: { space, net, commute, workers, field, employers, rent, points, population: city.population, jobs: totalJobs, unemployment, approval: approvalR, tax: income },
+    view: { space, net, commute, workers, field, employers, rent, capFactor, points, population: city.population, jobs: totalJobs, unemployment, approval: approvalR, tax: income },
   };
 }
 

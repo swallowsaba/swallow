@@ -6,7 +6,8 @@ import type { Article, World } from '@/sim/types';
 import { grownVillage } from '@/sim/__fixtures__/cities';
 import { TopBar } from '@/ui/TopBar';
 import { civicNotices, createCityStore } from './cityStore';
-import { budgetModel, capitalModel, inboxRows, newsIssues, taxPreview } from './civicView';
+import { budgetModel, capitalModel, inboxRows, newsIssues, powerLine, taxPreview } from './civicView';
+import { powerUse } from '@/sim/power';
 import { BudgetWindow, InboxWindow, NewsWindow } from './CivicWindows';
 
 /**
@@ -173,5 +174,33 @@ describe('上の帯の財政（3.1）', () => {
   it('黒字なら赤くしない', () => {
     const host = mount(<TopBar {...props} treasury={{ value: 980, onOpen: () => undefined }} />);
     expect(host.querySelector('[data-testid="topbar-treasury"]')?.className).not.toContain('is-deficit');
+  });
+});
+
+describe('発電所を選んでいる間の電力の 1 行（docs/ui-design.md 11.5）', () => {
+  it('使う量と来る量（発電所と外の電気）を MW で出し、止まった地区があれば数を添える。道具を離すと消える', () => {
+    const plant = { id: 'pt', type: 'power-thermal' as const, origin: { x: 53, y: 48 }, rotation: 0 as const, level: 1 as const, state: 'active' as const, builtDay: 0 };
+    const w: World = { ...GROWN, city: { ...GROWN.city, facilities: [...GROWN.city.facilities, plant] } };
+    const line = powerLine(w, POLITICS_RULES);
+    const use = powerUse(w.city, POLITICS_RULES);
+    expect(line).toBe(`電力 使う ${use.toFixed(1)} MW ／ 来る ${(40 + w.sim.power.externalCapMW).toFixed(1)} MW（発電所 40.0・外の電気 ${w.sim.power.externalCapMW.toFixed(1)} まで）`);
+    const off: World = { ...w, sim: { ...w.sim, power: { ...w.sim.power, recent: [[3, 4]] } } };
+    expect(powerLine(off, POLITICS_RULES)).toMatch(/・止まっている地区 2$/);
+    const red: World = { ...w, budget: { ...w.budget, treasury: -5 } };
+    expect(powerLine(red, POLITICS_RULES)).toContain('発電所 28.0（赤字の間は 7 割）');
+
+    const store = createCityStore(undefined, undefined, { world: w });
+    expect(store.getState().tool.kind).toBe('none');
+    store.getState().setTool({ kind: 'facility', type: 'power-solar' });
+    expect(store.getState().overlay).toBe('power');
+    store.getState().setTool({ kind: 'facility', type: 'school' });
+    expect(store.getState().overlay).toBe('school');
+    store.getState().setTool({ kind: 'none' });
+    expect(store.getState().overlay).toBeNull();
+    store.getState().setOverlay('rent');
+    store.getState().setTool({ kind: 'facility', type: 'police' });
+    expect(store.getState().overlay).toBe('police');
+    store.getState().openMenu(null);
+    expect(store.getState().overlay).toBe('rent');
   });
 });

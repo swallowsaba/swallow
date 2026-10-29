@@ -76,8 +76,10 @@ export function DemolishConfirm({ target, onYes, onNo }: { target: DemolishTarge
 }
 
 /** 上の帯の下、右寄せの 1 行の知らせ（docs/ui-design.md 3 章）と、一時停止の印 */
-export function CityNotice({ text, paused, shifted, windows, onOpen }: {
+export function CityNotice({ text, power = null, paused, shifted, windows, onOpen }: {
   text: string | null;
+  /** 発電所を選んでいる間の電力の 1 行（docs/ui-design.md 11.5） */
+  power?: string | null;
   paused: boolean;
   shifted: boolean;
   /** 開いている小さな窓の数（窓の後ろに隠れないよう、一番左の窓のさらに左に出す） */
@@ -91,6 +93,12 @@ export function CityNotice({ text, paused, shifted, windows, onOpen }: {
         <div className="city-notice is-paused" data-testid="paused" data-label-block>
           <Icon name="pause" size={16} />
           一時停止中（Space で再開）
+        </div>
+      ) : null}
+      {power ? (
+        <div className="city-notice is-power" data-label-block data-testid="power-line">
+          <Icon name="power" size={16} />
+          {power}
         </div>
       ) : null}
       {text && onOpen ? (

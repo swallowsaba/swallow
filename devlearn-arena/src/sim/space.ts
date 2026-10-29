@@ -86,7 +86,7 @@ function frontRoad(x: number, y: number, roadKind: Int8Array): number {
 }
 
 /** 施設の周り（敷地に接する）の道路のマス */
-function frontsOf(f: Facility, roadKind: Int8Array): number[] {
+export function frontsOf(f: Facility, roadKind: Int8Array): number[] {
   const size = footprintOf(f.type, f.rotation);
   const out: number[] = [];
   for (let y = f.origin.y - 1; y <= f.origin.y + size.d; y += 1) {

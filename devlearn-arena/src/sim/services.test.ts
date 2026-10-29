@@ -6,6 +6,7 @@ import { applyOp } from './commands';
 import { ageOf, factorIndex, LAYERS } from './layers';
 import { serviceAt } from './land';
 import { reach } from './network';
+import { reachAreaOf } from './reachArea';
 import { gainsOf } from './council';
 import { permitProblems, STAGE_DAYS } from './permits';
 import { LAND_SERVICE_MAX, SERVICE_DEFICIT, SERVICE_POINTS } from './rules';
@@ -172,5 +173,29 @@ describe('公共サービスと発電所の反対と得（16 章・18.1）', () 
     if (!app) throw new Error('申請が無い');
     expect(gainsOf(w, app, T2).raw.safety).toBeGreaterThan(0);
     expect(gainsOf(w, app).raw.safety).toBe(0);
+  });
+});
+
+describe('届く範囲（docs/ui-design.md 11.1・11.5: 置く場所の枠と、施設を押した時に縁で示す範囲）', () => {
+  it('公共サービスの届く範囲は、行き届きが 0 より大きい道路の外のマスと一致する', () => {
+    const police = active('p', 'police', 53, 48);
+    const view = previewOf(withFacilities(GROWN.world, police), T);
+    const area = new Set(reachAreaOf(view.space, police));
+    expect(area.size).toBeGreaterThan(0);
+    for (let i = 0; i < 96 * 96; i += 1) {
+      if ((view.space.roadKind[i] ?? -1) >= 0) continue;
+      const v = serviceAt(view.field, 'police', i % 96, Math.floor(i / 96)).value;
+      expect(area.has(i), String(i)).toBe(v > 0);
+    }
+  });
+
+  it('発電所は、面している道路網の全て。道路に面していなければ空。IT 施設は範囲を持たない', () => {
+    const view = previewOf(GROWN.world, T);
+    const plant = active('t', 'power-thermal', 53, 48);
+    const all = reachAreaOf(view.space, plant) ?? [];
+    const school = reachAreaOf(view.space, SCHOOL) ?? [];
+    expect(all.length).toBeGreaterThan(school.length);
+    expect(reachAreaOf(view.space, active('t2', 'power-thermal', 10, 10))).toEqual([]);
+    expect(reachAreaOf(view.space, active('w', 'web', 53, 48))).toBeNull();
   });
 });

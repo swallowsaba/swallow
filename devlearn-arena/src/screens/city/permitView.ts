@@ -295,6 +295,8 @@ function heatOf(reason: Pick<ObjectionReason, 'measure'>): HeatKind | undefined 
     case 'noise': return 'noise';
     case 'rent': return 'rent';
     case 'jobs-density': return 'jobs';
+    case 'power': return 'power';
+    case 'service-load': return reason.measure.service;
     default: return undefined;
   }
 }

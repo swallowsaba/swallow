@@ -223,10 +223,13 @@ describe('反対（G4。docs/ui-design.md 10.2 の 2・3、docs/city-design.md 9
     expect(host.querySelector('[data-testid="permit-reason-basis"]')?.textContent).toContain('夜の騒音が 2.3 増える見込み');
     expect(store.getState().overlay).toBe('noise');
     expect(store.getState().focus?.at).toEqual({ x: 47.5, y: 37 });
-    // ヒートマップの無い理由（電力）は、重ねた地図を変えない
+    // 電力の逼迫は、電力のヒートマップ（来ている所と止まった所。G10）
     act(() => (reasons?.querySelector('[data-reason="dc-power"] .permit-reason-main') as HTMLButtonElement).click());
-    expect(host.querySelector('[data-testid="permit-reason-basis"]')?.textContent).toBe('使う電力 3 MW に対し、今の電力の余りは 7.07 MW');
-    expect(store.getState().overlay).toBe('noise');
+    expect(host.querySelector('[data-testid="permit-reason-basis"]')?.textContent).toBe('使う電力 3 MW に対し、今の電力の余りは 7.07 MW都市の上に、その値の地図を重ねた');
+    expect(store.getState().overlay).toBe('power');
+    // ヒートマップの無い理由（冷却水）は、重ねた地図を変えない
+    act(() => (reasons?.querySelector('[data-reason="dc-cooling-water"] .permit-reason-main') as HTMLButtonElement).click());
+    expect(store.getState().overlay).toBe('power');
   });
 
   it('反対率が 20% 以上の申請は公聴会の段へ（看板・一覧・知らせ）。取り下げはできる', () => {

@@ -10,6 +10,7 @@ import { districtCenter } from '@/sim/space';
 import type { Terrain } from '@/city/terrain';
 import { FACILITY_DEFS } from '@/city/facilities';
 import { TAX_RANGE } from '@/sim/budget';
+import { plantOutput, powerUse, stoppedNow } from '@/sim/power';
 import type { Article, Petition, PoliticsRules, World } from '@/sim/types';
 
 /**
@@ -245,4 +246,18 @@ export function newsIssues(news: readonly Article[], query = ''): NewsIssue[] {
       const d = dateOf(week * DAYS_PER_WEEK);
       return { week, date: `${String(d.year)} 年目 ${String(d.week)} 週`, articles: [...articles].reverse() };
     });
+}
+
+/* ---------- 発電所を選んでいる間の電力の 1 行（11.5） ---------- */
+
+/** 「電力 使う 12.4 MW ／ 来る 48.0 MW（発電所 40.0・外の電気 8.0 まで）」。止まった地区があれば数を添える */
+export function powerLine(world: Pick<World, 'city' | 'sim' | 'budget'>, rules: Pick<PoliticsRules, 'facilities'>): string {
+  const mw = (v: number): string => v.toFixed(1);
+  const deficit = world.budget.treasury < 0;
+  let plants = 0;
+  for (const f of world.city.facilities) if (f.state === 'active') plants += plantOutput(f, deficit);
+  const ext = world.sim.power.externalCapMW;
+  const stopped = stoppedNow(world.sim.power).size;
+  return `電力 使う ${mw(powerUse(world.city, rules))} MW ／ 来る ${mw(plants + ext)} MW（発電所 ${mw(plants)}${deficit && plants > 0 ? '（赤字の間は 7 割）' : ''}・外の電気 ${mw(ext)} まで）`
+    + (stopped > 0 ? `・止まっている地区 ${String(stopped)}` : '');
 }

@@ -274,3 +274,50 @@ describe('情報パネルのミッション（docs/game-design.md 5 章・docs/d
     act(() => root.unmount());
   });
 });
+
+describe('公共サービス・発電所・電力の情報パネル（docs/city-design.md 9.3・9.4）', () => {
+  const withOne = (type: 'police' | 'school' | 'power-thermal'): { c: City; id: string } => {
+    const f = { id: `x-${type}`, type, origin: { x: 60, y: 60 }, rotation: 0 as const, level: 1 as const, state: 'active' as const, builtDay: 0 };
+    return { c: { ...city, facilities: [...city.facilities, f] }, id: f.id };
+  };
+  const model = (c: City, id: string, off?: ReadonlySet<string>): FacilityPanelModel => {
+    const m = panelModel(c, { kind: 'facility', id }, {}, emptyProgress(), [], off);
+    if (m?.kind !== 'facility') throw new Error(id);
+    return m;
+  };
+
+  it('公共サービスは学習の入口ではない（分野・ここで学ぶ・ミッション・アップグレードが無い）。届く距離・支える暮らし・維持費を出す', () => {
+    const { c, id } = withOne('police');
+    const m = model(c, id);
+    expect(m.typeLabel).toBe('公共サービス');
+    expect(m.lessons).toEqual([]);
+    expect(m.domains).toEqual([]);
+    expect(m.missions).toEqual([]);
+    expect(m.upgrade).toBeNull();
+    expect(m.effect).toBe('道路で 12 マスまでの住民の治安を支える。財政から毎週 30');
+    const s = withOne('school');
+    expect(model(s.c, s.id).effect).toBe('道路で 10 マスまでの子育ての世帯（600 世帯まで）の教育を支える。財政から毎週 30');
+  });
+
+  it('発電所は出力と送る先と維持費。電力を多く使う IT 施設は使う量（MW）を出す', () => {
+    const { c, id } = withOne('power-thermal');
+    const m = model(c, id);
+    expect(m.typeLabel).toBe('発電所');
+    expect(m.effect).toBe('出力 40 MW。面している道路網の建物に電気を送る。財政から毎週 40');
+    const dc = city.facilities.find((f) => f.type === 'datacenter');
+    if (!dc) throw new Error('データセンターが無い');
+    const lv2: City = { ...city, facilities: city.facilities.map((f) => (f.id === dc.id ? { ...f, level: 2 } : f)) };
+    expect(model(lv2, dc.id).power).toBe('使う電力 6 MW（Lv × 3 MW）');
+    const web = city.facilities.find((f) => f.type === 'web');
+    if (web) expect(model(city, web.id).power).toBeNull();
+  });
+
+  it('停電した地区の施設は、状態に停電を出す。ここで学ぶは変わらない（学習には効かない）', () => {
+    const web = city.facilities.find((f) => f.type === 'web');
+    if (!web) throw new Error('Web 施設が無い');
+    const lit = model(city, web.id);
+    const dark = model(city, web.id, new Set([web.id]));
+    expect(dark.condition).toEqual({ text: '停電している（輪番の停電。ここで学ぶことはできる）', tone: 'bad' });
+    expect(dark.lessons).toEqual(lit.lessons);
+  });
+});

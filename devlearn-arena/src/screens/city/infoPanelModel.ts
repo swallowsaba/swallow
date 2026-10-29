@@ -1,5 +1,5 @@
 import { frontOf, occupancyOf } from '@/city/cells';
-import { FACILITY_DEFS } from '@/city/facilities';
+import { FACILITY_DEFS, type CoverageKind } from '@/city/facilities';
 import { domainsOfFacility, facilityCondition, nextLevelOf, parkReach } from '@/city/facilityInfo';
 import { amenityAt } from '@/city/growth';
 import { buildingName } from '@/city/place';
@@ -55,6 +55,8 @@ export interface FacilityPanelModel {
   /** 次のレベル（docs/game-design.md 5 章）。ok なら「上げる」を押せる。blocked は上げられない理由。pending はアップグレードの申請が進んでいる時の 1 行 */
   upgrade: { level: number; title: string; adds: string; cost: number; needs: string; ok: boolean; blocked: string[]; pending?: string } | null;
   effect: string | null;
+  /** 電力を多く使う施設（データセンター・クラスタ施設・クラウドセンター）の使う量（docs/city-design.md 9.4） */
+  power?: string | null;
   /** 申請中・工事中なら、その申請（「申請の詳細を見る」。docs/ui-design.md 5 章） */
   permitId?: string;
 }
@@ -76,7 +78,14 @@ export type PanelModel = FacilityPanelModel | BuildingPanelModel;
 /** 分野ごとのスキル（src/game/skill.ts）。無い分野は 0 として扱う */
 export type Skills = Partial<Record<DomainId, SkillDetail>>;
 
-export function panelModel(city: City, sel: Selection, skills: Skills = {}, progress: Progress = emptyProgress(), applications: readonly Application[] = []): PanelModel | null {
+/** 公共サービスが支える暮らし（docs/game-design.md 24.2） */
+const SERVICE_LIFE: Record<CoverageKind, string> = { police: '治安', fire: '防災', school: '教育', clinic: '医療' };
+const CAPACITY_OF: Partial<Record<CoverageKind, string>> = { school: '子育ての世帯', clinic: '高齢の世帯' };
+/** 情報パネルに使う量を出す施設（使う量が 3 MW / Lv 以上） */
+const HEAVY_POWER_MW = 3;
+
+/** off: 今の週に停電している施設の ID（docs/game-design.md 24.1。学習には効かない） */
+export function panelModel(city: City, sel: Selection, skills: Skills = {}, progress: Progress = emptyProgress(), applications: readonly Application[] = [], off: ReadonlySet<string> = new Set()): PanelModel | null {
   if (sel.kind === 'application') return applicationModel(city, sel.id, skills, progress, applications);
   if (sel.kind === 'facility') {
     const f = city.facilities.find((x) => x.id === sel.id);
@@ -85,12 +94,27 @@ export function panelModel(city: City, sel: Selection, skills: Skills = {}, prog
     const cond = facilityCondition(f, city);
     const day = Math.floor(city.day);
     const left = f.completeDay !== undefined ? Math.max(0, f.completeDay - day) : null;
-    const condition = cond.kind === 'active'
+    const condition = cond.kind === 'active' && off.has(f.id)
+      ? { text: '停電している（輪番の停電。ここで学ぶことはできる）', tone: 'bad' as const }
+      : cond.kind === 'active'
       ? { text: '稼働中', tone: 'ok' as const }
       : cond.kind === 'constructing'
         ? { text: `建設中（${cond.stage === 'foundation' ? '基礎' : '骨組み'}）${left !== null ? `・完成まで ${String(left)} 日` : ''}`, tone: 'warn' as const }
         : { text: '止まっている: 道路に面していない', tone: 'bad' as const };
     const permit = applications.find((a) => isOpen(a) && a.target.facilityId === f.id);
+    if (def.group === 'civic' || def.group === 'power') {
+      const cov = def.coverage;
+      const upkeep = `財政から毎週 ${String(def.upkeep ?? 0)}`;
+      const who = cov ? (CAPACITY_OF[cov.kind] && cov.capacity ? `${CAPACITY_OF[cov.kind] ?? ''}（${cov.capacity.toLocaleString('ja-JP')} 世帯まで）` : '住民') : '';
+      return {
+        kind: 'facility', id: f.id, name: def.name, typeLabel: def.group === 'power' ? '発電所' : '公共サービス', level: f.level, levelNote: '', condition,
+        domains: [], lessons: [], libraryDomain: null, missions: [], missionTotal: 0, upgrade: null,
+        effect: cov
+          ? `道路で ${String(cov.distance)} マスまでの${who}の${SERVICE_LIFE[cov.kind]}を支える。${upkeep}`
+          : `出力 ${String(-(def.powerMW ?? 0))} MW。面している道路網の建物に電気を送る。${upkeep}`,
+        ...(permit ? { permitId: permit.id } : {}),
+      };
+    }
     if (def.group !== 'facility') {
       return {
         kind: 'facility', id: f.id, name: def.name, typeLabel: '公園の類', level: f.level, levelNote: '', condition,
@@ -141,6 +165,7 @@ export function panelModel(city: City, sel: Selection, skills: Skills = {}, prog
         ...(upgrading ? { pending: `Lv${String(upgrading.target.toLevel ?? next.level)} へのアップグレードを申請中: ${STAGE_LABEL[upgrading.stage]} ${waitingText(upgrading, day)}` } : {}),
       } : null,
       effect: null,
+      power: (def.powerMW ?? 0) >= HEAVY_POWER_MW ? `使う電力 ${String((def.powerMW ?? 0) * f.level * (f.mods?.power ?? 1))} MW（Lv × ${String(def.powerMW)} MW）` : null,
       ...(permit ? { permitId: permit.id } : {}),
     };
   }

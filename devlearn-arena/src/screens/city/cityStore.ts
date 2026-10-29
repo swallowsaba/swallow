@@ -7,7 +7,7 @@ import type { Selection } from '@/city/render/CityRenderer';
 import type { BuildRoadKind } from '@/city/rules';
 import type { Terrain } from '@/city/terrain';
 import type { City, Facility, FacilityType, ZoneKind } from '@/city/types';
-import { FACILITY_DEFS } from '@/city/facilities';
+import { FACILITY_DEFS, type CoverageKind } from '@/city/facilities';
 import { checkUpgrade } from '@/city/upgrade';
 import { EXPLAIN, NAME_PARTS, POLITICS_RULES } from '@/content/politics';
 import { explainApproval } from '@/sim/explain';
@@ -94,6 +94,8 @@ export interface CityGameState {
   selected: Selection | null;
   /** 表示の切り替え */
   overlay: ViewKind | null;
+  /** 公共の道具を選んで自動で重ねたヒートマップと、その前に重ねていた物（道具を離すと戻す。docs/ui-design.md 11.5） */
+  autoView: { before: ViewKind | null } | null;
   /** 模擬が週の終わりに返したヒートマップの値 */
   heat: HeatFields | null;
   /** 開いている小さな窓（前に開いた順。最後が一番上） */
@@ -218,6 +220,22 @@ export interface CityStoreOptions {
 }
 
 /** 都市の状態を作る。保存から戻す時は、保存した世界（options.world）か都市（initial）から始める */
+/** 公共の道具が自動で重ねるヒートマップ（公共サービスはその種類の行き届き、発電所は電力。docs/ui-design.md 11.5） */
+export function toolView(tool: Tool): HeatKind | null {
+  if (tool.kind !== 'facility') return null;
+  const def = FACILITY_DEFS[tool.type];
+  if (def.group === 'power') return 'power';
+  return def.group === 'civic' && def.coverage ? (tool.type as CoverageKind) : null;
+}
+
+/** 道具を替えた時の重ねる物: 公共の道具なら重ね、離したら前の物に戻す */
+function toolViewPatch(s: Pick<CityGameState, 'overlay' | 'autoView'>, tool: Tool): Partial<Pick<CityGameState, 'overlay' | 'autoView'>> {
+  const view = toolView(tool);
+  if (view) return { overlay: view, autoView: s.autoView ?? { before: s.overlay } };
+  if (s.autoView) return { overlay: s.autoView.before, autoView: null };
+  return {};
+}
+
 export function createCityStore(seed?: number, initial?: City, options: CityStoreOptions = {}) {
   const terrainSeed = options.world?.city.seed ?? initial?.seed ?? seed;
   const startWorld = options.world
@@ -306,6 +324,7 @@ export function createCityStore(seed?: number, initial?: City, options: CityStor
       notice: null,
       selected: null,
       overlay: null,
+      autoView: null,
       heat: null,
       windows: [],
       queue: [],
@@ -353,8 +372,11 @@ export function createCityStore(seed?: number, initial?: City, options: CityStor
         if (on === has) return {};
         return { holds: on ? [...s.holds, reason] : s.holds.filter((r) => r !== reason) };
       }),
-      setTool: (tool) => set({ tool, hint: null }),
-      openMenu: (menu) => set((s) => ({ menu, tool: menu === 'demolish' ? { kind: 'demolish' } : menu === null || menu !== s.menu ? { kind: 'none' } : s.tool, hint: null })),
+      setTool: (tool) => set((s) => ({ tool, hint: null, ...toolViewPatch(s, tool) })),
+      openMenu: (menu) => set((s) => {
+        const tool: Tool = menu === 'demolish' ? { kind: 'demolish' } : menu === null || menu !== s.menu ? { kind: 'none' } : s.tool;
+        return { menu, tool, hint: null, ...toolViewPatch(s, tool) };
+      }),
       rotate: () => set((s) => ({ rotation: ((s.rotation + 90) % 360) as Facility['rotation'] })),
       setHint: (hint) => set({ hint }),
       askDemolish: (confirm) => set({ confirm }),
@@ -541,7 +563,7 @@ export function createCityStore(seed?: number, initial?: City, options: CityStor
         get().notify(`${name}の申請を取り下げた。取り分けた ${app.reserved.toLocaleString('ja-JP')} 資金が戻った`, now);
       },
       focusAt: (at, size = { x: 1, y: 1 }) => set((s) => ({ focus: { at, size, seq: (s.focus?.seq ?? 0) + 1 } })),
-      setOverlay: (overlay) => set({ overlay }),
+      setOverlay: (overlay) => set({ overlay, autoView: null }),
       openWindow: (id) => set((s) => {
         const rest = s.windows.filter((w) => w !== id);
         return { windows: [...rest.slice(Math.max(0, rest.length - (MAX_SMALL_WINDOWS - 1))), id] };

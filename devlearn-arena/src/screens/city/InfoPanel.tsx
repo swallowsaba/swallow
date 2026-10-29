@@ -66,9 +66,10 @@ export function InfoPanel({ model, onClose, onLesson, onLibrary, onUpgrade, onMi
         </section>
       ) : null}
 
-      {model.kind === 'facility' && model.effect ? (
+      {model.kind === 'facility' && (model.effect || model.power) ? (
         <section className="info-section">
-          <p className="info-line">{model.effect}</p>
+          {model.effect ? <p className="info-line">{model.effect}</p> : null}
+          {model.power ? <p className="info-line" data-testid="info-power">{model.power}</p> : null}
         </section>
       ) : null}
 

@@ -6,6 +6,8 @@ import { ROAD_RULES, ZONE_RULES } from '@/city/rules';
 import type { City, Point } from '@/city/types';
 import { permitPreview, type Op } from '@/sim/commands';
 import { PERMIT_REASON } from '@/sim/permits';
+import { reachAreaOf } from '@/sim/reachArea';
+import { spaceOf, type Space } from '@/sim/space';
 import type { CityStore, SmallWindowId, Tool } from './cityStore';
 
 /**
@@ -27,6 +29,12 @@ export function attachBuildControls(canvas: HTMLCanvasElement, renderer: CityRen
   let pointer: { sx: number; sy: number; cx: number; cy: number } | null = null;
   let rightDown: { x: number; y: number } | null = null;
   let leftDown: { x: number; y: number } | null = null;
+  // 届く範囲の計算に使う、都市のマスの読み（都市が変わった時だけ作り直す）
+  let spaceFor: { city: City; space: Space } | null = null;
+  const spaceNow = (city: City): Space => {
+    if (spaceFor?.city !== city) spaceFor = { city, space: spaceOf(city, store.getState().terrain) };
+    return spaceFor.space;
+  };
 
   const local = (e: { clientX: number; clientY: number }): { sx: number; sy: number } => {
     const r = canvas.getBoundingClientRect();
@@ -96,7 +104,10 @@ export function attachBuildControls(canvas: HTMLCanvasElement, renderer: CityRen
       const { check, note } = withPermit(checkFacility(city, terrain, tool.type, origin, rotation, store.getState().world.budget.treasury), op);
       const name = tool.landmark ? (landmarkOf(tool.landmark)?.name ?? FACILITY_DEFS[tool.type].name) : FACILITY_DEFS[tool.type].name;
       const ghost = { type: tool.type, origin, rotation, ...(tool.landmark ? { landmark: tool.landmark } : {}) };
-      show(check, `${name}（R で回す）${note}`, { cells: check.cells, ghost, ok: check.ok });
+      // 公共サービスと発電所は、置くと増える行き届きの範囲を縁で示す（docs/ui-design.md 11.5）
+      const group = FACILITY_DEFS[tool.type].group;
+      const area = check.ok && (group === 'civic' || group === 'power') ? reachAreaOf(spaceNow(city), { type: tool.type, origin, rotation }) : null;
+      show(check, `${name}（R で回す）${note}`, { cells: check.cells, ghost, ok: check.ok, ...(area ? { area } : {}) });
       return { apply: check.ok ? op : null };
     }
 

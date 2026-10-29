@@ -9,7 +9,7 @@ export type IconName =
   | 'export' | 'import' | 'restart' | 'save' | 'calendar' | 'approval' | 'speed1' | 'speed2' | 'speed3'
   | 'up' | 'heat' | 'collapse' | 'civic' | 'permit' | 'pin'
   | 'issue-afford' | 'issue-environment' | 'issue-jobs' | 'issue-finance' | 'issue-safety' | 'issue-traffic' | 'issue-tech' | 'vote'
-  | 'capital' | 'term' | 'inbox' | 'news' | 'treasury';
+  | 'capital' | 'term' | 'inbox' | 'news' | 'treasury' | 'power';
 
 const PATHS: Record<IconName, string> = {
   // 開いた本
@@ -94,6 +94,8 @@ const PATHS: Record<IconName, string> = {
   heat: 'M12 3.5 21 8l-9 4.5L3 8Z M3 12l9 4.5 9-4.5 M3 16l9 4.5 9-4.5',
   // 窓を畳む（横の線）
   collapse: 'M6 12h12',
+  // 電力（送電の鉄塔: 2 本の脚と 2 段の腕と、腕の先の碍子）
+  power: 'M12 3 7.5 21 M12 3l4.5 18 M6 8h12 M4.5 12.5h15 M9 16.5h6 M6 8v2 M18 8v2 M4.5 12.5v2 M19.5 12.5v2',
   // 市政（三角の破風と 4 本の柱の議事堂）
   civic: 'M3 9.5 12 4l9 5.5Z M4 20.5h16 M5.5 18.5h13 M6.5 11.5v7 M10 11.5v7 M14 11.5v7 M17.5 11.5v7',
   // 許認可（2 本の脚の看板と、板の上の行）

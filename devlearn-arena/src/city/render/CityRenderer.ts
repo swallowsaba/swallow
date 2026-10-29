@@ -35,6 +35,8 @@ export interface Preview {
   roads?: readonly Road[];
   /** 置こうとしている施設の姿 */
   ghost?: { type: FacilityType; origin: Point; rotation: Facility['rotation']; landmark?: string };
+  /** 置くと増える行き届きの範囲（マスの番号 y × 96 + x。公共サービス・公園の類・発電所。docs/ui-design.md 11.5） */
+  area?: readonly number[];
   ok: boolean;
 }
 
@@ -296,7 +298,41 @@ export class CityRenderer {
 
   setPreview(preview: Preview | null): void {
     this.preview = preview ? { ...preview, shapes: preview.roads ? roadShapes(preview.roads) : [] } : null;
+    this.previewEdges = preview?.area ? areaEdges(preview.area) : null;
     this.dirty = true;
+  }
+
+  private previewEdges: [Point, Point][] | null = null;
+  private areaEdgeList: [Point, Point][] | null = null;
+  /** 最後に描いた届く範囲の縁の数（撮影と確かめの道具が読む） */
+  lastAreaEdges = 0;
+
+  /** 選んだ施設の届く範囲（行き届きのヒートマップで施設を押した時。docs/ui-design.md 11.1）。null で消す */
+  setArea(cells: readonly number[] | null): void {
+    this.areaEdgeList = cells ? areaEdges(cells) : null;
+    this.dirty = true;
+  }
+
+  /** 届く範囲の縁（範囲の外と接する辺）を、金の線で描く */
+  private drawAreaEdges(o: { x: number; y: number }, edges: readonly [Point, Point][]): void {
+    const ctx = this.ctx;
+    const s = this.space();
+    ctx.save();
+    ctx.beginPath();
+    for (const [a, b] of edges) {
+      const [ax, ay] = toLayer(s, a);
+      const [bx, by] = toLayer(s, b);
+      ctx.moveTo(o.x + ax, o.y + ay);
+      ctx.lineTo(o.x + bx, o.y + by);
+    }
+    ctx.lineCap = 'round';
+    ctx.strokeStyle = rgbaOf(hud.bg, 0.7);
+    ctx.lineWidth = Math.max(3, 4.5 * this.camera.zoom);
+    ctx.stroke();
+    ctx.strokeStyle = accent.gold;
+    ctx.lineWidth = Math.max(1.5, 2.2 * this.camera.zoom);
+    ctx.stroke();
+    ctx.restore();
   }
 
   setSelection(selection: Selection | null): void {
@@ -636,6 +672,9 @@ export class CityRenderer {
     this.stats.agents = this.agents.length;
     this.drawFog(o);
     this.drawOverlay(o);
+    const edges = this.previewEdges ?? this.areaEdgeList;
+    if (edges) this.drawAreaEdges(o, edges);
+    this.lastAreaEdges = edges?.length ?? 0;
     this.drawPreview(o);
     this.drawLabels(o, order);
     if (this.onReady) {
@@ -1170,6 +1209,21 @@ export class CityRenderer {
     const [lx, ly] = toLayer(this.space(), { x, y }, z);
     return { sx: o.x + lx, sy: o.y + ly };
   }
+}
+
+/** マスの集まりの縁（集まりの外と接する辺。マスの番号は y × 96 + x） */
+export function areaEdges(cells: readonly number[]): [Point, Point][] {
+  const set = new Set(cells);
+  const out: [Point, Point][] = [];
+  for (const i of cells) {
+    const x = i % MAP_SIZE;
+    const y = Math.floor(i / MAP_SIZE);
+    if (y === 0 || !set.has(i - MAP_SIZE)) out.push([{ x, y }, { x: x + 1, y }]);
+    if (y === MAP_SIZE - 1 || !set.has(i + MAP_SIZE)) out.push([{ x, y: y + 1 }, { x: x + 1, y: y + 1 }]);
+    if (x === 0 || !set.has(i - 1)) out.push([{ x, y }, { x, y: y + 1 }]);
+    if (x === MAP_SIZE - 1 || !set.has(i + 1)) out.push([{ x: x + 1, y }, { x: x + 1, y: y + 1 }]);
+  }
+  return out;
 }
 
 /** 描く物が変わったかを見分ける印（道路・区画の建物の段階・施設の段階） */
