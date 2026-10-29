@@ -328,3 +328,120 @@ test('G7（S3）: スキル 0 のまま、譲歩と政治資本だけで申請�
   expect(await stageOf(page)).toBe('done');
   expect(errors).toEqual([]);
 });
+
+/**
+ * 市政のゲームループ（docs/acceptance-criteria.md 7.1 の S1）を 1 本で通す。
+ *   都市を表示 → 施設を置く → 申請 → 反対の集団と理由が立つ → 公聴会の論点から学習を選択 →（途中で中断して都市へ。公聴会は待っている）
+ *   → 続きから 7 段 → スキル段階が上がる → 公聴会に戻り、新しく出せる説明で答える → 議会の採決で可決 → 着工 → 完成
+ *   → 模擬の値と支持率が動き、その理由が説明に出る
+ * 住宅の列の東のネットワーク施設（電波塔の日照の理由）。スキル 0 のままでは 7 人のうち 3 人しか賛成しないので、
+ * 学んで出した説明（反対率が下がり、論点を重く見る議員の点が上がる）と、議員 1 人の説得（政治資本 3）で 4 人にする
+ */
+test('S1: 施設を置いて申請し、公聴会の論点から学んで説明で答え、可決・着工・完成して、支持率の動きと理由が説明に出る', async ({ page }) => {
+  test.setTimeout(300_000);
+  const errors: string[] = [];
+  page.on('pageerror', (e) => errors.push(String(e)));
+  type World = { city: { day: number; facilities: { id: string; type: string; state: string }[] }; applications: { id: string; stage: string; opposition: number; objections: { reasonId: string; group: string; hand?: { kind: string } }[]; vote?: { passed: boolean } }[]; history: { breakdown: { approval: number; causes: { source?: { id?: string } }[] }[] } };
+  const world = () => page.evaluate(() => (window as unknown as { __cityStore: { getState: () => { world: World } } }).__cityStore.getState().world);
+  const cityDay = async () => (await world()).city.day;
+  await town(page);
+
+  // 施設を置く → 申請（まだ都市には無い）
+  await page.getByTestId('build-group-facility').click();
+  await page.getByTestId('facility-shelf-base').click();
+  await page.getByTestId('build-facility-network').click();
+  const spot = await at(page, 45, 45);
+  await page.mouse.move(spot.sx, spot.sy, { steps: 2 });
+  await page.mouse.click(spot.sx, spot.sy);
+  await page.keyboard.press('Escape');
+  await page.keyboard.press('Escape');
+  await expect.poll(() => typeOf(page)).toBe('network');
+  expect((await world()).city.facilities.some((f) => f.type === 'network')).toBe(false);
+
+  // 反対の集団と理由が立ち、公聴会の段へ
+  for (let i = 0; i < 30 && (await stageOf(page)) !== 'hearing'; i += 1) await days(page, 1);
+  expect(await stageOf(page)).toBe('hearing');
+  const filed = (await world()).applications.at(-1);
+  expect(filed?.opposition).toBeGreaterThan(0);
+  expect(filed?.objections.map((o) => `${o.reasonId}:${o.group}`)).toContain('net-tower:neighbors');
+
+  // 敷地を押して申請の詳細 →「公聴会を開く」→ 論点「電波塔」。スキル 0 なので説明は無く、「この論点を学ぶ」が出る
+  const site = await at(page, 45, 45);
+  await page.mouse.click(site.sx, site.sy);
+  await page.getByTestId('permit-open-hearing').click();
+  const hearing = page.getByTestId('hearing-window');
+  await expect(hearing).toBeVisible();
+  const opposition0 = Number(await page.getByTestId('hearing-opposition').textContent());
+  await hearing.locator('.hearing-issue[data-reason="net-tower"]').click();
+  await expect(page.getByTestId('hearing-no-explain')).toBeVisible();
+  const learnLink = page.getByTestId('hearing-learn').locator('[data-lesson="net.b.01"]');
+  const day0 = await cityDay();
+
+  // 学びに行き、解説の途中で中断して都市へ。公聴会は待っていて、時間も進んでいない
+  await learnLink.click();
+  await page.getByTestId('entry-start').click();
+  await expect(page.getByTestId('stage-explain')).toBeVisible();
+  await page.getByTestId('lesson-next').click();
+  await page.getByTestId('lesson-exit').click();
+  await expect(page.getByTestId('city-screen')).toBeVisible();
+  expect(await stageOf(page)).toBe('hearing');
+  expect(await cityDay()).toBe(day0);
+
+  // 公聴会の窓から同じレッスンの「続きから学ぶ」→ 7 段
+  if (!(await hearing.count())) {
+    await page.mouse.click(site.sx, site.sy);
+    await page.getByTestId('permit-open-hearing').click();
+  }
+  await hearing.locator('.hearing-issue[data-reason="net-tower"]').click();
+  await page.getByTestId('hearing-learn').locator('[data-lesson="net.b.01"]').click();
+  await expect(page.getByTestId('entry-start')).toHaveText('続きから学ぶ');
+  await page.getByTestId('entry-start').click();
+  await expect(page.getByTestId('lesson-screen')).toBeVisible();
+  const out = await runLesson(page, 'net.b.01');
+  expect(out.result).toBe('success');
+  await expect(page.getByTestId('stage-done')).toBeVisible();
+  await page.getByTestId('lesson-to-city').click();
+
+  // 同じ公聴会の窓に戻り、スキル段階が上がった知らせと、新しく出せる説明。出すと反対率が下がる
+  await expect(hearing).toBeVisible();
+  expect(await cityDay()).toBe(day0);
+  await expect(page.locator('.city-notice')).toContainText('新しい説明を出せる', { timeout: 15_000 });
+  await hearing.locator('.hearing-issue[data-reason="net-tower"]').click();
+  await hearing.locator('[data-explanation="net-radio-weak"]').click();
+  await expect(page.getByTestId('hearing-reaction')).not.toBeEmpty();
+  expect(Number(await page.getByTestId('hearing-opposition').textContent())).toBeLessThan(opposition0);
+  await page.getByTestId('hearing-end').click();
+  expect(await stageOf(page)).toBe('council');
+
+  // 議会の採決の見込み。賛成 3 に、議員 1 人を説得（政治資本 3）して 4
+  await page.evaluate(() => {
+    const s = (window as unknown as { __cityStore: { getState: () => { world: { applications: { id: string }[] }; openCouncil: (id: string) => void } } }).__cityStore.getState();
+    s.openCouncil(s.world.applications.at(-1)?.id ?? '');
+  });
+  const council = page.getByTestId('council-window');
+  await expect(page.getByTestId('council-yes')).toHaveText('3');
+  await council.locator('[data-member="michishita"]').click();
+  await page.getByTestId('council-persuade').click();
+  await expect(page.getByTestId('council-yes')).toHaveText('4');
+  await expect(page.getByTestId('council-verdict')).toContainText('可決');
+  await council.locator('.council-close').click();
+
+  // 議会の日に可決 → 着工 → 完成
+  for (let i = 0; i < 20 && (await stageOf(page)) === 'council'; i += 1) await days(page, 1);
+  expect((await world()).applications.at(-1)?.vote?.passed).toBe(true);
+  expect(['construction', 'appeal']).toContain(await stageOf(page));
+  for (let i = 0; i < 60 && (await stageOf(page)) !== 'done'; i += 1) await days(page, 1);
+  expect(await stageOf(page)).toBe('done');
+  const built = (await world()).city.facilities.find((f) => f.type === 'network');
+  expect(built?.state).toBe('active');
+
+  // 完成した後の週: 施設が模擬の原因に数えられ、支持率が動き、その理由が平易な文で出る
+  const approval0 = (await world()).history.breakdown.at(-1)?.approval ?? 0;
+  await days(page, 28);
+  const after = await world();
+  expect(after.history.breakdown.some((b) => b.causes.some((c) => c.source?.id === built?.id))).toBe(true);
+  expect(after.history.breakdown.at(-1)?.approval).not.toBe(approval0);
+  await page.keyboard.press('v');
+  await expect(page.getByTestId('view-explain')).toContainText(/この \d+ 週で支持率が \d+ (上がった|下がった)。主な理由は、/);
+  expect(errors).toEqual([]);
+});
