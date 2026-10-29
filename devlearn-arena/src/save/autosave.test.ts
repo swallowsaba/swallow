@@ -111,6 +111,26 @@ describe('リロードしても進捗が消えない', () => {
     saver.stop();
   });
 
+  it('段が進んだ時の保存は、前の書き込みが終わるのを待たずに、その場で保存先へ渡す（直後にページを離れても、書き込みが始まっている）', async () => {
+    const backend = memoryBackend();
+    const opened = await openSession(backend, { now, newId: () => 'p-1' });
+    const saver = startAutosave(opened, backend, { now });
+    // 保存先の書き込みが終わらない（重い都市の書き込みの途中）
+    const started: string[] = [];
+    backend.write = (data: unknown) => {
+      const read = readSave(data);
+      started.push(read.ok ? (read.data.lessons['linux.b.01']?.stage ?? '-') : '?');
+      return new Promise<void>(() => undefined);
+    };
+    opened.session.progress.getState().start('linux.b.01', AT);
+    await vi.advanceTimersByTimeAsync(0);
+    opened.session.progress.getState().reach('linux.b.01', 'understand');
+    await vi.advanceTimersByTimeAsync(0);
+    // 書き込みは渡した順に保存先が並べる（IndexedDB の readwrite の取引は、作った順に行われる）
+    expect(started).toEqual(['explain', 'understand']);
+    saver.stop();
+  });
+
   it('初めて遊ぶ時は新しい都市と市長で始め、保存先に何も無いことを問題にしない', async () => {
     const backend = memoryBackend();
     const opened = await openSession(backend, { now, newId: () => 'p-new' });

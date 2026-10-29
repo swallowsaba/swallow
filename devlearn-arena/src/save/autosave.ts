@@ -124,8 +124,10 @@ export function startAutosave(opened: Opened, backend: SaveBackend, options: Aut
       timer = null;
     }
     const data = snapshot();
-    // 書き込みは順に（前の書き込みより古い物で上書きしない）
-    writing = writing.then(() => backend.write(data)).then(
+    // 書き込みは、前の書き込みの終わりを待たずに、その場で保存先へ渡す（直後にページを離れても書き込みが始まっている）。
+    // 古い物で上書きしないのは保存先が受け持つ（IndexedDB の readwrite の取引は、作った順に行われる）
+    const write = backend.write(data);
+    writing = Promise.all([writing, write]).then(
       () => {
         if (failed) {
           failed = false;
