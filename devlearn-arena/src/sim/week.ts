@@ -6,7 +6,7 @@ import { commuteOf, type Commute } from './commute';
 import { COVERAGE_KINDS, FACILITY_DEFS, type CoverageKind } from '@/city/facilities';
 import { landFieldOf, landTermsAt, noiseTermsAt, parkAt, serviceAt, type LandField, type Source } from './land';
 import {
-  adultsOf, AGE_SHARE, ageOf, FACTOR_COUNT, FACTORS, INCOME_SHARE, incomeOf, incomeYenOf, LAYER_COUNT, LAYER_SHARE, LAYERS, MONTHLY_INCOME, sizeOf, WEIGHTS,
+  adultsOf, AGE_SHARE, ageOf, FACTOR_COUNT, FACTORS, INCOME_SHARE, incomeOf, incomeYenOf, LAYER_COUNT, LAYER_SHARE, layerOf, LAYERS, MONTHLY_INCOME, sizeOf, WEIGHTS,
   workersOf, type FactorId,
 } from './layers';
 import { eventSourceAt, matchInWeek, STADIUM } from './awards';
@@ -267,20 +267,24 @@ export function weekStep(world: World, terrain: Terrain, init = false, rules: Po
     const commuteP = !anyJobs ? 0 : Number.isFinite(minutes) ? commutePoints(minutes) : (COMMUTE_POINTS[COMMUTE_POINTS.length - 1] as readonly [number, number])[1];
     // 催し（競技場から直線で 15 マス以内。若者と子育ての層だけ）
     const event = eventSourceAt(space, b.cell.x, b.cell.y) ? STADIUM.event.points : 0;
+    // 公共サービスの点は層によらない（学校は子育ての層だけ）。建物ごとに 1 回だけ計算する
+    const cover = coverage.get(b.id) as { value: number }[];
+    const service = SERVICE_FACTORS.map((sf, k) => servicePoints(sf.kind, layerOf(1, 0), (cover[k] as { value: number }).value));
+    const jobsBy = [0, 1, 2].map((band) => jobsPoints(commute.unemployment[zb.district * 3 + band] as number));
     // 毎週、建物 × 層の数だけ作るので、行は 1 つの配列の中で重みを掛ける（作る物を減らす）
     const rows = LAYERS.map((l) => {
       const row = emptyRow();
       row[AFFORD] = affordPoints(burden[l] as number);
-      row[JOBS] = jobsPoints(commute.unemployment[zb.district * 3 + incomeOf(l)] as number);
+      row[JOBS] = jobsBy[incomeOf(l)] as number;
       row[COMMUTE] = commuteP;
       row[NOISE] = noise;
       row[GREEN] = green;
       row[TAX] = tax;
       row[TRUST] = sim.trust[l] as number;
-      const cover = coverage.get(b.id) as { value: number }[];
-      SERVICE_FACTORS.forEach((s, k) => {
-        row[s.f] = servicePoints(s.kind, l, (cover[k] as { value: number }).value);
-      });
+      for (let k = 0; k < SERVICE_FACTORS.length; k += 1) {
+        const sf = SERVICE_FACTORS[k] as { kind: CoverageKind; f: number };
+        row[sf.f] = sf.kind === 'school' && ageOf(l) !== 1 ? 0 : (service[k] as number);
+      }
       row[POWER] = POWER_POINTS * outage;
       if (STADIUM.event.ages.includes(ageOf(l))) row[EVENT] = event;
       const w = WEIGHTS[l] as readonly number[];

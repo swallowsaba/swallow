@@ -312,14 +312,37 @@ export function landFieldOf(space: Space, commute: Float32Array, noiseLimit?: Re
     const l = LAND_AWARD[af.facility.type];
     if (l) boost(af.center, l.value, l.radius);
   }
+  // 面する道路の値（道路に面する・公園・公共サービス 4 種。それぞれ 4 方の隣のうち一番大きい物）を、関数を呼ばずに引く。
+  // 値は roadFront・parkAt・serviceAt と同じ（landTermsAt の項の合計と一致する）
+  const roadValue = new Float32Array(CELLS);
+  for (const i of space.roadCells) roadValue[i] = LAND_ROAD[ROAD_KINDS[space.roadKind[i] as number] ?? 'lane'] ?? 0;
+  const serviceRoads = COVERAGE_KINDS.map((kind) => service[kind].road);
+  const near = new Float64Array(COVERAGE_KINDS.length);
+  // 仕事への近さは地区ごとに 1 回
+  const jobsNear = Float64Array.from({ length: DISTRICT_COUNT }, (_, d) => jobsNearValue(commute[d] ?? Infinity));
   for (let y = 0; y < SIZE; y += 1) {
     for (let x = 0; x < SIZE; x += 1) {
       const i = indexOf(x, y);
-      let v = LAND_BASE + roadFront(space, x, y).value + parkAt(field, x, y).value * LAND_PARK_MAX;
+      let road = 0;
+      let park = 0;
+      near.fill(0);
+      for (const [dx, dy] of NEIGHBORS) {
+        const nx = x + dx;
+        const ny = y + dy;
+        if (!inMap(nx, ny)) continue;
+        const j = indexOf(nx, ny);
+        if ((roadValue[j] as number) > road) road = roadValue[j] as number;
+        if ((cover[j] as number) > park) park = cover[j] as number;
+        for (let k = 0; k < serviceRoads.length; k += 1) {
+          const sv = (serviceRoads[k] as Float32Array)[j] as number;
+          if (sv > (near[k] as number)) near[k] = sv;
+        }
+      }
+      let v = LAND_BASE + road + park * LAND_PARK_MAX;
       let sv = 0;
-      for (const kind of COVERAGE_KINDS) sv += serviceAt(field, kind, x, y).value;
+      for (let k = 0; k < near.length; k += 1) sv += near[k] as number;
       v += (sv * LAND_SERVICE_MAX) / COVERAGE_KINDS.length;
-      v += jobsNearValue(commute[districtOfIndex(i)] ?? Infinity);
+      v += jobsNear[districtOfIndex(i)] as number;
       if (water[i]) v += LAND_WATER.value;
       v += (hills[i] as number) * LAND_HILL_STEP;
       v += facilityBoost[i] as number;

@@ -4,6 +4,7 @@ import type { Facility, FacilityType, Point } from '@/city/types';
 import { POLITICS_RULES } from '@/content/politics';
 import { eventNear, matchDay, matchInWeek, STADIUM, unlitStadiums } from './awards';
 import { heatOf } from './heat';
+import { landTermsAt } from './land';
 import { factorIndex, FACTORS, LAYERS, ageOf, WEIGHTS } from './layers';
 import { oppositionOf } from './opposition';
 import { indexOf } from './space';
@@ -152,6 +153,17 @@ describe('試合の日の騒音と交通（U-13・U-14）', () => {
   it('試合の週は近くの地価が騒音の分だけ下がる（地価と家賃もその週だけ動く）', () => {
     const at = cell(0, -3);
     expect(match.field.land[at] as number).toBeLessThan(off.field.land[at] as number);
+  });
+
+  it('全てのマスの地価は、項（13.4 の式。原因つき）の合計と一致する（試合の週も、無い週も）', () => {
+    for (const v of [match, off]) {
+      for (let y = 0; y < 96; y += 1) {
+        for (let x = 0; x < 96; x += 1) {
+          const sum = landTermsAt(v.space, v.field, v.commute.minutes, x, y, 'z').reduce((a, t) => a + t.value, 0);
+          expect(v.field.land[indexOf(x, y)] as number, `${String(x)},${String(y)}`).toBeCloseTo(sum, 3);
+        }
+      }
+    }
   });
 
   it('ヒートマップの「催し」: 住宅のマスに、15 マス以内なら 1、外なら 0。競技場の無い都市は全て 0', () => {
