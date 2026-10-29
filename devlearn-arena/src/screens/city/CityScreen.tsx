@@ -8,6 +8,7 @@ import { Intro } from './Intro';
 import { CityRenderer } from '@/city/render/CityRenderer';
 import { RANK_NAMES, rankOf } from '@/game/rank';
 import { STAGE_NAMES } from '@/game/stage';
+import { unlitStadiums } from '@/sim/awards';
 import { HEAT_KINDS, SERVICE_HEAT, type HeatKind } from '@/sim/heat';
 import { reachAreaOf } from '@/sim/reachArea';
 import { POLITICS_RULES } from '@/content/politics';
@@ -202,6 +203,8 @@ export function CityScreen({ session, active = true, covered = false, current, d
           const off = (s.world.sim.power.recent?.at(-1)?.length ?? 0) > 0 ? poweredOffIds(s.world, spaceOf(s.world.city, s.terrain)) : new Set<string>();
           renderer.setPower({ landing: s.world.sim.power.landing, off });
         }
+        // 競技場の照明は試合の日だけ灯る（docs/city-design.md 9.5）
+        renderer.setUnlit(unlitStadiums(s.world.city));
       }
       // 学習から戻った時の変化の場所へカメラを寄せ、光の輪で示す
       if (s.focus && s.focus.seq !== focusSeq) {

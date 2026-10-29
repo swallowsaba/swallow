@@ -83,3 +83,10 @@ export const PERSUADE_CAPITAL = 3;
 export function persuadeCostOf(city: Pick<City, 'facilities'>): number {
   return awardActive(city, 'city-hall') ? CITY_HALL.persuade : PERSUADE_CAPITAL;
 }
+
+/** 今日、照明の消えている競技場（完成していて、試合の日でない物。docs/city-design.md 9.5「試合の日は照明が灯る」） */
+export function unlitStadiums(city: Pick<City, 'day' | 'facilities'>): Set<string> {
+  const out = new Set<string>();
+  for (const f of city.facilities) if (f.type === 'stadium' && f.state === 'active' && !matchDay(f, city.day)) out.add(f.id);
+  return out;
+}

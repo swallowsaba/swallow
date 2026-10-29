@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { checkFacility } from '@/city/place';
 import type { Facility, FacilityType, Point } from '@/city/types';
 import { POLITICS_RULES } from '@/content/politics';
-import { eventNear, matchDay, matchInWeek, STADIUM } from './awards';
+import { eventNear, matchDay, matchInWeek, STADIUM, unlitStadiums } from './awards';
 import { heatOf } from './heat';
 import { factorIndex, FACTORS, LAYERS, ageOf, WEIGHTS } from './layers';
 import { oppositionOf } from './opposition';
@@ -51,6 +51,14 @@ describe('試合の日（U-14: 完成した日から 14 日ごと）', () => {
     expect([3, 16, 17, 30, 31, 45].map((d) => matchDay(f, d))).toEqual([false, false, true, false, true, true]);
     // 申請を通らずに置いた物（completeDay が無い）は builtDay から数える
     expect(matchDay({ builtDay: 10 }, 24)).toBe(true);
+  });
+
+  it('照明（docs/city-design.md 9.5）: 完成した競技場は試合の日だけ照明が灯り、ほかの日は消えている。工事中は数えない', () => {
+    const st = (id: string, completeDay: number, state: Facility['state'] = 'active'): Facility => ({ id, type: 'stadium', origin: { x: 0, y: 0 }, rotation: 0, level: 1, state, builtDay: 0, completeDay });
+    const city = (day: number) => ({ day, facilities: [st('a', 3), st('b', 10), st('c', 99, 'constructing'), { ...st('p', 3), type: 'police' as const }] });
+    expect([...unlitStadiums(city(17))]).toEqual(['b']);
+    expect([...unlitStadiums(city(24))]).toEqual(['a']);
+    expect([...unlitStadiums(city(18))]).toEqual(['a', 'b']);
   });
 
   it('週の終わり（7 の倍数の日）ごとに見ると、試合の日を含む週は 1 週おきに来る', () => {

@@ -104,6 +104,8 @@ export class CityRenderer {
   private siteObjects: SceneObject[] = [];
   /** 陸揚げ所（docs/city-design.md 9.4）と、停電している建物・施設の ID（窓の灯りを消し、屋根に止まった記号） */
   private power: { landing: Point | null; off: ReadonlySet<string> } = { landing: null, off: new Set() };
+  /** 照明の消えている施設（試合の日でない競技場。灯りを消した絵で描くが、止まった記号は出さない） */
+  private unlit: ReadonlySet<string> = new Set();
   private powerObjects: SceneObject[] = [];
   /** 最後に描いた止まった記号（撮影と確かめの道具が読む） */
   lastPlugs: { id: string; x: number; y: number }[] = [];
@@ -266,6 +268,21 @@ export class CityRenderer {
     // 止まった施設の絵（窓の灯りを消した SVG）を先に読み込む。読み終えたら描き直す
     for (const f of this.cityState.facilities) {
       if (!power.off.has(f.id)) continue;
+      const asset = facilityAsset(f.type, f.level, f.landmark);
+      if (asset) void this.sprites.preloadOff(asset.key, asset.svg).then(() => { this.dirty = true; });
+    }
+    this.dirty = true;
+  }
+
+  /**
+   * 照明の消えている施設を渡す（docs/city-design.md 9.5「競技場は試合の日は照明が灯る」）。
+   * 灯りの色を消した絵を先に読み込み、読み終えたら描き直す
+   */
+  setUnlit(ids: ReadonlySet<string>): void {
+    if (ids.size === this.unlit.size && [...ids].every((id) => this.unlit.has(id))) return;
+    this.unlit = ids;
+    for (const f of this.cityState.facilities) {
+      if (!ids.has(f.id)) continue;
       const asset = facilityAsset(f.type, f.level, f.landmark);
       if (asset) void this.sprites.preloadOff(asset.key, asset.svg).then(() => { this.dirty = true; });
     }
@@ -653,12 +670,13 @@ export class CityRenderer {
       if (sx < -reach || sx > width + reach || sy < -reach || sy > height + reach * 0.5) continue;
       const rot = ((obj.facing + this.camera.rotation) % 4) as Rotation;
       const off = obj.select !== undefined && obj.select.kind !== 'application' && this.power.off.has(obj.select.id);
+      const dark = off || (obj.select !== undefined && obj.select.kind !== 'application' && this.unlit.has(obj.select.id));
       let sprite;
       if (obj.source.kind === 'facility') {
         const asset = facilityAsset(obj.source.type, obj.source.level, obj.source.landmark);
-        sprite = asset ? ((off ? this.sprites.facilityOff(asset.key, asset.svg, rot, this.camera.zoom) : null) ?? this.sprites.facility(asset.key, asset.svg, rot, this.camera.zoom)) : null;
+        sprite = asset ? ((dark ? this.sprites.facilityOff(asset.key, asset.svg, rot, this.camera.zoom) : null) ?? this.sprites.facility(asset.key, asset.svg, rot, this.camera.zoom)) : null;
       } else {
-        sprite = this.sprites.model(obj.source.key, obj.source.model, rot, this.camera.zoom, off);
+        sprite = this.sprites.model(obj.source.key, obj.source.model, rot, this.camera.zoom, dark);
       }
       if (!sprite) continue;
       ctx.drawImage(sprite.canvas, Math.round(sx - sprite.ox), Math.round(sy - sprite.oy), sprite.w, sprite.h);
