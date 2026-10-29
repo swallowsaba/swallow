@@ -25,16 +25,17 @@ function createdFor(file: string, make: (created: string) => string): string {
   return make(today);
 }
 
-// 分野の施設は Lv1〜Lv5、公園の類は 1 枚（docs/visual-design.md 6.1）。公共サービスと発電所は civic/ に 1 枚ずつ（docs/city-design.md 9.6）
+// 分野の施設は Lv1〜Lv5、公園の類は 1 枚（docs/visual-design.md 6.1）。公共サービスと発電所と褒賞の建物は civic/ に 1 枚ずつ（docs/city-design.md 9.6）
 const civicDir = 'src/city/assets/civic';
 mkdirSync(civicDir, { recursive: true });
 for (const type of MODELED_FACILITIES) {
   const group = FACILITY_DEFS[type].group;
-  if (group === 'civic' || group === 'power') {
+  if (group === 'civic' || group === 'power' || group === 'award') {
     const model = facilityModel(type, 1);
     if (!model) continue;
     const file = `${civicDir}/${type}.svg`;
-    const svg = createdFor(file, (created) => drawingToSvg(meshModel(model, 0), meshModel(model, 2), FACILITY_DEFS[type].name, created, 'src/city/generate/facilities/civic.ts'));
+    const source = group === 'award' ? 'src/city/generate/facilities/awards.ts' : 'src/city/generate/facilities/civic.ts';
+    const svg = createdFor(file, (created) => drawingToSvg(meshModel(model, 0), meshModel(model, 2), FACILITY_DEFS[type].name, created, source));
     writeFileSync(file, svg);
     console.log(`${file} ${String(Math.round(svg.length / 102.4) / 10)}KB`);
     continue;

@@ -181,4 +181,27 @@ describe('公共サービス・発電所・陸揚げ所の SVG（docs/city-desig
       expect(text, name).toMatch(/viewBox="/);
     }
   });
+
+  it('褒賞の建物 5 つ（docs/city-design.md 9.5）も 1 枚ずつ civic/ にあり、30KB 以内で、模型から作り直した物と一致する', () => {
+    const types = Object.values(FACILITY_DEFS).filter((d) => d.group === 'award').map((d) => d.type);
+    expect(types).toEqual(['city-hall', 'memorial', 'stadium', 'civic-hall', 'central-park']);
+    for (const type of types) {
+      expect(civic, type).toContain(`${type}.svg`);
+      const svg = readFileSync(join(CIVIC, `${type}.svg`), 'utf8').replace(/\r\n/g, '\n');
+      expect(svg.length, type).toBeLessThan(30 * 1024);
+      expect(svg).not.toMatch(/<image|href=|base64/);
+      const model = facilityModel(type, 1);
+      if (!model) throw new Error(type);
+      const created = /作成日 (\d{4}-\d{2}-\d{2})/.exec(svg)?.[1] ?? '';
+      expect(svg, type).toBe(drawingToSvg(meshModel(model, 0), meshModel(model, 2), FACILITY_DEFS[type].name, created, 'src/city/generate/facilities/awards.ts'));
+    }
+  });
+
+  it('褒賞の建物は、大きさの敷地いっぱいに描き、細部の部品を多く持つ（四角と三角だけにしない。docs/visual-design.md 5 章）', () => {
+    for (const type of ['city-hall', 'memorial', 'stadium', 'civic-hall', 'central-park'] as const) {
+      const model = facilityModel(type, 1);
+      expect([model?.w, model?.d], type).toEqual([FACILITY_DEFS[type].w, FACILITY_DEFS[type].d]);
+      expect(model?.parts.length ?? 0, type).toBeGreaterThanOrEqual(12);
+    }
+  });
 });
