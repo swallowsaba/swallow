@@ -60,6 +60,25 @@ describe('受信箱（10.8）', () => {
     expect(row?.at).toBeDefined();
   });
 
+  it('公共サービスの行き届きで届いた請願は、施設の名前と % で理由を言う（語の ID をそのまま見せない）', () => {
+    const clinic = POLITICS_RULES.petitions?.find((p) => p.when.includes('coverage.clinic'));
+    expect(clinic).toBeDefined();
+    const world: World = { ...GROWN, petitions: { inbox: [{ ...ENTRY, id: `${clinic?.id ?? ''}@18`, petitionId: clinic?.id ?? '', value: 0 }], handled: {}, effects: [] } };
+    const store = storeOf(world);
+    const [row] = inboxRows(store.getState().world, store.getState().terrain, POLITICS_RULES);
+    const place = GROWN.sim.districtNames[66] ?? '';
+    expect(row?.basis).toBe(`${place}の診療所の行き届きが 0%（歩いて通える所に診療所が無い）`);
+  });
+
+  it('どの請願も、届いた理由の文に語の ID が出ない', () => {
+    const petitions = POLITICS_RULES.petitions ?? [];
+    const inbox = petitions.map((p, i) => ({ ...ENTRY, id: `${p.id}@${String(i)}`, petitionId: p.id, value: 12 }));
+    const store = storeOf({ ...GROWN, petitions: { inbox, handled: {}, effects: [] } });
+    const rows = inboxRows(store.getState().world, store.getState().terrain, POLITICS_RULES);
+    expect(rows).toHaveLength(petitions.length);
+    for (const r of rows) expect(r.basis, r.id).not.toMatch(/[a-z]/);
+  });
+
   it('受理を押すと請願が受信箱から消え、受け取られ方を知らせる', () => {
     const store = storeOf(withInbox);
     const host = mount(<InboxWindow store={store} stack={0} shifted={false} />);

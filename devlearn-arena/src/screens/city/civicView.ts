@@ -66,6 +66,10 @@ function basisText(p: Petition, place: string, value: number): string {
   switch (word) {
     case 'noiseAtHome': return `${at}住まいの騒音が ${num1(value)}（うるさい方から 1 割の平均。40 を超えると眠りを妨げる）`;
     case 'coverage.park': return `${at}公園の行き届きが ${num(value)}%（歩いて行ける公園が無い）`;
+    case 'coverage.school': return `${at}学校の行き届きが ${num(value)}%（子どもが歩いて通える所に学校が無い）`;
+    case 'coverage.clinic': return `${at}診療所の行き届きが ${num(value)}%（歩いて通える所に診療所が無い）`;
+    case 'coverage.police': return `${at}警察の行き届きが ${num(value)}%（警察署から遠く、夜の見回りが来ない）`;
+    case 'coverage.fire': return `${at}消防の行き届きが ${num(value)}%（消防署から遠く、火事の時に間に合わない）`;
     case 'outageDays': return `${place ? `${place}で` : ''}直近 28 日に ${num(value)} 日の停電`;
     case 'unemployment': return `${at}失業率が ${num1(value)}%`;
     case 'population': return `${at}人口が ${num(value)} 人`;
