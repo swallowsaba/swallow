@@ -234,6 +234,8 @@ export default async function permitG3(page, shot) {
     await page.locator('[data-testid="info-lessons"] button').first().click();
     await page.waitForSelector('[data-testid="lesson-screen"], [data-testid="entry-card"]', { timeout: 15000 }).catch(() => {});
     console.log('申請中の施設から学ぶ', await page.evaluate(() => window.location.hash));
+    // 都市からレッスンへの切り替え（溶け込み）が終わってから撮る
+    await page.waitForTimeout(1200);
     await shot(`g3-learn${tag}`);
   }
 }
