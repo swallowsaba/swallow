@@ -8,7 +8,7 @@
 // 反対の受付で理由が立ち、反対率が日ごとに上がる所と、囲いの前の人の影を寄って撮る。申請の詳細で内訳を開き、
 // 理由を押して元の値とヒートマップを撮る。反対率が 20% 以上なので公聴会の段で待つ（公聴会の手は G5）。
 // 住宅から離した所に同じデータセンターを置き、反対率が下がることを数で比べる。
-// 最後に、公聴会の段で待つ申請の敷地から、ここで学ぶ → レッスンへ行けること（学習にロックが無い）を確かめる。
+// 公聴会の段で待つ申請の敷地から、ここで学ぶ → レッスンへ行けること（学習にロックが無い）を確かめる。
 import { fundBy } from './learning.mjs';
 import { at, closePledges, days, drag, facility, pick } from './town.mjs';
 
@@ -156,6 +156,20 @@ export default async function permitG4(page, shot) {
   console.log('公聴会の段', JSON.stringify(await appOf(page, near)), await page.evaluate(() => window.__cityStore.getState().notice?.text ?? null));
   console.log('重なり（公聴会）', JSON.stringify(await overlaps(page)));
   await shot(`g4-hearing${tag}`);
+  // 学習にロックが無い: 公聴会の段で待つ申請の敷地 → 情報パネル → ここで学ぶ（公聴会は 14 日のうちに開かないと市長抜きで開かれて決まるので、待っている間に確かめる）
+  const p = await at(page, 46, 45);
+  await page.mouse.click(p.sx, p.sy);
+  await page.waitForTimeout(400);
+  console.log('情報パネル', await page.evaluate(() => document.querySelector('[data-testid="info-state"]')?.textContent), 'ここで学ぶ', await page.locator('[data-testid="info-lessons"] button').count(), '本');
+  await page.locator('[data-testid="info-lessons"] button').first().click();
+  await page.waitForSelector('[data-testid="lesson-screen"], [data-testid="entry-card"]', { timeout: 15000 }).catch(() => {});
+  console.log('公聴会の段で待つ施設から学ぶ', await page.evaluate(() => window.location.hash));
+  // 都市からレッスンへの切り替え（溶け込み）が終わってから撮る
+  await page.waitForTimeout(1200);
+  await shot(`g4-learn${tag}`);
+  await page.evaluate(() => { window.location.hash = '#/city'; });
+  await page.waitForFunction(() => document.body.dataset.cityReady === '1');
+  await page.keyboard.press('Escape');
   // 遠くでは人の影を間引き、看板だけ
   await zoomOut(page, 5);
   await page.waitForTimeout(400);
@@ -211,14 +225,4 @@ export default async function permitG4(page, shot) {
   }));
   await page.keyboard.press('1');
   await page.keyboard.press(' ');
-
-  // 学習にロックが無い: 公聴会の段で待つ申請の敷地 → 情報パネル → ここで学ぶ
-  const p = await at(page, 46, 45);
-  await page.mouse.click(p.sx, p.sy);
-  await page.waitForTimeout(400);
-  console.log('情報パネル', await page.evaluate(() => document.querySelector('[data-testid="info-state"]')?.textContent), 'ここで学ぶ', await page.locator('[data-testid="info-lessons"] button').count(), '本');
-  await page.locator('[data-testid="info-lessons"] button').first().click();
-  await page.waitForSelector('[data-testid="lesson-screen"], [data-testid="entry-card"]', { timeout: 15000 }).catch(() => {});
-  console.log('公聴会の段で待つ施設から学ぶ', await page.evaluate(() => window.location.hash));
-  await shot(`g4-learn${tag}`);
 }

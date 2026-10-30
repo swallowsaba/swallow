@@ -18,7 +18,24 @@ export async function pick(page, group, item) {
   if (item) await page.click(`[data-testid="${item}"]`);
 }
 
+/**
+ * マスの点が UI（建設メニューの引き出し・ミニマップなど）の下にあれば、点の真ん中を画面の中央に寄せる。
+ * 1280×720 では引き出しが画面の下の 3 分の 1 を覆い、1920×1080 で見えている所が隠れる
+ */
+async function reveal(page, cells) {
+  const hidden = await page.evaluate((cs) => cs.some(([x, y]) => {
+    const p = window.__city.screenOf(x + 0.5, y + 0.5);
+    return !document.elementFromPoint(p.sx, p.sy)?.classList.contains('city-canvas');
+  }), cells);
+  if (!hidden) return;
+  const cx = cells.reduce((n, c) => n + c[0], 0) / cells.length;
+  const cy = cells.reduce((n, c) => n + c[1], 0) / cells.length;
+  await page.evaluate(([x, y]) => window.__city.focusOn(x + 0.5, y + 0.5), [cx, cy]);
+  await page.waitForTimeout(100);
+}
+
 export async function drag(page, from, to) {
+  await reveal(page, [from, to]);
   const a = await at(page, from[0], from[1]);
   const b = await at(page, to[0], to[1]);
   await page.mouse.move(a.sx, a.sy);
@@ -29,6 +46,7 @@ export async function drag(page, from, to) {
 }
 
 async function click(page, cell) {
+  await reveal(page, [cell]);
   const p = await at(page, cell[0], cell[1]);
   await page.mouse.move(p.sx, p.sy, { steps: 2 });
   await page.mouse.click(p.sx, p.sy);
@@ -123,6 +141,7 @@ export async function buildTown(page, shot = async () => {}) {
   await drag(page, [37, 52], [58, 52]);
   await page.click('[data-testid="road-shape-curve"]');
   await drag(page, [49, 57], [57, 55]);
+  await reveal(page, [[49, 57], [57, 55], [55, 59]]);
   const bend = await at(page, 55, 59);
   await page.mouse.move(bend.sx, bend.sy, { steps: 3 });
   await page.mouse.click(bend.sx, bend.sy);
