@@ -1,8 +1,11 @@
 // 建設メニューの引き出しを開いた画面（小さな画面で崩れないかの確かめ）。
 //
 //   SHOOT_SIZE=1280x720 SHOOT_SCRIPT=tools/scenarios/menu.mjs npm run shoot -- p2-menu-1280
+import { closePledges } from './town.mjs';
 
 export default async function menu(page, shot) {
+  // 1 期目の公約を選ぶ窓（G8）は選ばずに閉じる（1280×720 では窓が建設メニューの引き出しを覆う）
+  await closePledges(page);
   await page.click('[data-testid="build-group-facility"]');
   await page.click('[data-testid="build-facility-academy"]');
   const p = await page.evaluate(() => window.__city.screenOf(44.5, 44.5));
