@@ -28,6 +28,16 @@ const WORDS: Record<string, { name: string; unit: string }> = {
   'facilities.it': { name: '完成した IT 施設', unit: 'つ' },
   'facilities.civic': { name: '公共サービス', unit: 'つ' },
   missionsDone: { name: '達成したミッション', unit: 'つ' },
+  'rentBurden.低': { name: '低い収入の世帯の家賃の負担', unit: '%' },
+  'rentBurden.中': { name: '中くらいの収入の世帯の家賃の負担', unit: '%' },
+  'rentBurden.高': { name: '高い収入の世帯の家賃の負担', unit: '%' },
+  noiseAtHome: { name: '住まいの騒音', unit: '' },
+  'coverage.police': { name: '警察の行き届き', unit: '%' },
+  'coverage.fire': { name: '消防の行き届き', unit: '%' },
+  'coverage.school': { name: '学校の行き届き', unit: '%' },
+  'coverage.clinic': { name: '診療所の行き届き', unit: '%' },
+  'coverage.park': { name: '公園の行き届き', unit: '%' },
+  highApprovalWeeks: { name: '支持率 65% 以上の週', unit: '週' },
 };
 const OPS: Record<string, string> = { '>=': '以上', '<=': '以下', '>': 'より上', '<': 'より下', '=': 'ちょうど' };
 

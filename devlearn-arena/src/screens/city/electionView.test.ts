@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { POLITICS_RULES } from '@/content/politics';
+import { CONDITION_WORDS } from '@/sim/conditions';
 import { grownVillage } from '@/sim/__fixtures__/cities';
 import { applyOp } from '@/sim/commands';
 import { electionOf, TERM_DAYS } from '@/sim/election';
@@ -35,6 +36,18 @@ describe('公約の今の値と目標', () => {
     expect(goalText({ goal: 'unemployment <= 5' }, { unemployment: 7.25 }, undefined)).toBe('失業率 7.3%（目標 5%以下）');
     // 財政は単位を付けず、桁を区切る
     expect(goalText({ goal: 'treasury >= start.treasury + 1000' }, { treasury: 800 }, 800)).toBe('財政 800（目標 1,800以上）');
+  });
+
+  it('公共サービスの行き届きは、施設の名前と % で言う（語の ID をそのまま見せない）', () => {
+    expect(goalText({ goal: 'coverage.police >= 50 && coverage.clinic >= 50' }, { 'coverage.police': 12, 'coverage.clinic': 0 }, undefined))
+      .toBe('警察の行き届き 12%（目標 50%以上）・診療所の行き届き 0%（目標 50%以上）');
+    expect(goalText({ goal: 'coverage.school >= 60' }, { 'coverage.school': 61.5 }, undefined)).toBe('学校の行き届き 61.5%（目標 60%以上）');
+  });
+
+  it('条件のどの語も、公約の文では日本語の名前になる', () => {
+    for (const word of CONDITION_WORDS) {
+      expect(goalText({ goal: `${word} >= 1` }, { [word]: 0 }, undefined), word).not.toMatch(/[a-z]/);
+    }
   });
 
   it('公約の候補は全て、今の値と目標と重く見る層を添えて並ぶ（start の語は今の値を初めの値にする）', () => {
