@@ -2,6 +2,7 @@
 // 段階だけを地方都市にして（霧も晴らし、資金も足して）、建設メニューから引く。
 //
 //   SHOOT_SCRIPT=tools/scenarios/avenue.mjs npm run shoot -- p2-avenue
+import { closePledges } from './town.mjs';
 
 async function at(page, x, y) {
   return page.evaluate(([cx, cy]) => window.__city.screenOf(cx + 0.5, cy + 0.5), [x, y]);
@@ -17,6 +18,8 @@ async function drag(page, from, to) {
 }
 
 export default async function avenue(page, shot) {
+  // 1 期目の公約を選ぶ窓（G8）は選ばずに閉じる（1280×720 では窓が建設メニューの引き出しを覆う）
+  await closePledges(page);
   await page.evaluate(() => {
     const s = window.__cityStore.getState();
     s.setCity({ ...s.city, stage: 3, funds: 20000, revealed: [{ x: 20, y: 20, w: 56, h: 56 }] });

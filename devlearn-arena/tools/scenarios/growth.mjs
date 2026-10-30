@@ -6,6 +6,7 @@
 // 学習の記録が無い状態 → 模擬の学習記録を与える → 上の帯の XP・資金・エンジニア段階 → XP を押して成長画面 → 分野を選んで内訳 → Esc で都市へ。
 import { readFileSync } from 'node:fs';
 import { learn, mockRecords } from './learning.mjs';
+import { closePledges } from './town.mjs';
 
 const LESSONS = JSON.parse(readFileSync(new URL('../../content/catalog.json', import.meta.url), 'utf8')).lessons;
 
@@ -19,6 +20,8 @@ async function topbar(page) {
 export default async function growth(page, shot) {
   const w = String(page.viewportSize()?.width ?? 0);
   const tag = w === '1920' ? '' : `-${w}`;
+  // 1 期目の公約を選ぶ窓（G8）は選ばずに閉じる（上の帯と都市を撮る台本なので）
+  await closePledges(page);
   console.log('始め', await topbar(page));
   await shot(`p4-start${tag}`);
 
