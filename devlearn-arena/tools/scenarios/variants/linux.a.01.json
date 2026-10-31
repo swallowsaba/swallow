@@ -1,0 +1,55 @@
+{
+  "lesson": "linux.a.01",
+  "variants": [
+    {
+      "name": "grep で読む・止めるのを分ける",
+      "steps": {
+        "syntax": [
+          "journalctl -u nginx --no-pager | grep emerg",
+          "3"
+        ],
+        "fix": [
+          "sed -i 's/^  listen 80$/  listen 80;/' /etc/nginx/conf.d/site.conf",
+          "nginx -t"
+        ],
+        "port": [
+          "ss -ltnp",
+          "systemctl stop apache2",
+          "systemctl disable apache2",
+          "systemctl start nginx",
+          "curl -i http://site.example/"
+        ]
+      }
+    },
+    {
+      "name": "置き換えを変える",
+      "steps": {
+        "syntax": [
+          "nginx -t",
+          "cat -n /etc/nginx/conf.d/site.conf",
+          "３"
+        ],
+        "fix": [
+          "sed -i '3s/$/;/' /etc/nginx/conf.d/site.conf",
+          "nginx -t"
+        ],
+        "port": [
+          "systemctl disable --now apache2",
+          "systemctl restart nginx",
+          "systemctl status nginx"
+        ]
+      }
+    }
+  ],
+  "wrong": {
+    "step": "port",
+    "why": "止めずに動かし直す",
+    "input": [
+      "systemctl restart nginx"
+    ],
+    "retry": [
+      "systemctl disable --now apache2",
+      "systemctl restart nginx"
+    ]
+  }
+}

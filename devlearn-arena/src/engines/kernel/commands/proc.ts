@@ -113,6 +113,16 @@ function heldBytes(shell: ShellState): number {
   return total;
 }
 
+export interface Meters { cpus: number; load: [number, number, number]; us: number; sy: number; id: number; wa: number; writeMBs: number; util: number }
+
+/** 資源の計器（setup の meters）。無ければ null */
+export function metersOf(shell: ShellState): Meters | null {
+  const raw = shell.vars.get('__METERS');
+  return raw === undefined ? null : (JSON.parse(raw) as Meters);
+}
+
+export const loadText = (m: Meters): string => `load average: ${m.load.map((n) => n.toFixed(2)).join(', ')}`;
+
 /** ディスクの大きさと使っている量（df と同じ。機械のディスクの大きさは setup の disk。無ければ 20G） */
 export function diskUse(shell: ShellState): { capacity: number; used: number } {
   const capacity = Number(shell.vars.get('__DISK_SIZE') ?? String(20 * 1024 ** 3));
@@ -120,6 +130,36 @@ export function diskUse(shell: ShellState): { capacity: number; used: number } {
 }
 
 export const procCommands: CommandSpec[] = [
+  {
+    name: 'vmstat',
+    summary: 'CPU・メモリ・入出力の様子を 1 行で見る（wa は入出力の待ち）',
+    handler: ({ shell }) => {
+      const m = metersOf(shell);
+      const c = m ?? { us: 1, sy: 1, id: 98, wa: 0, writeMBs: 0 };
+      const blocked = m ? Math.round(m.wa / 10) : 0;
+      return { stdout: fromLines(['procs -----------memory---------- ---swap-- -----io---- -system-- ------cpu-----', ' r  b   swpd   free   buff  cache   si   so    bi    bo   in   cs us sy id wa st', `${' 1'.padStart(2)} ${String(blocked).padStart(2)}      0   2048    128   4096    0    0     8 ${String(c.writeMBs * 1024).padStart(5)}  900 1500 ${[c.us, c.sy, c.id, c.wa, 0].map(String).join(' ')}`]) };
+    },
+  },
+  {
+    name: 'iostat',
+    summary: 'ディスクの混み具合を見る（-x の %util が 100 に近いと詰まっている）',
+    handler: ({ shell }) => {
+      const m = metersOf(shell);
+      const w = m?.writeMBs ?? 0;
+      const u = m?.util ?? 0;
+      return { stdout: fromLines(['Device            r/s     w/s     rkB/s     wkB/s  %util', `${'vda'.padEnd(17)}${'4.0'.padStart(4)}${(w * 5).toFixed(1).padStart(8)}${'32.0'.padStart(10)}${(w * 1024).toFixed(1).padStart(10)}${u.toFixed(1).padStart(7)}`]) };
+    },
+  },
+  {
+    name: 'iotop',
+    summary: 'どのプロセスがディスクに書いているかを見る（管理者だけ）',
+    handler: ({ shell }) => {
+      if (currentUser(shell) !== 'root') return { stderr: 'iotop requires root or the NET_ADMIN capability.\n', code: 1 };
+      const m = metersOf(shell);
+      const rows = sorted(shell).filter((p) => (p.ioMBs ?? 0) > 0).sort((a, b) => (b.ioMBs ?? 0) - (a.ioMBs ?? 0));
+      return { stdout: fromLines([`Total DISK READ:         0.00 B/s | Total DISK WRITE:       ${(m?.writeMBs ?? 0).toFixed(2)} M/s`, '    PID  PRIO  USER     DISK READ  DISK WRITE  SWAPIN      IO    COMMAND', ...rows.map((p) => `${String(p.pid).padStart(7)}  be/4  ${p.user.padEnd(8)} 0.00 B/s  ${(p.ioMBs ?? 0).toFixed(2)} M/s  0.00 %  ${Math.min(99, Math.round((p.ioMBs ?? 0) / 2)).toFixed(2)} %  ${p.command}`)]) };
+    },
+  },
   {
     name: 'ps',
     summary: '動いているプロセスを見る（aux / -ef）',
@@ -141,7 +181,7 @@ export const procCommands: CommandSpec[] = [
       }
       return {
         stdout:
-          `%Cpu(s): ${totalCpu(shell.procs).toFixed(1)} us\n` +
+          (metersOf(shell) ? `top - 09:00:30 up 1 day,  2:03,  1 user,  ${loadText(metersOf(shell) as Meters)}\n%Cpu(s): ${(metersOf(shell) as Meters).us.toFixed(1)} us,  ${(metersOf(shell) as Meters).sy.toFixed(1)} sy,  0.0 ni, ${(metersOf(shell) as Meters).id.toFixed(1)} id, ${(metersOf(shell) as Meters).wa.toFixed(1)} wa,  0.0 hi,  0.0 si,  0.0 st\n` : `%Cpu(s): ${totalCpu(shell.procs).toFixed(1)} us\n`) +
           `MiB Mem : ${String(shell.procs.totalMemory)} total, ${String(shell.procs.totalMemory - Math.min(used, shell.procs.totalMemory))} free, ${String(Math.min(used, shell.procs.totalMemory))} used\n` +
           swapLine(shell) +
           '\n' +

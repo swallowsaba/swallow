@@ -407,6 +407,125 @@
         "sudo",
         "ufw"
       ]
+    },
+    {
+      "id": "linux-port-busy",
+      "match": "Address already in use|already in use",
+      "meaning": "そのポートを別のプログラムが使っている。同じポートでは 1 つしか待ち受けられない。",
+      "causes": [
+        "別の Web サーバが動いている。",
+        "前に動かした物が止まっていない。"
+      ],
+      "hint": "`ss -ltnp` で、そのポートを使っているプログラムを読み、要らなければ止めよう。",
+      "terms": [
+        "ss",
+        "port"
+      ]
+    },
+    {
+      "id": "linux-job-failed",
+      "match": "Job for nginx.service failed",
+      "meaning": "nginx の起動に失敗した。理由は `journalctl -u nginx` か `nginx -t` で読める。",
+      "causes": [
+        "設定の文法の誤りが残っている。",
+        "ポートを別のプログラムが使っている。"
+      ],
+      "hint": "`nginx -t` と `ss -ltnp` を打って、どちらかを確かめよう。",
+      "terms": [
+        "journalctl",
+        "systemctl"
+      ]
+    },
+    {
+      "id": "linux-a-misread",
+      "match": "答えが合っていない",
+      "meaning": "答えが、調べた結果と違う。",
+      "causes": [
+        "別の行や列を読んだ。",
+        "CPU の使用率だけを見て判断した。`wa` は入出力の待ち。"
+      ],
+      "hint": "目的の文に書いた道具の出力を、もう一度読もう。",
+      "terms": [
+        "iowait"
+      ]
+    },
+    {
+      "id": "linux-mount-badfs",
+      "match": "wrong fs type",
+      "meaning": "装置にファイルシステムが無いので、取り付けられない。",
+      "causes": [
+        "`mkfs` をまだ打っていない。",
+        "別の装置を指定した。"
+      ],
+      "hint": "`sudo mkfs.ext4 /dev/vdb` で作ってから取り付けよう。",
+      "terms": [
+        "file-system"
+      ]
+    },
+    {
+      "id": "linux-mount-nodir",
+      "match": "mount point does not exist",
+      "meaning": "取り付ける場所のディレクトリが無い。",
+      "causes": [
+        "`mkdir` をまだ打っていない。",
+        "場所の綴りが違う。"
+      ],
+      "hint": "`sudo mkdir /data` で作ってから取り付けよう。",
+      "terms": [
+        "mount"
+      ]
+    },
+    {
+      "id": "linux-mount-root",
+      "match": "must be superuser",
+      "meaning": "取り付けは管理者だけができる。",
+      "causes": [
+        "`sudo` を付けていない。",
+        "別の利用者で打っている。"
+      ],
+      "hint": "`sudo mount …` と打とう。",
+      "terms": [
+        "sudo"
+      ]
+    },
+    {
+      "id": "linux-mount-nodev",
+      "match": "special device .* does not exist",
+      "meaning": "`/etc/fstab` に、無い装置が書いてある。そのまま再起動すると、起動が止まる。",
+      "causes": [
+        "装置の名前の綴りが違う。",
+        "`UUID` を写し間違えた。"
+      ],
+      "hint": "`lsblk` で装置の名前を確かめ、`/etc/fstab` を直してから、もう一度 `sudo mount -a` を打とう。",
+      "terms": [
+        "fstab"
+      ]
+    },
+    {
+      "id": "linux-sshd-bad",
+      "match": "Bad configuration option",
+      "meaning": "`sshd_config` に、知らない項目がある。",
+      "causes": [
+        "項目の綴りが違う（`PermitRootLogin`）。",
+        "`sed` の置き換えで、項目の名前まで替えた。"
+      ],
+      "hint": "`sudo sshd -t` の行の番号を読み、その行を直そう。",
+      "terms": [
+        "ssh"
+      ]
+    },
+    {
+      "id": "linux-nginx-emerg",
+      "match": "is not terminated by",
+      "meaning": "設定の文法の誤り。文の終わりに `;` が無い。文の最後に、ファイルと行の番号が書いてある。",
+      "causes": [
+        "行の終わりの `;` を書き忘れた。",
+        "`{` と `}` の数が合っていない。"
+      ],
+      "hint": "`:3` のような行の番号を読み、その行を直そう。",
+      "terms": [
+        "config-file"
+      ]
     }
   ]
 }

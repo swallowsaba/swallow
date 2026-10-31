@@ -1,0 +1,58 @@
+{
+  "lesson": "linux.a.03",
+  "variants": [
+    {
+      "name": "UUID で書く",
+      "steps": {
+        "mount": [
+          "sudo mkfs -t ext4 /dev/vdb",
+          "sudo mkdir -p /data",
+          "sudo mount /dev/vdb /data"
+        ],
+        "fstab": [
+          "blkid /dev/vdb",
+          "echo 'UUID=7c3e1a90-2b4d-4f6e-9a10-000000000001 /data ext4 defaults 0 2' | sudo tee -a /etc/fstab",
+          "sudo mount -a"
+        ],
+        "boot": [
+          "sudo reboot",
+          "lsblk"
+        ]
+      }
+    },
+    {
+      "name": "外してから確かめる",
+      "steps": {
+        "mount": [
+          "lsblk -f",
+          "sudo mkfs.ext4 /dev/vdb",
+          "sudo mkdir /data",
+          "sudo mount /dev/vdb /data",
+          "mount"
+        ],
+        "fstab": [
+          "sudo umount /data",
+          "sudo sh -c \"echo '/dev/vdb /data ext4 defaults 0 2' >> /etc/fstab\"",
+          "sudo mount -a",
+          "findmnt /data"
+        ],
+        "boot": [
+          "sudo reboot",
+          "mount"
+        ]
+      }
+    }
+  ],
+  "wrong": {
+    "step": "mount",
+    "why": "ファイルシステムを作らずに取り付ける",
+    "input": [
+      "sudo mkdir /data",
+      "sudo mount /dev/vdb /data"
+    ],
+    "retry": [
+      "sudo mkfs.ext4 /dev/vdb",
+      "sudo mount /dev/vdb /data"
+    ]
+  }
+}

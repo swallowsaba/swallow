@@ -1,3 +1,4 @@
+import { loadText, metersOf } from './proc';
 import { displayPath } from '../path';
 import type { CommandSpec, ShellState } from '../registry';
 import { exists, readFile } from '../vfs';
@@ -114,7 +115,9 @@ export const miscCommands: CommandSpec[] = [
   {
     name: 'uptime',
     summary: '仮想時計の経過を表示する',
-    handler: ({ clock }) => {
+    handler: ({ clock, shell }) => {
+      const meters = metersOf(shell);
+      if (meters) return { stdout: ` 09:00:30 up 1 day,  2:03,  1 user,  ${loadText(meters)}\n` };
       const seconds = Math.floor(clock.nowMs / 1000);
       return { stdout: `up ${String(seconds)}s (tick ${String(clock.tick)})\n` };
     },

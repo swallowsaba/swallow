@@ -8,6 +8,7 @@ import { exists, isDir, metaOf, readFile, writeFile } from '../vfs';
 import { withZones } from '../dnsZones';
 import { readWebConfig } from '../webConfig';
 import { fromLines } from './args';
+import { remountAfterReboot } from './block';
 
 /**
  * systemctl と journalctl（src/engines/kernel/services.ts の模型を操作する）。
@@ -137,7 +138,10 @@ export const systemctlCommands: CommandSpec[] = [
     summary: '機械を起動し直す（有効なサービスだけが動き出す。root だけ）',
     handler: ({ shell }) => {
       if ((shell.vars.get('USER') ?? 'learner') !== 'root') return { stderr: 'Call to Reboot failed: Interactive authentication required.\n', code: 1 };
-      return shell.services ? { patch: { services: reboot(shell.services, loaderOf(shell), readerOf(shell)) } } : {};
+      const { vfs, failed } = remountAfterReboot(shell.vfs);
+      // /etc/fstab の誤りで取り付かない時は、本物と同じく緊急モードで止まる
+      const emergency = failed === null ? {} : { stderr: `${failed}\nYou are in emergency mode. After logging in, type "journalctl -xb" to view system logs.\nGive root password for maintenance\n(or press Control-D to continue):\n`, code: 1 };
+      return { ...emergency, patch: { vfs, ...(shell.services ? { services: reboot(shell.services, loaderOf(shell), readerOf(shell)) } : {}) } };
     },
   },
   {

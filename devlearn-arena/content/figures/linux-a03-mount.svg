@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 360" font-family="&quot;Noto Sans JP&quot;, sans-serif">
+  <title>新しい装置にファイルシステムを作り、木に取り付け、起動の時の設定に書く</title>
+  <defs>
+    <marker id="arrow-gold" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="#f2b632" />
+    </marker>
+  </defs>
+  <g class="el" data-part="mkfs">
+    <rect x="20" y="110" width="132" height="110" rx="10" fill="#1a6fd6" />
+    <text x="86" y="159" text-anchor="middle" font-size="16" font-weight="700" fill="#eef2f6">作る</text>
+    <text x="86" y="181" text-anchor="middle" font-size="14" fill="#eef2f6">mkfs.ext4</text>
+  </g>
+  <g class="el" data-part="mount">
+    <rect x="176" y="110" width="132" height="110" rx="10" fill="#7a3fd0" />
+    <text x="242" y="159" text-anchor="middle" font-size="16" font-weight="700" fill="#eef2f6">取り付ける</text>
+    <text x="242" y="181" text-anchor="middle" font-size="14" fill="#eef2f6">mount</text>
+  </g>
+  <g class="el" data-part="fstab">
+    <rect x="332" y="110" width="132" height="110" rx="10" fill="#f2b632" />
+    <text x="398" y="159" text-anchor="middle" font-size="16" font-weight="700" fill="#0a1424">残す</text>
+    <text x="398" y="181" text-anchor="middle" font-size="14" fill="#0a1424">/etc/fstab</text>
+  </g>
+  <g class="el" data-part="verify">
+    <rect x="488" y="110" width="132" height="110" rx="10" fill="#1f7a4d" />
+    <text x="554" y="159" text-anchor="middle" font-size="16" font-weight="700" fill="#eef2f6">確かめる</text>
+    <text x="554" y="181" text-anchor="middle" font-size="14" fill="#eef2f6">mount -a</text>
+  </g>
+  <g class="el" data-part="flow">
+    <path d="M152 165 L173 165" fill="none" stroke="#f2b632" stroke-width="2" marker-end="url(#arrow-gold)" />
+    <path d="M308 165 L329 165" fill="none" stroke="#f2b632" stroke-width="2" marker-end="url(#arrow-gold)" />
+    <path d="M464 165 L485 165" fill="none" stroke="#f2b632" stroke-width="2" marker-end="url(#arrow-gold)" />
+  </g>
+  <g class="el" data-part="note">
+    <text x="320" y="340" text-anchor="middle" font-size="14" fill="#eef2f6">mount だけでは再起動で外れる</text>
+  </g>
+</svg>

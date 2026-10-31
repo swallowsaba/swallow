@@ -1,6 +1,7 @@
 import { dockerCommands } from '@/engines/docker/cli';
 import { CommandRegistry } from '../registry';
 import { aptCommands } from './apt';
+import { blockCommands } from './block';
 import { ufwCommands } from './ufw';
 import { builtinCommands } from './builtins';
 import { cronCommands } from './cron';
@@ -62,6 +63,7 @@ export function createDefaultRegistry(): CommandRegistry {
     ...systemctlCommands,
     ...aptCommands,
     ...ufwCommands,
+    ...blockCommands,
     ...cronCommands,
     ...socketCommands,
     ...dhcpServerCommands,

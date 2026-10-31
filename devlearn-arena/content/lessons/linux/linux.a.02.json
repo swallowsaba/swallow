@@ -1,0 +1,277 @@
+{
+  "id": "linux.a.02",
+  "domain": "linux",
+  "level": "advanced",
+  "theme": "性能",
+  "title": "遅いサーバを調べる",
+  "goal": "CPU・メモリ・ディスク・待ちの偏りを見分けられる",
+  "minutes": 20,
+  "prerequisites": [
+    "linux.i.05"
+  ],
+  "related": [
+    "mon.b.03",
+    "db.i.03"
+  ],
+  "next": [
+    "linux.a.03"
+  ],
+  "terms": [
+    "network",
+    "process",
+    "disk",
+    "server",
+    "cpu",
+    "memory",
+    "load-average",
+    "swap",
+    "iowait",
+    "command",
+    "root-user",
+    "permission",
+    "mb"
+  ],
+  "explain": {
+    "what": "遅い{{term:server}}は、{{term:cpu}}・{{term:memory}}・{{term:disk}}・{{term:network}}のどこが詰まっているかを見分けて調べる。組み合わせで判断し、元の{{term:process}}まで追う。",
+    "why": "原因の違う対策をしても速くならない。ディスクが詰まっているのに CPU を増やしても、費用だけが増える。",
+    "use": "性能の障害対応で使う。全体の計器を見てから、詰まった資源の詳しい道具へ進む。",
+    "when": "朝から応答が遅い。CPU の使用率は高くないのに、{{term:load-average}}だけが高い。",
+    "figures": [
+      "linux-a02-meters"
+    ]
+  },
+  "understand": [
+    {
+      "kind": "relation",
+      "prompt": "2 つの関係を選ぶ。",
+      "a": "処理が CPU かディスクを待って溜まる",
+      "b": "負荷平均が高くなる",
+      "answer": "cause",
+      "why": "負荷平均は、待っている処理の数。CPU の使用率が低くても、ディスク待ちで高くなる。",
+      "see": "what"
+    },
+    {
+      "kind": "situation",
+      "prompt": "CPU の `us` は 10%、`wa` は 60%。どこが詰まっている？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "ディスク",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "CPU",
+          "correct": false,
+          "whyNot": "CPU は入出力の完了を待って遊んでいる。"
+        },
+        {
+          "id": "c",
+          "text": "メモリ",
+          "correct": false,
+          "whyNot": "それなら{{term:swap}}が増える。"
+        }
+      ],
+      "see": "what"
+    }
+  ],
+  "quiz": [
+    {
+      "id": "q1",
+      "kind": "cause",
+      "prompt": "CPU の使用率は低いが、{{term:iowait}} が高い。原因は？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "ディスクの入出力",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "CPU の不足",
+          "correct": false,
+          "whyNot": "CPU は余っている。"
+        },
+        {
+          "id": "c",
+          "text": "ネットワークの設定",
+          "correct": false,
+          "whyNot": "iowait はディスクなどの入出力の待ち。"
+        }
+      ],
+      "explanation": "`iostat` と `iotop` へ進む。"
+    },
+    {
+      "id": "q2",
+      "kind": "situation",
+      "prompt": "メモリ不足の兆候は？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "スワップの使用量が増える",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "CPU の数が減る",
+          "correct": false,
+          "whyNot": "CPU の数は変わらない。"
+        },
+        {
+          "id": "c",
+          "text": "ディスクの容量が増える",
+          "correct": false,
+          "whyNot": "容量は増えない。"
+        }
+      ],
+      "explanation": "`free` の `Swap` を見る。"
+    },
+    {
+      "id": "q3",
+      "kind": "predict",
+      "prompt": "CPU が 4 つで、負荷平均が 8。どういう状態？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "処理待ちが溜まっている",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "余裕がある",
+          "correct": false,
+          "whyNot": "CPU の数より大きい。"
+        },
+        {
+          "id": "c",
+          "text": "半分だけ使っている",
+          "correct": false,
+          "whyNot": "半分なら 2 くらい。"
+        }
+      ],
+      "explanation": "CPU の数と比べて読む。"
+    }
+  ],
+  "practice": {
+    "mode": "terminal",
+    "purpose": "朝から応答が遅いサーバを調べる。全体の計器から、詰まっている資源を見分け、その元のプロセスを特定する。",
+    "environment": "linux-basic",
+    "setup": {
+      "hostname": "report-srv",
+      "meters": {
+        "cpus": 4,
+        "load": [
+          8.2,
+          7.9,
+          6.1
+        ],
+        "us": 12,
+        "sy": 4,
+        "id": 20,
+        "wa": 64,
+        "writeMBs": 180,
+        "util": 98
+      },
+      "memory": {
+        "total": 8192,
+        "swap": 2048
+      },
+      "processes": [
+        {
+          "command": "/usr/bin/report-batch --all",
+          "cpu": 5,
+          "memory": 180,
+          "user": "report",
+          "state": "D",
+          "ioMBs": 176
+        },
+        {
+          "command": "/usr/bin/reserve",
+          "cpu": 8,
+          "memory": 240,
+          "user": "www-data",
+          "ioMBs": 3
+        },
+        {
+          "command": "/usr/sbin/cron",
+          "cpu": 0,
+          "memory": 12,
+          "user": "root"
+        }
+      ]
+    },
+    "steps": [
+      {
+        "id": "load",
+        "purpose": "`uptime` と `top -b -n 1` を見る。入出力の待ちの割合（`wa` の値）を答えの欄に入れる。",
+        "check": {
+          "kind": "answer",
+          "equals": "64"
+        },
+        "afterward": "`wa` が 64%。負荷平均は 8 で CPU の 4 つを超えているのに、`us` は 12%。CPU でなく、入出力を待っている。",
+        "hints": [
+          "`top` の 3 行目が CPU の時間の割合。",
+          "`wa` が入出力の待ち。",
+          "`uptime` `top -b -n 1` を打ち、`64` と答える。"
+        ],
+        "expectedErrors": [
+          "linux-a-misread"
+        ]
+      },
+      {
+        "id": "resource",
+        "purpose": "`vmstat` と `iostat -x` で確かめ、詰まっている資源を答えの欄に入れる（CPU・メモリ・ディスク・ネットワークのどれか）。",
+        "check": {
+          "kind": "answer",
+          "equals": "ディスク"
+        },
+        "afterward": "`iostat -x` の `%util` が 98。ディスクがほぼ休みなく動いている。",
+        "hints": [
+          "`%util` が 100 に近いと、そのディスクは詰まっている。",
+          "`iostat -x` の一番右の列を読む。",
+          "`vmstat` `iostat -x` を打ち、`ディスク` と答える。"
+        ],
+        "expectedErrors": [
+          "linux-a-misread"
+        ]
+      },
+      {
+        "id": "process",
+        "purpose": "`sudo iotop -b -o -n 1` で、一番書き込んでいるプロセスの{{term:command}}の名前（`report-batch` の形）を答えの欄に入れる。",
+        "check": {
+          "kind": "answer",
+          "equals": "report-batch"
+        },
+        "afterward": "`report-batch` が毎秒 176 {{term:mb}} 書いている。朝の集計の処理が、昼の仕事を圧迫していた。夜に動かすなどの対策を考えられる。",
+        "hints": [
+          "どのプロセスかは `iotop`。{{term:root-user}}の{{term:permission}}が要る。",
+          "`DISK WRITE` の一番大きい行のコマンドを読む。",
+          "`sudo iotop -b -o -n 1` を打ち、`report-batch` と答える。"
+        ],
+        "expectedErrors": [
+          "linux-a-misread"
+        ]
+      }
+    ]
+  },
+  "result": {
+    "success": "計器の組み合わせから詰まりの場所を見分け、元のプロセスまで追えた。",
+    "partial": "ヒントを使って見分けられた。次は、自分で読む順を組み立ててみよう。",
+    "retry": "CPU だけで判断していないか、`wa` と `%util` を読み直そう。"
+  },
+  "summary": {
+    "points": [
+      "4 つの資源を見る",
+      "症状の組み合わせで判断する",
+      "元のプロセスまで追う"
+    ],
+    "next": [
+      "mon.b.03"
+    ],
+    "terms": [
+      "load-average",
+      "iowait",
+      "top"
+    ]
+  }
+}

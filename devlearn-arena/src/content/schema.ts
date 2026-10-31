@@ -128,6 +128,7 @@ export const checkSchema = z.discriminatedUnion('kind', [
     data: z.string().optional(),
   }).strict(),
   z.object({ kind: z.literal('tls'), host: z.string(), trusted: z.boolean() }).strict(),
+  z.object({ kind: z.literal('mount'), path: z.string(), device: z.string() }).strict(),
   z.object({ kind: z.literal('disk'), maxUse: z.number().min(1).max(100) }).strict(),
   z.object({ kind: z.literal('sql'), query: z.string(), equals: z.unknown(), committed: z.boolean().optional() }).strict(),
   /** 答えの欄に入れる形。コマンドでは得られない値（読み取って考える値）を答える時だけ使う（docs/content-spec.md 2.4） */

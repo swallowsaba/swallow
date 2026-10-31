@@ -56,7 +56,7 @@
 | 中級 | devops | 終わり（3 本。下の「中級 devops」） |
 | 中級 | trouble | 終わり（3 本。下の「中級 trouble」） |
 | 中級 | lab | 終わり（2 本。下の「中級 lab」） |
-| 上級 | linux | 未着手 |
+| 上級 | linux | 終わり（4 本。下の「上級 linux」） |
 | 上級 | net | 未着手 |
 | 上級 | web | 未着手 |
 | 上級 | sec | 未着手 |
@@ -251,3 +251,23 @@
 設計を直した物: lab.i.02 を「編」から「端」にした（ワークフローとコードの 2 つのファイルを直して push する。壊れた変更が止まることを見るには、コードの変更が要る）。`docs/lessons/lab.md` を先に直した。
 
 模擬環境に足した物（テストを先に書いた。`ufw.test.ts`）: `ufw`（`allow`・`deny`・`delete`・`enable`・`disable`・`status`。`/etc/ufw/user.rules` に書く）と `reboot`（有効なサービスだけが動き出す）。外からの通信の模型は無いので、`ufw` は規則を決めるところまでを扱う（届くかは `curl` を手元から打って確かめる）。
+
+### 上級 linux（4 本）
+
+| ID | 実戦 | verify-all | verify-free（別解） | verify-wrong |
+|---|---|---|---|---|
+| linux.a.01 起動しないサービスを直す | 端 | 合格 | 合格（2 通り） | 合格 |
+| linux.a.02 遅いサーバを調べる | 端 | 合格 | 合格（2 通り） | 合格 |
+| linux.a.03 マウントとファイルシステム | 端 | 合格 | 合格（2 通り） | 合格 |
+| linux.a.04 サーバを堅くする | 端 | 合格 | 合格（2 通り） | 合格 |
+
+| 不合格 | 原因 | 直したこと |
+|---|---|---|
+| linux.a.01 の手順 `nginx -t` で一般の案内が出た | 書き起こしの誤り: `nginx -t` の失敗に当てる解説が無かった | 解説 `linux-nginx-emerg` を足し、読むための失敗（`designedErrors`）にした |
+
+設計は変えていない（4 本とも端）。
+
+模擬環境に足した物（テストを先に書いた。`block.test.ts`）:
+- 記憶装置とマウント: setup の `blockDevices`。`lsblk`・`mkfs.ext4`・`mkfs -t`・`blkid`・`mount`（`-a` で /etc/fstab）・`umount`・`findmnt`。再起動すると fstab の物だけが取り付き、誤りがあれば緊急モードの文で止まる。判定の `mount`
+- 資源の計器: setup の `meters`。`uptime`・`top` の負荷平均と `wa`、`vmstat`、`iostat -x`、`iotop`（プロセスの `ioMBs`）
+- `sshd -t`（`/etc/ssh/sshd_config` の検査。本物の文で断る）

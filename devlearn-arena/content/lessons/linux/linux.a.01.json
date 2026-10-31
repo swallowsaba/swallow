@@ -1,0 +1,276 @@
+{
+  "id": "linux.a.01",
+  "domain": "linux",
+  "level": "advanced",
+  "theme": "障害",
+  "title": "起動しないサービスを直す",
+  "goal": "状態・ログ・設定から原因を特定し直せる",
+  "minutes": 20,
+  "prerequisites": [
+    "linux.i.02"
+  ],
+  "related": [
+    "trouble.i.01",
+    "docker.a.02"
+  ],
+  "next": [
+    "linux.a.02"
+  ],
+  "terms": [
+    "service",
+    "log",
+    "web-server",
+    "server",
+    "program",
+    "port",
+    "disk",
+    "ip",
+    "permission",
+    "file"
+  ],
+  "explain": {
+    "what": "起動しない{{term:service}}は、状態・{{term:log}}・設定の順に調べて理由を見つけて直す。理由が 1 つとは限らない。",
+    "why": "サービスの停止は利用者に直結する。思いつきで再起動を繰り返しても、原因が残っていれば何度でも落ちる。",
+    "use": "障害対応で使う。設定を直したら、検査してから動かし、応答まで確かめる。",
+    "when": "設定を変えた後、{{term:web-server}}が failed になった。誰かが別の{{term:server}}も入れたらしい。",
+    "figures": [
+      "linux-a01-failed"
+    ]
+  },
+  "understand": [
+    {
+      "kind": "order",
+      "prompt": "調べる順に並べる。",
+      "items": [
+        "状態を見る",
+        "ログを読む",
+        "設定を検査する",
+        "直して動かす",
+        "応答を確かめる"
+      ],
+      "see": "what"
+    },
+    {
+      "kind": "situation",
+      "prompt": "ログの `bind() to 0.0.0.0:80 failed (98: Address already in use)` は、どの種類の原因？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "別の{{term:program}}が{{term:port}}を使っている",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "設定の文法の誤り",
+          "correct": false,
+          "whyNot": "文法の誤りなら `[emerg]` と行の番号が出る。"
+        },
+        {
+          "id": "c",
+          "text": "{{term:disk}}の満杯",
+          "correct": false,
+          "whyNot": "それなら `No space left on device`。"
+        }
+      ],
+      "see": "what"
+    }
+  ],
+  "quiz": [
+    {
+      "id": "q1",
+      "kind": "cause",
+      "prompt": "`address already in use` と出た。原因は？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "ポートを別のプログラムが使っている",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "住所（{{term:ip}}）が足りない",
+          "correct": false,
+          "whyNot": "使っているのはポート。"
+        },
+        {
+          "id": "c",
+          "text": "{{term:permission}}が足りない",
+          "correct": false,
+          "whyNot": "それなら `Permission denied`。"
+        }
+      ],
+      "explanation": "`ss -ltnp` で誰が使っているかを見る。"
+    },
+    {
+      "id": "q2",
+      "kind": "situation",
+      "prompt": "設定を直した後にすることは？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "検査してから動かし直す",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "すぐに動かし直す",
+          "correct": false,
+          "whyNot": "誤りが残っていると、また落ちる。"
+        },
+        {
+          "id": "c",
+          "text": "サーバを再起動する",
+          "correct": false,
+          "whyNot": "影響が大きく、原因も消えない。"
+        }
+      ],
+      "explanation": "`nginx -t` で検査する。"
+    },
+    {
+      "id": "q3",
+      "kind": "predict",
+      "prompt": "文法の誤りのまま `restart` すると？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "また failed になる",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "誤りを自動で直して動く",
+          "correct": false,
+          "whyNot": "直さない。読めない設定では動かない。"
+        },
+        {
+          "id": "c",
+          "text": "前の設定で動く",
+          "correct": false,
+          "whyNot": "`restart` は今の{{term:file}}を読む。"
+        }
+      ],
+      "explanation": "`reload` なら前の設定で動き続けるが、`restart` は止まる。"
+    }
+  ],
+  "practice": {
+    "mode": "terminal",
+    "purpose": "サイト `site.example` の nginx が failed になっている。設定は `/etc/nginx/conf.d/site.conf`。原因を 2 つ見つけて直し、動かす。",
+    "environment": "linux-basic",
+    "setup": {
+      "hostname": "city-web",
+      "dirs": [
+        "/var/www/site"
+      ],
+      "sites": [],
+      "files": {
+        "/etc/hosts": "127.0.0.1\tlocalhost site.example\n",
+        "/etc/nginx/conf.d/site.conf": "# 市の案内のサイト\nserver {\n  listen 80\n  server_name site.example;\n  root /var/www/site;\n}\n",
+        "/var/www/site/index.html": "<h1>市の案内</h1>\n"
+      },
+      "services": {
+        "nginx": {
+          "description": "nginx web server",
+          "enabled": true,
+          "config": "/etc/nginx/conf.d/site.conf",
+          "failed": true,
+          "log": [
+            "Oct 03 09:00:30 city-web nginx[812]: nginx: [emerg] directive \"listen\" is not terminated by \";\" in /etc/nginx/conf.d/site.conf:3",
+            "Oct 03 09:00:31 city-web systemd[1]: nginx.service: Failed with result 'exit-code'."
+          ]
+        },
+        "apache2": {
+          "description": "The Apache HTTP Server",
+          "enabled": true,
+          "active": true,
+          "port": 80,
+          "program": "apache2",
+          "body": "<h1>Apache2 Default Page</h1>"
+        }
+      }
+    },
+    "steps": [
+      {
+        "id": "syntax",
+        "purpose": "`systemctl status nginx` と `nginx -t` で状態と誤りを読み、誤りのある行の番号を答えの欄に入れる。",
+        "check": {
+          "kind": "answer",
+          "equals": "3"
+        },
+        "afterward": "3 行目の `listen 80` に `;` が無い。ログの `[emerg]` の行に、場所まで書いてある。",
+        "hints": [
+          "`nginx -t` は、ファイルと行の番号を言う。",
+          "文の最後の `:3` が行の番号。",
+          "`systemctl status nginx` `nginx -t` を打ち、`3` と答える。"
+        ],
+        "expectedErrors": [
+          "linux-a-misread",
+          "linux-nginx-emerg"
+        ],
+        "designedErrors": [
+          "linux-nginx-emerg"
+        ]
+      },
+      {
+        "id": "fix",
+        "purpose": "`sed -i` で `listen 80` の行に `;` を足し、`nginx -t` で検査して通す。",
+        "check": {
+          "kind": "fs",
+          "path": "/etc/nginx/conf.d/site.conf",
+          "contains": "listen 80;"
+        },
+        "afterward": "検査が通った。1 つ目の原因は直った。ただ、動かし直すと別の理由で止まる。",
+        "hints": [
+          "行の中の文字を置き換える。",
+          "`sed -i 's/listen 80$/listen 80;/' ファイル`。",
+          "`sed -i 's/listen 80$/listen 80;/' /etc/nginx/conf.d/site.conf` `nginx -t` を打つ。"
+        ],
+        "expectedErrors": [
+          "linux-nginx-emerg"
+        ]
+      },
+      {
+        "id": "port",
+        "purpose": "`systemctl restart nginx` は、まだ失敗する。`ss -ltnp` で 80 番を使っているプログラムを見つけ、止めて無効にしてから nginx を動かす。ページが出れば達成。",
+        "check": {
+          "kind": "http",
+          "url": "http://site.example/",
+          "status": 200,
+          "contains": "市の案内"
+        },
+        "afterward": "別に入れた apache2 が 80 番を使っていた。止めて無効にしたので、再起動しても取り合いにならない。2 つの原因を順に解いた。",
+        "hints": [
+          "同じポートでは 1 つしか待ち受けられない。",
+          "`systemctl disable --now apache2` は、止めて無効にする。",
+          "`systemctl restart nginx` `journalctl -u nginx -n 5` `ss -ltnp` `systemctl disable --now apache2` `systemctl restart nginx` `curl http://site.example/` を打つ。1 つ目の命令は失敗する。"
+        ],
+        "expectedErrors": [
+          "linux-port-busy",
+          "linux-job-failed"
+        ],
+        "designedErrors": [
+          "linux-job-failed"
+        ]
+      }
+    ]
+  },
+  "result": {
+    "success": "状態・ログ・設定の順に調べ、2 つの原因を解けた。",
+    "partial": "ヒントを使って直せた。次は、ログのどの行で気付けるかを確かめよう。",
+    "retry": "まだ failed。`nginx -t` と `ss -ltnp` で、残っている原因を確かめよう。"
+  },
+  "summary": {
+    "points": [
+      "状態とログから始める",
+      "直したら検査する",
+      "動いたことを確かめる"
+    ],
+    "next": [
+      "trouble.i.01"
+    ],
+    "terms": [
+      "systemctl",
+      "journalctl",
+      "ss"
+    ]
+  }
+}

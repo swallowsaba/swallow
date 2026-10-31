@@ -11,6 +11,8 @@ import { createDefaultRegistry } from './kernel/commands';
 import { BUILTIN_NAMESPACES } from './kernel/commands/kubectlNamespace';
 import { applyManifestText } from './kernel/commands/kubectlOps';
 import type { GitServer, ShellState, WebWorld } from './kernel/registry';
+import { blockStateFile } from './kernel/commands/block';
+import { writeFile } from './kernel/vfs';
 import { createServiceTable, portFromConfig, readEnvValue, readKeys, unitValue } from './kernel/services';
 import { readSessionIni } from './http/session';
 import { createShellState, type SessionOptions } from './kernel/session';
@@ -187,6 +189,10 @@ export const setupSchema = z.object({
   }).strict().optional(),
   /** 積んでいるメモリとスワップ（MiB。free・top。プロセスの使用量の合計がメモリを超えた分はスワップに置く） */
   memory: z.object({ total: z.number().int().positive(), swap: z.number().int().min(0).optional() }).strict().optional(),
+  /** 足した記憶装置（lsblk・mkfs・mount。linux.a.03） */
+  blockDevices: z.array(z.object({ name: z.string().regex(/^[a-z0-9]+$/), size: z.string() }).strict()).optional(),
+  /** 資源の計器（uptime・top・vmstat・iostat。linux.a.02）。CPU の時間の割合と、負荷平均・ディスクの書き込みと混み具合 */
+  meters: z.object({ cpus: z.number().int().positive(), load: z.tuple([z.number(), z.number(), z.number()]), us: z.number(), sy: z.number(), id: z.number(), wa: z.number(), writeMBs: z.number(), util: z.number() }).strict().optional(),
   /** 動いているプロセス（ps・top・kill。PID は 100 から順に振る） */
   processes: z.array(z.object({
     command: z.string().min(1),
@@ -197,6 +203,8 @@ export const setupSchema = z.object({
     ignoresTerm: z.boolean().optional(),
     /** 掴んでいるファイル（消しても、掴んでいる間は容量が戻らない） */
     openFiles: z.array(z.string().startsWith('/')).optional(),
+    /** ディスクへの書き込みの速さ（MB/s。iotop） */
+    ioMBs: z.number().optional(),
   }).strict()).optional(),
   /** 利用者のグループ（グループ → 入っている利用者）。/etc/group に書く（src/engines/kernel/users.ts） */
   groups: z.record(z.string().regex(/^[a-z][a-z0-9-]*$/), z.array(z.string())).optional(),
@@ -398,6 +406,7 @@ export function shellOptions(environment: string, setup: unknown): SessionOption
       ...(s.sockets ? { __SOCKETS: JSON.stringify(s.sockets) } : {}),
       ...(s.address !== undefined ? { __HOST_ADDR: s.address } : {}),
       ...(s.disk !== undefined ? { __DISK_SIZE: String(parseSize(s.disk)) } : {}),
+      ...(s.meters !== undefined ? { __METERS: JSON.stringify(s.meters) } : {}),
     },
   };
   if (s.services) {
@@ -504,6 +513,10 @@ export function initialShell(environment: string, setup: unknown): ShellState {
   const s = resolveSetup(environment, setup);
   // 動いている DNS のサーバは、始めにゾーンファイルを読んでいる
   let shell = withZones(createShellState(shellOptions(environment, setup)));
+  if (s.blockDevices) {
+    const [path, text] = blockStateFile(s.blockDevices);
+    shell = { ...shell, vfs: writeFile(shell.vfs, path, text, true) };
+  }
   for (const [path, size] of Object.entries(s.sizes ?? {})) shell = { ...shell, vfs: setSize(shell.vfs, path, parseSize(size)) };
   if (!s.run?.length) return othersWork(shell, s.gitServers ?? []);
   const cwd = shell.cwd;

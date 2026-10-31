@@ -1,0 +1,230 @@
+{
+  "id": "linux.a.03",
+  "domain": "linux",
+  "level": "advanced",
+  "theme": "ファイルシステム",
+  "title": "マウントとファイルシステム",
+  "goal": "領域を追加し、マウントし、再起動後も保てる",
+  "minutes": 20,
+  "prerequisites": [
+    "linux.i.05"
+  ],
+  "related": [
+    "ctr.i.04",
+    "k8s.i.03"
+  ],
+  "next": [
+    "linux.a.04"
+  ],
+  "terms": [
+    "file-system",
+    "file",
+    "mount",
+    "os",
+    "disk",
+    "fstab",
+    "root-user",
+    "permission"
+  ],
+  "explain": {
+    "what": "{{term:mount}}は、記憶装置を{{term:file}}の木のどこかに取り付けること。新しい装置は{{term:file-system}}を作ってから取り付ける。",
+    "why": "容量を増やす時や、データ用の領域を分ける時に要る。{{term:os}} と同じ装置にデータを置くと、満杯になった時に OS ごと止まる。",
+    "use": "{{term:disk}}の追加に使う。作る・取り付ける・起動の時に残す、の順に行い、起動の設定は誤ると起動が止まるので確かめる。",
+    "when": "データ用のディスクを足した。これを /data として使いたい。再起動しても残るようにしたい。",
+    "figures": [
+      "linux-a03-mount"
+    ]
+  },
+  "understand": [
+    {
+      "kind": "order",
+      "prompt": "順に並べる。",
+      "items": [
+        "ファイルシステムを作る",
+        "場所に取り付ける",
+        "起動の時の設定に書く"
+      ],
+      "see": "use"
+    },
+    {
+      "kind": "yesno",
+      "prompt": "`mount` を打っただけで、再起動の後も取り付いている。",
+      "answer": false,
+      "why": "再起動すると外れる。起動の時の設定（{{term:fstab}}）に書く。",
+      "see": "use"
+    }
+  ],
+  "quiz": [
+    {
+      "id": "q1",
+      "kind": "term",
+      "prompt": "マウントとは？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "記憶装置をファイルの木に取り付けること",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "ファイルを圧縮すること",
+          "correct": false,
+          "whyNot": "圧縮は別の話。"
+        },
+        {
+          "id": "c",
+          "text": "ファイルの控えを取ること",
+          "correct": false,
+          "whyNot": "控えは別の話。"
+        }
+      ],
+      "explanation": "取り付けて初めて、その場所から読み書きできる。"
+    },
+    {
+      "id": "q2",
+      "kind": "situation",
+      "prompt": "再起動の後も取り付けるには？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "/etc/fstab に書く",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "`mount` を 2 回打つ",
+          "correct": false,
+          "whyNot": "何度打っても、再起動で外れる。"
+        },
+        {
+          "id": "c",
+          "text": "`~/.bashrc` に書く",
+          "correct": false,
+          "whyNot": "ログインの時に動く物で、起動の時に取り付ける物ではない。"
+        }
+      ],
+      "explanation": "起動の時に読むファイルに書く。"
+    },
+    {
+      "id": "q3",
+      "kind": "cause",
+      "prompt": "取り付いているのに書けない。原因の候補は？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "読み取り専用で取り付いている",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "装置が大きすぎる",
+          "correct": false,
+          "whyNot": "大きさは書けないことの理由にならない。"
+        },
+        {
+          "id": "c",
+          "text": "名前が長い",
+          "correct": false,
+          "whyNot": "関係が無い。"
+        }
+      ],
+      "explanation": "`mount` の出力の `ro` を確かめる。"
+    }
+  ],
+  "practice": {
+    "mode": "terminal",
+    "purpose": "足したディスク `/dev/vdb` にファイルシステムを作り、`/data` に取り付け、再起動しても残るようにする。",
+    "environment": "linux-basic",
+    "setup": {
+      "hostname": "data-srv",
+      "blockDevices": [
+        {
+          "name": "vdb",
+          "size": "100G"
+        }
+      ],
+      "files": {
+        "/etc/fstab": "# 起動の時に取り付ける物\nUUID=root / ext4 defaults 0 1\n"
+      }
+    },
+    "steps": [
+      {
+        "id": "mount",
+        "purpose": "`lsblk` で装置を確かめ、ファイルシステム（`ext4`）を作り、`/data` を作って取り付ける。",
+        "check": {
+          "kind": "mount",
+          "path": "/data",
+          "device": "/dev/vdb"
+        },
+        "afterward": "`/data` に取り付いた。`findmnt /data` で見られる。ただ、このままでは再起動で外れる。",
+        "hints": [
+          "作る → 場所を作る → 取り付ける。どれも{{term:root-user}}の{{term:permission}}が要る。",
+          "`sudo mkfs.ext4 /dev/vdb` `sudo mkdir /data` `sudo mount /dev/vdb /data`。",
+          "`lsblk` `sudo mkfs.ext4 /dev/vdb` `sudo mkdir /data` `sudo mount /dev/vdb /data` `findmnt /data` を打つ。"
+        ],
+        "expectedErrors": [
+          "linux-mount-badfs",
+          "linux-mount-nodir",
+          "linux-mount-root"
+        ]
+      },
+      {
+        "id": "fstab",
+        "purpose": "`/etc/fstab` に 1 行足す（装置・場所・種類・`defaults`・`0`・`2`）。`sudo mount -a` で誤りが無いことを確かめる。",
+        "check": {
+          "kind": "fs",
+          "path": "/etc/fstab",
+          "contains": "/data ext4"
+        },
+        "afterward": "誤りは無かった。`mount -a` は、起動の時と同じように読むので、再起動の前の確かめになる。",
+        "hints": [
+          "行を足すのは `echo … | sudo tee -a`。",
+          "`echo '/dev/vdb /data ext4 defaults 0 2' | sudo tee -a /etc/fstab`。",
+          "`echo '/dev/vdb /data ext4 defaults 0 2' | sudo tee -a /etc/fstab` `sudo mount -a` を打つ。"
+        ],
+        "expectedErrors": [
+          "linux-mount-nodev",
+          "linux-mount-root"
+        ]
+      },
+      {
+        "id": "boot",
+        "purpose": "`sudo reboot` で起動し直し、`/data` が取り付いていることを確かめる。",
+        "check": {
+          "kind": "fs",
+          "path": "/var/log/boot.log",
+          "contains": "Mounted /data"
+        },
+        "afterward": "起動の記録に `Mounted /data` が残った。領域を足せて、再起動しても残る。",
+        "hints": [
+          "起動し直しても残るかを確かめる。",
+          "`sudo reboot` の後に `findmnt /data`。",
+          "`sudo reboot` `findmnt /data` `cat /var/log/boot.log` を打つ。"
+        ],
+        "expectedErrors": [
+          "linux-mount-nodev"
+        ]
+      }
+    ]
+  },
+  "result": {
+    "success": "領域を足し、再起動しても残るようにできた。",
+    "partial": "ヒントを使って足せた。次は `UUID` で書く方法も試してみよう。",
+    "retry": "止まった段を確かめよう。作る → 取り付ける → /etc/fstab の順。"
+  },
+  "summary": {
+    "points": [
+      "作ってから取り付ける",
+      "残すのは /etc/fstab",
+      "誤ると起動に影響するので確かめる"
+    ],
+    "next": [
+      "ctr.i.04"
+    ],
+    "terms": [
+      "mount",
+      "file-system",
+      "fstab"
+    ]
+  }
+}

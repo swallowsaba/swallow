@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 360" font-family="&quot;Noto Sans JP&quot;, sans-serif">
+  <title>CPU・メモリ・ディスク・ネットワークの 4 つの計器と、詰まった時の症状</title>
+  <g class="el" data-part="cpu">
+    <rect x="20" y="30" width="290" height="130" rx="10" fill="#c0392b" />
+    <text x="165" y="78" text-anchor="middle" font-size="16" font-weight="700" fill="#eef2f6">CPU</text>
+    <text x="165" y="100" text-anchor="middle" font-size="14" fill="#eef2f6">us・sy が高い</text>
+    <text x="165" y="122" text-anchor="middle" font-size="14" fill="#eef2f6">負荷平均 &gt; CPU の数</text>
+  </g>
+  <g class="el" data-part="mem">
+    <rect x="330" y="30" width="290" height="130" rx="10" fill="#7a3fd0" />
+    <text x="475" y="78" text-anchor="middle" font-size="16" font-weight="700" fill="#eef2f6">メモリ</text>
+    <text x="475" y="100" text-anchor="middle" font-size="14" fill="#eef2f6">スワップが増える</text>
+    <text x="475" y="122" text-anchor="middle" font-size="14" fill="#eef2f6">free の Swap</text>
+  </g>
+  <g class="el" data-part="disk">
+    <rect x="20" y="180" width="290" height="130" rx="10" fill="#f2b632" />
+    <text x="165" y="228" text-anchor="middle" font-size="16" font-weight="700" fill="#0a1424">ディスク</text>
+    <text x="165" y="250" text-anchor="middle" font-size="14" fill="#0a1424">wa が高い</text>
+    <text x="165" y="272" text-anchor="middle" font-size="14" fill="#0a1424">iostat の %util が 100 近く</text>
+  </g>
+  <g class="el" data-part="net">
+    <rect x="330" y="180" width="290" height="130" rx="10" fill="#1a6fd6" />
+    <text x="475" y="228" text-anchor="middle" font-size="16" font-weight="700" fill="#eef2f6">ネットワーク</text>
+    <text x="475" y="250" text-anchor="middle" font-size="14" fill="#eef2f6">接続の待ちが増える</text>
+    <text x="475" y="272" text-anchor="middle" font-size="14" fill="#eef2f6">ss で確かめる</text>
+  </g>
+  <g class="el" data-part="note">
+    <text x="320" y="340" text-anchor="middle" font-size="14" fill="#eef2f6">組み合わせで判断し、元のプロセスまで追う</text>
+  </g>
+</svg>

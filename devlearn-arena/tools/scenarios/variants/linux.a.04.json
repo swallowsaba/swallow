@@ -1,0 +1,57 @@
+{
+  "lesson": "linux.a.04",
+  "variants": [
+    {
+      "name": "tee で足す・行の番号で替える",
+      "steps": {
+        "key": [
+          "cat /home/learner/inbox/admin.pub | tee -a /home/learner/.ssh/authorized_keys",
+          "chmod u=rw,go= /home/learner/.ssh/authorized_keys"
+        ],
+        "sshd": [
+          "sudo sed -i '2s/yes/no/' /etc/ssh/sshd_config",
+          "sudo sed -i '3s/yes/no/' /etc/ssh/sshd_config",
+          "sudo sshd -t",
+          "sudo systemctl restart ssh"
+        ],
+        "svc": [
+          "sudo systemctl stop telnet",
+          "sudo systemctl disable telnet"
+        ]
+      }
+    },
+    {
+      "name": "1 つの sed にまとめる",
+      "steps": {
+        "key": [
+          "cp /home/learner/inbox/admin.pub /home/learner/.ssh/authorized_keys",
+          "chmod 600 /home/learner/.ssh/authorized_keys",
+          "ls -l /home/learner/.ssh"
+        ],
+        "sshd": [
+          "sudo sed -i -e 's/^PermitRootLogin .*/PermitRootLogin no/' -e 's/^PasswordAuthentication .*/PasswordAuthentication no/' /etc/ssh/sshd_config",
+          "sudo sshd -t",
+          "sudo systemctl reload ssh"
+        ],
+        "svc": [
+          "systemctl status telnet",
+          "sudo systemctl disable --now telnet",
+          "systemctl is-enabled telnet || true"
+        ]
+      }
+    }
+  ],
+  "wrong": {
+    "step": "sshd",
+    "why": "項目の名前まで替えてしまい、検査で断られる",
+    "input": [
+      "sudo sed -i 's/^PermitRootLogin yes/PermitRoot no/' /etc/ssh/sshd_config",
+      "sudo sshd -t"
+    ],
+    "retry": [
+      "sudo sed -i 's/^PermitRoot no/PermitRootLogin no/' /etc/ssh/sshd_config",
+      "sudo sed -i 's/^PasswordAuthentication yes/PasswordAuthentication no/' /etc/ssh/sshd_config",
+      "sudo sshd -t"
+    ]
+  }
+}

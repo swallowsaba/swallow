@@ -1,0 +1,258 @@
+{
+  "id": "linux.a.04",
+  "domain": "linux",
+  "level": "advanced",
+  "theme": "安全",
+  "title": "サーバを堅くする",
+  "goal": "SSH 鍵・最小権限・不要なサービスの停止ができる",
+  "minutes": 20,
+  "prerequisites": [
+    "sec.b.04",
+    "linux.i.01"
+  ],
+  "related": [
+    "sec.i.04",
+    "sec.b.04"
+  ],
+  "next": [],
+  "terms": [
+    "service",
+    "server",
+    "root-user",
+    "hardening",
+    "authorized-keys",
+    "public-key",
+    "secret-key",
+    "port",
+    "log",
+    "owner"
+  ],
+  "explain": {
+    "what": "{{term:server}}を堅くするとは、攻撃の入口を減らすこと。これを{{term:hardening}}と言う。鍵での接続に切り替え、{{term:root-user}}への直接の接続を止め、要らない{{term:service}}を止める。",
+    "why": "公開されたサーバは、数分で攻撃の接続が来る。パスワードは総当たりで破られる。入口が少ないほど破られにくい。",
+    "use": "新しいサーバの初期設定に使う。順を誤ると自分も入れなくなるので、鍵を置いて確かめてから、パスワードの接続を止める。",
+    "when": "借りたサーバは、パスワードで管理者が入れる状態。昔の telnet まで動いている。",
+    "figures": [
+      "linux-a04-harden"
+    ]
+  },
+  "understand": [
+    {
+      "kind": "situation",
+      "prompt": "次のうち、危ない設定は？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "`PermitRootLogin yes`",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "`PubkeyAuthentication yes`",
+          "correct": false,
+          "whyNot": "鍵での接続を許す、安全な設定。"
+        },
+        {
+          "id": "c",
+          "text": "`PasswordAuthentication no`",
+          "correct": false,
+          "whyNot": "パスワードを止める、安全な設定。"
+        }
+      ],
+      "see": "what"
+    },
+    {
+      "kind": "relation",
+      "prompt": "2 つの関係を選ぶ。",
+      "a": "サーバの {{term:authorized-keys}} に{{term:public-key}}を置く",
+      "b": "{{term:secret-key}}を持つ人だけが入れる",
+      "answer": "cause",
+      "why": "公開鍵はサーバに、秘密鍵は手元に。秘密鍵はサーバに置かない。",
+      "see": "what"
+    }
+  ],
+  "quiz": [
+    {
+      "id": "q1",
+      "kind": "situation",
+      "prompt": "遠隔の接続はどうする？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "鍵で接続し、パスワードは無効にする",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "長いパスワードにする",
+          "correct": false,
+          "whyNot": "総当たりの的であることは変わらない。"
+        },
+        {
+          "id": "c",
+          "text": "{{term:port}}を変えるだけ",
+          "correct": false,
+          "whyNot": "見つけにくくなるだけで、守りにはならない。"
+        }
+      ],
+      "explanation": "鍵は総当たりで破れない。"
+    },
+    {
+      "id": "q2",
+      "kind": "cause",
+      "prompt": "管理者への接続の試みが記録に大量にある。何が許されている？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "管理者への直接の接続",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "公開鍵の登録",
+          "correct": false,
+          "whyNot": "登録は攻撃の入口ではない。"
+        },
+        {
+          "id": "c",
+          "text": "{{term:log}}の保存",
+          "correct": false,
+          "whyNot": "記録が残るのは良いこと。"
+        }
+      ],
+      "explanation": "`PermitRootLogin no` にする。"
+    },
+    {
+      "id": "q3",
+      "kind": "choice",
+      "prompt": "要らないサービスはどうする？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "止めて無効にする",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "動かしたまま放っておく",
+          "correct": false,
+          "whyNot": "使っていない入口が攻撃される。"
+        },
+        {
+          "id": "c",
+          "text": "止めるだけ",
+          "correct": false,
+          "whyNot": "有効のままだと、再起動で動き出す。"
+        }
+      ],
+      "explanation": "`systemctl disable --now` を使う。"
+    }
+  ],
+  "practice": {
+    "mode": "terminal",
+    "purpose": "借りたサーバを堅くする。受け取りの場所の公開鍵 `/home/learner/inbox/admin.pub` を登録し、設定 `/etc/ssh/sshd_config` でパスワードと管理者の直接の接続を止め、要らない `telnet` を止める。",
+    "environment": "linux-basic",
+    "setup": {
+      "hostname": "public-srv",
+      "dirs": [
+        "/home/learner/.ssh"
+      ],
+      "files": {
+        "/home/learner/inbox/admin.pub": "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIExampleKeyOnly admin@office\n",
+        "/etc/ssh/sshd_config": "Port 22\nPermitRootLogin yes\nPasswordAuthentication yes\nPubkeyAuthentication yes\n"
+      },
+      "services": {
+        "ssh": {
+          "description": "OpenBSD Secure Shell server",
+          "enabled": true,
+          "active": true,
+          "port": 22,
+          "program": "sshd"
+        },
+        "telnet": {
+          "description": "Telnet server",
+          "enabled": true,
+          "active": true,
+          "port": 23,
+          "program": "telnetd"
+        }
+      }
+    },
+    "steps": [
+      {
+        "id": "key",
+        "purpose": "公開鍵を `~/.ssh/authorized_keys` に足し、{{term:owner}}だけが読める 600 にする。これを先にしないと、自分も入れなくなる。",
+        "check": {
+          "kind": "fs",
+          "path": "/home/learner/.ssh/authorized_keys",
+          "contains": "admin@office",
+          "mode": "600"
+        },
+        "afterward": "鍵が登録できた。秘密鍵を持つ人だけが入れる。",
+        "hints": [
+          "公開鍵はサーバに置く。",
+          "`cat 公開鍵 >> ~/.ssh/authorized_keys` と `chmod 600`。",
+          "`cat /home/learner/inbox/admin.pub >> /home/learner/.ssh/authorized_keys` `chmod 600 /home/learner/.ssh/authorized_keys` を打つ。"
+        ]
+      },
+      {
+        "id": "sshd",
+        "purpose": "`sed -i` で `PermitRootLogin no` と `PasswordAuthentication no` に替え、`sudo sshd -t` で検査してから `sudo systemctl reload ssh` で読み直す。",
+        "check": {
+          "kind": "fs",
+          "path": "/etc/ssh/sshd_config",
+          "contains": "PermitRootLogin no",
+          "lacks": [
+            "PasswordAuthentication yes",
+            "PermitRootLogin yes"
+          ]
+        },
+        "afterward": "パスワードと、管理者への直接の接続が止まった。総当たりの的が消えた。",
+        "hints": [
+          "2 つの行の `yes` を `no` に替える。",
+          "`sudo sed -i 's/^PermitRootLogin yes/PermitRootLogin no/' ファイル`。",
+          "`sudo sed -i 's/^PermitRootLogin yes/PermitRootLogin no/' /etc/ssh/sshd_config` `sudo sed -i 's/^PasswordAuthentication yes/PasswordAuthentication no/' /etc/ssh/sshd_config` `sudo sshd -t` `sudo systemctl reload ssh` を打つ。"
+        ],
+        "expectedErrors": [
+          "linux-sshd-bad"
+        ]
+      },
+      {
+        "id": "svc",
+        "purpose": "要らない `telnet` を止めて無効にする。`ss -ltn` で 23 番が消えたことを確かめる。",
+        "check": {
+          "kind": "service",
+          "name": "telnet",
+          "active": false,
+          "enabled": false
+        },
+        "afterward": "23 番が消えた。暗号化しない接続の入口が無くなった。設定の 3 点が揃った。",
+        "hints": [
+          "止めて無効にする。",
+          "`sudo systemctl disable --now telnet`。",
+          "`ss -ltn` `sudo systemctl disable --now telnet` `ss -ltn` を打つ。"
+        ]
+      }
+    ]
+  },
+  "result": {
+    "success": "鍵での接続に切り替え、入口を減らせた。",
+    "partial": "ヒントを使って堅くできた。次は、順を誤ると何が起きるかを説明してみよう。",
+    "retry": "残った入口がある。`sshd_config` の 2 行と、`ss -ltn` を確かめよう。"
+  },
+  "summary": {
+    "points": [
+      "鍵で接続する",
+      "管理者は直接入れない",
+      "要らないサービスを止める"
+    ],
+    "next": [
+      "sec.i.04"
+    ],
+    "terms": [
+      "hardening",
+      "ssh",
+      "authorized-keys"
+    ]
+  }
+}

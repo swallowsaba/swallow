@@ -1,0 +1,55 @@
+{
+  "lesson": "linux.a.02",
+  "variants": [
+    {
+      "name": "vmstat から",
+      "steps": {
+        "load": [
+          "vmstat",
+          "top -b -n 1",
+          "64"
+        ],
+        "resource": [
+          "iostat -x",
+          "free -m",
+          "ディスク"
+        ],
+        "process": [
+          "sudo iotop -b -n 1",
+          "report-batch"
+        ]
+      }
+    },
+    {
+      "name": "順に降りる",
+      "steps": {
+        "load": [
+          "uptime",
+          "top -b -n 1 | head -n 3",
+          "64%"
+        ],
+        "resource": [
+          "vmstat",
+          "iostat -x",
+          " ディスク "
+        ],
+        "process": [
+          "ps aux",
+          "sudo iotop -b -o -n 1",
+          "REPORT-BATCH"
+        ]
+      }
+    }
+  ],
+  "wrong": {
+    "step": "resource",
+    "why": "CPU と答える",
+    "commands": false,
+    "input": [
+      "CPU"
+    ],
+    "retry": [
+      "ディスク"
+    ]
+  }
+}

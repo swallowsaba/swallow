@@ -888,6 +888,91 @@
       "lessons": [
         "lab.i.01"
       ]
+    },
+    {
+      "id": "load-average",
+      "word": "負荷平均",
+      "reading": "ふかへいきん",
+      "plain": "動きたくて待っている処理の数の平均。1 分・5 分・15 分の 3 つの数で出る。",
+      "why": "CPU の数より大きいと、処理が待たされている。CPU の数と比べて読む。",
+      "related": [
+        "cpu",
+        "top",
+        "iowait"
+      ],
+      "lessons": [
+        "linux.a.02"
+      ]
+    },
+    {
+      "id": "iowait",
+      "word": "iowait",
+      "reading": "あいおーうぇいと",
+      "plain": "CPU が、ディスクなどの入出力の完了を待っていた時間の割合。`top` の `wa`。",
+      "why": "CPU の使用率が低いのに遅い時、これが高ければディスクが詰まっている。",
+      "related": [
+        "load-average",
+        "disk"
+      ],
+      "lessons": [
+        "linux.a.02"
+      ]
+    },
+    {
+      "id": "mount",
+      "word": "マウント",
+      "reading": "まうんと",
+      "plain": "記憶装置を、ファイルの木のどこかの場所に取り付けること。",
+      "why": "取り付けて初めて、その場所から装置に読み書きできる。容量を足す・データ用の領域を分ける時に使う。",
+      "related": [
+        "file-system",
+        "fstab",
+        "disk"
+      ],
+      "lessons": [
+        "linux.a.03"
+      ]
+    },
+    {
+      "id": "file-system",
+      "word": "ファイルシステム",
+      "reading": "ふぁいるしすてむ",
+      "plain": "ファイルの名前と中身を、装置に並べて置く決まり。ext4 や xfs がある。",
+      "why": "買ったばかりの装置には無い。作ってからでないと、取り付けられない。",
+      "related": [
+        "mount",
+        "disk"
+      ],
+      "lessons": [
+        "linux.a.03"
+      ]
+    },
+    {
+      "id": "fstab",
+      "word": "/etc/fstab",
+      "plain": "起動の時に自動で取り付ける装置を書くファイル。",
+      "why": "`mount` だけでは再起動で外れる。ただし誤りを書くと起動が止まることがあるので、`mount -a` で確かめる。",
+      "related": [
+        "mount"
+      ],
+      "lessons": [
+        "linux.a.03"
+      ]
+    },
+    {
+      "id": "hardening",
+      "word": "堅牢化",
+      "reading": "けんろうか",
+      "plain": "サーバの攻撃の入口を減らすこと。鍵での接続・不要なサービスの停止など。",
+      "why": "公開されたサーバは常に狙われる。入口が少ないほど、破られにくい。",
+      "related": [
+        "ssh",
+        "least-privilege",
+        "authorized-keys"
+      ],
+      "lessons": [
+        "linux.a.04"
+      ]
     }
   ]
 }

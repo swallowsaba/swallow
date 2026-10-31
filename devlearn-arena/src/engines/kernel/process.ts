@@ -21,6 +21,8 @@ export interface Process {
   ignoresTerm: boolean;
   /** 掴んでいるファイル。消しても容量が戻らない状況を再現する */
   openFiles: readonly string[];
+  /** ディスクへの書き込みの速さ（MB/s） */
+  ioMBs?: number;
   /** 掴んだまま消されたファイルの大きさ（場所 → バイト）。掴んでいる間は容量が戻らない */
   held?: Readonly<Record<string, number>>;
   startedAt: number;
@@ -43,6 +45,7 @@ export interface ProcSeed {
   state?: ProcState;
   ignoresTerm?: boolean;
   openFiles?: readonly string[];
+  ioMBs?: number;
   ppid?: number;
 }
 
@@ -68,6 +71,7 @@ export function createProcessTable(seeds: readonly ProcSeed[] = [], totalMemory 
       state: seed.state ?? 'S',
       ignoresTerm: seed.ignoresTerm ?? false,
       openFiles: seed.openFiles ?? [],
+      ...(seed.ioMBs !== undefined ? { ioMBs: seed.ioMBs } : {}),
       startedAt: 0,
     });
     pid += 1;
