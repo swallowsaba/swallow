@@ -1,0 +1,58 @@
+{
+  "lesson": "trouble.a.01",
+  "variants": [
+    {
+      "name": "種類と名前を分ける・describe で読む",
+      "steps": {
+        "read": [
+          "kubectl get pods -o wide",
+          "crashloopbackoff"
+        ],
+        "env": [
+          "kubectl logs -l app=api",
+          "kubectl set env deployment api DATABASE_URL=postgres://app@db:5432/reserve"
+        ],
+        "oom": [
+          "kubectl get pods",
+          "kubectl set resources deployment api --limits=memory=128Mi",
+          "kubectl get pods -w"
+        ],
+        "check": [
+          "curl -i http://city.example/api/items"
+        ]
+      }
+    },
+    {
+      "name": "上限を先に直す",
+      "steps": {
+        "read": [
+          "kubectl get pods",
+          "kubectl get events --field-selector type=Warning",
+          "CrashLoopBackOff"
+        ],
+        "env": [
+          "kubectl describe pod -l app=api",
+          "kubectl set resources deploy/api --limits=memory=512Mi",
+          "kubectl logs deploy/api",
+          "kubectl set env deploy/api DATABASE_URL=postgres://app@db:5432/reserve"
+        ],
+        "oom": [
+          "kubectl rollout status deploy/api"
+        ],
+        "check": [
+          "curl -s http://city.example/api/items"
+        ]
+      }
+    }
+  ],
+  "wrong": {
+    "step": "env",
+    "why": "値を渡さずに打つ",
+    "input": [
+      "kubectl set env deployment/api"
+    ],
+    "retry": [
+      "kubectl set env deployment/api DATABASE_URL=postgres://app@db:5432/reserve"
+    ]
+  }
+}

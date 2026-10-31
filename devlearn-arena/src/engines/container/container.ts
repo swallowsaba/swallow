@@ -311,6 +311,7 @@ export const REGISTRY: readonly Image[] = [
       routes: { '/api/items': { status: 200, body: '{"items":[{"id":1,"name":"灯台の模型"},{"id":2,"name":"港の絵はがき"}]}' }, 'POST /api/login': { status: 200, body: '{"user":"guest","loggedIn":true}' }, '/api/health': { status: 200, body: '{"status":"ok"}' } },
     },
     startLog: ['api: listening on :3000'],
+    procs: [{ command: 'node server.js', memory: 96 }],
   },
   {
     // 市の案内（Node.js）。動き出してから地図のデータを 20 秒かけて読み込み、それから 8080 番で待ち受ける（k8s.i.05）

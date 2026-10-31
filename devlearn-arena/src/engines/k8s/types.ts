@@ -220,6 +220,7 @@ export interface EventRecord {
   first?: number;
 }
 
+import type { Image } from '@/engines/container/container';
 import type { ControlPlane, Machine } from './bootstrap';
 import type {
   ConfigMap, CronJob, DaemonSet, HorizontalPodAutoscaler, Ingress, Job, NetworkPolicy,
@@ -275,6 +276,8 @@ export interface ClusterState {
   readonly server?: string;
   /** 置き場から取れるイメージ（名前:タグ）。あれば、これに無いイメージは取れない（ErrImagePull） */
   readonly images?: readonly string[];
+  /** 自分たちの置き場へ push したイメージの中身（docker push で増える） */
+  readonly pushed?: readonly Image[];
   /** 区画（Namespace）の一覧。あれば、無い区画には作れない */
   readonly namespaces?: readonly { name: string; createdAt: number }[];
   /** 入口の係（ingress-nginx）。受け持つ種類（IngressClass）と、外から届く住所 */

@@ -1,0 +1,397 @@
+{
+  "id": "lab.a.03",
+  "domain": "lab",
+  "level": "advanced",
+  "theme": "総合",
+  "title": "新しい技術を調べて試す",
+  "goal": "公式ドキュメントを読み、小さく試し、報告できる",
+  "minutes": 20,
+  "prerequisites": [],
+  "related": [
+    "devops.a.02",
+    "cloud.a.01"
+  ],
+  "next": [],
+  "terms": [
+    "caddy",
+    "certificate"
+  ],
+  "explain": {
+    "what": "公式の文書を読み、小さく試し、報告する一連の動き。",
+    "why": "技術は変わり続ける。調べて身に付ける力が要る。",
+    "use": "新しい技術の導入と、自分の成長に使う。問いを決めてから読む。",
+    "when": "新しい道具を使うか判断して、と頼まれた。",
+    "figures": [
+      "lab-a03-study"
+    ]
+  },
+  "understand": [
+    {
+      "kind": "order",
+      "prompt": "調べる順に並べる。",
+      "items": [
+        "問いを決める",
+        "公式の文書を読む",
+        "小さく試す",
+        "結果をまとめる",
+        "判断を報告する"
+      ],
+      "see": "use"
+    },
+    {
+      "kind": "situation",
+      "prompt": "情報源として先に信頼するのは？",
+      "see": "why",
+      "choices": [
+        {
+          "id": "a",
+          "text": "その技術の公式の文書（版を確かめて）",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "誰かの古いブログ",
+          "correct": false,
+          "whyNot": "版が違うことがある。"
+        },
+        {
+          "id": "c",
+          "text": "噂",
+          "correct": false,
+          "whyNot": "根拠が無い。"
+        }
+      ]
+    }
+  ],
+  "quiz": [
+    {
+      "id": "q1",
+      "kind": "choice",
+      "prompt": "まず読むのは？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "公式の文書",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "知らない人の感想",
+          "correct": false,
+          "whyNot": "根拠が分からない。"
+        },
+        {
+          "id": "c",
+          "text": "広告",
+          "correct": false,
+          "whyNot": "良い事だけが書いてある。"
+        }
+      ],
+      "explanation": "書かれた版も確かめる。"
+    },
+    {
+      "id": "q2",
+      "kind": "situation",
+      "prompt": "本番に入れる前にすることは？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "小さく試す",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "全ての本番に入れる",
+          "correct": false,
+          "whyNot": "壊すと影響が大きい。"
+        },
+        {
+          "id": "c",
+          "text": "何もしない",
+          "correct": false,
+          "whyNot": "分からないまま。"
+        }
+      ],
+      "explanation": "試験の機械で、問いに答える分だけ試す。"
+    },
+    {
+      "id": "q3",
+      "kind": "cause",
+      "prompt": "文書どおりに試したら動かない。原因は？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "版の違い",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "文書は全て嘘",
+          "correct": false,
+          "whyNot": "まず版を合わせる。"
+        },
+        {
+          "id": "c",
+          "text": "パソコンの色",
+          "correct": false,
+          "whyNot": "関係しない。"
+        }
+      ],
+      "explanation": "読んだ文書と、入れた物の版を比べる。"
+    }
+  ],
+  "practice": {
+    "mode": "simulation",
+    "purpose": "「{{term:certificate}}の更新の手間を減らすため、nginx を {{term:caddy}} に替えるべきか」と聞かれた。公式の文書の要点と、試験の機械で試した記録がある。札を報告の枠へ仕分け、問い・試した事・結果・判断を揃える。",
+    "environment": "sim-assign",
+    "setup": {
+      "slots": [
+        {
+          "id": "q",
+          "label": "問い",
+          "capacity": 1,
+          "full": "問いは 1 つに絞る"
+        },
+        {
+          "id": "tried",
+          "label": "試した事"
+        },
+        {
+          "id": "out",
+          "label": "結果"
+        },
+        {
+          "id": "decide",
+          "label": "判断",
+          "capacity": 1,
+          "full": "判断は 1 つ。理由と一緒に書く"
+        },
+        {
+          "id": "no",
+          "label": "報告に書かない"
+        }
+      ],
+      "items": [
+        {
+          "id": "i-q",
+          "label": "替えると証明書の手作業が減るか",
+          "refuse": {
+            "tried": "これは問い",
+            "out": "これは問い",
+            "decide": "判断ではない。問いの形"
+          }
+        },
+        {
+          "id": "i-try1",
+          "label": "試験の機械で Caddy を動かし、名前を書いて HTTPS を確かめた",
+          "refuse": {
+            "q": "これは行った事",
+            "out": "これは行った事",
+            "decide": "判断ではない"
+          }
+        },
+        {
+          "id": "i-try2",
+          "label": "今の 3 つの中継の設定を Caddy の設定に書き直した",
+          "refuse": {
+            "q": "これは行った事",
+            "out": "これは行った事",
+            "decide": "判断ではない"
+          }
+        },
+        {
+          "id": "i-out1",
+          "label": "証明書は手を動かさず取れた",
+          "refuse": {
+            "q": "これは結果",
+            "tried": "これは結果",
+            "decide": "判断ではない"
+          }
+        },
+        {
+          "id": "i-out2",
+          "label": "書き直しに半日かかり、社内に経験者は居ない",
+          "refuse": {
+            "q": "これは結果",
+            "tried": "これは結果",
+            "decide": "判断ではない"
+          }
+        },
+        {
+          "id": "i-dec",
+          "label": "次の更新の機会に 1 つのサイトから替える（手作業は減るが、経験者を育てる時間が要る）",
+          "refuse": {
+            "q": "判断は問いではない",
+            "tried": "判断は行った事ではない",
+            "out": "判断は結果ではない",
+            "no": "判断は報告の中心"
+          }
+        },
+        {
+          "id": "i-fame",
+          "label": "有名だから替えるべきだ",
+          "refuse": {
+            "decide": "根拠が無い。試した結果に基づかない",
+            "q": "根拠が無い",
+            "tried": "根拠が無い",
+            "out": "根拠が無い"
+          }
+        },
+        {
+          "id": "i-rumor",
+          "label": "どこかで速いと聞いた",
+          "refuse": {
+            "out": "根拠が無い。試していない",
+            "q": "根拠が無い",
+            "tried": "根拠が無い",
+            "decide": "根拠が無い"
+          }
+        }
+      ],
+      "panels": [
+        {
+          "kind": "kv",
+          "title": "公式の文書の要点",
+          "rows": [
+            [
+              "証明書",
+              "サイトの名前を書くと、既定で HTTPS を使い、証明書を自動で取って更新する"
+            ],
+            [
+              "設定",
+              "`Caddyfile` という設定ファイル。例: `shop.example { reverse_proxy localhost:3000 }`"
+            ],
+            [
+              "許諾",
+              "Apache 2.0（無料で使える）"
+            ]
+          ]
+        },
+        {
+          "kind": "log",
+          "title": "試験の機械の記録",
+          "lines": [
+            "10:02 caddy 2.8 を入れた",
+            "10:05 shop.example を書いて起動。証明書が自動で入った",
+            "13:40 3 つの中継の設定を書き直した（半日）"
+          ]
+        }
+      ]
+    },
+    "steps": [
+      {
+        "id": "what",
+        "purpose": "「問い」と「試した事」の枠を埋める。",
+        "check": {
+          "kind": "sim",
+          "expr": "in i-q=q i-try1=tried i-try2=tried"
+        },
+        "afterward": "何を知りたくて、何をしたかが読める。これで報告を読む人が結果を信じられる。",
+        "hints": [
+          "知りたい事は 1 つ。",
+          "記録にある事だけ。",
+          "「替えると証明書の手作業が減るか」を「問い」へ、「試験の機械で Caddy を動かし、名前を書いて HTTPS を確かめた」と「今の 3 つの中継の設定を Caddy の設定に書き直した」を「試した事」へドラッグして入れる。"
+        ],
+        "expectedErrors": [
+          "lab-a-report"
+        ],
+        "actions": [
+          {
+            "op": "put",
+            "item": "i-q",
+            "slot": "q"
+          },
+          {
+            "op": "put",
+            "item": "i-try1",
+            "slot": "tried"
+          },
+          {
+            "op": "put",
+            "item": "i-try2",
+            "slot": "tried"
+          }
+        ]
+      },
+      {
+        "id": "out",
+        "purpose": "試して分かった事を「結果」へ入れる。根拠の無い札は「報告に書かない」へ。",
+        "check": {
+          "kind": "sim",
+          "expr": "in i-out1=out i-out2=out i-fame=no i-rumor=no"
+        },
+        "afterward": "良い事と困る事の両方を書いた。噂は入れていない。",
+        "hints": [
+          "試した記録に基づく物だけ。",
+          "聞いた話は書かない。",
+          "「証明書は手を動かさず取れた」と「書き直しに半日かかり、社内に経験者は居ない」を「結果」へ、「有名だから替えるべきだ」と「どこかで速いと聞いた」を「報告に書かない」へドラッグして入れる。"
+        ],
+        "expectedErrors": [
+          "lab-a-report"
+        ],
+        "actions": [
+          {
+            "op": "put",
+            "item": "i-out1",
+            "slot": "out"
+          },
+          {
+            "op": "put",
+            "item": "i-out2",
+            "slot": "out"
+          },
+          {
+            "op": "put",
+            "item": "i-fame",
+            "slot": "no"
+          },
+          {
+            "op": "put",
+            "item": "i-rumor",
+            "slot": "no"
+          }
+        ]
+      },
+      {
+        "id": "decide",
+        "purpose": "判断を書く。結果に基づいた札を「判断」へ入れる。",
+        "check": {
+          "kind": "sim",
+          "expr": "in i-dec=decide"
+        },
+        "afterward": "問い・試した事・結果・判断が揃った。研究施設に研究の成果が並ぶ。",
+        "hints": [
+          "判断が無い報告は、読む人に決められない。",
+          "得失の両方に触れた札。",
+          "「次の更新の機会に 1 つのサイトから替える（手作業は減るが、経験者を育てる時間が要る）」を「判断」へドラッグして入れる。"
+        ],
+        "expectedErrors": [
+          "lab-a-report"
+        ],
+        "actions": [
+          {
+            "op": "put",
+            "item": "i-dec",
+            "slot": "decide"
+          }
+        ]
+      }
+    ]
+  },
+  "result": {
+    "success": "報告が揃った。研究施設に研究の成果が並ぶ。",
+    "partial": "ヒントを使って揃えた。次は、自分で気になる道具を 1 つ選び、同じ形で調べよう。",
+    "retry": "まだ足りない。問い・試した事・結果・判断のどれが空かを見よう。"
+  },
+  "summary": {
+    "points": [
+      "公式の文書から",
+      "小さく試す",
+      "結果と判断を報告"
+    ],
+    "next": [],
+    "terms": [
+      "caddy"
+    ]
+  }
+}

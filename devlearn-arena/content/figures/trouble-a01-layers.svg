@@ -1,0 +1,47 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 360" font-family="&quot;Noto Sans JP&quot;, sans-serif">
+  <title>Ingress → Service → Pod → コンテナ → Node の各層を確かめる</title>
+  <defs>
+    <marker id="arrow-gold" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="#f2b632" />
+    </marker>
+  </defs>
+  <g class="el" data-part="ing">
+    <rect x="20" y="110" width="100" height="130" rx="10" fill="#f2b632" />
+    <text x="70" y="158" text-anchor="middle" font-size="16" font-weight="700" fill="#0a1424">Ingress</text>
+    <text x="70" y="180" text-anchor="middle" font-size="14" fill="#0a1424">503 なら</text>
+    <text x="70" y="202" text-anchor="middle" font-size="14" fill="#0a1424">後ろを見る</text>
+  </g>
+  <g class="el" data-part="svc">
+    <rect x="144" y="110" width="100" height="130" rx="10" fill="#1a6fd6" />
+    <text x="194" y="158" text-anchor="middle" font-size="16" font-weight="700" fill="#eef2f6">Service</text>
+    <text x="194" y="180" text-anchor="middle" font-size="14" fill="#eef2f6">Endpoints</text>
+    <text x="194" y="202" text-anchor="middle" font-size="14" fill="#eef2f6">が空か</text>
+  </g>
+  <g class="el" data-part="pod">
+    <rect x="268" y="110" width="100" height="130" rx="10" fill="#7a3fd0" />
+    <text x="318" y="158" text-anchor="middle" font-size="16" font-weight="700" fill="#eef2f6">Pod</text>
+    <text x="318" y="180" text-anchor="middle" font-size="14" fill="#eef2f6">STATUS</text>
+    <text x="318" y="202" text-anchor="middle" font-size="14" fill="#eef2f6">を読む</text>
+  </g>
+  <g class="el" data-part="ctr">
+    <rect x="392" y="110" width="100" height="130" rx="10" fill="#c0392b" />
+    <text x="442" y="158" text-anchor="middle" font-size="16" font-weight="700" fill="#eef2f6">コンテナ</text>
+    <text x="442" y="180" text-anchor="middle" font-size="14" fill="#eef2f6">logs</text>
+    <text x="442" y="202" text-anchor="middle" font-size="14" fill="#eef2f6">describe</text>
+  </g>
+  <g class="el" data-part="node">
+    <rect x="516" y="110" width="100" height="130" rx="10" fill="#1f7a4d" />
+    <text x="566" y="158" text-anchor="middle" font-size="16" font-weight="700" fill="#eef2f6">Node</text>
+    <text x="566" y="180" text-anchor="middle" font-size="14" fill="#eef2f6">資源</text>
+    <text x="566" y="202" text-anchor="middle" font-size="14" fill="#eef2f6">は足りるか</text>
+  </g>
+  <g class="el" data-part="flow">
+    <path d="M120 175 L141 175" fill="none" stroke="#f2b632" stroke-width="2" marker-end="url(#arrow-gold)" />
+    <path d="M244 175 L265 175" fill="none" stroke="#f2b632" stroke-width="2" marker-end="url(#arrow-gold)" />
+    <path d="M368 175 L389 175" fill="none" stroke="#f2b632" stroke-width="2" marker-end="url(#arrow-gold)" />
+    <path d="M492 175 L513 175" fill="none" stroke="#f2b632" stroke-width="2" marker-end="url(#arrow-gold)" />
+  </g>
+  <g class="el" data-part="note">
+    <text x="320" y="340" text-anchor="middle" font-size="14" fill="#eef2f6">状態の名前から、原因のある層を推測する</text>
+  </g>
+</svg>

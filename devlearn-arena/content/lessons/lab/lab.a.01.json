@@ -1,0 +1,281 @@
+{
+  "id": "lab.a.01",
+  "domain": "lab",
+  "level": "advanced",
+  "theme": "総合",
+  "title": "コンテナ化して Kubernetes へ",
+  "goal": "アプリをコンテナにし、クラスタで公開・更新できる",
+  "minutes": 20,
+  "prerequisites": [
+    "docker.i.06",
+    "k8s.a.01"
+  ],
+  "related": [
+    "cicd.a.01",
+    "cloud.a.01"
+  ],
+  "next": [
+    "lab.a.02"
+  ],
+  "terms": [
+    "container",
+    "cluster",
+    "app",
+    "kubernetes",
+    "image",
+    "kubectl",
+    "pod",
+    "k8s-node",
+    "authentication",
+    "k8s-service",
+    "ingress",
+    "deployment"
+  ],
+  "explain": {
+    "what": "{{term:app}}を{{term:container}}にし、{{term:cluster}}で公開し、止めずに更新する課題。",
+    "why": "コンテナから {{term:kubernetes}} までを、一続きで使えるようにするため。",
+    "use": "今の本番の構成で使う。作る・置く・動かす・公開する・更新するの順に進める。",
+    "when": "既存のアプリをクラスタに移したい。",
+    "figures": [
+      "lab-a01-pipeline"
+    ]
+  },
+  "understand": [
+    {
+      "kind": "order",
+      "prompt": "作業の順に並べる。",
+      "items": [
+        "{{term:image}}を作る",
+        "置き場へ置く",
+        "クラスタで動かす",
+        "外へ公開する",
+        "新しい版に更新する"
+      ],
+      "see": "use"
+    },
+    {
+      "kind": "relation",
+      "prompt": "2 つの関係は？",
+      "a": "`Deployment` の `image` に書いた名前",
+      "b": "クラスタが置き場から取るイメージ",
+      "answer": "cause",
+      "why": "手元で作っただけでは、クラスタから取れない。",
+      "see": "why"
+    }
+  ],
+  "quiz": [
+    {
+      "id": "q1",
+      "kind": "order",
+      "prompt": "作業の順に並べる。",
+      "order": [
+        "docker build",
+        "docker push",
+        "{{term:kubectl}} apply",
+        "kubectl set image"
+      ],
+      "explanation": "置いてからでないと、クラスタは取れない。"
+    },
+    {
+      "id": "q2",
+      "kind": "situation",
+      "prompt": "止めずに更新するには？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "ローリング（少しずつ入れ替える）",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "全ての {{term:pod}} を消してから作る",
+          "correct": false,
+          "whyNot": "消す間は止まる。"
+        },
+        {
+          "id": "c",
+          "text": "{{term:k8s-node}} を止める",
+          "correct": false,
+          "whyNot": "止まる。"
+        }
+      ],
+      "explanation": "`kubectl set image` は既定でローリング。"
+    },
+    {
+      "id": "q3",
+      "kind": "cause",
+      "prompt": "`ImagePullBackOff` が出た。原因は？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "名前か{{term:authentication}}、まだ置いていない",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "{{term:k8s-service}} の札",
+          "correct": false,
+          "whyNot": "Pod の取り込みには関係しない。"
+        },
+        {
+          "id": "c",
+          "text": "{{term:ingress}} の規則",
+          "correct": false,
+          "whyNot": "入口は関係しない。"
+        }
+      ],
+      "explanation": "`docker push` した名前と比べる。"
+    }
+  ],
+  "practice": {
+    "mode": "terminal",
+    "purpose": "港の店の画面（`site/`）を、コンテナにしてクラスタで公開し、新しい版に止めずに更新する。置き場は `registry.city.example`、イメージの名前は `registry.city.example/city/shop`。`shop.yaml` に {{term:deployment}}・Service・Ingress が書いてある。",
+    "environment": "k8s-cluster",
+    "setup": {
+      "hostname": "console",
+      "cwd": "/home/learner/shop",
+      "dirs": [
+        "/home/learner/shop/site"
+      ],
+      "files": {
+        "/etc/hosts": "127.0.0.1 localhost\n203.0.113.10 city.example\n",
+        "/home/learner/shop/Dockerfile": "FROM nginx:1.27-alpine\n",
+        "/home/learner/shop/site/index.html": "<h1>港の店</h1>\n",
+        "/home/learner/shop/shop.yaml": "apiVersion: apps/v1\nkind: Deployment\nmetadata:\n  name: shop\nspec:\n  replicas: 3\n  selector:\n    matchLabels:\n      app: shop\n  template:\n    metadata:\n      labels:\n        app: shop\n    spec:\n      containers:\n      - name: shop\n        image: registry.city.example/city/shop:1.0\n        ports:\n        - containerPort: 80\n---\napiVersion: v1\nkind: Service\nmetadata:\n  name: shop\nspec:\n  selector:\n    app: shop\n  ports:\n  - port: 80\n    targetPort: 80\n---\napiVersion: networking.k8s.io/v1\nkind: Ingress\nmetadata:\n  name: shop\nspec:\n  ingressClassName: nginx\n  rules:\n  - host: city.example\n    http:\n      paths:\n      - path: /\n        pathType: Prefix\n        backend:\n          service:\n            name: shop\n            port:\n              number: 80\n"
+      },
+      "images": [
+        "nginx:1.27-alpine"
+      ],
+      "registries": [
+        {
+          "server": "registry.city.example",
+          "user": "learner"
+        }
+      ],
+      "cluster": {
+        "nodes": 3,
+        "ageDays": 3,
+        "ingress": {
+          "address": "203.0.113.10"
+        }
+      }
+    },
+    "steps": [
+      {
+        "id": "build",
+        "purpose": "`Dockerfile` に `COPY site /usr/share/nginx/html` を足して `1.0` を作り、手元で `try` という名前で動かして確かめる（`-p 8080:80`）。",
+        "check": {
+          "kind": "container",
+          "expr": "image:registry.city.example/city/shop:1.0 running:try body:try~港の店"
+        },
+        "afterward": "頁を写したイメージができた。手元で確かめてから先へ進むと、後で迷わない。",
+        "hints": [
+          "`>>` で 1 行足す。",
+          "`docker build -t 名前:タグ .`。",
+          "`echo 'COPY site /usr/share/nginx/html' >> Dockerfile` `docker build -t registry.city.example/city/shop:1.0 .` `docker run -d --name try -p 8080:80 registry.city.example/city/shop:1.0` `curl -s http://localhost:8080/` を打つ。"
+        ],
+        "expectedErrors": [
+          "ctr-build-parse",
+          "ctr-name-in-use",
+          "docker-conflict"
+        ]
+      },
+      {
+        "id": "push",
+        "purpose": "置き場へ置く。`docker login` してから `docker push` する。",
+        "check": {
+          "kind": "container",
+          "expr": "pushed:registry.city.example/city/shop:1.0"
+        },
+        "afterward": "クラスタから取れる場所に置いた。手元にあるだけでは、Node は取れない。",
+        "hints": [
+          "先にログイン。",
+          "名前に置き場の住所が入っている。",
+          "`docker login registry.city.example` `docker push registry.city.example/city/shop:1.0` を打つ。"
+        ],
+        "expectedErrors": [
+          "lab-a-unauth",
+          "lab-a-noimage"
+        ]
+      },
+      {
+        "id": "deploy",
+        "purpose": "`kubectl apply -f shop.yaml` で動かし、`http://city.example/` に頼む。店の画面が返れば達成。",
+        "check": {
+          "kind": "http",
+          "url": "http://city.example/",
+          "status": 200,
+          "contains": "港の店"
+        },
+        "afterward": "外から届いた。作る・置く・動かす・公開するが一続きになった。",
+        "hints": [
+          "Pod が揃うまで待つ。",
+          "`kubectl rollout status`。",
+          "`kubectl apply -f shop.yaml` `kubectl rollout status deployment/shop` `curl -s http://city.example/` を打つ。"
+        ],
+        "expectedErrors": [
+          "k8s-image-pull",
+          "k8s-a-apply-file",
+          "k8s-yaml"
+        ]
+      },
+      {
+        "id": "update",
+        "purpose": "新しい版 `1.1` を出す。`site/index.html` の `港の店` を `港の店 夏の市` に変え、作って置いて、`kubectl set image` で入れ替える。全て新しい版で動けば達成。",
+        "check": {
+          "kind": "k8s",
+          "expr": "deployment/shop readyUpdated=3 image=registry.city.example/city/shop:1.1"
+        },
+        "afterward": "少しずつ入れ替わったので、途中も古い版か新しい版が答え続けた。",
+        "hints": [
+          "作る → 置く → 入れ替えるの順。",
+          "コンテナの名前は `shop`。",
+          "`sed -i 's/港の店/港の店 夏の市/' site/index.html` `docker build -t registry.city.example/city/shop:1.1 .` `docker push registry.city.example/city/shop:1.1` `kubectl set image deployment/shop shop=registry.city.example/city/shop:1.1` `kubectl rollout status deployment/shop` を打つ。"
+        ],
+        "expectedErrors": [
+          "lab-a-noimage",
+          "k8s-set-image-container"
+        ]
+      },
+      {
+        "id": "check",
+        "purpose": "外から新しい版を確かめる。`夏の市` が返れば達成。",
+        "check": {
+          "kind": "http",
+          "url": "http://city.example/",
+          "status": 200,
+          "contains": "夏の市"
+        },
+        "afterward": "利用者と同じ場所から確かめた。クラスタ施設に新しい棟が建つ。",
+        "hints": [
+          "外から頼む。",
+          "入口の名前。",
+          "`curl -s http://city.example/` を打つ。"
+        ],
+        "expectedErrors": [
+          "k8s-image-pull"
+        ]
+      }
+    ]
+  },
+  "result": {
+    "success": "作って、置いて、公開して、止めずに更新できた。クラスタ施設に新しい棟が建つ。",
+    "partial": "ヒントを使って通せた。次は、段ごとに確かめる物を先に言ってみよう。",
+    "retry": "まだ途中で止まっている。`docker images` と `kubectl get pods` で、止まった段を見よう。"
+  },
+  "summary": {
+    "points": [
+      "作る・置く・動かす・公開する",
+      "止めずに更新",
+      "各段で確かめる"
+    ],
+    "next": [
+      "lab.a.02"
+    ],
+    "terms": [
+      "image",
+      "registry",
+      "rolling-update"
+    ]
+  }
+}

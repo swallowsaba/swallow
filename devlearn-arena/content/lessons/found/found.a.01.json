@@ -1,0 +1,224 @@
+{
+  "id": "found.a.01",
+  "domain": "found",
+  "level": "advanced",
+  "theme": "OS",
+  "title": "カーネルとシステムコール",
+  "goal": "アプリと OS の境界を説明できる",
+  "minutes": 20,
+  "prerequisites": [
+    "found.i.02"
+  ],
+  "related": [
+    "ctr.i.02",
+    "linux.a.02"
+  ],
+  "next": [
+    "ctr.i.02"
+  ],
+  "terms": [
+    "syscall",
+    "kernel",
+    "app",
+    "os",
+    "file",
+    "disk",
+    "permission",
+    "memory",
+    "program",
+    "log"
+  ],
+  "explain": {
+    "what": "{{term:os}} の中心（{{term:kernel}}）と、{{term:app}}がカーネルに頼む窓口（{{term:syscall}}）。",
+    "why": "アプリは機械を直接触れず、必ずカーネルを通す。安全と共有のため。",
+    "use": "遅さや失敗の原因を、アプリと OS の境目で調べる時に使う。",
+    "when": "{{term:file}}を開けない。理由がアプリの中か OS か分からない。",
+    "figures": [
+      "found-a01-syscall"
+    ]
+  },
+  "understand": [
+    {
+      "kind": "figure-pick",
+      "figure": "found-a01-syscall",
+      "prompt": "ファイルを開く・読む・書くの頼みが通る場所を押す。",
+      "answer": [
+        "gate"
+      ],
+      "see": "what"
+    },
+    {
+      "kind": "yesno",
+      "prompt": "アプリは{{term:disk}}を直接読める？",
+      "answer": false,
+      "why": "カーネルに頼む。{{term:permission}}の確かめもカーネルが行う。",
+      "see": "why"
+    }
+  ],
+  "quiz": [
+    {
+      "id": "q1",
+      "kind": "term",
+      "prompt": "システムコールとは？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "アプリが OS に頼む窓口",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "OS の設定の書類",
+          "correct": false,
+          "whyNot": "書類ではなく呼び出し。"
+        },
+        {
+          "id": "c",
+          "text": "電話の機能",
+          "correct": false,
+          "whyNot": "別の物。"
+        }
+      ],
+      "explanation": "ファイル・{{term:memory}}・網を使う時に必ず通る。"
+    },
+    {
+      "id": "q2",
+      "kind": "cause",
+      "prompt": "`open` が失敗した。理由の手掛かりは？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "返ってきたエラーの種類",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "画面の色",
+          "correct": false,
+          "whyNot": "関係しない。"
+        },
+        {
+          "id": "c",
+          "text": "コードの行数",
+          "correct": false,
+          "whyNot": "関係しない。"
+        }
+      ],
+      "explanation": "`EACCES` は権限、`ENOENT` は無い。"
+    },
+    {
+      "id": "q3",
+      "kind": "predict",
+      "prompt": "権限の無いファイルを `open` すると？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "拒否のエラーが返る",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "空のファイルが開く",
+          "correct": false,
+          "whyNot": "カーネルが断る。"
+        },
+        {
+          "id": "c",
+          "text": "パソコンが止まる",
+          "correct": false,
+          "whyNot": "そのアプリに返るだけ。"
+        }
+      ],
+      "explanation": "アプリは返事を見て振る舞いを決める。"
+    }
+  ],
+  "practice": {
+    "mode": "terminal",
+    "purpose": "集計の{{term:program}} `report` が動かず `cannot open log` とだけ言う。動いた時のシステムコールの記録が `report.strace` にある（`strace` という道具で取った物）。失敗した呼び出しを探し、その名前と理由を答える。",
+    "environment": "linux-basic",
+    "setup": {
+      "hostname": "batch-01",
+      "cwd": "/home/learner",
+      "files": {
+        "/home/learner/report.strace": "execve(\"/usr/bin/report\", [\"report\"], 0x7ffd5e0c8a10 /* 21 vars */) = 0\nopenat(AT_FDCWD, \"/etc/report.conf\", O_RDONLY) = 3\nread(3, \"level=info\\n\", 4096) = 11\nclose(3) = 0\nopenat(AT_FDCWD, \"/var/log/report/out.log\", O_WRONLY|O_CREAT|O_APPEND, 0644) = -1 EACCES (Permission denied)\nwrite(2, \"cannot open log\\n\", 16) = 16\nexit_group(1) = ?\n"
+      }
+    },
+    "steps": [
+      {
+        "id": "find",
+        "purpose": "失敗は戻り値が `-1`。`grep` で `= -1` の行を取り出す。",
+        "check": {
+          "kind": "ran",
+          "uses": [
+            "grep"
+          ],
+          "shows": [
+            "openat(AT_FDCWD, \"/var/log/report/out.log\", O_WRONLY|O_CREAT|O_APPEND, 0644) = -1 EACCES (Permission denied)"
+          ]
+        },
+        "afterward": "1 行だけ出た。ほかの呼び出しは全て成功している。",
+        "hints": [
+          "1 行ごとに `= 戻り値` が付く。",
+          "`grep` で探す。",
+          "`grep '= -1' report.strace` を打つ。"
+        ],
+        "expectedErrors": [
+          "found-a-trace"
+        ]
+      },
+      {
+        "id": "call",
+        "purpose": "失敗した呼び出しの名前（行の最初の語。括弧の前）を答えの欄に入れる。",
+        "check": {
+          "kind": "answer",
+          "equals": "openat"
+        },
+        "afterward": "ファイルを開く呼び出し。ここで失敗したので、次の `write` はエラーの文を画面へ出しただけ。",
+        "hints": [
+          "行の最初の語。",
+          "`(` の前まで。",
+          "`grep '= -1' report.strace` を打ち、`openat` と答える。"
+        ],
+        "expectedErrors": [
+          "found-a-trace"
+        ]
+      },
+      {
+        "id": "why",
+        "purpose": "エラーの名前（`-1` の次の語）を答えの欄に入れる。",
+        "check": {
+          "kind": "answer",
+          "equals": "EACCES"
+        },
+        "afterward": "`EACCES` は権限が無い。アプリの不具合ではなく、OS が断った。見るべき所は{{term:log}}の場所の権限と分かった。",
+        "hints": [
+          "`-1` の次の語。",
+          "括弧の中は同じ意味の文。",
+          "`grep '= -1' report.strace` を打ち、`EACCES` と答える。"
+        ],
+        "expectedErrors": [
+          "found-a-trace"
+        ]
+      }
+    ]
+  },
+  "result": {
+    "success": "アプリと OS の境目で原因を特定できた。",
+    "partial": "ヒントを使って読めた。次は、`ENOENT` が出たら何を見るかを考えよう。",
+    "retry": "まだ答えが違う。`= -1` の行の語を順に読もう。"
+  },
+  "summary": {
+    "points": [
+      "カーネルが機械を管理する",
+      "アプリはシステムコールで頼む",
+      "失敗は返ってきたエラーで分かる"
+    ],
+    "next": [
+      "ctr.i.02"
+    ],
+    "terms": [
+      "kernel",
+      "syscall"
+    ]
+  }
+}

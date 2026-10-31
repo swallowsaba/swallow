@@ -6,7 +6,22 @@ import type { ClusterState, ContainerSpec } from './types';
  * コンテナの模擬（src/engines/container）と同じイメージの定義を使う: 起動の行・要る環境変数・動き出した時のログ
  */
 function imageOf(state: ClusterState, spec: ContainerSpec): Image | undefined {
-  return state.images === undefined ? undefined : fromRegistry(normalizeRef(spec.image));
+  return state.images === undefined ? undefined : clusterImage(state, spec.image);
+}
+
+/** クラスタが取れるイメージの中身（自分たちの置き場へ push した物を先に見る。lab.a.01） */
+export function clusterImage(state: ClusterState, ref: string): Image | undefined {
+  const full = normalizeRef(ref);
+  return state.pushed?.find((i) => i.ref === full) ?? fromRegistry(full);
+}
+
+/** 置き場へ push したイメージを、クラスタから取れるようにする（同じ名前:タグは置き換わる） */
+export function withPushed(state: ClusterState, image: Image): ClusterState {
+  return {
+    ...state,
+    ...(state.images === undefined ? {} : { images: [...new Set([...state.images, image.ref])] }),
+    pushed: [...(state.pushed ?? []).filter((i) => i.ref !== image.ref), image],
+  };
 }
 
 /** 動き出してすぐ止まる時の、原因の行（要る環境変数が無いか空）。止まらなければ null */

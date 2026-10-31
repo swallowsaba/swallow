@@ -1,0 +1,333 @@
+{
+  "id": "trouble.a.03",
+  "domain": "trouble",
+  "level": "advanced",
+  "theme": "予防",
+  "title": "再発防止",
+  "goal": "原因に応じた恒久対策を選び、確かめられる",
+  "minutes": 20,
+  "prerequisites": [
+    "trouble.a.02",
+    "devops.i.03"
+  ],
+  "related": [
+    "devops.i.03",
+    "sec.a.03"
+  ],
+  "next": [],
+  "terms": [
+    "lasting-fix",
+    "monitoring",
+    "disk",
+    "log",
+    "server"
+  ],
+  "explain": {
+    "what": "原因に応じた{{term:lasting-fix}}を選び、効いたことを確かめること。",
+    "why": "その場しのぎでは、同じ障害が繰り返す。",
+    "use": "運用の改善で使う。増える元を止める仕組みと、早く気づく{{term:monitoring}}を入れる。",
+    "when": "毎月同じ{{term:disk}}満杯が起きて、そのたびに手で{{term:log}}を消している。",
+    "figures": [
+      "trouble-a03-prevent"
+    ]
+  },
+  "understand": [
+    {
+      "kind": "relation",
+      "prompt": "2 つの関係は？",
+      "a": "手でログを消す",
+      "b": "翌月また同じ障害が起きる",
+      "answer": "cause",
+      "why": "増える元が変わらないので、同じだけ増える。",
+      "see": "why"
+    },
+    {
+      "kind": "situation",
+      "prompt": "恒久の対策の選び方は？",
+      "see": "use",
+      "choices": [
+        {
+          "id": "a",
+          "text": "原因を止めるか、早く気づける仕組みを選ぶ",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "一番安い物",
+          "correct": false,
+          "whyNot": "効かなければ意味が無い。"
+        },
+        {
+          "id": "c",
+          "text": "一番新しい道具",
+          "correct": false,
+          "whyNot": "新しさでは決まらない。"
+        }
+      ]
+    }
+  ],
+  "quiz": [
+    {
+      "id": "q1",
+      "kind": "situation",
+      "prompt": "毎月の満杯。何をする？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "ログの自動の整理と監視",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "毎月手で消す",
+          "correct": false,
+          "whyNot": "また繰り返す。"
+        },
+        {
+          "id": "c",
+          "text": "ディスクを増やすだけ",
+          "correct": false,
+          "whyNot": "時期が延びるだけ。"
+        }
+      ],
+      "explanation": "増える元を止める。"
+    },
+    {
+      "id": "q2",
+      "kind": "choice",
+      "prompt": "効いたかの確かめ方は？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "指標で見る",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "担当者の感想",
+          "correct": false,
+          "whyNot": "人によって違う。"
+        },
+        {
+          "id": "c",
+          "text": "確かめない",
+          "correct": false,
+          "whyNot": "効いたか分からない。"
+        }
+      ],
+      "explanation": "満杯の回数や残りの量を測る。"
+    },
+    {
+      "id": "q3",
+      "kind": "cause",
+      "prompt": "対策を決めたのに再発した。原因は？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "対策を実行していない・効いていない",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "障害は防げないから",
+          "correct": false,
+          "whyNot": "防げる物は多い。"
+        },
+        {
+          "id": "c",
+          "text": "記録が長いから",
+          "correct": false,
+          "whyNot": "長さの問題ではない。"
+        }
+      ],
+      "explanation": "担当と期限を決め、効いたかを測る。"
+    }
+  ],
+  "practice": {
+    "mode": "simulation",
+    "purpose": "予約の{{term:server}}は、毎月ディスクが満杯になる。今は手でログを消している。恒久の対策を入れ、1 か月の模擬で再発しないことを確かめる。",
+    "environment": "sim-assign",
+    "setup": {
+      "timeLabel": "1 か月に満杯になる回数",
+      "timeUnit": "回",
+      "slots": [
+        {
+          "id": "do",
+          "label": "入れる対策"
+        },
+        {
+          "id": "no",
+          "label": "入れない"
+        }
+      ],
+      "items": [
+        {
+          "id": "manual",
+          "label": "満杯になったら手でログを消す",
+          "time": {
+            "do": 0,
+            "no": 0
+          }
+        },
+        {
+          "id": "rotate",
+          "label": "ログを毎日圧縮し、7 日で消す（logrotate）",
+          "time": {
+            "do": 0,
+            "no": 3
+          }
+        },
+        {
+          "id": "alert",
+          "label": "残りが 20% を切ったら翌朝の札にする",
+          "time": {
+            "do": 0,
+            "no": 1
+          }
+        },
+        {
+          "id": "bigger",
+          "label": "ディスクを 2 倍にする（費用が 2 倍）",
+          "extra": true,
+          "time": {
+            "do": 0,
+            "no": 0
+          },
+          "refuse": {
+            "do": "増える元が同じなので、いずれ再発する"
+          }
+        }
+      ],
+      "initial": {
+        "manual": "do",
+        "rotate": "no",
+        "alert": "no",
+        "bigger": "no"
+      },
+      "panels": [
+        {
+          "kind": "chart",
+          "title": "ディスクの使用率（先月）",
+          "unit": "%",
+          "x": [
+            "1 日",
+            "10 日",
+            "20 日",
+            "30 日"
+          ],
+          "series": [
+            {
+              "label": "使用率",
+              "values": [
+                40,
+                70,
+                100,
+                100
+              ]
+            }
+          ]
+        },
+        {
+          "kind": "log",
+          "title": "過去の障害",
+          "lines": [
+            "8 月 18 日 ディスク満杯。手でログを消した",
+            "9 月 19 日 ディスク満杯。手でログを消した",
+            "10 月 17 日 ディスク満杯。手でログを消した"
+          ]
+        },
+        {
+          "kind": "chart",
+          "title": "1 か月の模擬",
+          "unit": "%",
+          "x": [
+            "1 日",
+            "10 日",
+            "20 日",
+            "30 日"
+          ],
+          "series": [
+            {
+              "label": "使用率",
+              "values": [
+                40,
+                45,
+                45,
+                46
+              ]
+            }
+          ],
+          "when": "in rotate=do alert=do"
+        }
+      ]
+    },
+    "steps": [
+      {
+        "id": "root",
+        "purpose": "増える元を止める。「ログを毎日圧縮し、7 日で消す（logrotate）」を「入れる対策」へ入れる。",
+        "check": {
+          "kind": "sim",
+          "expr": "in rotate=do"
+        },
+        "afterward": "ログが増え続けなくなった。ここが原因への対策。",
+        "hints": [
+          "増えているのはログ。",
+          "自動で整理する。",
+          "「ログを毎日圧縮し、7 日で消す（logrotate）」を「入れる対策」へドラッグして入れる。"
+        ],
+        "expectedErrors": [
+          "trouble-a-prevent"
+        ],
+        "actions": [
+          {
+            "op": "put",
+            "item": "rotate",
+            "slot": "do"
+          }
+        ]
+      },
+      {
+        "id": "watch",
+        "purpose": "早く気づく。「残りが 20% を切ったら翌朝の札にする」を「入れる対策」へ入れる。満杯の回数が 0 回で、模擬のグラフが平らなら達成。",
+        "check": {
+          "kind": "sim",
+          "expr": "in rotate=do alert=do && time<=0"
+        },
+        "afterward": "1 か月の模擬で 46% に収まった。効いたことを数字で確かめられた。手で消す手順は、残っていても使わなくなる。",
+        "hints": [
+          "別の理由で増えても、夜中に止まる前に分かる。",
+          "監視を足す。",
+          "「残りが 20% を切ったら翌朝の札にする」を「入れる対策」へドラッグして入れる。"
+        ],
+        "expectedErrors": [
+          "trouble-a-prevent"
+        ],
+        "actions": [
+          {
+            "op": "put",
+            "item": "alert",
+            "slot": "do"
+          }
+        ]
+      }
+    ]
+  },
+  "result": {
+    "success": "繰り返しを止められた。",
+    "partial": "ヒントを使って止められた。次は、対処と対策を自分で分けてみよう。",
+    "retry": "まだ再発する。満杯の回数と、増える元を止めているかを見よう。"
+  },
+  "summary": {
+    "points": [
+      "その場しのぎで終えない",
+      "仕組みで防ぐ",
+      "効いたかを測る"
+    ],
+    "next": [],
+    "terms": [
+      "lasting-fix",
+      "alert",
+      "postmortem"
+    ]
+  }
+}

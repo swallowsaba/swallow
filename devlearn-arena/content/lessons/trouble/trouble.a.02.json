@@ -1,0 +1,305 @@
+{
+  "id": "trouble.a.02",
+  "domain": "trouble",
+  "level": "advanced",
+  "theme": "複合",
+  "title": "複合障害",
+  "goal": "複数の原因が重なった障害を順に解ける",
+  "minutes": 20,
+  "prerequisites": [
+    "trouble.a.01",
+    "mon.i.03"
+  ],
+  "related": [
+    "mon.a.02",
+    "git.a.01"
+  ],
+  "next": [
+    "trouble.a.03"
+  ],
+  "terms": [
+    "retry-storm",
+    "db",
+    "server",
+    "log"
+  ],
+  "explain": {
+    "what": "複数の原因が重なった障害を、順に解くこと。",
+    "why": "1 つ直しても直らない時、別の原因が隠れている。順を誤ると元に戻らない。",
+    "use": "大きな障害で使う。被害を止め、元の原因を直し、1 つずつ確かめる。",
+    "when": "{{term:db}} の遅れと、それによる{{term:retry-storm}}で全体が止まった。",
+    "figures": [
+      "trouble-a02-chain"
+    ]
+  },
+  "understand": [
+    {
+      "kind": "relation",
+      "prompt": "2 つの関係は？",
+      "a": "元の原因（索引の欠け）",
+      "b": "二次の原因（再試行の嵐）",
+      "answer": "cause",
+      "why": "検索が遅いと失敗が増え、再試行が増えて、さらに DB が詰まる。",
+      "see": "why"
+    },
+    {
+      "kind": "situation",
+      "prompt": "どれから止める？",
+      "see": "use",
+      "choices": [
+        {
+          "id": "a",
+          "text": "被害を広げている二次の原因",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "一番古い記録",
+          "correct": false,
+          "whyNot": "古さで決めない。"
+        },
+        {
+          "id": "c",
+          "text": "直しやすい物",
+          "correct": false,
+          "whyNot": "被害が広がる間に別の物が壊れる。"
+        }
+      ]
+    }
+  ],
+  "quiz": [
+    {
+      "id": "q1",
+      "kind": "situation",
+      "prompt": "まず止めるのは？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "被害を広げる二次の原因",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "全ての{{term:server}}",
+          "correct": false,
+          "whyNot": "再起動しても同じ状態に戻る。"
+        },
+        {
+          "id": "c",
+          "text": "利用者の接続を全て",
+          "correct": false,
+          "whyNot": "止める範囲が広すぎる。"
+        }
+      ],
+      "explanation": "負荷が下がると、調べられるようになる。"
+    },
+    {
+      "id": "q2",
+      "kind": "cause",
+      "prompt": "1 つ直しても直らない。なぜ？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "隠れた別の原因がある",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "直し方が全て誤り",
+          "correct": false,
+          "whyNot": "効いた分はある。"
+        },
+        {
+          "id": "c",
+          "text": "時間が足りない",
+          "correct": false,
+          "whyNot": "待っても解けない。"
+        }
+      ],
+      "explanation": "1 つ直すごとに確かめて次を探す。"
+    },
+    {
+      "id": "q3",
+      "kind": "choice",
+      "prompt": "確かめ方として良いのは？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "1 つ直すごとに確かめる",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "全て直してからまとめて",
+          "correct": false,
+          "whyNot": "どれが効いたか分からない。"
+        },
+        {
+          "id": "c",
+          "text": "確かめない",
+          "correct": false,
+          "whyNot": "直ったか分からない。"
+        }
+      ],
+      "explanation": "指標が動くのを見る。"
+    }
+  ],
+  "practice": {
+    "mode": "simulation",
+    "purpose": "全体が止まった。DB の索引の欠け・再試行の嵐・容量不足が重なっている。止める順に札を並べ、応答を元に戻す。",
+    "environment": "sim-order",
+    "setup": {
+      "unit": "分",
+      "items": [
+        {
+          "id": "stop",
+          "label": "再試行を止める（被害を止める）"
+        },
+        {
+          "id": "space",
+          "label": "古いログを消して容量を空ける",
+          "needs": [
+            "stop"
+          ]
+        },
+        {
+          "id": "index",
+          "label": "遅い検索に索引を付ける",
+          "needs": [
+            "space"
+          ]
+        },
+        {
+          "id": "resume",
+          "label": "再試行を制限付きで戻す",
+          "needs": [
+            "index"
+          ]
+        },
+        {
+          "id": "reboot",
+          "label": "全てのサーバを再起動する",
+          "extra": true,
+          "stop": "再起動しても、再試行の嵐ですぐ同じ状態に戻る"
+        }
+      ],
+      "panels": [
+        {
+          "kind": "kv",
+          "title": "今の様子",
+          "rows": [
+            [
+              "応答",
+              "止まっている"
+            ],
+            [
+              "DB のディスク",
+              "99%（書けない）"
+            ],
+            [
+              "呼び出し",
+              "毎秒 4000（再試行が 9 割）"
+            ],
+            [
+              "遅い検索",
+              "1 回 6 秒。索引が無い"
+            ]
+          ]
+        },
+        {
+          "kind": "text",
+          "title": "様子",
+          "body": "再試行が止まり、DB に余裕ができ、書けるようになり、検索が速くなった。制限付きで再試行を戻しても、もう詰まらない。",
+          "when": "seq stop<space<index<resume"
+        }
+      ]
+    },
+    "steps": [
+      {
+        "id": "first",
+        "purpose": "最初に被害を止める。「再試行を止める（被害を止める）」→「古い{{term:log}}を消して容量を空ける」の順に並べる。",
+        "check": {
+          "kind": "sim",
+          "expr": "seq stop<space && deps"
+        },
+        "afterward": "呼び出しが 1 割に減った。DB が書けるようになった。まだ検索は遅い。",
+        "hints": [
+          "負荷の 9 割が再試行。",
+          "止めないと、空けてもすぐ埋まる。",
+          "「再試行を止める（被害を止める）」「古いログを消して容量を空ける」を、この順に上から並べる。"
+        ],
+        "expectedErrors": [
+          "trouble-a-chain"
+        ],
+        "actions": [
+          {
+            "op": "arrange",
+            "stages": [
+              [
+                "stop"
+              ],
+              [
+                "space"
+              ]
+            ]
+          }
+        ]
+      },
+      {
+        "id": "root",
+        "purpose": "元の原因を直し、最後に再試行を戻す。「全てのサーバを再起動する」は使わない。",
+        "check": {
+          "kind": "sim",
+          "expr": "seq stop<space<index<resume && deps && !has reboot"
+        },
+        "afterward": "応答が戻った。再試行は制限付きなので、次の遅れでは嵐にならない。",
+        "hints": [
+          "検索を速くしてから再試行を戻す。",
+          "戻すのは最後。",
+          "「再試行を止める（被害を止める）」「古いログを消して容量を空ける」「遅い検索に索引を付ける」「再試行を制限付きで戻す」を、この順に上から並べる。"
+        ],
+        "expectedErrors": [
+          "trouble-a-chain"
+        ],
+        "actions": [
+          {
+            "op": "arrange",
+            "stages": [
+              [
+                "stop"
+              ],
+              [
+                "space"
+              ],
+              [
+                "index"
+              ],
+              [
+                "resume"
+              ]
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "result": {
+    "success": "連鎖を解けた。",
+    "partial": "ヒントを使って解けた。次は、被害を広げている物を先に指してみよう。",
+    "retry": "まだ戻らない。止める順を見直そう。"
+  },
+  "summary": {
+    "points": [
+      "被害を止めてから",
+      "元の原因を探す",
+      "1 つずつ確かめる"
+    ],
+    "next": [
+      "trouble.a.03"
+    ],
+    "terms": [
+      "retry-storm",
+      "index"
+    ]
+  }
+}

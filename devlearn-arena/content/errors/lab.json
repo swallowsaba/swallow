@@ -1,0 +1,57 @@
+{
+  "domain": "lab",
+  "errors": [
+    {
+      "id": "lab-a-unauth",
+      "match": "unauthorized: authentication required",
+      "meaning": "置き場にログインしていない。",
+      "causes": [
+        "`docker login` を打っていない。",
+        "別の置き場にログインした。"
+      ],
+      "hint": "`docker login registry.city.example` を打ってから、もう一度 `docker push` しよう。",
+      "terms": [
+        "registry"
+      ]
+    },
+    {
+      "id": "lab-a-noimage",
+      "match": "An image does not exist locally",
+      "meaning": "その名前のイメージが手元に無い。",
+      "causes": [
+        "`docker build -t` の名前と違う。",
+        "まだ作っていない。"
+      ],
+      "hint": "`docker images` で名前とタグを確かめよう。",
+      "terms": [
+        "image"
+      ]
+    },
+    {
+      "id": "lab-a-misread",
+      "match": "答えが合っていない",
+      "meaning": "答えが、調べた結果と違う。",
+      "causes": [
+        "別の行を読んだ。",
+        "ファイルの大きさの列を見ていない。"
+      ],
+      "hint": "通知の文と、調べた結果の表を読み直そう。",
+      "terms": [
+        "alert"
+      ]
+    },
+    {
+      "id": "lab-a-report",
+      "match": "答えが合っていない|判断ではない|根拠が無い",
+      "meaning": "報告の項目が、置いた枠と合わない。",
+      "causes": [
+        "判断が無い。",
+        "試していない事を結果に書いた。"
+      ],
+      "hint": "問い・試した事・結果・判断の順に読める形にしよう。",
+      "terms": [
+        "caddy"
+      ]
+    }
+  ]
+}

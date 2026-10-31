@@ -41,6 +41,20 @@
       "lessons": [
         "trouble.b.03"
       ]
+    },
+    {
+      "id": "lasting-fix",
+      "word": "恒久の対策",
+      "reading": "こうきゅうのたいさく",
+      "plain": "同じ障害が起きないように、仕組みを変える対策。その場の対処と分けて考える。",
+      "why": "手で直すだけでは、同じ障害が繰り返す。",
+      "related": [
+        "postmortem",
+        "alert"
+      ],
+      "lessons": [
+        "trouble.a.03"
+      ]
     }
   ]
 }

@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 360" font-family="&quot;Noto Sans JP&quot;, sans-serif">
+  <title>問い → 公式の文書 → 小さく試す → 結果 → 報告</title>
+  <defs>
+    <marker id="arrow-gold" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="#f2b632" />
+    </marker>
+  </defs>
+  <g class="el" data-part="q">
+    <rect x="20" y="120" width="100" height="110" rx="10" fill="#f2b632" />
+    <text x="70" y="180" text-anchor="middle" font-size="16" font-weight="700" fill="#0a1424">問い</text>
+  </g>
+  <g class="el" data-part="doc">
+    <rect x="144" y="120" width="100" height="110" rx="10" fill="#1a6fd6" />
+    <text x="194" y="180" text-anchor="middle" font-size="16" font-weight="700" fill="#eef2f6">公式の文書</text>
+  </g>
+  <g class="el" data-part="try">
+    <rect x="268" y="120" width="100" height="110" rx="10" fill="#7a3fd0" />
+    <text x="318" y="180" text-anchor="middle" font-size="16" font-weight="700" fill="#eef2f6">小さく試す</text>
+  </g>
+  <g class="el" data-part="out">
+    <rect x="392" y="120" width="100" height="110" rx="10" fill="#1f7a4d" />
+    <text x="442" y="180" text-anchor="middle" font-size="16" font-weight="700" fill="#eef2f6">結果</text>
+  </g>
+  <g class="el" data-part="report">
+    <rect x="516" y="120" width="100" height="110" rx="10" fill="#0a1424" />
+    <text x="566" y="180" text-anchor="middle" font-size="16" font-weight="700" fill="#eef2f6">報告</text>
+  </g>
+  <g class="el" data-part="flow">
+    <path d="M120 175 L141 175" fill="none" stroke="#f2b632" stroke-width="2" marker-end="url(#arrow-gold)" />
+    <path d="M244 175 L265 175" fill="none" stroke="#f2b632" stroke-width="2" marker-end="url(#arrow-gold)" />
+    <path d="M368 175 L389 175" fill="none" stroke="#f2b632" stroke-width="2" marker-end="url(#arrow-gold)" />
+    <path d="M492 175 L513 175" fill="none" stroke="#f2b632" stroke-width="2" marker-end="url(#arrow-gold)" />
+  </g>
+  <g class="el" data-part="note">
+    <text x="320" y="340" text-anchor="middle" font-size="14" fill="#eef2f6">調べて試し、判断まで書く</text>
+  </g>
+</svg>

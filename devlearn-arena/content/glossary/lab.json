@@ -1,0 +1,19 @@
+{
+  "domain": "lab",
+  "terms": [
+    {
+      "id": "caddy",
+      "word": "Caddy",
+      "reading": "きゃでぃ",
+      "plain": "Go で書かれた Web サーバの 1 つ。名前を書くと、既定で証明書を自動で取って更新する。",
+      "why": "この実戦では、新しい道具を調べて判断する題材にする。",
+      "related": [
+        "reverse-proxy",
+        "tls"
+      ],
+      "lessons": [
+        "lab.a.03"
+      ]
+    }
+  ]
+}

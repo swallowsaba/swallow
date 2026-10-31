@@ -1,0 +1,79 @@
+{
+  "lesson": "lab.a.01",
+  "variants": [
+    {
+      "name": "sed で足す・ログインしてから作る",
+      "steps": {
+        "build": [
+          "sed -i '$a COPY site /usr/share/nginx/html' Dockerfile",
+          "docker build -t registry.city.example/city/shop:1.0 .",
+          "docker run -d -p 8080:80 --name try registry.city.example/city/shop:1.0"
+        ],
+        "push": [
+          "docker login registry.city.example",
+          "docker push registry.city.example/city/shop:1.0",
+          "docker images"
+        ],
+        "deploy": [
+          "kubectl apply -f shop.yaml",
+          "kubectl get pods -w",
+          "kubectl get ingress",
+          "curl -i http://city.example/"
+        ],
+        "update": [
+          "sed -i 's/港の店/港の店 夏の市/' site/index.html",
+          "docker build -t registry.city.example/city/shop:1.1 .",
+          "docker push registry.city.example/city/shop:1.1",
+          "sed -i 's/shop:1.0/shop:1.1/' shop.yaml",
+          "kubectl apply -f shop.yaml",
+          "kubectl get pods -w"
+        ],
+        "check": [
+          "curl -i http://city.example/"
+        ]
+      }
+    },
+    {
+      "name": "別のポートで確かめる・種類を分ける",
+      "steps": {
+        "build": [
+          "cat Dockerfile",
+          "echo 'COPY site /usr/share/nginx/html' >> Dockerfile",
+          "docker build -t registry.city.example/city/shop:1.0 .",
+          "docker run -d --name try -p 9090:80 registry.city.example/city/shop:1.0",
+          "curl -s http://localhost:9090/"
+        ],
+        "push": [
+          "docker login registry.city.example -u learner",
+          "docker push registry.city.example/city/shop:1.0"
+        ],
+        "deploy": [
+          "kubectl apply -f shop.yaml",
+          "kubectl rollout status deploy/shop",
+          "curl -s http://city.example/"
+        ],
+        "update": [
+          "sed -i 's/港の店/港の店 夏の市/' site/index.html",
+          "docker build -t registry.city.example/city/shop:1.1 .",
+          "docker push registry.city.example/city/shop:1.1",
+          "kubectl set image deploy/shop shop=registry.city.example/city/shop:1.1",
+          "kubectl rollout status deploy/shop"
+        ],
+        "check": [
+          "curl -s http://city.example/"
+        ]
+      }
+    }
+  ],
+  "wrong": {
+    "step": "push",
+    "why": "ログインせずに置く",
+    "input": [
+      "docker push registry.city.example/city/shop:1.0"
+    ],
+    "retry": [
+      "docker login registry.city.example",
+      "docker push registry.city.example/city/shop:1.0"
+    ]
+  }
+}

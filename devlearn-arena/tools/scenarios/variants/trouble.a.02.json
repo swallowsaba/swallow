@@ -1,0 +1,134 @@
+{
+  "lesson": "trouble.a.02",
+  "variants": [
+    {
+      "name": "1 段ずつ足す",
+      "steps": {
+        "first": [
+          {
+            "op": "arrange",
+            "stages": [
+              [
+                "stop"
+              ]
+            ]
+          },
+          {
+            "op": "arrange",
+            "stages": [
+              [
+                "stop"
+              ],
+              [
+                "space"
+              ]
+            ]
+          }
+        ],
+        "root": [
+          {
+            "op": "arrange",
+            "stages": [
+              [
+                "stop"
+              ],
+              [
+                "space"
+              ],
+              [
+                "index"
+              ]
+            ]
+          },
+          {
+            "op": "arrange",
+            "stages": [
+              [
+                "stop"
+              ],
+              [
+                "space"
+              ],
+              [
+                "index"
+              ],
+              [
+                "resume"
+              ]
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "一度に全てを並べる",
+      "steps": {
+        "first": [
+          {
+            "op": "arrange",
+            "stages": [
+              [
+                "stop"
+              ],
+              [
+                "space"
+              ],
+              [
+                "index"
+              ],
+              [
+                "resume"
+              ]
+            ]
+          }
+        ],
+        "root": []
+      }
+    }
+  ],
+  "wrong": {
+    "step": "root",
+    "why": "再起動で済ませようとする",
+    "input": [
+      {
+        "op": "arrange",
+        "stages": [
+          [
+            "reboot"
+          ],
+          [
+            "stop"
+          ],
+          [
+            "space"
+          ],
+          [
+            "index"
+          ],
+          [
+            "resume"
+          ]
+        ]
+      }
+    ],
+    "retry": [
+      {
+        "op": "arrange",
+        "stages": [
+          [
+            "stop"
+          ],
+          [
+            "space"
+          ],
+          [
+            "index"
+          ],
+          [
+            "resume"
+          ]
+        ]
+      }
+    ]
+  }
+}

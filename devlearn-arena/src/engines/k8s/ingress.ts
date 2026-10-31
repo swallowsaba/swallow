@@ -1,4 +1,4 @@
-import { fromRegistry, normalizeRef } from '@/engines/container/container';
+import { clusterImage } from './apps';
 import { routeFor, type Route } from '@/engines/http/http';
 import { isReady } from './kubelet';
 import type { ClusterState, EventRecord, Ingress, Pod, Service } from './types';
@@ -91,7 +91,8 @@ export function backendPods(state: ClusterState, ns: string, svc: Service): Pod[
 /** Pod のコンテナが、そのポートで答える中身 */
 function podAnswer(state: ClusterState, pod: Pod, port: number, method: string, path: string): Route {
   for (const c of pod.spec.containers) {
-    const serves = state.images === undefined ? undefined : fromRegistry(normalizeRef(c.image))?.serves;
+    const image = state.images === undefined ? undefined : clusterImage(state, c.image);
+    const serves = image?.serves;
     if (serves?.port !== port) continue;
     const only = path.split('?')[0] ?? '/';
     // DB の場所（postgres://利用者@名前:ポート/DB）の名前の Service に、動いている Pod があるか
@@ -107,7 +108,9 @@ function podAnswer(state: ClusterState, pod: Pod, port: number, method: string, 
       if (r.status !== 404 || serves.notFound !== 'express') return r;
       return { status: 404, body: `<!DOCTYPE html>\n<html lang="en">\n<head>\n<meta charset="utf-8">\n<title>Error</title>\n</head>\n<body>\n<pre>Cannot ${method} ${only}</pre>\n</body>\n</html>\n` };
     }
-    return only === '/' || only === '/index.html' ? { status: 200, body: serves.body } : NOT_FOUND;
+    // 公開の場所を持つイメージ（Dockerfile で作った物）は、イメージの中の頁を答える
+    const page = serves.root === undefined ? serves.body : image?.files?.[`${serves.root}/index.html`] ?? serves.body;
+    return only === '/' || only === '/index.html' ? { status: 200, body: page } : NOT_FOUND;
   }
   // そのポートで待ち受けていない（Service の targetPort の誤り）
   return BAD_GATEWAY;

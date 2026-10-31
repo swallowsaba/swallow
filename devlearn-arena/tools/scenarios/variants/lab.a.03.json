@@ -1,0 +1,134 @@
+{
+  "lesson": "lab.a.03",
+  "variants": [
+    {
+      "name": "試した事を先に置く",
+      "steps": {
+        "what": [
+          {
+            "op": "put",
+            "item": "i-try2",
+            "slot": "tried"
+          },
+          {
+            "op": "put",
+            "item": "i-try1",
+            "slot": "tried"
+          },
+          {
+            "op": "put",
+            "item": "i-q",
+            "slot": "q"
+          }
+        ],
+        "out": [
+          {
+            "op": "put",
+            "item": "i-rumor",
+            "slot": "no"
+          },
+          {
+            "op": "put",
+            "item": "i-fame",
+            "slot": "no"
+          },
+          {
+            "op": "put",
+            "item": "i-out2",
+            "slot": "out"
+          },
+          {
+            "op": "put",
+            "item": "i-out1",
+            "slot": "out"
+          }
+        ],
+        "decide": [
+          {
+            "op": "put",
+            "item": "i-dec",
+            "slot": "decide"
+          }
+        ]
+      }
+    },
+    {
+      "name": "戻してから置く",
+      "steps": {
+        "what": [
+          {
+            "op": "put",
+            "item": "i-q",
+            "slot": "q"
+          },
+          {
+            "op": "put",
+            "item": "i-try1",
+            "slot": "tried"
+          },
+          {
+            "op": "take",
+            "item": "i-try1"
+          },
+          {
+            "op": "put",
+            "item": "i-try1",
+            "slot": "tried"
+          },
+          {
+            "op": "put",
+            "item": "i-try2",
+            "slot": "tried"
+          }
+        ],
+        "out": [
+          {
+            "op": "put",
+            "item": "i-out1",
+            "slot": "out"
+          },
+          {
+            "op": "put",
+            "item": "i-out2",
+            "slot": "out"
+          },
+          {
+            "op": "put",
+            "item": "i-fame",
+            "slot": "no"
+          },
+          {
+            "op": "put",
+            "item": "i-rumor",
+            "slot": "no"
+          }
+        ],
+        "decide": [
+          {
+            "op": "put",
+            "item": "i-dec",
+            "slot": "decide"
+          }
+        ]
+      }
+    }
+  ],
+  "wrong": {
+    "step": "decide",
+    "why": "根拠の無い札を判断にする",
+    "input": [
+      {
+        "op": "put",
+        "item": "i-fame",
+        "slot": "decide"
+      }
+    ],
+    "retry": [
+      {
+        "op": "put",
+        "item": "i-dec",
+        "slot": "decide"
+      }
+    ]
+  }
+}

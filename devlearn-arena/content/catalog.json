@@ -4136,7 +4136,6 @@
       "title": "コンテナ化して Kubernetes へ",
       "goal": "アプリをコンテナにし、クラスタで公開・更新できる",
       "practice": [
-        "editor",
         "terminal"
       ],
       "prerequisites": [
@@ -4164,7 +4163,6 @@
       "title": "監視して障害を直す",
       "goal": "監視で異常に気づき、原因を特定して直せる",
       "practice": [
-        "simulation",
         "terminal"
       ],
       "prerequisites": [

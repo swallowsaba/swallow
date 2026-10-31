@@ -244,6 +244,45 @@
         "reverse-proxy",
         "port"
       ]
+    },
+    {
+      "id": "trouble-a-state",
+      "match": "答えが合っていない",
+      "meaning": "答えが、`kubectl get pods` の結果と違う。",
+      "causes": [
+        "`STATUS` の欄でない所を読んだ。",
+        "`READY` の数を答えた。"
+      ],
+      "hint": "`STATUS` の欄の語をそのまま入れよう。",
+      "terms": [
+        "pod-status"
+      ]
+    },
+    {
+      "id": "trouble-a-chain",
+      "match": "答えが合っていない|戻る|先に",
+      "meaning": "この順では、元に戻らない。",
+      "causes": [
+        "被害を止める前に元の原因を直そうとした。",
+        "再試行を戻すのが早すぎた。"
+      ],
+      "hint": "被害を広げている物を最初に止めよう。",
+      "terms": [
+        "retry-storm"
+      ]
+    },
+    {
+      "id": "trouble-a-prevent",
+      "match": "答えが合っていない|再発",
+      "meaning": "選んだ対策では、また同じ障害が起きる。",
+      "causes": [
+        "その場の対処だけを選んだ。",
+        "増える元を止めていない。"
+      ],
+      "hint": "1 か月の模擬の、満杯になる回数を見よう。",
+      "terms": [
+        "lasting-fix"
+      ]
     }
   ]
 }

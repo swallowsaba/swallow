@@ -1,3 +1,4 @@
+import type { Image as ContainerImage } from '@/engines/container/container';
 import type {
   ClusterState, ConfigMap, ControlPlane, Machine, CronJob, DaemonSet, Deployment, EventRecord,
   HorizontalPodAutoscaler, Ingress, Job, NetworkPolicy, Node, PersistentVolume,
@@ -40,6 +41,7 @@ export interface ClusterSnapshot {
   nameCounter: number;
   server?: string;
   images?: string[];
+  pushed?: ContainerImage[];
   namespaces?: { name: string; createdAt: number }[];
   ingressController?: { className: string; address: string };
 }
@@ -76,6 +78,7 @@ export function snapshotCluster(cluster: ClusterState): ClusterSnapshot {
     nameCounter: cluster.nameCounter,
     ...(cluster.server === undefined ? {} : { server: cluster.server }),
     ...(cluster.images === undefined ? {} : { images: [...cluster.images] }),
+    ...(cluster.pushed === undefined ? {} : { pushed: [...cluster.pushed] }),
     ...(cluster.namespaces === undefined ? {} : { namespaces: [...cluster.namespaces] }),
     ...(cluster.ingressController === undefined ? {} : { ingressController: { ...cluster.ingressController } }),
   };
@@ -113,6 +116,7 @@ export function restoreCluster(snapshot: ClusterSnapshot): ClusterState {
     nameCounter: snapshot.nameCounter,
     ...(snapshot.server === undefined ? {} : { server: snapshot.server }),
     ...(snapshot.images === undefined ? {} : { images: snapshot.images }),
+    ...(snapshot.pushed === undefined ? {} : { pushed: snapshot.pushed }),
     ...(snapshot.namespaces === undefined ? {} : { namespaces: snapshot.namespaces }),
     ...(snapshot.ingressController === undefined ? {} : { ingressController: snapshot.ingressController }),
   };

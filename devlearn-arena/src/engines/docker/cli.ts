@@ -5,6 +5,7 @@ import {
 } from '@/engines/container/container';
 import { psql, readTables, TABLES_FILE } from '@/engines/container/pg';
 import { build } from '@/engines/container/build';
+import { withPushed } from '@/engines/k8s/apps';
 import { composeCommand } from './compose';
 import { resolve } from '@/engines/kernel/path';
 import type { CommandResult, CommandSpec, ShellState } from '@/engines/kernel/registry';
@@ -1041,7 +1042,9 @@ function dockerOn(host: ContainerHost, verb: string | undefined, rest: readonly 
             if (why === null) return daemonError(r.error, 'push');
             return { stdout: lines([head, ...layers.map((l) => `${l}: Preparing`)]), stderr: `${why}\n`, code: 1 };
           }
-          return set(r.host, { stdout: lines([head, ...layers.map((l) => `${l}: Pushed`), `${tagOf(r.value.ref)}: digest: sha256:${hexOf(seed + 98, 64)} size: 1570`]) });
+          const pushed = set(r.host, { stdout: lines([head, ...layers.map((l) => `${l}: Pushed`), `${tagOf(r.value.ref)}: digest: sha256:${hexOf(seed + 98, 64)} size: 1570`]) });
+          // 同じ機械から操作するクラスタは、置き場の物を取れる
+          return shell.cluster ? { ...pushed, patch: { ...pushed.patch, cluster: withPushed(shell.cluster, r.value) } } : pushed;
         }
         default:
           return { stderr: `docker: '${verb ?? ''}' is not a docker command.\nSee 'docker --help'\n`, code: 1 };

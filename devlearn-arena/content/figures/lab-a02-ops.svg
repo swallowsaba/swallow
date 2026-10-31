@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 360" font-family="&quot;Noto Sans JP&quot;, sans-serif">
+  <title>通知 → 影響 → 調査 → 対処 → 再確認 → 振り返り</title>
+  <defs>
+    <marker id="arrow-gold" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="#f2b632" />
+    </marker>
+  </defs>
+  <g class="el" data-part="alert">
+    <rect x="20" y="120" width="80" height="110" rx="10" fill="#c0392b" />
+    <text x="60" y="180" text-anchor="middle" font-size="16" font-weight="700" fill="#eef2f6">通知</text>
+  </g>
+  <g class="el" data-part="impact">
+    <rect x="124" y="120" width="80" height="110" rx="10" fill="#f2b632" />
+    <text x="164" y="180" text-anchor="middle" font-size="16" font-weight="700" fill="#0a1424">影響</text>
+  </g>
+  <g class="el" data-part="dig">
+    <rect x="228" y="120" width="80" height="110" rx="10" fill="#1a6fd6" />
+    <text x="268" y="180" text-anchor="middle" font-size="16" font-weight="700" fill="#eef2f6">調査</text>
+  </g>
+  <g class="el" data-part="fix">
+    <rect x="332" y="120" width="80" height="110" rx="10" fill="#7a3fd0" />
+    <text x="372" y="180" text-anchor="middle" font-size="16" font-weight="700" fill="#eef2f6">対処</text>
+  </g>
+  <g class="el" data-part="again">
+    <rect x="436" y="120" width="80" height="110" rx="10" fill="#1f7a4d" />
+    <text x="476" y="180" text-anchor="middle" font-size="16" font-weight="700" fill="#eef2f6">再確認</text>
+  </g>
+  <g class="el" data-part="review">
+    <rect x="540" y="120" width="80" height="110" rx="10" fill="#0a1424" />
+    <text x="580" y="180" text-anchor="middle" font-size="16" font-weight="700" fill="#eef2f6">振り返り</text>
+  </g>
+  <g class="el" data-part="flow">
+    <path d="M100 175 L121 175" fill="none" stroke="#f2b632" stroke-width="2" marker-end="url(#arrow-gold)" />
+    <path d="M204 175 L225 175" fill="none" stroke="#f2b632" stroke-width="2" marker-end="url(#arrow-gold)" />
+    <path d="M308 175 L329 175" fill="none" stroke="#f2b632" stroke-width="2" marker-end="url(#arrow-gold)" />
+    <path d="M412 175 L433 175" fill="none" stroke="#f2b632" stroke-width="2" marker-end="url(#arrow-gold)" />
+    <path d="M516 175 L537 175" fill="none" stroke="#f2b632" stroke-width="2" marker-end="url(#arrow-gold)" />
+  </g>
+</svg>

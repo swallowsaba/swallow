@@ -714,6 +714,20 @@
       "lessons": [
         "found.i.03"
       ]
+    },
+    {
+      "id": "syscall",
+      "word": "システムコール",
+      "reading": "しすてむこーる",
+      "plain": "アプリがカーネルに仕事を頼む窓口。ファイルを開く・読む・書くなど。",
+      "why": "アプリの失敗の多くは、この窓口の返事に現れる。",
+      "related": [
+        "kernel",
+        "process"
+      ],
+      "lessons": [
+        "found.a.01"
+      ]
     }
   ]
 }

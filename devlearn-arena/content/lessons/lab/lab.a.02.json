@@ -1,0 +1,307 @@
+{
+  "id": "lab.a.02",
+  "domain": "lab",
+  "level": "advanced",
+  "theme": "総合",
+  "title": "監視して障害を直す",
+  "goal": "監視で異常に気づき、原因を特定して直せる",
+  "minutes": 20,
+  "prerequisites": [
+    "mon.i.03",
+    "trouble.a.01"
+  ],
+  "related": [
+    "devops.i.02",
+    "sec.a.03"
+  ],
+  "next": [
+    "lab.a.03"
+  ],
+  "terms": [
+    "monitoring",
+    "log",
+    "lasting-fix",
+    "file",
+    "app"
+  ],
+  "explain": {
+    "what": "{{term:monitoring}}で異常に気付き、原因を特定して直し、再発を防ぐ課題。",
+    "why": "運用の一連の動きを、通して身に付けるため。",
+    "use": "本番の運用で使う。影響を見てから調べ、直した後で確かめ、振り返る。",
+    "when": "夜に通知が鳴った。",
+    "figures": [
+      "lab-a02-ops"
+    ]
+  },
+  "understand": [
+    {
+      "kind": "order",
+      "prompt": "対応の順に並べる。",
+      "items": [
+        "影響を確かめる",
+        "調べる",
+        "対処する",
+        "再確認する",
+        "振り返る"
+      ],
+      "see": "use"
+    },
+    {
+      "kind": "situation",
+      "prompt": "通知と利用者の画面と{{term:log}}を見比べるのはなぜ？",
+      "see": "why",
+      "choices": [
+        {
+          "id": "a",
+          "text": "1 つの材料だけでは、症状と原因を取り違えるから",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "時間をつぶすため",
+          "correct": false,
+          "whyNot": "速く絞るため。"
+        },
+        {
+          "id": "c",
+          "text": "全部同じだから",
+          "correct": false,
+          "whyNot": "見える物が違う。"
+        }
+      ]
+    }
+  ],
+  "quiz": [
+    {
+      "id": "q1",
+      "kind": "situation",
+      "prompt": "通知が鳴った。最初にすることは？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "影響の確認",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "再起動",
+          "correct": false,
+          "whyNot": "原因の記録が消えることがある。"
+        },
+        {
+          "id": "c",
+          "text": "振り返りを書く",
+          "correct": false,
+          "whyNot": "先に止血する。"
+        }
+      ],
+      "explanation": "誰がどれだけ困っているかを見る。"
+    },
+    {
+      "id": "q2",
+      "kind": "cause",
+      "prompt": "通知の少し前に更新があった。何を疑う？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "直前の変更",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "利用者",
+          "correct": false,
+          "whyNot": "利用者の問題ではない。"
+        },
+        {
+          "id": "c",
+          "text": "来月の予定",
+          "correct": false,
+          "whyNot": "関係しない。"
+        }
+      ],
+      "explanation": "時刻の一致は強い手掛かり。"
+    },
+    {
+      "id": "q3",
+      "kind": "choice",
+      "prompt": "振り返りで大事なのは？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "責めずに仕組みを直す",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "担当者を叱る",
+          "correct": false,
+          "whyNot": "人を替えても再発する。"
+        },
+        {
+          "id": "c",
+          "text": "書かない",
+          "correct": false,
+          "whyNot": "学びが残らない。"
+        }
+      ],
+      "explanation": "{{term:lasting-fix}}と担当を決める。"
+    }
+  ],
+  "practice": {
+    "mode": "terminal",
+    "purpose": "夜に通知が来た（`/home/learner/alert.txt`）。予約の画面が止まっている。影響を確かめ、原因を調べて直し、再確認して、`postmortem.md` の振り返りを埋める。",
+    "environment": "linux-basic",
+    "setup": {
+      "hostname": "reserve-web",
+      "disk": "20G",
+      "cwd": "/home/learner",
+      "files": {
+        "/etc/hosts": "127.0.0.1\tlocalhost reserve.example\n",
+        "/home/learner/alert.txt": "02:14 [重大] reserve の 5xx の割合が 5% を超えた\n",
+        "/home/learner/postmortem.md": "影響: ?\n原因: ?\n対策: ?\n",
+        "/var/log/app/app.log": "2026-10-15 02:13:01 INFO request ok\n2026-10-15 02:14:02 ERROR write failed: No space left on device\n",
+        "/var/log/app/app.log.1": "2026-10-14 23:59:59 INFO request ok\n",
+        "/var/lib/app/data.bin": "(予約のデータ)\n"
+      },
+      "sizes": {
+        "/var/log/app/app.log": "19.5G",
+        "/var/log/app/app.log.1": "100M",
+        "/var/lib/app/data.bin": "300M"
+      },
+      "processes": [
+        {
+          "command": "/usr/bin/reserve",
+          "memory": 64,
+          "user": "learner",
+          "openFiles": [
+            "/var/log/app/app.log"
+          ]
+        }
+      ],
+      "services": {
+        "reserve": {
+          "description": "Reserve app",
+          "active": true,
+          "enabled": true,
+          "port": 80,
+          "body": "<h1>港の予約</h1>",
+          "diskGuard": true
+        }
+      }
+    },
+    "steps": [
+      {
+        "id": "impact",
+        "purpose": "`alert.txt` を読み、`curl -i` で利用者の画面を確かめる。返事の番号を答えの欄に入れる。",
+        "check": {
+          "kind": "answer",
+          "equals": "500"
+        },
+        "afterward": "利用者が今困っている。ここまでが影響の確認。",
+        "hints": [
+          "通知の後は、利用者と同じ所を見る。",
+          "`curl -i` の 1 行目。",
+          "`cat alert.txt` `curl -i http://reserve.example/` を打ち、`500` と答える。"
+        ],
+        "expectedErrors": [
+          "lab-a-misread"
+        ]
+      },
+      {
+        "id": "cause",
+        "purpose": "ログを読み、`df -h` と `du` で一番大きい{{term:file}}を探す。そのファイルの場所を答えの欄に入れる。",
+        "check": {
+          "kind": "answer",
+          "equals": "/var/log/app/app.log"
+        },
+        "afterward": "`No space left on device`。ログが 19.5G までふくらんでいた。ログの時刻と通知の時刻が合う。",
+        "hints": [
+          "ログに理由がある。",
+          "`du -sh` で大きさの順に並べる。",
+          "`tail /var/log/app/app.log` `df -h` `du -sh /var/log/app/* | sort -h` を打ち、`/var/log/app/app.log` と答える。"
+        ],
+        "expectedErrors": [
+          "lab-a-misread"
+        ]
+      },
+      {
+        "id": "fix",
+        "purpose": "{{term:app}}が開いているログは `rm` せず `truncate -s 0` で空にする。使用率が 70% 以下なら達成。",
+        "check": {
+          "kind": "disk",
+          "maxUse": 70
+        },
+        "afterward": "容量が戻った。消さずに空にしたので、アプリは同じファイルに書き続けられる。",
+        "hints": [
+          "開いたままのファイルを消しても、容量は戻らない。",
+          "`truncate`。",
+          "`truncate -s 0 /var/log/app/app.log` `df -h` を打つ。"
+        ],
+        "expectedErrors": [
+          "trouble-truncate"
+        ]
+      },
+      {
+        "id": "again",
+        "purpose": "再確認する。`curl -i` で 200 が返れば達成。",
+        "check": {
+          "kind": "http",
+          "url": "http://reserve.example/",
+          "status": 200,
+          "contains": "港の予約"
+        },
+        "afterward": "画面が戻った。必ず利用者と同じ場所から確かめる。",
+        "hints": [
+          "同じ頼みをもう一度。",
+          "200 を確かめる。",
+          "`curl -i http://reserve.example/` を打つ。"
+        ],
+        "expectedErrors": []
+      },
+      {
+        "id": "review",
+        "purpose": "`postmortem.md` の 3 つの `?` を、`sed -i` で埋める。影響・原因・対策の順。人を責めず、仕組みを書く。",
+        "check": {
+          "kind": "fs",
+          "path": "/home/learner/postmortem.md",
+          "contains": "対策: ",
+          "lacks": [
+            "影響: ?",
+            "原因: ?",
+            "対策: ?"
+          ]
+        },
+        "afterward": "振り返りが揃った。監視・運用センターに記念の盾が飾られる。",
+        "hints": [
+          "1 行ずつ置き換える。",
+          "`?` を含む行を、`s/^影響: .*/…/` の形で書き換える。",
+          "`sed -i 's/^影響: .*/影響: 予約の画面が 500 を返した/' postmortem.md` `sed -i 's/^原因: .*/原因: ログが増え続け、ディスクが満杯になった/' postmortem.md` `sed -i 's/^対策: .*/対策: ログを自動で整理し、残りの量を監視する/' postmortem.md` `cat postmortem.md` を打つ。"
+        ],
+        "expectedErrors": [
+          "enoent"
+        ]
+      }
+    ]
+  },
+  "result": {
+    "success": "通知から復旧と振り返りまで通せた。監視・運用センターに記念の盾が飾られる。",
+    "partial": "ヒントを使って通せた。次は、通知を見て次に見る物を先に言ってみよう。",
+    "retry": "まだ終わっていない。`curl -i` の番号と `postmortem.md` を見よう。"
+  },
+  "summary": {
+    "points": [
+      "気付く・調べる・直す",
+      "材料を突き合わせる",
+      "振り返って防ぐ"
+    ],
+    "next": [
+      "lab.a.03"
+    ],
+    "terms": [
+      "alert",
+      "postmortem",
+      "lasting-fix"
+    ]
+  }
+}

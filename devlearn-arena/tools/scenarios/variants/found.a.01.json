@@ -1,0 +1,44 @@
+{
+  "lesson": "found.a.01",
+  "variants": [
+    {
+      "name": "cat で全部読む",
+      "steps": {
+        "find": [
+          "cat report.strace",
+          "grep -- '-1 E' report.strace"
+        ],
+        "call": [
+          "OPENAT"
+        ],
+        "why": [
+          " eacces "
+        ]
+      }
+    },
+    {
+      "name": "-e で書く",
+      "steps": {
+        "find": [
+          "grep -e '= -1' report.strace"
+        ],
+        "call": [
+          "openat"
+        ],
+        "why": [
+          "EACCES"
+        ]
+      }
+    }
+  ],
+  "wrong": {
+    "step": "call",
+    "why": "成功した呼び出しを答える",
+    "input": [
+      "read"
+    ],
+    "retry": [
+      "openat"
+    ]
+  }
+}

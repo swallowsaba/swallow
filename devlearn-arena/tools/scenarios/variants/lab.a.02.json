@@ -1,0 +1,67 @@
+{
+  "lesson": "lab.a.02",
+  "variants": [
+    {
+      "name": "lsof で確かめる",
+      "steps": {
+        "impact": [
+          "cat alert.txt",
+          "curl -s -o /dev/null -w \"%{http_code}\\n\" http://reserve.example/",
+          " 500 "
+        ],
+        "cause": [
+          "df -h",
+          "du -sh /var/* | sort -h",
+          "du -sh /var/log/app/*",
+          "lsof /var/log/app/app.log",
+          "/var/log/app/app.log"
+        ],
+        "fix": [
+          "truncate --size=0 /var/log/app/app.log"
+        ],
+        "again": [
+          "curl -s http://reserve.example/"
+        ],
+        "review": [
+          "sed -i 's/^影響: ?/影響: 予約が 40 分止まった/;s/^原因: ?/原因: ログの整理の仕組みが無かった/;s/^対策: ?/対策: logrotate を入れて監視を足す/' postmortem.md"
+        ]
+      }
+    },
+    {
+      "name": "リダイレクトで空にする",
+      "steps": {
+        "impact": [
+          "curl -i http://reserve.example/",
+          "500"
+        ],
+        "cause": [
+          "grep ERROR /var/log/app/app.log",
+          "du -sh /var/log/app/app.log /var/log/app/app.log.1",
+          "/var/log/app/app.log/"
+        ],
+        "fix": [
+          "truncate -s 0 /var/log/app/app.log",
+          "df -h"
+        ],
+        "again": [
+          "curl -i http://reserve.example/"
+        ],
+        "review": [
+          "sed -i 's/影響: ?/影響: 予約の画面が止まった/' postmortem.md",
+          "sed -i 's/原因: ?/原因: ディスクの満杯/' postmortem.md",
+          "sed -i 's/対策: ?/対策: 自動の整理/' postmortem.md"
+        ]
+      }
+    }
+  ],
+  "wrong": {
+    "step": "impact",
+    "why": "別の数を答える",
+    "input": [
+      "200"
+    ],
+    "retry": [
+      "500"
+    ]
+  }
+}

@@ -1,0 +1,306 @@
+{
+  "id": "trouble.a.01",
+  "domain": "trouble",
+  "level": "advanced",
+  "theme": "コンテナ",
+  "title": "コンテナと Kubernetes の障害",
+  "goal": "層をまたぐ障害を切り分けて直せる",
+  "minutes": 20,
+  "prerequisites": [
+    "k8s.a.02"
+  ],
+  "related": [
+    "docker.a.02",
+    "k8s.a.02"
+  ],
+  "next": [
+    "trouble.a.02",
+    "lab.a.02"
+  ],
+  "terms": [
+    "image",
+    "k8s-service",
+    "pod",
+    "ingress",
+    "container",
+    "k8s-node",
+    "app",
+    "k8s-endpoints",
+    "dns",
+    "pod-status",
+    "api",
+    "env-var",
+    "db",
+    "log",
+    "configmap",
+    "memory"
+  ],
+  "explain": {
+    "what": "{{term:image}}・設定・資源・網の層をまたぐ障害を切り分けること。",
+    "why": "層が多く、症状と原因の場所が離れる。1 つ直すと、次の原因が出てくることもある。",
+    "use": "障害対応で使う。外の層から順に見て、状態の名前で原因の層を絞る。",
+    "when": "更新の後、{{term:pod}} が動かず、{{term:k8s-service}} にも届かない。",
+    "figures": [
+      "trouble-a01-layers"
+    ]
+  },
+  "understand": [
+    {
+      "kind": "order",
+      "prompt": "確かめる順に並べる（外から）。",
+      "items": [
+        "{{term:ingress}}",
+        "Service",
+        "Pod",
+        "{{term:container}}",
+        "{{term:k8s-node}}"
+      ],
+      "see": "use"
+    },
+    {
+      "kind": "situation",
+      "prompt": "`CrashLoopBackOff` の時、原因の層はどこ？",
+      "see": "use",
+      "choices": [
+        {
+          "id": "a",
+          "text": "コンテナの中の{{term:app}}（`logs` を読む）",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "Node",
+          "correct": false,
+          "whyNot": "Node に問題があれば、置く段階で止まる。"
+        },
+        {
+          "id": "c",
+          "text": "Ingress",
+          "correct": false,
+          "whyNot": "入口の問題なら Pod は動いている。"
+        }
+      ]
+    }
+  ],
+  "quiz": [
+    {
+      "id": "q1",
+      "kind": "cause",
+      "prompt": "`CrashLoopBackOff` で、{{term:k8s-endpoints}} も空。原因は？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "アプリが起動直後に終わり、宛先から外れた",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "Service が消えた",
+          "correct": false,
+          "whyNot": "Service はある。宛先が空。"
+        },
+        {
+          "id": "c",
+          "text": "{{term:dns}} の障害",
+          "correct": false,
+          "whyNot": "{{term:pod-status}}は DNS で変わらない。"
+        }
+      ],
+      "explanation": "準備のできた Pod が無いので宛先が空になる。"
+    },
+    {
+      "id": "q2",
+      "kind": "situation",
+      "prompt": "更新の直後に壊れた。まず何をする？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "前の版に戻して確かめる",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "原因を全て調べてから戻す",
+          "correct": false,
+          "whyNot": "利用者が止まったまま。"
+        },
+        {
+          "id": "c",
+          "text": "新しい版をもう一度入れる",
+          "correct": false,
+          "whyNot": "同じ物では直らない。"
+        }
+      ],
+      "explanation": "戻せば、更新が原因かも確かめられる。"
+    },
+    {
+      "id": "q3",
+      "kind": "cause",
+      "prompt": "特定の Node の上の Pod だけが遅い。何を疑う？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "その Node の資源",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "全ての Pod のアプリ",
+          "correct": false,
+          "whyNot": "それなら全部遅い。"
+        },
+        {
+          "id": "c",
+          "text": "Ingress",
+          "correct": false,
+          "whyNot": "入口なら全部遅い。"
+        }
+      ],
+      "explanation": "`kubectl top nodes` などで比べる。"
+    },
+    {
+      "id": "q4",
+      "kind": "predict",
+      "prompt": "上限を実際の使用量より上げると？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "強制終了が止まる",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "Pod が増える",
+          "correct": false,
+          "whyNot": "数は変わらない。"
+        },
+        {
+          "id": "c",
+          "text": "Service が消える",
+          "correct": false,
+          "whyNot": "Service は変わらない。"
+        }
+      ],
+      "explanation": "`OOMKilled` の時の直し方。"
+    }
+  ],
+  "practice": {
+    "mode": "terminal",
+    "purpose": "店の {{term:api}} に届かない（`http://city.example/api/items`）。更新の後から止まっている。設定と資源に誤りが重なっている。層ごとに確かめ、全ての Pod を `Running` にして 200 を返す。番号は `curl` の `-w` で見る。",
+    "environment": "k8s-cluster",
+    "setup": {
+      "hostname": "console",
+      "files": {
+        "/etc/hosts": "127.0.0.1 localhost\n203.0.113.10 city.example\n"
+      },
+      "cluster": {
+        "nodes": 2,
+        "ageDays": 3,
+        "ingress": {
+          "address": "203.0.113.10"
+        },
+        "manifests": "apiVersion: apps/v1\nkind: Deployment\nmetadata:\n  name: db\nspec:\n  replicas: 1\n  selector:\n    matchLabels:\n      app: db\n  template:\n    metadata:\n      labels:\n        app: db\n    spec:\n      containers:\n      - name: db\n        image: city-db:1.0\n        ports:\n        - containerPort: 5432\n---\napiVersion: v1\nkind: Service\nmetadata:\n  name: db\nspec:\n  selector:\n    app: db\n  ports:\n  - port: 5432\n    targetPort: 5432\n---\napiVersion: v1\nkind: Service\nmetadata:\n  name: api\nspec:\n  selector:\n    app: api\n  ports:\n  - port: 3000\n    targetPort: 3000\n---\napiVersion: networking.k8s.io/v1\nkind: Ingress\nmetadata:\n  name: city\nspec:\n  ingressClassName: nginx\n  rules:\n  - host: city.example\n    http:\n      paths:\n      - path: /api\n        pathType: Prefix\n        backend:\n          service:\n            name: api\n            port:\n              number: 3000\n---\napiVersion: v1\nkind: ConfigMap\nmetadata:\n  name: api-config\ndata:\n  DATABASE_URI: postgres://app@db:5432/reserve\n",
+        "recent": "apiVersion: apps/v1\nkind: Deployment\nmetadata:\n  name: api\nspec:\n  replicas: 1\n  selector:\n    matchLabels:\n      app: api\n  template:\n    metadata:\n      labels:\n        app: api\n    spec:\n      containers:\n      - name: api\n        image: city-store-api:1.0\n        ports:\n        - containerPort: 3000\n        envFrom:\n        - configMapRef:\n            name: api-config\n        resources:\n          limits:\n            memory: 64Mi\n"
+      }
+    },
+    "steps": [
+      {
+        "id": "read",
+        "purpose": "外の層から見る。`curl` の番号と `kubectl get endpoints api`、`kubectl get pods` を順に打ち、`api` の Pod の `STATUS` を答えの欄に入れる。",
+        "check": {
+          "kind": "answer",
+          "equals": "CrashLoopBackOff"
+        },
+        "afterward": "503 で、宛先が空で、Pod は `CrashLoopBackOff`。外から順に見たので、コンテナの層まで絞れた。",
+        "hints": [
+          "番号 → 宛先 → Pod の順。",
+          "Pod の行の `STATUS`。",
+          "`curl -s -o /dev/null -w '%{http_code}\\n' http://city.example/api/items` `kubectl get endpoints api` `kubectl get pods` を打ち、`CrashLoopBackOff` と答える。"
+        ],
+        "expectedErrors": [
+          "trouble-a-state"
+        ]
+      },
+      {
+        "id": "env",
+        "purpose": "`kubectl logs deployment/api` でアプリの言葉を読む。足りない{{term:env-var}}を `kubectl set env` で足す。{{term:db}} の場所は `postgres://app@db:5432/reserve`。",
+        "check": {
+          "kind": "ran",
+          "uses": [
+            "kubectl"
+          ],
+          "shows": [
+            "deployment.apps/api env updated"
+          ]
+        },
+        "afterward": "{{term:configmap}} のキーが `DATABASE_URI` で、アプリの読む名前と違っていた。ただ、まだ動かない。",
+        "hints": [
+          "{{term:log}}の 1 行目。",
+          "`DATABASE_URL`。",
+          "`kubectl logs deployment/api` `kubectl set env deployment/api DATABASE_URL=postgres://app@db:5432/reserve` を打つ。"
+        ],
+        "expectedErrors": [
+          "k8s-a-set-env"
+        ]
+      },
+      {
+        "id": "oom",
+        "purpose": "次の原因を探す。`kubectl get pods` を何度か打つと `OOMKilled` が見える。`kubectl describe pod -l app=api` で上限を読み、`kubectl set resources` で{{term:memory}}の上限を `256Mi` にする。動き続ければ達成。",
+        "check": {
+          "kind": "k8s",
+          "expr": "deployment/api readyUpdated=1 restarts=0"
+        },
+        "afterward": "上限の 64Mi に対して、アプリは 96Mi 使う。1 つ目に隠れていた 2 つ目の原因だった。",
+        "hints": [
+          "状態が別の名前に変わった。",
+          "`--limits=memory=256Mi`。",
+          "`kubectl get pods` `kubectl describe pod -l app=api` `kubectl set resources deployment/api --limits=memory=256Mi` `kubectl rollout status deployment/api` を打つ。"
+        ],
+        "expectedErrors": [
+          "k8s-quantity",
+          "k8s-a-still-stuck"
+        ]
+      },
+      {
+        "id": "check",
+        "purpose": "外から確かめる。`curl -s http://city.example/api/items` で商品の一覧が返れば達成。",
+        "check": {
+          "kind": "http",
+          "url": "http://city.example/api/items",
+          "status": 200,
+          "contains": "灯台の模型"
+        },
+        "afterward": "全ての層が通った。最後は必ず、利用者と同じ場所から確かめる。",
+        "hints": [
+          "外から頼む。",
+          "入口の名前に頼む。",
+          "`curl -s http://city.example/api/items` を打つ。"
+        ],
+        "expectedErrors": [
+          "k8s-a-db-notfound"
+        ]
+      }
+    ]
+  },
+  "result": {
+    "success": "層をまたいで解けた。",
+    "partial": "ヒントを使って解けた。次は、状態を見た時点で原因の層を言ってみよう。",
+    "retry": "まだ届かない。`kubectl get pods` と `kubectl get endpoints api` で、残る層を見よう。"
+  },
+  "summary": {
+    "points": [
+      "層ごとに確かめる",
+      "状態の名前から推測",
+      "更新直後は戻して確かめる"
+    ],
+    "next": [
+      "trouble.a.02",
+      "lab.a.02"
+    ],
+    "terms": [
+      "pod-status",
+      "oomkilled",
+      "k8s-endpoints"
+    ]
+  }
+}

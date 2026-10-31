@@ -1,0 +1,69 @@
+{
+  "lesson": "trouble.a.03",
+  "variants": [
+    {
+      "name": "順に置く",
+      "steps": {
+        "root": [
+          {
+            "op": "put",
+            "item": "rotate",
+            "slot": "do"
+          }
+        ],
+        "watch": [
+          {
+            "op": "put",
+            "item": "alert",
+            "slot": "do"
+          }
+        ]
+      }
+    },
+    {
+      "name": "戻してから置く",
+      "steps": {
+        "root": [
+          {
+            "op": "take",
+            "item": "rotate"
+          },
+          {
+            "op": "put",
+            "item": "rotate",
+            "slot": "do"
+          }
+        ],
+        "watch": [
+          {
+            "op": "take",
+            "item": "alert"
+          },
+          {
+            "op": "put",
+            "item": "alert",
+            "slot": "do"
+          }
+        ]
+      }
+    }
+  ],
+  "wrong": {
+    "step": "root",
+    "why": "ディスクを増やすだけで済ませる",
+    "input": [
+      {
+        "op": "put",
+        "item": "bigger",
+        "slot": "do"
+      }
+    ],
+    "retry": [
+      {
+        "op": "put",
+        "item": "rotate",
+        "slot": "do"
+      }
+    ]
+  }
+}
