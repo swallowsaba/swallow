@@ -1,0 +1,348 @@
+{
+  "id": "trouble.i.02",
+  "domain": "trouble",
+  "level": "intermediate",
+  "theme": "ネットワーク",
+  "title": "繋がらない",
+  "goal": "名前が引けない・経路が無い・ポートが閉じている、を見分けて直せる",
+  "minutes": 20,
+  "prerequisites": [
+    "net.i.03"
+  ],
+  "related": [
+    "net.a.01",
+    "k8s.a.03"
+  ],
+  "next": [
+    "trouble.i.03"
+  ],
+  "terms": [
+    "port",
+    "firewall",
+    "api",
+    "app",
+    "ip-address",
+    "dns",
+    "log"
+  ],
+  "explain": {
+    "what": "「繋がらない」の原因は、名前が引けない・経路が無い・{{term:port}}が閉じている、のどれかが多い。層ごとに確かめて、止まっている層を見つける。",
+    "why": "原因は層ごとに全く違う。名前の問題に{{term:firewall}}の設定を変えても直らない。下の層から順に確かめれば、無駄が無い。",
+    "use": "障害対応で使う。時間切れと拒否の違いは、特に手掛かりになる。拒否は待ち受けが無く、時間切れは途中で止められていることが多い。",
+    "when": "社内の機械から外の {{term:api}} を呼ぶと、時間切れになる。昨日ファイアウォールの設定を変えたらしい。",
+    "figures": [
+      "trouble-i02-layers"
+    ]
+  },
+  "understand": [
+    {
+      "kind": "order",
+      "prompt": "確かめる順に並べる。",
+      "items": [
+        "名前が引けるか",
+        "経路があるか",
+        "ポートに届くか",
+        "{{term:app}}が答えるか"
+      ],
+      "see": "what"
+    },
+    {
+      "kind": "situation",
+      "prompt": "`Connection refused` と時間切れの違いは？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "refused は相手が断った。時間切れは返事が来ない（途中で止められている）",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "同じ意味",
+          "correct": false,
+          "whyNot": "調べる場所が全く違う。"
+        },
+        {
+          "id": "c",
+          "text": "refused は名前の問題",
+          "correct": false,
+          "whyNot": "名前が引けなければ、接続そのものが始まらない。"
+        }
+      ],
+      "see": "use"
+    }
+  ],
+  "quiz": [
+    {
+      "id": "q1",
+      "kind": "cause",
+      "prompt": "名前では失敗し、{{term:ip-address}}では成功する。原因は？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "{{term:dns}}",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "ファイアウォール",
+          "correct": false,
+          "whyNot": "IP アドレスで届くので、通っている。"
+        },
+        {
+          "id": "c",
+          "text": "アプリの誤り",
+          "correct": false,
+          "whyNot": "IP アドレスでは答えている。"
+        }
+      ],
+      "explanation": "名前の答えを `dig` で確かめる。"
+    },
+    {
+      "id": "q2",
+      "kind": "cause",
+      "prompt": "`Connection refused` と出た。原因は？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "そのポートに待ち受けが無い",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "途中で止められている",
+          "correct": false,
+          "whyNot": "それならふつう時間切れになる。"
+        },
+        {
+          "id": "c",
+          "text": "DNS が引けない",
+          "correct": false,
+          "whyNot": "それなら `Could not resolve host`。"
+        }
+      ],
+      "explanation": "相手まで届き、断られた。"
+    },
+    {
+      "id": "q3",
+      "kind": "cause",
+      "prompt": "時間切れになった。原因の候補は？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "途中のファイアウォールで止められている",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "ポートの番号の綴りの誤り",
+          "correct": false,
+          "whyNot": "待ち受けが無ければ、ふつう refused になる。"
+        },
+        {
+          "id": "c",
+          "text": "名前が引けない",
+          "correct": false,
+          "whyNot": "それなら接続が始まらない。"
+        }
+      ],
+      "explanation": "返事が来ない時は、途中の規則を見る。"
+    },
+    {
+      "id": "q4",
+      "kind": "situation",
+      "prompt": "最初に確かめるのは？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "名前が引けるか",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "アプリの{{term:log}}",
+          "correct": false,
+          "whyNot": "届いていなければ、ログに出ない。"
+        },
+        {
+          "id": "c",
+          "text": "ファイアウォールの全ての規則",
+          "correct": false,
+          "whyNot": "順に絞ってから見る。"
+        }
+      ],
+      "explanation": "下の層から順に。"
+    },
+    {
+      "id": "q5",
+      "kind": "predict",
+      "prompt": "行きの規則だけを足した。戻りの規則を足すと？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "往復が成立して応答する",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "変わらない",
+          "correct": false,
+          "whyNot": "返事が戻れるようになる。"
+        },
+        {
+          "id": "c",
+          "text": "全ての通信が止まる",
+          "correct": false,
+          "whyNot": "足すだけで、止める規則は増えない。"
+        }
+      ],
+      "explanation": "通信は往復で成り立つ。"
+    }
+  ],
+  "practice": {
+    "mode": "terminal",
+    "purpose": "社内の機械 `office` から `https://api.example/` を呼ぶと時間切れになる。あなたはファイアウォールの機械 `gw` にいる。`office` からの様子は `ip netns exec office 命令` で見る。層ごとに確かめ、規則を直す。",
+    "environment": "net-client",
+    "setup": {
+      "user": "root",
+      "network": {
+        "self": "gw",
+        "devices": [
+          {
+            "name": "api",
+            "addrs": [
+              "203.0.113.77/24"
+            ],
+            "gateway": "203.0.113.5",
+            "listen": [
+              443
+            ],
+            "body": "{\"status\":\"ok\"}"
+          },
+          {
+            "name": "gw",
+            "kind": "router",
+            "addrs": [
+              "203.0.113.5/24",
+              "192.168.1.1/24"
+            ],
+            "firewall": [
+              "-P FORWARD DROP",
+              "-A FORWARD -i eth1 -o eth0 -p tcp --dport 80 -j ACCEPT",
+              "-t nat -A POSTROUTING -o eth0 -j MASQUERADE"
+            ]
+          },
+          {
+            "name": "sw",
+            "kind": "switch",
+            "ports": 2
+          },
+          {
+            "name": "office",
+            "addrs": [
+              "192.168.1.10/24"
+            ],
+            "gateway": "192.168.1.1"
+          }
+        ],
+        "links": [
+          [
+            "api",
+            "gw"
+          ],
+          [
+            "gw",
+            "sw"
+          ],
+          [
+            "office",
+            "sw"
+          ]
+        ],
+        "dns": {
+          "api.example": "203.0.113.77"
+        }
+      }
+    },
+    "steps": [
+      {
+        "id": "name",
+        "purpose": "`office` から `dig +short api.example` で名前を引く。結果が出れば、名前の層は問題ない。",
+        "check": {
+          "kind": "ran",
+          "uses": [
+            "dig"
+          ],
+          "result": "203.0.113.77"
+        },
+        "afterward": "名前は引けた。DNS は原因ではない。",
+        "hints": [
+          "`office` から調べる。",
+          "`ip netns exec office dig +short api.example`。",
+          "`ip netns exec office dig +short api.example` を打つ。203.0.113.77 と出れば達成。"
+        ],
+        "expectedErrors": [
+          "net-fw-syntax"
+        ]
+      },
+      {
+        "id": "kind",
+        "purpose": "`office` から `curl https://api.example/` を打ち、どう失敗するかを読む。時間切れなら `timeout`、断られたなら `refused` と答えの欄に入れる。",
+        "check": {
+          "kind": "answer",
+          "equals": "timeout"
+        },
+        "afterward": "時間切れ。相手まで届いていないか、返事が戻っていない。途中のファイアウォールを疑う。",
+        "hints": [
+          "`curl` の誤りの文を読む。",
+          "`timed out` か `refused` か。",
+          "`ip netns exec office curl https://api.example/` を打ち、`timeout` と答える。"
+        ],
+        "expectedErrors": [
+          "net-fw-timeout",
+          "trouble-net-answer"
+        ],
+        "designedErrors": [
+          "net-fw-timeout"
+        ]
+      },
+      {
+        "id": "rules",
+        "purpose": "`iptables -L FORWARD -n -v --line-numbers` で規則を読み、443 番の行きと、戻りの規則（`ESTABLISHED,RELATED`）を足す。`office` から `curl` で届けば達成。",
+        "check": {
+          "kind": "net",
+          "expr": "reach 203.0.113.77:443 from office"
+        },
+        "afterward": "返事が返った。80 番しか通しておらず、戻りの規則も無かった。通信は往復で成り立つので、両方が要る。",
+        "hints": [
+          "規則を読むと、80 番の行きしか無い。",
+          "行きは `--dport 443`、戻りは `-m conntrack --ctstate ESTABLISHED,RELATED`。",
+          "`iptables -L FORWARD -n -v --line-numbers` `iptables -A FORWARD -i eth1 -o eth0 -p tcp --dport 443 -j ACCEPT` `iptables -A FORWARD -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT` `ip netns exec office curl https://api.example/` を打つ。"
+        ],
+        "expectedErrors": [
+          "net-fw-timeout",
+          "net-fw-syntax"
+        ]
+      }
+    ]
+  },
+  "result": {
+    "success": "層ごとに切り分け、止まっている所を直せた。",
+    "partial": "ヒントを使って直せた。次は `refused` の時の調べ方も考えてみよう。",
+    "retry": "まだ届かない。行きと戻りの両方の規則があるかを確かめよう。"
+  },
+  "summary": {
+    "points": [
+      "下の層から確かめる",
+      "refused と timeout の違い",
+      "1 つ直したら確かめる"
+    ],
+    "next": [
+      "trouble.i.03"
+    ],
+    "terms": [
+      "firewall",
+      "dig",
+      "iptables"
+    ]
+  }
+}

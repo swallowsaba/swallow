@@ -1,0 +1,59 @@
+{
+  "lesson": "trouble.i.01",
+  "variants": [
+    {
+      "name": "cat /dev/null で空にする",
+      "steps": {
+        "usage": [
+          "df",
+          "df -h",
+          "100%"
+        ],
+        "where": [
+          "du -a /var/log | sort -n | tail -n 3",
+          "du -sh /var/log/app/app.log",
+          "/var/log/app/app.log"
+        ],
+        "free": [
+          "cat /dev/null > /var/log/app/app.log"
+        ],
+        "check": [
+          "curl -s -o /dev/null -w '%{http_code}' http://reserve.example/"
+        ]
+      }
+    },
+    {
+      "name": ": で空にする・順に降りる",
+      "steps": {
+        "usage": [
+          "curl http://reserve.example/",
+          "df -h /",
+          "100%"
+        ],
+        "where": [
+          "du -sh /var/*",
+          "du -sh /var/log/*",
+          "du -sh /var/log/app/*",
+          "/VAR/LOG/APP/APP.LOG"
+        ],
+        "free": [
+          ": > /var/log/app/app.log",
+          "df -h"
+        ],
+        "check": [
+          "curl http://reserve.example/"
+        ]
+      }
+    }
+  ],
+  "wrong": {
+    "step": "free",
+    "why": "大きさを書き忘れる",
+    "input": [
+      "truncate /var/log/app/app.log"
+    ],
+    "retry": [
+      "truncate -s 0 /var/log/app/app.log"
+    ]
+  }
+}

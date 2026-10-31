@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 360" font-family="&quot;Noto Sans JP&quot;, sans-serif">
+  <title>症状から、よくある原因と確かめる道具を選ぶ</title>
+  <g class="el" data-part="disk">
+    <rect x="20" y="30" width="600" height="80" rx="10" fill="#c0392b" />
+    <text x="320" y="64" text-anchor="middle" font-size="16" font-weight="700" fill="#eef2f6">No space left on device・500</text>
+    <text x="320" y="86" text-anchor="middle" font-size="14" fill="#eef2f6">ディスク満杯 → df・du</text>
+  </g>
+  <g class="el" data-part="perm">
+    <rect x="20" y="125" width="600" height="80" rx="10" fill="#7a3fd0" />
+    <text x="320" y="159" text-anchor="middle" font-size="16" font-weight="700" fill="#eef2f6">Permission denied</text>
+    <text x="320" y="181" text-anchor="middle" font-size="14" fill="#eef2f6">権限 → ls -l・id</text>
+  </g>
+  <g class="el" data-part="svc">
+    <rect x="20" y="220" width="600" height="80" rx="10" fill="#1a6fd6" />
+    <text x="320" y="254" text-anchor="middle" font-size="16" font-weight="700" fill="#eef2f6">502・Connection refused</text>
+    <text x="320" y="276" text-anchor="middle" font-size="14" fill="#eef2f6">サービス停止 → systemctl status・journalctl</text>
+  </g>
+  <g class="el" data-part="note">
+    <text x="320" y="340" text-anchor="middle" font-size="14" fill="#eef2f6">原因を確かめてから直す。直したら確かめ直す</text>
+  </g>
+</svg>

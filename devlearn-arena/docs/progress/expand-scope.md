@@ -54,7 +54,7 @@
 | 中級 | mon | 終わり（4 本。下の「中級 mon」） |
 | 中級 | cloud | 終わり（4 本。下の「中級 cloud」） |
 | 中級 | devops | 終わり（3 本。下の「中級 devops」） |
-| 中級 | trouble | 未着手 |
+| 中級 | trouble | 終わり（3 本。下の「中級 trouble」） |
 | 中級 | lab | 未着手 |
 | 上級 | linux | 未着手 |
 | 上級 | net | 未着手 |
@@ -218,3 +218,20 @@
 模擬環境に足した物（テストを先に書いた。`src/engines/kernel/commands/diskFull.test.ts`）: 次の分野 trouble.i.01 で使う `truncate`・判定の `disk`（`df` の使用率）・サービスの `diskGuard`（満杯の間は 500）・掴まれたまま消されたファイルの大きさ（前は 200KB と決め打ちだった）。
 
 既にあるテストを直した物: `proc.test.ts` の「掴まれたまま消したファイルの分は空きに戻らない」は、決め打ちの 200KB で `df` の値が変わることを確かめていた。本物では消しても使用量は変わらないので、同じ値であることを確かめる形に直した。
+
+### 中級 trouble（3 本）
+
+| ID | 実戦 | verify-all | verify-free（別解） | verify-wrong |
+|---|---|---|---|---|
+| trouble.i.01 サーバの障害 | 端 | 合格 | 合格（2 通り） | 合格 |
+| trouble.i.02 繋がらない | 端 | 合格 | 合格（2 通り） | 合格 |
+| trouble.i.03 Web の障害 | 端 | 合格 | 合格（2 通り） | 合格 |
+
+| 不合格 | 原因 | 直したこと |
+|---|---|---|
+| trouble.i.02 の別解 `curl --max-time 3 …` が名前を引けないと失敗 | 模擬の不具合: 網のある実戦の `curl` が、待つ時間の値を URL と取り違えた | `--max-time`・`-m`・`--connect-timeout` を受ける（テストを先に書いた。`curlTimeout.test.ts`） |
+| trouble.i.03 の 502 を読む打鍵に誤りの案内が当たった | 書き起こしの誤り: `curl -i` は 502 でも終了の状態が 0 で、うまくいった命令に案内を当てる形になった | 目的を `curl -fsS` にし、失敗（`(22)`）を見せるための手順にした（`designedErrors`） |
+
+設計は変えていない。trouble.i.02・trouble.i.03 は、目的の文が失敗を読むことなので、想定した失敗のレッスン（`DESIGNED_FAILURES`）に足した。
+
+模擬環境に足した物は `truncate`・判定の `disk`・サービスの `diskGuard`（devops の記録に書いた）と、`curl` の待つ時間の指定。

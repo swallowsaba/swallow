@@ -171,7 +171,9 @@ export const netCommands: CommandSpec[] = [
   {
     name: 'curl',
     summary: 'HTTP でページを取りに行く',
-    handler: ({ argv, shell }) => {
+    handler: ({ argv: raw, shell }) => {
+      // 待つ時間の指定は、結果を変えないので外す（値を URL と取り違えない）
+      const argv = raw.filter((a, i) => !/^(--max-time|--connect-timeout|-m)$/.test(a) && !/^(--max-time|--connect-timeout|-m)$/.test(raw[i - 1] ?? ''));
       const net = shell.net;
       // ネットワークの構成が無い実戦では、手元のサービス・コンテナと、名前で引けるサイトに取りに行く
       if (net === null) return localCurl(argv, shell);

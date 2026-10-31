@@ -190,6 +190,60 @@
         "status-code",
         "service"
       ]
+    },
+    {
+      "id": "trouble-disk-misread",
+      "match": "答えが合っていない",
+      "meaning": "答えが、調べた結果と違う。",
+      "causes": [
+        "`df -h` の別の列（`Size` や `Avail`）を読んだ。",
+        "ディレクトリの名前を答えた。一番大きいファイルの場所を答える。"
+      ],
+      "hint": "`df -h` の `Use%`、`du -sh /var/log/*` の大きい順を読もう。",
+      "terms": [
+        "df",
+        "du"
+      ]
+    },
+    {
+      "id": "trouble-truncate",
+      "match": "you must specify either '--size'",
+      "meaning": "`truncate` に、大きさの指定が無い。",
+      "causes": [
+        "`-s 0` を書いていない。",
+        "`-s` の後ろの数を書いていない。"
+      ],
+      "hint": "`truncate -s 0 ファイル` の形で打とう。",
+      "terms": [
+        "disk"
+      ]
+    },
+    {
+      "id": "trouble-net-answer",
+      "match": "答えが合っていない",
+      "meaning": "答えが、`curl` の結果と違う。",
+      "causes": [
+        "`Connection refused`（断られた）と `timed out`（時間切れ）を取り違えた。",
+        "別の機械から打った。`ip netns exec office` を付ける。"
+      ],
+      "hint": "`timed out` なら `timeout`、`refused` なら `refused` と答えよう。",
+      "terms": [
+        "firewall"
+      ]
+    },
+    {
+      "id": "trouble-502",
+      "match": "returned error: 502",
+      "meaning": "中継先に届かない。nginx の `proxy_pass` のポートに、誰も待ち受けていない。",
+      "causes": [
+        "`proxy_pass` のポートが、アプリの待ち受けと違う。",
+        "アプリが動いていない。"
+      ],
+      "hint": "`ss -ltn` で待ち受けのポートを読み、`proxy_pass` を直して読み直そう。",
+      "terms": [
+        "reverse-proxy",
+        "port"
+      ]
     }
   ]
 }

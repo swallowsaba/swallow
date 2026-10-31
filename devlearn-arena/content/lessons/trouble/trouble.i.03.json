@@ -1,0 +1,290 @@
+{
+  "id": "trouble.i.03",
+  "domain": "trouble",
+  "level": "intermediate",
+  "theme": "Web",
+  "title": "Web の障害",
+  "goal": "4xx/5xx・証明書・リバースプロキシの誤りを直せる",
+  "minutes": 20,
+  "prerequisites": [
+    "web.i.03",
+    "sec.i.01"
+  ],
+  "related": [
+    "web.a.02",
+    "sec.i.01"
+  ],
+  "next": [
+    "trouble.a.01"
+  ],
+  "terms": [
+    "reverse-proxy",
+    "app",
+    "certificate",
+    "web",
+    "terminal",
+    "intermediate-certificate",
+    "server",
+    "port",
+    "secret-key",
+    "permission"
+  ],
+  "explain": {
+    "what": "{{term:web}} の障害は、{{term:certificate}}・中継（{{term:reverse-proxy}}）・{{term:app}}のどこで起きたかで症状が変わる。警告は入口、502 は中継、500 はアプリが多い。",
+    "why": "Web の障害は利用者に直接見える。症状から層を当てれば、調べる所を絞れる。一部の利用者だけの症状には、理由がある。",
+    "use": "障害対応で使う。原因が 2 つ重なることもあるので、1 つ直すごとに確かめる。",
+    "when": "一部の利用者に証明書の警告が出ると連絡があった。別の人からは 502 と出たと言う。",
+    "figures": [
+      "trouble-i03-web"
+    ]
+  },
+  "understand": [
+    {
+      "kind": "match",
+      "prompt": "症状と層を結ぶ。",
+      "pairs": [
+        [
+          "証明書の警告",
+          "入口"
+        ],
+        [
+          "502",
+          "中継"
+        ],
+        [
+          "500",
+          "アプリ"
+        ]
+      ],
+      "see": "what"
+    },
+    {
+      "kind": "situation",
+      "prompt": "一部の{{term:terminal}}だけ証明書の警告が出る。理由は？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "{{term:intermediate-certificate}}を前に覚えた端末だけ通っている",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "端末の時計が全て壊れている",
+          "correct": false,
+          "whyNot": "一部の端末だけなら考えられるが、まず連鎖を疑う。"
+        },
+        {
+          "id": "c",
+          "text": "{{term:server}}が端末を選んでいる",
+          "correct": false,
+          "whyNot": "同じ証明書を送っている。"
+        }
+      ],
+      "see": "why"
+    }
+  ],
+  "quiz": [
+    {
+      "id": "q1",
+      "kind": "cause",
+      "prompt": "502 が返る。原因は？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "中継先に届かない",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "ページが無い",
+          "correct": false,
+          "whyNot": "それなら 404。"
+        },
+        {
+          "id": "c",
+          "text": "ログインしていない",
+          "correct": false,
+          "whyNot": "それなら 401 か 403。"
+        }
+      ],
+      "explanation": "中継先の{{term:port}}と、動いているかを見る。"
+    },
+    {
+      "id": "q2",
+      "kind": "cause",
+      "prompt": "一部の端末だけ警告が出る。原因は？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "中間証明書が無い",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "期限切れ",
+          "correct": false,
+          "whyNot": "期限切れなら、全員に出る。"
+        },
+        {
+          "id": "c",
+          "text": "{{term:secret-key}}の{{term:permission}}",
+          "correct": false,
+          "whyNot": "権限が誤っても、警告にはならない。"
+        }
+      ],
+      "explanation": "連鎖を確かめる。"
+    },
+    {
+      "id": "q3",
+      "kind": "situation",
+      "prompt": "直した後にすることは？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "複数の端末や道具で確かめる",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "自分のブラウザだけで確かめる",
+          "correct": false,
+          "whyNot": "自分の端末は、前に覚えて通っていたかもしれない。"
+        },
+        {
+          "id": "c",
+          "text": "何もしない",
+          "correct": false,
+          "whyNot": "直ったか分からない。"
+        }
+      ],
+      "explanation": "`curl` と `openssl s_client` でも見る。"
+    },
+    {
+      "id": "q4",
+      "kind": "predict",
+      "prompt": "中間証明書を足して読み直すと？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "一部の端末の警告が消える",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "502 も直る",
+          "correct": false,
+          "whyNot": "502 は中継の問題で、別の原因。"
+        },
+        {
+          "id": "c",
+          "text": "全員に警告が出る",
+          "correct": false,
+          "whyNot": "連鎖が揃うので、消える。"
+        }
+      ],
+      "explanation": "原因ごとに直す。"
+    }
+  ],
+  "practice": {
+    "mode": "terminal",
+    "purpose": "港の店 `shop.example` に、証明書の警告と 502 の 2 つが出ている。設定は `/etc/nginx/conf.d/shop.conf`、証明書は `/etc/nginx/certs`、受け取った中間証明書は `/home/learner/inbox/minato-issuing-ca.crt`。2 つとも直す。",
+    "environment": "linux-basic",
+    "setup": {
+      "hostname": "minato-shop",
+      "dirs": [
+        "/etc/nginx/certs"
+      ],
+      "sites": [],
+      "files": {
+        "/etc/hosts": "127.0.0.1\tlocalhost shop.example\n",
+        "/etc/nginx/conf.d/shop.conf": "server {\n  listen 443 ssl;\n  server_name shop.example;\n  ssl_certificate /etc/nginx/certs/shop.crt;\n  ssl_certificate_key /etc/nginx/certs/shop.key;\n\n  location / {\n    proxy_pass http://127.0.0.1:8081;\n  }\n}\n",
+        "/etc/nginx/certs/shop.crt": "-----BEGIN CERTIFICATE-----\nsubject: shop.example\nissuer: Minato Issuing CA\nnames: shop.example\nvalid: 2026-09-20 2027-10-20\nkey: shop-2026\n-----END CERTIFICATE-----\n",
+        "/etc/nginx/certs/shop.key": "-----BEGIN PRIVATE KEY-----\npair: shop-2026\n-----END PRIVATE KEY-----\n",
+        "/home/learner/inbox/minato-issuing-ca.crt": "-----BEGIN CERTIFICATE-----\nsubject: Minato Issuing CA\nissuer: Minato Root CA\nvalid: 2024-01-01 2030-01-01\nca: yes\n-----END CERTIFICATE-----\n"
+      },
+      "services": {
+        "nginx": {
+          "description": "nginx web server",
+          "enabled": true,
+          "config": "/etc/nginx/conf.d/shop.conf"
+        },
+        "shop": {
+          "description": "Shop app",
+          "active": true,
+          "enabled": true,
+          "port": 8080,
+          "body": "<h1>港の店</h1><p>本日の入荷: 灯台の模型</p>"
+        }
+      },
+      "run": [
+        "systemctl start nginx"
+      ]
+    },
+    "steps": [
+      {
+        "id": "chain",
+        "purpose": "`curl https://shop.example/` の警告を読む。証明書と中間証明書を `cat` でつないで束にし、設定の `ssl_certificate` を束に替えて読み直す。警告が消えれば達成。",
+        "check": {
+          "kind": "tls",
+          "host": "shop.example",
+          "trusted": true
+        },
+        "afterward": "警告が消えた。ただし、`curl` はまだ 502 を返す。別の原因が残っている。",
+        "hints": [
+          "`unable to get local issuer certificate` は、連鎖の欠け。",
+          "`cat shop.crt 中間 > fullchain.crt` で束を作り、`sed -i` で設定を替えて `systemctl reload nginx`。",
+          "`curl https://shop.example/` `cat /etc/nginx/certs/shop.crt /home/learner/inbox/minato-issuing-ca.crt > /etc/nginx/certs/fullchain.crt` `sed -i 's|certs/shop.crt|certs/fullchain.crt|' /etc/nginx/conf.d/shop.conf` `nginx -t` `systemctl reload nginx` を打つ。1 つ目の命令は警告で断られる。"
+        ],
+        "expectedErrors": [
+          "sec-chain-incomplete",
+          "sec-cert-path"
+        ],
+        "designedErrors": [
+          "sec-chain-incomplete"
+        ]
+      },
+      {
+        "id": "proxy",
+        "purpose": "`curl -fsS https://shop.example/` の 502 を読み、`ss -ltn` で待ち受けのポートを確かめて、`proxy_pass` を直す。ページが出れば達成。",
+        "check": {
+          "kind": "http",
+          "url": "https://shop.example/",
+          "status": 200,
+          "contains": "港の店"
+        },
+        "afterward": "警告なしの 200 になった。2 つの原因は別の層にあった。1 つずつ直して確かめたので、取り違えずに済んだ。",
+        "hints": [
+          "502 は中継先に届かない。",
+          "`ss -ltn` にあるのは 8080。設定は 8081 を指している。",
+          "`curl -fsS https://shop.example/` `ss -ltn` `sed -i 's/8081/8080/' /etc/nginx/conf.d/shop.conf` `nginx -t` `systemctl reload nginx` `curl https://shop.example/` を打つ。1 つ目の命令は 502 で断られる。"
+        ],
+        "expectedErrors": [
+          "trouble-502"
+        ],
+        "designedErrors": [
+          "trouble-502"
+        ]
+      }
+    ]
+  },
+  "result": {
+    "success": "2 つの原因を層ごとに直せた。",
+    "partial": "ヒントを使って直せた。次は、一部の端末だけ警告になる理由を説明してみよう。",
+    "retry": "まだ残っている。警告と 502 を分けて、それぞれ確かめよう。"
+  },
+  "summary": {
+    "points": [
+      "症状から層を推測する",
+      "一部だけの理由を考える",
+      "複数の環境で確かめる"
+    ],
+    "next": [
+      "trouble.a.01"
+    ],
+    "terms": [
+      "reverse-proxy",
+      "certificate-chain",
+      "tls"
+    ]
+  }
+}

@@ -1,0 +1,49 @@
+{
+  "lesson": "trouble.i.03",
+  "variants": [
+    {
+      "name": "行をまとめて置き換える",
+      "steps": {
+        "chain": [
+          "cat /etc/nginx/certs/shop.crt /home/learner/inbox/minato-issuing-ca.crt > /etc/nginx/certs/shop-full.crt",
+          "sed -i 's|/etc/nginx/certs/shop.crt|/etc/nginx/certs/shop-full.crt|' /etc/nginx/conf.d/shop.conf",
+          "nginx -s reload"
+        ],
+        "proxy": [
+          "sed -i 's|127.0.0.1:8081|127.0.0.1:8080|' /etc/nginx/conf.d/shop.conf",
+          "nginx -t && systemctl reload nginx",
+          "curl -s https://shop.example/"
+        ]
+      }
+    },
+    {
+      "name": "元のファイルに足す",
+      "steps": {
+        "chain": [
+          "openssl s_client -connect shop.example:443",
+          "cat /home/learner/inbox/minato-issuing-ca.crt >> /etc/nginx/certs/shop.crt",
+          "systemctl reload nginx"
+        ],
+        "proxy": [
+          "systemctl status shop",
+          "ss -ltn",
+          "sed -i 's/8081/8080/' /etc/nginx/conf.d/shop.conf",
+          "systemctl restart nginx"
+        ]
+      }
+    }
+  ],
+  "wrong": {
+    "step": "proxy",
+    "why": "アプリのポートを読まずに、別の番号へ直す",
+    "input": [
+      "sed -i 's/8081/9000/' /etc/nginx/conf.d/shop.conf",
+      "systemctl reload nginx",
+      "curl -fsS https://shop.example/"
+    ],
+    "retry": [
+      "sed -i 's/9000/8080/' /etc/nginx/conf.d/shop.conf",
+      "systemctl reload nginx"
+    ]
+  }
+}

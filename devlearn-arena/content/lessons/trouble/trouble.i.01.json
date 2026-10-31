@@ -1,0 +1,294 @@
+{
+  "id": "trouble.i.01",
+  "domain": "trouble",
+  "level": "intermediate",
+  "theme": "Linux",
+  "title": "サーバの障害",
+  "goal": "ディスク満杯・権限・サービス停止を直せる",
+  "minutes": 20,
+  "prerequisites": [
+    "linux.i.05",
+    "linux.i.01"
+  ],
+  "related": [
+    "linux.a.01",
+    "db.a.02"
+  ],
+  "next": [
+    "devops.i.03",
+    "sec.a.03",
+    "docker.a.02"
+  ],
+  "terms": [
+    "service",
+    "disk",
+    "server",
+    "permission",
+    "file",
+    "log",
+    "memory",
+    "process",
+    "app"
+  ],
+  "explain": {
+    "what": "{{term:server}}の障害は、{{term:disk}}満杯・{{term:permission}}・{{term:service}}停止など、よく起きる型がある。症状から型を選び、原因を確かめてから直す。",
+    "why": "よく起きる障害は、型を持つと速く直せる。逆に、確かめずに消すと、使用中の{{term:file}}を消して空きが戻らないなど、かえって悪くなる。",
+    "use": "障害対応で使う。サービスの状態と{{term:log}}を見て、資源を確かめ、影響の少ない方法で直し、確かめ直す。",
+    "when": "予約サイトが 500 を返す。さっきまで動いていて、誰も変更していない。ログが増え続けていたらしい。",
+    "figures": [
+      "trouble-i01-types"
+    ]
+  },
+  "understand": [
+    {
+      "kind": "order",
+      "prompt": "型の順に並べる。",
+      "items": [
+        "症状を確かめる",
+        "資源とログで原因を確かめる",
+        "影響の少ない方法で直す",
+        "確かめ直す"
+      ],
+      "see": "what"
+    },
+    {
+      "kind": "situation",
+      "prompt": "ログのどの行が手掛かり？ `INFO request ok` ／ `No space left on device` ／ `INFO started`",
+      "choices": [
+        {
+          "id": "a",
+          "text": "`No space left on device`",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "`INFO request ok`",
+          "correct": false,
+          "whyNot": "正常に動いた記録。"
+        },
+        {
+          "id": "c",
+          "text": "`INFO started`",
+          "correct": false,
+          "whyNot": "起動した記録で、誤りではない。"
+        }
+      ],
+      "see": "what"
+    }
+  ],
+  "quiz": [
+    {
+      "id": "q1",
+      "kind": "situation",
+      "prompt": "障害の知らせを受けて、最初に見るのは？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "サービスの状態とログ",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "サーバを再起動する",
+          "correct": false,
+          "whyNot": "確かめる前に動かすと、手掛かりが消える。"
+        },
+        {
+          "id": "c",
+          "text": "新しいサーバを注文する",
+          "correct": false,
+          "whyNot": "原因が分かっていない。"
+        }
+      ],
+      "explanation": "何が起きているかを先に見る。"
+    },
+    {
+      "id": "q2",
+      "kind": "cause",
+      "prompt": "ログに `No space left on device` と出た。原因は？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "ディスクが満杯",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "{{term:memory}}が足りない",
+          "correct": false,
+          "whyNot": "それならメモリの誤りが出る。"
+        },
+        {
+          "id": "c",
+          "text": "権限が足りない",
+          "correct": false,
+          "whyNot": "それなら `Permission denied`。"
+        }
+      ],
+      "explanation": "`df` で確かめる。"
+    },
+    {
+      "id": "q3",
+      "kind": "predict",
+      "prompt": "書き込み中のログを `rm` で消した。空きは？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "掴んでいる{{term:process}}が居る間は戻らない",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "すぐに戻る",
+          "correct": false,
+          "whyNot": "消えたのは名前だけ。中身は掴まれたまま残る。"
+        },
+        {
+          "id": "c",
+          "text": "サーバが止まる",
+          "correct": false,
+          "whyNot": "止まらないが、空きも戻らない。"
+        }
+      ],
+      "explanation": "中身だけを空にする `truncate` を使う。"
+    }
+  ],
+  "practice": {
+    "mode": "terminal",
+    "purpose": "予約サイト `reserve.example` が 500 を返している。ディスクの使用率と一番大きいファイルを確かめ、サービスを止めずに空きを戻す（使用率 70% 以下）。",
+    "environment": "linux-basic",
+    "dangerous": [
+      {
+        "id": "rm-log",
+        "pattern": "\\brm\\b.*app\\.log",
+        "why": "使用中のログを消すと、掴んでいる間は空きが戻らない。中身だけを空にする `truncate` を使う。"
+      }
+    ],
+    "setup": {
+      "hostname": "reserve-web",
+      "disk": "20G",
+      "files": {
+        "/etc/hosts": "127.0.0.1\tlocalhost reserve.example\n",
+        "/var/log/app/app.log": "2026-10-15 09:00:01 INFO request ok\n2026-10-15 09:00:02 ERROR write failed: No space left on device\n",
+        "/var/log/app/app.log.1": "2026-10-14 23:59:59 INFO request ok\n",
+        "/var/lib/app/data.bin": "(予約のデータ)\n"
+      },
+      "sizes": {
+        "/var/log/app/app.log": "19.5G",
+        "/var/log/app/app.log.1": "100M",
+        "/var/lib/app/data.bin": "300M"
+      },
+      "processes": [
+        {
+          "command": "/usr/bin/reserve",
+          "memory": 64,
+          "user": "learner",
+          "openFiles": [
+            "/var/log/app/app.log"
+          ]
+        }
+      ],
+      "services": {
+        "reserve": {
+          "description": "Reserve app",
+          "active": true,
+          "enabled": true,
+          "port": 80,
+          "body": "<h1>港の予約</h1>",
+          "diskGuard": true
+        }
+      }
+    },
+    "steps": [
+      {
+        "id": "usage",
+        "purpose": "`curl -i http://reserve.example/` で症状を見て、`df -h` でディスクの使用率を読む。使用率（% の付いた欄）を答えの欄に入れる。",
+        "check": {
+          "kind": "answer",
+          "equals": "100%"
+        },
+        "afterward": "ディスクが満杯で、{{term:app}}が書けずに 500 を返している。",
+        "hints": [
+          "症状の次は資源を見る。",
+          "`df -h` の `Use%` の列を読む。",
+          "`curl -i http://reserve.example/` `df -h` を打ち、`100%` と答える。"
+        ],
+        "expectedErrors": [
+          "trouble-disk-misread"
+        ]
+      },
+      {
+        "id": "where",
+        "purpose": "`du` で一番大きいファイルを探す。その場所を答えの欄に入れる。",
+        "check": {
+          "kind": "answer",
+          "equals": "/var/log/app/app.log"
+        },
+        "afterward": "`/var/log/app/app.log` が 19.5G。ログが増え続けていた。`lsof` で見ると、動いているアプリが掴んでいる。",
+        "hints": [
+          "`du -sh` と `sort -h` で、大きい順に並べる。",
+          "`/var/log` が大きい。その中をさらに見る。",
+          "`du -sh /var/* | sort -h` `du -sh /var/log/app/* | sort -h` `lsof /var/log/app/app.log` を打ち、`/var/log/app/app.log` と答える。"
+        ],
+        "expectedErrors": [
+          "trouble-disk-misread"
+        ]
+      },
+      {
+        "id": "free",
+        "purpose": "サービスを止めずに、ログの中身だけを空にする（`truncate -s 0`）。使用率が 70% 以下になれば達成。",
+        "check": {
+          "kind": "disk",
+          "maxUse": 70
+        },
+        "afterward": "空きが戻った。ファイルは残っているので、アプリは同じ場所に書き続けられる。",
+        "hints": [
+          "掴まれているファイルは、`rm` では空きが戻らない。",
+          "`truncate -s 0 ファイル` は、中身だけを空にする。",
+          "`truncate -s 0 /var/log/app/app.log` `df -h` を打つ。"
+        ],
+        "expectedErrors": [
+          "trouble-truncate"
+        ]
+      },
+      {
+        "id": "check",
+        "purpose": "`curl` で、サイトがページを返すことを確かめ直す。",
+        "check": {
+          "kind": "http",
+          "url": "http://reserve.example/",
+          "status": 200,
+          "contains": "港の予約"
+        },
+        "afterward": "ページが返った。止めずに直せた。次はログの回し方（`logrotate`）を決めて、再発を防ぐ。",
+        "hints": [
+          "直したら確かめ直す。",
+          "`curl -i` で 200 を見る。",
+          "`curl -i http://reserve.example/` を打つ。"
+        ]
+      }
+    ]
+  },
+  "result": {
+    "success": "原因を確かめ、止めずに安全に直せた。",
+    "partial": "直せたが、危ない手かヒントを使った。使用中のファイルは `truncate` で空にすることを覚えよう。",
+    "retry": "まだ空きが無い。`df -h` と `lsof` で、掴まれているファイルを確かめよう。"
+  },
+  "summary": {
+    "points": [
+      "型に沿って進める",
+      "原因を確かめてから直す",
+      "直したら確かめ直す"
+    ],
+    "next": [
+      "devops.i.03",
+      "sec.a.03",
+      "docker.a.02"
+    ],
+    "terms": [
+      "df",
+      "du",
+      "log"
+    ]
+  }
+}

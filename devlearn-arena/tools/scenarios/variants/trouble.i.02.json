@@ -1,0 +1,52 @@
+{
+  "lesson": "trouble.i.02",
+  "variants": [
+    {
+      "name": "時間を区切って調べる",
+      "steps": {
+        "name": [
+          "ip netns exec office dig +short api.example"
+        ],
+        "kind": [
+          "ip netns exec office curl --max-time 3 https://api.example/",
+          "TIMEOUT"
+        ],
+        "rules": [
+          "iptables -L FORWARD -n",
+          "iptables -I FORWARD -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT",
+          "iptables -A FORWARD -p tcp --dport 443 -j ACCEPT"
+        ]
+      }
+    },
+    {
+      "name": "戻りを先に足す・状態を確かめる",
+      "steps": {
+        "name": [
+          "ip netns exec office ping -c 1 203.0.113.5",
+          "ip netns exec office dig +short api.example"
+        ],
+        "kind": [
+          "ip netns exec office curl https://api.example/",
+          "timeout"
+        ],
+        "rules": [
+          "iptables -A FORWARD -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT",
+          "iptables -A FORWARD -s 192.168.1.0/24 -p tcp --dport 443 -j ACCEPT",
+          "ip netns exec office curl https://api.example/"
+        ]
+      }
+    }
+  ],
+  "wrong": {
+    "step": "kind",
+    "why": "refused と取り違える",
+    "input": [
+      "ip netns exec office curl https://api.example/",
+      "refused"
+    ],
+    "commands": false,
+    "retry": [
+      "timeout"
+    ]
+  }
+}
