@@ -1,0 +1,258 @@
+{
+  "id": "db.i.04",
+  "domain": "db",
+  "level": "intermediate",
+  "theme": "整合",
+  "title": "トランザクション",
+  "goal": "途中で失敗しても壊れない更新ができる",
+  "minutes": 20,
+  "prerequisites": [
+    "db.b.05"
+  ],
+  "related": [
+    "git.i.04",
+    "found.i.02"
+  ],
+  "next": [
+    "db.a.01"
+  ],
+  "terms": [
+    "transaction",
+    "atomicity"
+  ],
+  "explain": {
+    "what": "{{term:transaction}}は、複数の更新をひとまとまりにする仕組み。全部成功するか、全部無かったことになるかのどちらかになる。これを{{term:atomicity}}と言う。",
+    "why": "振込で、減らした後に落ちると、お金が消える。途中の状態を残さないので、片方だけ更新されることが無い。",
+    "use": "お金・在庫・予約のように、複数の行を合わせて変える時に使う。",
+    "when": "残高を移す処理が途中で落ち、片方の口座だけ減っていた。合計が合わず、原因を調べるのに丸 1 日かかった。",
+    "figures": [
+      "db-i04-tx"
+    ]
+  },
+  "understand": [
+    {
+      "kind": "order",
+      "prompt": "成功する時の流れを順に並べる。",
+      "items": [
+        "`BEGIN` で始める",
+        "更新を 2 つ行う",
+        "`COMMIT` で確定する"
+      ],
+      "see": "what"
+    },
+    {
+      "kind": "match",
+      "prompt": "言葉と意味を結ぶ。",
+      "pairs": [
+        [
+          "原子性",
+          "全部か、無しか"
+        ],
+        [
+          "`ROLLBACK`",
+          "始める前に戻す"
+        ],
+        [
+          "`COMMIT`",
+          "変更を確定する"
+        ]
+      ],
+      "see": "what"
+    }
+  ],
+  "quiz": [
+    {
+      "id": "q1",
+      "kind": "predict",
+      "prompt": "`BEGIN` の後に残高を減らし、`ROLLBACK` した。残高は？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "元の残高のまま",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "減ったまま",
+          "correct": false,
+          "whyNot": "`ROLLBACK` は、始める前に戻す。"
+        },
+        {
+          "id": "c",
+          "text": "0 になる",
+          "correct": false,
+          "whyNot": "値は元に戻るだけで、消えない。"
+        }
+      ],
+      "explanation": "`ROLLBACK` で、`BEGIN` からの変更が全て無かったことになる。"
+    },
+    {
+      "id": "q2",
+      "kind": "situation",
+      "prompt": "在庫を減らし、注文を作る。どう書く？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "1 つのトランザクションで囲む",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "2 つを別々に実行する",
+          "correct": false,
+          "whyNot": "間で落ちると、在庫だけ減って注文が無い。"
+        },
+        {
+          "id": "c",
+          "text": "在庫は減らさない",
+          "correct": false,
+          "whyNot": "在庫が合わなくなる。"
+        }
+      ],
+      "explanation": "合わせて変える物は、ひとまとまりにする。"
+    },
+    {
+      "id": "q3",
+      "kind": "cause",
+      "prompt": "更新したのに、別の接続から見ると変わっていない。原因は？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "`COMMIT` していない",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "索引が無い",
+          "correct": false,
+          "whyNot": "索引は速さの話。"
+        },
+        {
+          "id": "c",
+          "text": "表の名前が長い",
+          "correct": false,
+          "whyNot": "名前の長さは関係が無い。"
+        }
+      ],
+      "explanation": "確定するまで、変更はその接続の中だけで見える。"
+    }
+  ],
+  "practice": {
+    "mode": "sql",
+    "purpose": "口座の表 `accounts` で、青木さんから石田さんへお金を移す。残高は負にできない（`CHECK`）。途中で失敗しても合計 6000 円が変わらないことを確かめ、正しく移す。",
+    "environment": "sql-sqlite",
+    "setup": {
+      "sql": "CREATE TABLE accounts (id INTEGER PRIMARY KEY, name TEXT NOT NULL, balance INTEGER NOT NULL CHECK (balance >= 0)) STRICT;\nINSERT INTO accounts VALUES (1, '青木', 5000), (2, '石田', 1000);"
+    },
+    "steps": [
+      {
+        "id": "begin",
+        "purpose": "青木さんから 9000 円移そうとする。`BEGIN` で始め、先に石田さんに 9000 円足す。",
+        "check": {
+          "kind": "sql",
+          "query": "SELECT group_concat(name || ':' || balance, ',') FROM (SELECT name, balance FROM accounts ORDER BY id)",
+          "equals": "青木:5000,石田:10000",
+          "committed": false
+        },
+        "afterward": "石田さんは 10000 円になった。まだ確定していない。今、合計は 15000 円で、このまま落ちると困る状態。",
+        "hints": [
+          "1 文ずつ順に実行する。`BEGIN` の後に足す。",
+          "足すのは `UPDATE accounts SET balance = balance + 9000 WHERE name = '石田'`。",
+          "`BEGIN` `UPDATE accounts SET balance = balance + 9000 WHERE name = '石田'` を順に実行する。"
+        ],
+        "expectedErrors": [
+          "db-no-tx",
+          "db-tx-open",
+          "db-syntax"
+        ]
+      },
+      {
+        "id": "undo",
+        "purpose": "青木さんから 9000 円減らす（残高より多いので、これが断られる）。断られたら `ROLLBACK` で全てを無かったことにする。",
+        "check": {
+          "kind": "sql",
+          "query": "SELECT group_concat(name || ':' || balance, ',') FROM (SELECT name, balance FROM accounts ORDER BY id)",
+          "equals": "青木:5000,石田:1000",
+          "committed": true
+        },
+        "afterward": "減らす方が `CHECK constraint failed` で断られ、`ROLLBACK` で先に足した 9000 円も消えた。囲んでいなければ、石田さんの口座に 9000 円増えたままになる。",
+        "hints": [
+          "断られた後は、`ROLLBACK` で戻す。",
+          "減らすのは `UPDATE accounts SET balance = balance - 9000 WHERE name = '青木'`。",
+          "`UPDATE accounts SET balance = balance - 9000 WHERE name = '青木'` `ROLLBACK` を順に実行する。1 つ目の文は断られる。"
+        ],
+        "expectedErrors": [
+          "db-check-failed",
+          "db-no-tx",
+          "db-syntax"
+        ],
+        "designedErrors": [
+          "db-check-failed"
+        ]
+      },
+      {
+        "id": "same",
+        "purpose": "残高を確かめる。2 人の残高の合計を `SUM` で出す。",
+        "check": {
+          "kind": "ran",
+          "uses": [
+            "SUM"
+          ],
+          "result": "6000"
+        },
+        "afterward": "合計は 6000 円のまま。失敗しても、途中の状態は残っていない。",
+        "hints": [
+          "全ての行の合計は `SUM`。",
+          "`SELECT SUM(balance) FROM accounts`。",
+          "`SELECT SUM(balance) FROM accounts` を実行する。6000 と出れば達成。"
+        ],
+        "expectedErrors": [
+          "db-no-column",
+          "db-syntax"
+        ]
+      },
+      {
+        "id": "move",
+        "purpose": "`BEGIN` で始め、青木さんから 1000 円減らし、石田さんに 1000 円足して、`COMMIT` で確定する。",
+        "check": {
+          "kind": "sql",
+          "query": "SELECT group_concat(name || ':' || balance, ',') FROM (SELECT name, balance FROM accounts ORDER BY id)",
+          "equals": "青木:4000,石田:2000",
+          "committed": true
+        },
+        "afterward": "青木さん 4000 円、石田さん 2000 円で確定した。合計は 6000 円のまま。`COMMIT` までは、確定していない。",
+        "hints": [
+          "`BEGIN` → 減らす → 足す → `COMMIT`。",
+          "更新は 2 つとも `UPDATE accounts SET balance = …`。",
+          "`BEGIN` `UPDATE accounts SET balance = balance - 1000 WHERE name = '青木'` `UPDATE accounts SET balance = balance + 1000 WHERE name = '石田'` `COMMIT` を順に実行する。"
+        ],
+        "expectedErrors": [
+          "db-check-failed",
+          "db-no-tx",
+          "db-tx-open",
+          "db-syntax"
+        ]
+      }
+    ]
+  },
+  "result": {
+    "success": "失敗しても合計が変わらず、成功した時だけ確定する更新ができた。",
+    "partial": "ヒントを使って移せた。次は在庫と注文の更新でも考えてみよう。",
+    "retry": "残高の合計が合わない。`BEGIN` で囲み、`COMMIT` まで打ったかを確かめよう。"
+  },
+  "summary": {
+    "points": [
+      "全部か、無しか",
+      "`BEGIN` と `COMMIT` で囲む",
+      "失敗は `ROLLBACK` で戻す"
+    ],
+    "next": [
+      "db.a.01"
+    ],
+    "terms": [
+      "transaction",
+      "atomicity",
+      "consistency"
+    ]
+  }
+}

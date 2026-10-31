@@ -1,0 +1,45 @@
+{
+  "lesson": "db.i.03",
+  "variants": [
+    {
+      "name": "小文字で書く・名前を変える",
+      "steps": {
+        "plan": [
+          "explain query plan select * from members where email = 'ueno@city.example';",
+          "scan"
+        ],
+        "index": [
+          "create index members_email on members(email);"
+        ],
+        "again": [
+          "explain query plan select name from members where email = 'ueno@city.example';",
+          "search"
+        ]
+      }
+    },
+    {
+      "name": "UNIQUE の索引にする",
+      "steps": {
+        "plan": [
+          "EXPLAIN QUERY PLAN SELECT id, name FROM members WHERE email = 'aoki@city.example'",
+          "SCAN"
+        ],
+        "index": [
+          "CREATE UNIQUE INDEX uq_members_email ON members (email)",
+          "SELECT name FROM sqlite_master WHERE type = 'index'"
+        ],
+        "again": [
+          "EXPLAIN QUERY PLAN SELECT id, name FROM members WHERE email = 'aoki@city.example'",
+          "SEARCH"
+        ]
+      }
+    }
+  ],
+  "wrong": {
+    "step": "index",
+    "why": "無い列に索引を付けようとする",
+    "input": [
+      "CREATE INDEX idx_mail ON members (mail)"
+    ]
+  }
+}

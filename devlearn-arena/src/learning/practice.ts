@@ -10,7 +10,7 @@ import { clusterHolds } from '@/engines/k8s/check';
 import { containerHolds } from '@/engines/container/check';
 import { httpEnvOf } from '@/engines/kernel/commands/httpLocal';
 import { resolve } from '@/engines/kernel/path';
-import { matchesExpected, type ExecOutcome, type SqlDb } from '@/engines/db/check';
+import { isCommitted, matchesExpected, type ExecOutcome, type SqlDb } from '@/engines/db/check';
 import type { CommandRegistry, ShellState } from '@/engines/kernel/registry';
 import { portsOf, serviceOf } from '@/engines/kernel/services';
 import { execute, lineCommands, type CommandPart } from '@/engines/kernel/shell';
@@ -142,7 +142,7 @@ export function checkState(check: CheckSpec, input: CheckInput): boolean {
   if (check.kind === 'answer') return input.answer !== undefined && sameAnswer(input.answer, check.equals);
   if (check.kind === 'ran') return input.ran !== undefined && ranHolds(input.ran, check.uses, check.result, check.shows);
   // DB の実戦は、確かめる問い合わせの結果が期待する値と一致するか（DB の状態で判定する）
-  if (check.kind === 'sql') return input.db !== undefined && matchesExpected(input.db, check.query, check.equals);
+  if (check.kind === 'sql') return input.db !== undefined && matchesExpected(input.db, check.query, check.equals) && (check.committed === undefined || isCommitted(input.db) === check.committed);
   const { shell } = input;
   if (!shell) return false;
   switch (check.kind) {

@@ -1,0 +1,245 @@
+{
+  "id": "db.i.02",
+  "domain": "db",
+  "level": "intermediate",
+  "theme": "設計",
+  "title": "RDB の設計",
+  "goal": "重複を減らす分け方（正規化の考え方）ができる",
+  "minutes": 20,
+  "prerequisites": [
+    "db.i.01"
+  ],
+  "related": [
+    "db.i.05",
+    "web.i.01"
+  ],
+  "next": [
+    "db.i.05"
+  ],
+  "terms": [
+    "normalization",
+    "rdb",
+    "db",
+    "join",
+    "foreign-key",
+    "primary-key"
+  ],
+  "explain": {
+    "what": "{{term:rdb}} の設計は、同じ情報を何度も持たないように表を分けること。これを{{term:normalization}}と言う。会員の情報は会員の表に、注文は注文の表に置き、番号で指す。",
+    "why": "同じ情報が何か所にもあると、直し漏れで食い違う。会員の住所を 1 か所直しても、ほかの行は古いまま残る。",
+    "use": "新しい仕組みの表を決める時に使う。1 つの事実を 1 か所に置き、要る時は結んで使う。",
+    "when": "会員の住所を直したのに、注文の一覧には古い住所が出る。1 つの大きな表に、注文のたびに住所を書いていた。",
+    "figures": [
+      "db-i02-split"
+    ]
+  },
+  "understand": [
+    {
+      "kind": "situation",
+      "prompt": "1 つの表の複数の行に、青木さんの住所が書いてある。何が起きる？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "1 行だけ直すと、行ごとに住所が食い違う",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "{{term:db}} が自動で全ての行を揃える",
+          "correct": false,
+          "whyNot": "DB は同じ人だと知らない。別々の値として持っている。"
+        },
+        {
+          "id": "c",
+          "text": "検索が必ず失敗する",
+          "correct": false,
+          "whyNot": "検索はできるが、古い値の行も出てくる。"
+        }
+      ],
+      "see": "why"
+    },
+    {
+      "kind": "relation",
+      "prompt": "2 つの関係を選ぶ。",
+      "a": "表を会員と注文に分ける",
+      "b": "一覧を作る時に {{term:join}} が要る",
+      "answer": "cause",
+      "why": "分けた分、使う時に結ぶ。1 か所で直せる代わりの手間で、ふつうは得の方が大きい。",
+      "see": "use"
+    }
+  ],
+  "quiz": [
+    {
+      "id": "q1",
+      "kind": "cause",
+      "prompt": "会員の名前を変えたのに、古い名前の注文が残っている。原因は？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "同じ情報を複数の行に持っている",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "`UPDATE` が壊れている",
+          "correct": false,
+          "whyNot": "`UPDATE` は条件に当たった行を直しただけ。"
+        },
+        {
+          "id": "c",
+          "text": "索引が無い",
+          "correct": false,
+          "whyNot": "索引は速さの話。値の食い違いとは関係が無い。"
+        }
+      ],
+      "explanation": "情報を 1 か所にすれば、直し漏れが起きない。"
+    },
+    {
+      "id": "q2",
+      "kind": "situation",
+      "prompt": "会員の住所は、どこに持つ？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "会員の表だけ",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "会員の表と注文の表の両方",
+          "correct": false,
+          "whyNot": "2 か所にあると食い違う。"
+        },
+        {
+          "id": "c",
+          "text": "注文の表だけ",
+          "correct": false,
+          "whyNot": "注文の無い会員の住所を持てない。"
+        }
+      ],
+      "explanation": "1 つの事実は 1 か所に置く。"
+    },
+    {
+      "id": "q3",
+      "kind": "term",
+      "prompt": "表どうしをつなぐ、ほかの表の行を指す列を何と言う？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "{{term:foreign-key}}",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "{{term:primary-key}}",
+          "correct": false,
+          "whyNot": "主キーは、その表の中で行を 1 つに決める列。"
+        },
+        {
+          "id": "c",
+          "text": "インデックス",
+          "correct": false,
+          "whyNot": "索引は検索を速くする物。つながりは表さない。"
+        }
+      ],
+      "explanation": "注文の表の `member_id` が、会員の表の `id` を指す外部キー。"
+    }
+  ],
+  "practice": {
+    "mode": "sql",
+    "purpose": "1 つの大きな表 `sales` に、注文のたびに会員の名前と住所が書いてある。会員の表 `members` と注文の表 `orders` に分け、結合で元と同じ一覧を作る。",
+    "environment": "sql-sqlite",
+    "setup": {
+      "sql": "CREATE TABLE sales (order_id INTEGER PRIMARY KEY, member_name TEXT NOT NULL, member_city TEXT NOT NULL, item TEXT NOT NULL) STRICT;\nINSERT INTO sales VALUES (1, '青木', '東京', '灯台の模型'), (2, '青木', '東京', '海図'), (3, '石田', '大阪', '船の鈴'), (4, '青木', '東京', '双眼鏡');"
+    },
+    "steps": [
+      {
+        "id": "members",
+        "purpose": "会員の表 `members`（`id`・`name`・`city`）を作り、`sales` から重複を除いて入れる（`DISTINCT`）。会員は 2 人になる。",
+        "check": {
+          "kind": "sql",
+          "query": "SELECT group_concat(name || ':' || city, ',') FROM (SELECT name, city FROM members ORDER BY name)",
+          "equals": "石田:大阪,青木:東京"
+        },
+        "afterward": "`sales` に 3 回あった青木さんが 1 行になった。住所を直すのは、この 1 か所だけで済む。",
+        "hints": [
+          "`CREATE TABLE` で作り、`INSERT INTO … SELECT` で入れる。",
+          "`SELECT DISTINCT member_name, member_city FROM sales` が、重複を除いた会員。`id` は書かなくても順に付く。",
+          "`CREATE TABLE members (id INTEGER PRIMARY KEY, name TEXT NOT NULL, city TEXT NOT NULL); INSERT INTO members (name, city) SELECT DISTINCT member_name, member_city FROM sales` を実行する。"
+        ],
+        "expectedErrors": [
+          "db-split-miss",
+          "db-table-exists",
+          "db-no-column",
+          "db-syntax"
+        ]
+      },
+      {
+        "id": "orders",
+        "purpose": "注文の表 `orders`（`id`・`member_id`・`item`）を作り、`sales` と `members` を名前で結んで入れる。`member_id` が会員の `id` を指す外部キー。",
+        "check": {
+          "kind": "sql",
+          "query": "SELECT group_concat(o.id || ':' || m.name || ':' || o.item, ',') FROM (SELECT * FROM orders ORDER BY id) o JOIN members m ON m.id = o.member_id",
+          "equals": "1:青木:灯台の模型,2:青木:海図,3:石田:船の鈴,4:青木:双眼鏡"
+        },
+        "afterward": "注文の表から会員の名前と住所が消え、番号だけになった。",
+        "hints": [
+          "`member_id` の値は、`members` から名前で引く。",
+          "`INSERT INTO orders (id, member_id, item) SELECT s.order_id, m.id, s.item FROM sales s JOIN members m ON m.name = s.member_name` の形。",
+          "`CREATE TABLE orders (id INTEGER PRIMARY KEY, member_id INTEGER NOT NULL REFERENCES members(id), item TEXT NOT NULL); INSERT INTO orders (id, member_id, item) SELECT s.order_id, m.id, s.item FROM sales s JOIN members m ON m.name = s.member_name` を実行する。"
+        ],
+        "expectedErrors": [
+          "db-split-miss",
+          "db-table-exists",
+          "db-no-column",
+          "db-ambiguous",
+          "db-syntax"
+        ]
+      },
+      {
+        "id": "view",
+        "purpose": "分けた 2 つの表を結び、注文の `id` の順に、品物と名前と住所を出す。元の `sales` と同じ一覧になれば達成。",
+        "check": {
+          "kind": "ran",
+          "uses": [
+            "JOIN",
+            "ON"
+          ],
+          "result": "灯台の模型 青木 東京\n海図 青木 東京\n船の鈴 石田 大阪\n双眼鏡 青木 東京"
+        },
+        "afterward": "元と同じ一覧が、重複なしの 2 つの表から作れた。青木さんが引っ越しても、`members` の 1 行を直すだけで、全ての注文に反映される。",
+        "hints": [
+          "`orders` と `members` を、外部キーで結ぶ。",
+          "`FROM orders JOIN members ON orders.member_id = members.id`。",
+          "`SELECT item, name, city FROM orders JOIN members ON orders.member_id = members.id ORDER BY orders.id` を実行する。4 行が出れば達成。"
+        ],
+        "expectedErrors": [
+          "db-ambiguous",
+          "db-no-column",
+          "db-syntax",
+          "db-join-miss"
+        ]
+      }
+    ]
+  },
+  "result": {
+    "success": "情報を 1 か所に集め、結合で元の一覧を作れた。",
+    "partial": "ヒントを使って分けられた。次は、どの列が重複かを自分で見つけてみよう。",
+    "retry": "分けた表の中身が目的と違う。`SELECT *` で 2 つの表を見てみよう。"
+  },
+  "summary": {
+    "points": [
+      "情報は 1 か所に置く",
+      "表を分けて結ぶ",
+      "外部キーでつなぐ"
+    ],
+    "next": [
+      "db.i.05"
+    ],
+    "terms": [
+      "normalization",
+      "foreign-key",
+      "join"
+    ]
+  }
+}

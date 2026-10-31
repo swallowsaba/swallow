@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 360" font-family="&quot;Noto Sans JP&quot;, sans-serif">
+  <title>1 つの表に同じ会員の情報が何度も出ていた物を、会員と注文の 2 つの表に分ける</title>
+  <defs>
+    <marker id="arrow-gold" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="#f2b632" />
+    </marker>
+  </defs>
+  <g class="el" data-part="flat">
+    <rect x="20" y="60" width="260" height="220" rx="10" fill="#c0392b" />
+    <text x="150" y="120" text-anchor="middle" font-size="16" font-weight="700" fill="#eef2f6">1 つの大きな表</text>
+    <text x="150" y="142" text-anchor="middle" font-size="14" fill="#eef2f6">青木 / 東京 / 灯台の模型</text>
+    <text x="150" y="164" text-anchor="middle" font-size="14" fill="#eef2f6">青木 / 東京 / 海図</text>
+    <text x="150" y="186" text-anchor="middle" font-size="14" fill="#eef2f6">石田 / 大阪 / 船の鈴</text>
+    <text x="150" y="208" text-anchor="middle" font-size="14" fill="#eef2f6">青木 / 東京 / 双眼鏡</text>
+    <text x="150" y="230" text-anchor="middle" font-size="14" fill="#eef2f6">会員の情報が重複</text>
+  </g>
+  <g class="el" data-part="members">
+    <rect x="360" y="40" width="260" height="110" rx="10" fill="#1f7a4d" />
+    <text x="490" y="78" text-anchor="middle" font-size="16" font-weight="700" fill="#eef2f6">members</text>
+    <text x="490" y="100" text-anchor="middle" font-size="14" fill="#eef2f6">1 / 青木 / 東京</text>
+    <text x="490" y="122" text-anchor="middle" font-size="14" fill="#eef2f6">2 / 石田 / 大阪</text>
+  </g>
+  <g class="el" data-part="orders">
+    <rect x="360" y="180" width="260" height="120" rx="10" fill="#1a6fd6" />
+    <text x="490" y="223" text-anchor="middle" font-size="16" font-weight="700" fill="#eef2f6">orders</text>
+    <text x="490" y="245" text-anchor="middle" font-size="14" fill="#eef2f6">1 / member_id=1 / 灯台の模型</text>
+    <text x="490" y="267" text-anchor="middle" font-size="14" fill="#eef2f6">外部キーで会員を指す</text>
+  </g>
+  <g class="el" data-part="flow">
+    <path d="M280 140 L354 100" fill="none" stroke="#f2b632" stroke-width="2" marker-end="url(#arrow-gold)" />
+    <path d="M280 200 L354 240" fill="none" stroke="#f2b632" stroke-width="2" marker-end="url(#arrow-gold)" />
+  </g>
+  <g class="el" data-part="note">
+    <text x="320" y="340" text-anchor="middle" font-size="14" fill="#eef2f6">住所を直すのは members の 1 か所だけになる</text>
+  </g>
+</svg>

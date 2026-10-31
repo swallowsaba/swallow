@@ -1,0 +1,259 @@
+{
+  "id": "db.i.05",
+  "domain": "db",
+  "level": "intermediate",
+  "theme": "種類",
+  "title": "NoSQL の基本概念",
+  "goal": "文書型・キーバリュー型などの向き不向きを説明できる",
+  "minutes": 20,
+  "prerequisites": [
+    "db.i.02"
+  ],
+  "related": [
+    "web.i.02",
+    "cloud.b.02"
+  ],
+  "next": [
+    "db.a.01"
+  ],
+  "terms": [
+    "kv-store",
+    "nosql",
+    "json",
+    "document-db",
+    "db",
+    "rdb",
+    "log",
+    "transaction",
+    "consistency"
+  ],
+  "explain": {
+    "what": "{{term:nosql}} は、表の形にこだわらない {{term:db}} の総称。{{term:json}} のような文書を持つ{{term:document-db}}と、鍵と値だけを持つ{{term:kv-store}}が代表。",
+    "why": "形の変わりやすいデータや、大量の単純な読み書きには、表の形が足かせになる。その代わり、複雑な結合や厳密な整合は苦手な物が多い。",
+    "use": "設定・{{term:log}}・一時保存・商品ごとに項目の違う情報に使う。お金のように正確さが要るデータは、ふつう {{term:rdb}} に置く。",
+    "when": "商品ごとに項目が違う。本には著者、服には大きさがある。列を増やし続けると、ほとんどが空の表になった。",
+    "figures": [
+      "db-i05-kinds"
+    ]
+  },
+  "understand": [
+    {
+      "kind": "relation",
+      "prompt": "2 つの関係を選ぶ。",
+      "a": "NoSQL",
+      "b": "キーバリュー型",
+      "answer": "contains",
+      "why": "NoSQL は総称で、その中に文書型やキーバリュー型がある。キーバリュー型は鍵で引くのが得意で、値の中身での検索は苦手。",
+      "see": "why"
+    },
+    {
+      "kind": "yesno",
+      "prompt": "NoSQL は、RDB より常に優れている。",
+      "answer": false,
+      "why": "得意な物が違う。正確さや結合が要るなら RDB の方が向く。",
+      "see": "why"
+    }
+  ],
+  "quiz": [
+    {
+      "id": "q1",
+      "kind": "situation",
+      "prompt": "商品ごとに項目が違う情報を持つ。どれが向く？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "文書型",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "キーバリュー型",
+          "correct": false,
+          "whyNot": "鍵で引くだけなら良いが、項目で探せない。"
+        },
+        {
+          "id": "c",
+          "text": "列を増やし続けた表",
+          "correct": false,
+          "whyNot": "ほとんどが空の列になり、扱いにくい。"
+        }
+      ],
+      "explanation": "文書型なら、件ごとに項目が違ってもそのまま入れられる。"
+    },
+    {
+      "id": "q2",
+      "kind": "situation",
+      "prompt": "ログインの一時的な情報を、速く読み書きしたい。どれが向く？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "キーバリュー型",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "文書型",
+          "correct": false,
+          "whyNot": "使えるが、鍵で引くだけなら単純な方が速い。"
+        },
+        {
+          "id": "c",
+          "text": "RDB に結合して持つ",
+          "correct": false,
+          "whyNot": "結合が要らない物に、結合の仕組みは要らない。"
+        }
+      ],
+      "explanation": "鍵で引くだけなら、単純で速い物を使う。"
+    },
+    {
+      "id": "q3",
+      "kind": "choice",
+      "prompt": "口座の残高のように、お金の正確さが要る。どれが向く？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "{{term:transaction}}のある RDB",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "速さが一番のキーバリュー型",
+          "correct": false,
+          "whyNot": "複数の更新を全部か無しかにできない物が多い。"
+        },
+        {
+          "id": "c",
+          "text": "文書型なら何でもよい",
+          "correct": false,
+          "whyNot": "形が決まったデータに、自由な形の利点は要らない。"
+        }
+      ],
+      "explanation": "正確さが要るなら RDB。"
+    },
+    {
+      "id": "q4",
+      "kind": "predict",
+      "prompt": "文書型の DB に、これまでと項目の違う商品を入れると？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "表を作り直さずに入る",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "入れる前に全ての文書を書き換える必要がある",
+          "correct": false,
+          "whyNot": "件ごとに形が違ってよいのが文書型。"
+        },
+        {
+          "id": "c",
+          "text": "エラーになる",
+          "correct": false,
+          "whyNot": "形の決まりが無いので、断られない。"
+        }
+      ],
+      "explanation": "形の違う件をそのまま入れられる。ただし読む側は項目が無い時を考える。"
+    }
+  ],
+  "practice": {
+    "mode": "simulation",
+    "purpose": "港の店の 4 つのデータを、向いている DB に振り分ける。札を枠へドラッグする。迷ったら、形が変わるか・正確さが要るか・単純に速く読みたいかの順に考える。",
+    "environment": "sim-assign",
+    "setup": {
+      "slots": [
+        {
+          "id": "rdb",
+          "label": "RDB（表）"
+        },
+        {
+          "id": "doc",
+          "label": "文書型"
+        },
+        {
+          "id": "kv",
+          "label": "キーバリュー型"
+        }
+      ],
+      "items": [
+        {
+          "id": "pay",
+          "label": "決済の記録"
+        },
+        {
+          "id": "goods",
+          "label": "項目が品ごとに違う商品の情報"
+        },
+        {
+          "id": "login",
+          "label": "ログイン中の一時的な情報"
+        },
+        {
+          "id": "stock",
+          "label": "在庫と注文"
+        }
+      ]
+    },
+    "steps": [
+      {
+        "id": "kinds",
+        "purpose": "「決済の記録」「在庫と注文」は正確さが要る。「項目が品ごとに違う商品の情報」は形が変わる。「ログイン中の一時的な情報」は単純に速く読みたい。それぞれを枠に入れる。",
+        "check": {
+          "kind": "sim",
+          "expr": "in pay=rdb stock=rdb goods=doc login=kv"
+        },
+        "afterward": "正確さが要る物は RDB、形が変わる物は文書型、単純で速い物はキーバリュー型に置いた。1 つの仕組みの中で、複数の DB を使い分けることも多い。",
+        "hints": [
+          "お金や在庫は、複数の更新を全部か無しかにしたい。",
+          "形が品ごとに違う物は文書型、鍵で引くだけの物はキーバリュー型。",
+          "「決済の記録」と「在庫と注文」を「RDB（表）」へ、「項目が品ごとに違う商品の情報」を「文書型」へ、「ログイン中の一時的な情報」を「キーバリュー型」へドラッグして入れる。"
+        ],
+        "actions": [
+          {
+            "op": "put",
+            "item": "pay",
+            "slot": "rdb"
+          },
+          {
+            "op": "put",
+            "item": "stock",
+            "slot": "rdb"
+          },
+          {
+            "op": "put",
+            "item": "goods",
+            "slot": "doc"
+          },
+          {
+            "op": "put",
+            "item": "login",
+            "slot": "kv"
+          }
+        ],
+        "expectedErrors": [
+          "db-kind-miss"
+        ]
+      }
+    ]
+  },
+  "result": {
+    "success": "データの形と要る正確さで、DB を使い分けられた。",
+    "partial": "ヒントを使って振り分けられた。次は、なぜ向かないのかも説明してみよう。",
+    "retry": "合わない組み合わせがある。形が変わるか・正確さが要るかを見直そう。"
+  },
+  "summary": {
+    "points": [
+      "表以外の形もある",
+      "用途で選ぶ",
+      "{{term:consistency}}が要るなら RDB"
+    ],
+    "next": [
+      "db.a.01"
+    ],
+    "terms": [
+      "nosql",
+      "document-db",
+      "kv-store"
+    ]
+  }
+}

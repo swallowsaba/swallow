@@ -1,0 +1,50 @@
+{
+  "lesson": "db.i.02",
+  "variants": [
+    {
+      "name": "文を分けて実行する",
+      "steps": {
+        "members": [
+          "CREATE TABLE members (id INTEGER PRIMARY KEY, name TEXT, city TEXT)",
+          "INSERT INTO members (name, city) SELECT DISTINCT member_name, member_city FROM sales ORDER BY member_name"
+        ],
+        "orders": [
+          "CREATE TABLE orders (id INTEGER PRIMARY KEY, member_id INTEGER, item TEXT)",
+          "INSERT INTO orders SELECT order_id, (SELECT id FROM members WHERE name = member_name), item FROM sales"
+        ],
+        "view": [
+          "SELECT o.item, m.name, m.city FROM orders o JOIN members m ON m.id = o.member_id ORDER BY o.id"
+        ]
+      }
+    },
+    {
+      "name": "GROUP BY で会員を作る・AS を使う",
+      "steps": {
+        "members": [
+          "CREATE TABLE members AS SELECT NULL AS id, member_name AS name, member_city AS city FROM sales WHERE 0",
+          "DROP TABLE members",
+          "CREATE TABLE members (id INTEGER PRIMARY KEY, name TEXT NOT NULL, city TEXT NOT NULL)",
+          "INSERT INTO members (name, city) SELECT member_name, member_city FROM sales GROUP BY member_name, member_city"
+        ],
+        "orders": [
+          "CREATE TABLE orders (id INTEGER PRIMARY KEY, member_id INTEGER NOT NULL, item TEXT NOT NULL)",
+          "INSERT INTO orders (id, member_id, item) SELECT order_id, members.id, item FROM sales INNER JOIN members ON members.name = sales.member_name"
+        ],
+        "view": [
+          "select item, name, city from orders inner join members on members.id = orders.member_id order by orders.id;"
+        ]
+      }
+    }
+  ],
+  "wrong": {
+    "step": "orders",
+    "why": "存在しない列を選ぶ",
+    "input": [
+      "CREATE TABLE orders (id INTEGER PRIMARY KEY, member_id INTEGER, item TEXT)",
+      "INSERT INTO orders SELECT order_id, member_id, item FROM sales"
+    ],
+    "retry": [
+      "INSERT INTO orders (id, member_id, item) SELECT s.order_id, m.id, s.item FROM sales s JOIN members m ON m.name = s.member_name"
+    ]
+  }
+}

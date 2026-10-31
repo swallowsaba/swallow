@@ -1,0 +1,62 @@
+{
+  "lesson": "db.i.04",
+  "variants": [
+    {
+      "name": "小文字で書く・id で選ぶ・BEGIN TRANSACTION",
+      "steps": {
+        "begin": [
+          "begin transaction;",
+          "update accounts set balance = balance + 9000 where id = 2;"
+        ],
+        "undo": [
+          "update accounts set balance = balance - 9000 where id = 1;",
+          "rollback;"
+        ],
+        "same": [
+          "select sum(balance) from accounts;"
+        ],
+        "move": [
+          "begin transaction;",
+          "update accounts set balance = balance - 1000 where id = 1;",
+          "update accounts set balance = balance + 1000 where id = 2;",
+          "commit;"
+        ]
+      }
+    },
+    {
+      "name": "1 行にまとめて確定する・途中で確かめる",
+      "steps": {
+        "begin": [
+          "BEGIN; UPDATE accounts SET balance = balance + 9000 WHERE name = '石田'"
+        ],
+        "undo": [
+          "SELECT * FROM accounts",
+          "UPDATE accounts SET balance = balance - 9000 WHERE name = '青木'",
+          "ROLLBACK"
+        ],
+        "same": [
+          "SELECT * FROM accounts",
+          "SELECT SUM(balance) AS total FROM accounts"
+        ],
+        "move": [
+          "BEGIN; UPDATE accounts SET balance = balance - 1000 WHERE name = '青木'; UPDATE accounts SET balance = balance + 1000 WHERE name = '石田'; COMMIT"
+        ]
+      }
+    }
+  ],
+  "wrong": {
+    "step": "move",
+    "why": "COMMIT を打たずに、BEGIN から打ち直す",
+    "input": [
+      "BEGIN",
+      "BEGIN"
+    ],
+    "retry": [
+      "ROLLBACK",
+      "BEGIN",
+      "UPDATE accounts SET balance = balance - 1000 WHERE name = '青木'",
+      "UPDATE accounts SET balance = balance + 1000 WHERE name = '石田'",
+      "COMMIT"
+    ]
+  }
+}

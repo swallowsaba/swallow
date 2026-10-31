@@ -177,6 +177,113 @@
         "where",
         "update"
       ]
+    },
+    {
+      "id": "db-ambiguous",
+      "match": "ambiguous column name",
+      "meaning": "同じ名前の列が 2 つの表にあり、どちらか分からないと言われた。",
+      "causes": [
+        "`id` のように両方の表にある列に、表の名前を付けていない。",
+        "`AS` で付けた短い名前と、書いた名前が合っていない。"
+      ],
+      "hint": "`members.id` や `m.id` のように、表の名前を付けて書こう。",
+      "terms": [
+        "join",
+        "column"
+      ]
+    },
+    {
+      "id": "db-join-miss",
+      "match": "答えが合っていない",
+      "meaning": "結果が目的の一覧と違う。",
+      "causes": [
+        "結ぶ条件が違う（`ON` の列が対応していない）。条件を間違えると行が増えたり消えたりする。",
+        "`LEFT JOIN` と `JOIN` を取り違えた。注文の無い会員が消える・残る。"
+      ],
+      "hint": "`orders.member_id` が `members.id` を指している。この 2 つを `ON` で結ぼう。",
+      "terms": [
+        "join"
+      ]
+    },
+    {
+      "id": "db-split-miss",
+      "match": "答えが合っていない",
+      "meaning": "分けた表が、目的の形になっていない。",
+      "causes": [
+        "結ぶ列の値が違う（`member_id` が会員の `id` を指していない）。",
+        "会員を人数分でなく、注文の数だけ入れた（`DISTINCT` を付けていない）。"
+      ],
+      "hint": "`SELECT * FROM members` と `SELECT * FROM orders` で中身を見てから直そう。入れ直すなら、先に `DROP TABLE` する。",
+      "terms": [
+        "normalization"
+      ]
+    },
+    {
+      "id": "db-index-miss",
+      "match": "答えが合っていない",
+      "meaning": "計画が、まだ索引を使っていないか、読み方が違う。",
+      "causes": [
+        "索引を付けた列と、`WHERE` の列が違う。",
+        "`SCAN` と `SEARCH` を読み違えた。`SCAN` は全ての行を順に見ること。"
+      ],
+      "hint": "`EXPLAIN QUERY PLAN SELECT …` の `detail` の列を読もう。",
+      "terms": [
+        "query-plan",
+        "index"
+      ]
+    },
+    {
+      "id": "db-check-failed",
+      "match": "CHECK constraint failed",
+      "meaning": "`balance >= 0` の決まりに反する更新を、DB が断った。残高が負になる。",
+      "causes": [
+        "残高より多い額を減らそうとした。",
+        "減らす相手を間違えた。"
+      ],
+      "hint": "`BEGIN` の中なら、`ROLLBACK` で、その前の更新もまとめて無かったことにできる。",
+      "terms": [
+        "transaction"
+      ]
+    },
+    {
+      "id": "db-no-tx",
+      "match": "no transaction is active",
+      "meaning": "トランザクションが始まっていない。`BEGIN` より前か、もう終わった後に打った。",
+      "causes": [
+        "`BEGIN` を打っていない。各文は打った時点で確定している。",
+        "前の `COMMIT` か `ROLLBACK` で、もう終わっている。"
+      ],
+      "hint": "`SELECT` で今の残高を確かめ、`BEGIN` から打ち直そう。",
+      "terms": [
+        "transaction"
+      ]
+    },
+    {
+      "id": "db-tx-open",
+      "match": "within a transaction",
+      "meaning": "もう `BEGIN` している。前のトランザクションが終わっていない。",
+      "causes": [
+        "前の `BEGIN` の後に `COMMIT` も `ROLLBACK` も打っていない。",
+        "`BEGIN` を 2 度打った。"
+      ],
+      "hint": "`ROLLBACK` で一度終えて、`BEGIN` から打ち直そう。",
+      "terms": [
+        "transaction"
+      ]
+    },
+    {
+      "id": "db-kind-miss",
+      "match": "答えが合っていない",
+      "meaning": "用途と種類の組み合わせが合っていない。",
+      "causes": [
+        "流行や速さだけで選び、整合性の要るデータに文書型を当てた。",
+        "形の変わるデータに、表の形を当てた。"
+      ],
+      "hint": "「形が変わるか」「整合性が要るか」「単純に速く読みたいか」の順に考えよう。",
+      "terms": [
+        "nosql",
+        "rdb"
+      ]
     }
   ]
 }

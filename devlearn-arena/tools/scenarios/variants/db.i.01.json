@@ -1,0 +1,42 @@
+{
+  "lesson": "db.i.01",
+  "variants": [
+    {
+      "name": "AS で短い名前を付ける・INNER JOIN と書く",
+      "steps": {
+        "inner": [
+          "SELECT o.item, m.name FROM orders AS o INNER JOIN members AS m ON o.member_id = m.id ORDER BY o.id"
+        ],
+        "ambiguous": [
+          "SELECT o.id, m.name FROM orders o JOIN members m ON o.member_id = m.id ORDER BY o.id"
+        ],
+        "left": [
+          "SELECT m.name, o.item FROM members m LEFT JOIN orders o ON o.member_id = m.id ORDER BY m.id, o.id"
+        ]
+      }
+    },
+    {
+      "name": "小文字で書く・先に表を見る",
+      "steps": {
+        "inner": [
+          "select * from members",
+          "select * from orders",
+          "select item, name from orders join members on members.id = orders.member_id order by orders.id;"
+        ],
+        "ambiguous": [
+          "select orders.id, members.name from orders join members on members.id = orders.member_id order by orders.id;"
+        ],
+        "left": [
+          "select members.name, orders.item from members left outer join orders on members.id = orders.member_id order by members.id, orders.id;"
+        ]
+      }
+    }
+  ],
+  "wrong": {
+    "step": "ambiguous",
+    "why": "`id` に表の名前を付けない",
+    "input": [
+      "SELECT id, name FROM orders JOIN members ON orders.member_id = members.id"
+    ]
+  }
+}

@@ -122,7 +122,7 @@ type CheckSpec =
   | { kind: 'alert'; expr: string }             // 例: 'rules:rules/reserve.yml test:tests/yesterday.test.yml'
   | { kind: 'http'; url: string; status: number; contains?: string; header?: string; method?: string; data?: string; auth?: string } // contains: 返事の本文にその文字列がある。header: '名前: 値' の見出しがある（名前の大文字・小文字は問わず、値は同じ）。method・data: 頼み方（POST と送る中身）。auth: 送る Authorization の見出しの値
   | { kind: 'tls'; host: string; trusted: boolean }
-  | { kind: 'sql'; query: string; equals: unknown }
+  | { kind: 'sql'; query: string; equals: unknown; committed?: boolean } // committed: true はトランザクションの途中でない（COMMIT か ROLLBACK まで打った）、false は途中
   | { kind: 'ran'; uses: string[]; result?: string; shows?: string[] } // 端末で打った行が uses のコマンドを全て使い（パイプでつないでよい）、その結果（標準出力の全体）が result と同じ。shows: 出力にその行が全てある（result か shows のどちらかを書く）
   | { kind: 'answer'; equals: string }         // 答えの欄に入れる形。コマンドでは得られない値（読み取って考える値）を答える時だけ
   | { kind: 'sim'; expr: string };              // 画面で操作する模擬環境（模）の状態。式は 2.4.1（docs/decisions.md D-16）

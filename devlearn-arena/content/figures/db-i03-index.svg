@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 360" font-family="&quot;Noto Sans JP&quot;, sans-serif">
+  <title>索引が無いと全ての行を順に見る。索引があれば値から行をすぐ引ける</title>
+  <g class="el" data-part="scan">
+    <rect x="20" y="50" width="280" height="220" rx="10" fill="#c0392b" />
+    <text x="160" y="121" text-anchor="middle" font-size="16" font-weight="700" fill="#eef2f6">索引なし（SCAN）</text>
+    <text x="160" y="143" text-anchor="middle" font-size="14" fill="#eef2f6">1 行目を見る</text>
+    <text x="160" y="165" text-anchor="middle" font-size="14" fill="#eef2f6">2 行目を見る</text>
+    <text x="160" y="187" text-anchor="middle" font-size="14" fill="#eef2f6">… 100 万行目まで</text>
+    <text x="160" y="209" text-anchor="middle" font-size="14" fill="#eef2f6">件数が増えるほど遅い</text>
+  </g>
+  <g class="el" data-part="search">
+    <rect x="340" y="50" width="280" height="220" rx="10" fill="#1f7a4d" />
+    <text x="480" y="121" text-anchor="middle" font-size="16" font-weight="700" fill="#eef2f6">索引あり（SEARCH）</text>
+    <text x="480" y="143" text-anchor="middle" font-size="14" fill="#eef2f6">email の索引を引く</text>
+    <text x="480" y="165" text-anchor="middle" font-size="14" fill="#eef2f6">行の場所が分かる</text>
+    <text x="480" y="187" text-anchor="middle" font-size="14" fill="#eef2f6">その行だけを読む</text>
+    <text x="480" y="209" text-anchor="middle" font-size="14" fill="#eef2f6">書き込みは少し遅くなる</text>
+  </g>
+  <g class="el" data-part="note">
+    <text x="320" y="340" text-anchor="middle" font-size="14" fill="#eef2f6">実行計画で、どちらで動くかを確かめる</text>
+  </g>
+</svg>

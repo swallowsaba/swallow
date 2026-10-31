@@ -1,0 +1,116 @@
+{
+  "lesson": "db.i.05",
+  "variants": [
+    {
+      "name": "下から順に入れる",
+      "steps": {
+        "kinds": [
+          {
+            "op": "put",
+            "item": "stock",
+            "slot": "rdb"
+          },
+          {
+            "op": "put",
+            "item": "login",
+            "slot": "kv"
+          },
+          {
+            "op": "put",
+            "item": "goods",
+            "slot": "doc"
+          },
+          {
+            "op": "put",
+            "item": "pay",
+            "slot": "rdb"
+          }
+        ]
+      }
+    },
+    {
+      "name": "置き直してから入れる",
+      "steps": {
+        "kinds": [
+          {
+            "op": "put",
+            "item": "goods",
+            "slot": "kv"
+          },
+          {
+            "op": "take",
+            "item": "goods"
+          },
+          {
+            "op": "put",
+            "item": "goods",
+            "slot": "doc"
+          },
+          {
+            "op": "put",
+            "item": "pay",
+            "slot": "rdb"
+          },
+          {
+            "op": "put",
+            "item": "stock",
+            "slot": "rdb"
+          },
+          {
+            "op": "put",
+            "item": "login",
+            "slot": "kv"
+          }
+        ]
+      }
+    }
+  ],
+  "wrong": {
+    "step": "kinds",
+    "why": "決済の記録をキーバリュー型へ入れて、全ての札を置く",
+    "input": [
+      {
+        "op": "put",
+        "item": "stock",
+        "slot": "rdb"
+      },
+      {
+        "op": "put",
+        "item": "goods",
+        "slot": "doc"
+      },
+      {
+        "op": "put",
+        "item": "login",
+        "slot": "kv"
+      },
+      {
+        "op": "put",
+        "item": "pay",
+        "slot": "kv"
+      }
+    ],
+    "retry": [
+      {
+        "op": "put",
+        "item": "pay",
+        "slot": "rdb"
+      },
+      {
+        "op": "put",
+        "item": "stock",
+        "slot": "rdb"
+      },
+      {
+        "op": "put",
+        "item": "goods",
+        "slot": "doc"
+      },
+      {
+        "op": "put",
+        "item": "login",
+        "slot": "kv"
+      }
+    ]
+  }
+}

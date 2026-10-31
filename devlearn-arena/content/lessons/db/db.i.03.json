@@ -1,0 +1,233 @@
+{
+  "id": "db.i.03",
+  "domain": "db",
+  "level": "intermediate",
+  "theme": "性能",
+  "title": "インデックス",
+  "goal": "遅い検索を索引で速くできる",
+  "minutes": 20,
+  "prerequisites": [
+    "db.b.04"
+  ],
+  "related": [
+    "web.i.04",
+    "linux.a.02"
+  ],
+  "next": [
+    "db.a.02"
+  ],
+  "terms": [
+    "index",
+    "db",
+    "where",
+    "query-plan"
+  ],
+  "explain": {
+    "what": "{{term:index}}は、検索を速くするための仕組み。本の巻末の索引のように、値から行の場所をすぐ引ける。例えの後に正確に言うと、列の値を並べた別の構造を {{term:db}} が持つ。",
+    "why": "索引が無いと、全ての行を順に見る。件数が増えるほど遅くなる。100 万人の会員を毎回全部見ると、画面が待たされる。",
+    "use": "よく {{term:where}} に使う列に付ける。{{term:query-plan}}で全件を見ているかを確かめてから付ける。書き込みは索引の更新の分だけ遅くなる。",
+    "when": "会員が 100 万人になり、メールアドレスで探す画面が何秒も待つようになった。",
+    "figures": [
+      "db-i03-index"
+    ]
+  },
+  "understand": [
+    {
+      "kind": "relation",
+      "prompt": "2 つの関係を選ぶ。",
+      "a": "索引を増やす",
+      "b": "書き込みが少し遅くなる",
+      "answer": "cause",
+      "why": "行を足すたびに索引も更新する。検索は速くなるが、タダではない。",
+      "see": "use"
+    },
+    {
+      "kind": "situation",
+      "prompt": "次のうち、索引を付けるとよい列は？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "検索の `WHERE` によく使う `email`",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "検索に使わない `memo`",
+          "correct": false,
+          "whyNot": "使わない索引は、書き込みを遅くするだけ。"
+        },
+        {
+          "id": "c",
+          "text": "全ての列",
+          "correct": false,
+          "whyNot": "書き込みが遅くなり、容量も増える。要る列だけに付ける。"
+        }
+      ],
+      "see": "use"
+    }
+  ],
+  "quiz": [
+    {
+      "id": "q1",
+      "kind": "situation",
+      "prompt": "よく `WHERE` で探す列の検索が遅い。何をする？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "その列に索引を付ける",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "表を消して作り直す",
+          "correct": false,
+          "whyNot": "作り直しても、全ての行を順に見ることは変わらない。"
+        },
+        {
+          "id": "c",
+          "text": "別の列に索引を付ける",
+          "correct": false,
+          "whyNot": "条件の列の索引でないと使われない。"
+        }
+      ],
+      "explanation": "条件の列に索引を付ければ、値から行を引ける。"
+    },
+    {
+      "id": "q2",
+      "kind": "predict",
+      "prompt": "`email` に索引を付けた後、`email` で探す問い合わせは？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "速くなる（実行計画が `SEARCH` になる）",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "結果の行の数が変わる",
+          "correct": false,
+          "whyNot": "索引は速さだけを変える。結果は同じ。"
+        },
+        {
+          "id": "c",
+          "text": "遅くなる",
+          "correct": false,
+          "whyNot": "遅くなるのは書き込みの方。"
+        }
+      ],
+      "explanation": "結果は同じで、探し方だけが変わる。"
+    },
+    {
+      "id": "q3",
+      "kind": "cause",
+      "prompt": "索引を付けたのに、計画がまだ `SCAN`。原因は？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "条件の列と、索引の列が違う",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "表の行が多すぎる",
+          "correct": false,
+          "whyNot": "多いほど索引の効果は大きい。"
+        },
+        {
+          "id": "c",
+          "text": "索引は次の日から効く",
+          "correct": false,
+          "whyNot": "作ればすぐ使える。"
+        }
+      ],
+      "explanation": "実行計画と `WHERE` の列を見比べる。"
+    }
+  ],
+  "practice": {
+    "mode": "sql",
+    "purpose": "図書館の会員の表 `members` を、メールアドレス（`email`）で探す検索が遅い。実行計画（`EXPLAIN QUERY PLAN`）で確かめ、索引を付けて、計画が変わることを確かめる。",
+    "environment": "sql-sqlite",
+    "setup": {
+      "sql": "CREATE TABLE members (id INTEGER PRIMARY KEY, email TEXT NOT NULL, name TEXT NOT NULL) STRICT;\nINSERT INTO members VALUES (1, 'aoki@city.example', '青木'), (2, 'ishida@city.example', '石田'), (3, 'ueno@city.example', '上野'), (4, 'endo@city.example', '遠藤');"
+    },
+    "steps": [
+      {
+        "id": "plan",
+        "purpose": "`EXPLAIN QUERY PLAN SELECT * FROM members WHERE email = 'ueno@city.example'` を実行し、`detail` の列の最初の語を答えの欄に入れる。",
+        "check": {
+          "kind": "answer",
+          "equals": "SCAN"
+        },
+        "afterward": "`SCAN members`。全ての行を順に見ている。今は 4 行だが、100 万行なら 100 万回見ることになる。",
+        "hints": [
+          "問い合わせの前に `EXPLAIN QUERY PLAN` を付けると、実行の代わりに予定が出る。",
+          "`detail` の列に `SCAN` か `SEARCH` が出る。",
+          "`EXPLAIN QUERY PLAN SELECT * FROM members WHERE email = 'ueno@city.example'` を実行し、`SCAN` と答える。"
+        ],
+        "expectedErrors": [
+          "db-index-miss",
+          "db-no-column",
+          "db-syntax"
+        ]
+      },
+      {
+        "id": "index",
+        "purpose": "`members` の `email` の列に、索引を付ける。",
+        "check": {
+          "kind": "sql",
+          "query": "SELECT COUNT(*) FROM sqlite_master m, pragma_index_info(m.name) i WHERE m.type = 'index' AND m.tbl_name = 'members' AND i.name = 'email'",
+          "equals": 1
+        },
+        "afterward": "`email` の値から行の場所を引く索引ができた。行を足すたびに、この索引も更新される。",
+        "hints": [
+          "`CREATE INDEX 名前 ON 表 (列)` の形。",
+          "索引の名前は `idx_members_email` のように、表と列が分かる物にする。",
+          "`CREATE INDEX idx_members_email ON members (email)` を実行する。"
+        ],
+        "expectedErrors": [
+          "db-no-column",
+          "db-no-table",
+          "db-syntax"
+        ]
+      },
+      {
+        "id": "again",
+        "purpose": "もう一度同じ `EXPLAIN QUERY PLAN` を実行し、`detail` の列の最初の語を答えの欄に入れる。",
+        "check": {
+          "kind": "answer",
+          "equals": "SEARCH"
+        },
+        "afterward": "`SEARCH members USING INDEX …`。索引で行を引くようになった。結果は同じで、探し方だけが変わった。",
+        "hints": [
+          "同じ問い合わせの計画を、もう一度見る。",
+          "`detail` の列の最初の語を読む。",
+          "`EXPLAIN QUERY PLAN SELECT * FROM members WHERE email = 'ueno@city.example'` を実行し、`SEARCH` と答える。"
+        ],
+        "expectedErrors": [
+          "db-index-miss",
+          "db-syntax"
+        ]
+      }
+    ]
+  },
+  "result": {
+    "success": "実行計画で確かめてから索引を付け、計画が変わることを確かめられた。",
+    "partial": "ヒントを使って速くできた。次は、ほかの問い合わせの計画も読んでみよう。",
+    "retry": "まだ索引が使われていない。`WHERE` の列と、索引の列を確かめよう。"
+  },
+  "summary": {
+    "points": [
+      "索引で検索が速くなる",
+      "書き込みは少し遅くなる",
+      "よく使う条件の列に付ける"
+    ],
+    "next": [
+      "db.a.02"
+    ],
+    "terms": [
+      "index",
+      "query-plan",
+      "where"
+    ]
+  }
+}

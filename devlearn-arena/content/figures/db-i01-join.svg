@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 360" font-family="&quot;Noto Sans JP&quot;, sans-serif">
+  <title>orders の member_id と members の id を結ぶと、注文の一覧に会員の名前を付けられる</title>
+  <defs>
+    <marker id="arrow-gold" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="#f2b632" />
+    </marker>
+  </defs>
+  <g class="el" data-part="orders">
+    <rect x="20" y="40" width="270" height="130" rx="10" fill="#1a6fd6" />
+    <text x="155" y="88" text-anchor="middle" font-size="16" font-weight="700" fill="#eef2f6">orders（注文）</text>
+    <text x="155" y="110" text-anchor="middle" font-size="14" fill="#eef2f6">id / member_id / item</text>
+    <text x="155" y="132" text-anchor="middle" font-size="14" fill="#eef2f6">101 / 1 / 灯台の模型</text>
+  </g>
+  <g class="el" data-part="members">
+    <rect x="350" y="40" width="270" height="130" rx="10" fill="#7a3fd0" />
+    <text x="485" y="88" text-anchor="middle" font-size="16" font-weight="700" fill="#eef2f6">members（会員）</text>
+    <text x="485" y="110" text-anchor="middle" font-size="14" fill="#eef2f6">id / name</text>
+    <text x="485" y="132" text-anchor="middle" font-size="14" fill="#eef2f6">1 / 青木</text>
+  </g>
+  <g class="el" data-part="result">
+    <rect x="130" y="220" width="380" height="90" rx="10" fill="#1f7a4d" />
+    <text x="320" y="259" text-anchor="middle" font-size="16" font-weight="700" fill="#eef2f6">結んだ結果</text>
+    <text x="320" y="281" text-anchor="middle" font-size="14" fill="#eef2f6">灯台の模型 / 青木</text>
+  </g>
+  <g class="el" data-part="flow">
+    <path d="M290 105 L346 105" fill="none" stroke="#f2b632" stroke-width="2" marker-end="url(#arrow-gold)" />
+    <path d="M320 170 L320 216" fill="none" stroke="#f2b632" stroke-width="2" marker-end="url(#arrow-gold)" />
+  </g>
+  <g class="el" data-part="note">
+    <text x="320" y="340" text-anchor="middle" font-size="14" fill="#eef2f6">ON orders.member_id = members.id が結ぶ条件</text>
+  </g>
+</svg>

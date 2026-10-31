@@ -1,10 +1,25 @@
 import { describe, expect, it } from 'vitest';
-import { formatResult, matchesExpected, openDb } from './db';
+import { formatResult, isCommitted, matchesExpected, openDb } from './db';
 
 const SETUP = `
 CREATE TABLE products (id INTEGER PRIMARY KEY, name TEXT NOT NULL, price INTEGER NOT NULL, stock INTEGER NOT NULL);
 INSERT INTO products (name, price, stock) VALUES ('ペン', 120, 30), ('ノート', 200, 0), ('はさみ', 450, 5);
 `;
+
+describe('確定した状態の判定（committed）', () => {
+  it('BEGIN の途中は確定していない。COMMIT の後は確定している', async () => {
+    const db = await openDb(SETUP);
+    expect(isCommitted(db)).toBe(true);
+    db.exec('BEGIN');
+    db.exec("UPDATE products SET stock = 1 WHERE name = 'ペン'");
+    expect(isCommitted(db)).toBe(false);
+    expect(matchesExpected(db, "SELECT stock FROM products WHERE name = 'ペン'", 1)).toBe(true);
+    db.exec('COMMIT');
+    expect(isCommitted(db)).toBe(true);
+    expect(matchesExpected(db, "SELECT stock FROM products WHERE name = 'ペン'", 1)).toBe(true);
+    db.close();
+  });
+});
 
 describe('DB（sql.js の SQLite で本物の SQL を実行する）', () => {
   it('初期状態の SQL から開き、問い合わせの結果を列の名前の付いた行で返す', async () => {

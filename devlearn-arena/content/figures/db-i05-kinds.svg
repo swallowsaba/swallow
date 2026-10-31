@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 360" font-family="&quot;Noto Sans JP&quot;, sans-serif">
+  <title>表の形は項目が決まった物、文書の形は件ごとに項目が違う物、キーと値の形は単純で速い読み書きに向く</title>
+  <g class="el" data-part="table">
+    <rect x="20" y="50" width="190" height="240" rx="10" fill="#1a6fd6" />
+    <text x="115" y="131" text-anchor="middle" font-size="16" font-weight="700" fill="#eef2f6">表（RDB）</text>
+    <text x="115" y="153" text-anchor="middle" font-size="14" fill="#eef2f6">形が決まっている</text>
+    <text x="115" y="175" text-anchor="middle" font-size="14" fill="#eef2f6">結合できる</text>
+    <text x="115" y="197" text-anchor="middle" font-size="14" fill="#eef2f6">整合性が強い</text>
+    <text x="115" y="219" text-anchor="middle" font-size="14" fill="#eef2f6">お金・予約</text>
+  </g>
+  <g class="el" data-part="doc">
+    <rect x="225" y="50" width="190" height="240" rx="10" fill="#7a3fd0" />
+    <text x="320" y="131" text-anchor="middle" font-size="16" font-weight="700" fill="#eef2f6">文書型</text>
+    <text x="320" y="153" text-anchor="middle" font-size="14" fill="#eef2f6">件ごとに形が違う</text>
+    <text x="320" y="175" text-anchor="middle" font-size="14" fill="#eef2f6">表を作り直さない</text>
+    <text x="320" y="197" text-anchor="middle" font-size="14" fill="#eef2f6">結合は苦手</text>
+    <text x="320" y="219" text-anchor="middle" font-size="14" fill="#eef2f6">商品の情報</text>
+  </g>
+  <g class="el" data-part="kv">
+    <rect x="430" y="50" width="190" height="240" rx="10" fill="#1f7a4d" />
+    <text x="525" y="131" text-anchor="middle" font-size="16" font-weight="700" fill="#eef2f6">キーバリュー型</text>
+    <text x="525" y="153" text-anchor="middle" font-size="14" fill="#eef2f6">鍵と値だけ</text>
+    <text x="525" y="175" text-anchor="middle" font-size="14" fill="#eef2f6">単純でとても速い</text>
+    <text x="525" y="197" text-anchor="middle" font-size="14" fill="#eef2f6">検索は苦手</text>
+    <text x="525" y="219" text-anchor="middle" font-size="14" fill="#eef2f6">一時保存</text>
+  </g>
+  <g class="el" data-part="note">
+    <text x="320" y="340" text-anchor="middle" font-size="14" fill="#eef2f6">流行で選ばず、データの形と要る正確さで選ぶ</text>
+  </g>
+</svg>

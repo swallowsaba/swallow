@@ -1,0 +1,249 @@
+{
+  "id": "db.i.01",
+  "domain": "db",
+  "level": "intermediate",
+  "theme": "結合",
+  "title": "JOIN",
+  "goal": "複数の表を結び付けて取り出せる",
+  "minutes": 20,
+  "prerequisites": [
+    "db.b.04"
+  ],
+  "related": [
+    "db.i.02",
+    "web.i.01"
+  ],
+  "next": [
+    "db.i.02"
+  ],
+  "terms": [
+    "join",
+    "left-join",
+    "inner-join",
+    "sql-null"
+  ],
+  "explain": {
+    "what": "{{term:join}} は、複数の表を共通の列で結び付けて取り出す書き方。注文の表の member_id と、会員の表の id を結べば、注文に会員の名前を付けられる。",
+    "why": "データは重複を避けて表に分けて持つ。会員の名前を注文ごとに持つと、直す時に漏れる。分けて持ち、要る時に結ぶ。",
+    "use": "注文と会員、記事と著者のように、分けた表から一覧を作る時に使う。",
+    "when": "注文の一覧に、会員の番号しか出ていない。担当者は、誰の注文かを名前で見たい。",
+    "figures": [
+      "db-i01-join"
+    ]
+  },
+  "understand": [
+    {
+      "kind": "relation",
+      "prompt": "2 つの関係を選ぶ。",
+      "a": "`orders.member_id` と `members.id` の値が同じ",
+      "b": "2 つの表の行が、結果の 1 行に結ばれる",
+      "answer": "cause",
+      "why": "`ON` の条件が合う行どうしが結ばれる。`member_id` は会員の表の `id` を指す列。",
+      "see": "what"
+    },
+    {
+      "kind": "situation",
+      "prompt": "注文が 1 つも無い会員も、一覧に残したい。どの結び方？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "{{term:left-join}}（左の表を全て残す）",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "{{term:inner-join}}（両方にある物だけ）",
+          "correct": false,
+          "whyNot": "注文の無い会員は、右に対応が無いので消える。"
+        },
+        {
+          "id": "c",
+          "text": "結ばずに 2 つの表を別々に出す",
+          "correct": false,
+          "whyNot": "1 つの一覧にならない。"
+        }
+      ],
+      "see": "what"
+    }
+  ],
+  "quiz": [
+    {
+      "id": "q1",
+      "kind": "predict",
+      "prompt": "注文の無い会員がいる。`INNER JOIN` で結ぶと、その会員は？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "結果に出ない",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "注文の列が {{term:sql-null}} で出る",
+          "correct": false,
+          "whyNot": "それは LEFT JOIN の時。"
+        },
+        {
+          "id": "c",
+          "text": "エラーになる",
+          "correct": false,
+          "whyNot": "対応が無いだけで、エラーにはならない。"
+        }
+      ],
+      "explanation": "INNER JOIN は、両方の表に対応がある行だけを出す。"
+    },
+    {
+      "id": "q2",
+      "kind": "situation",
+      "prompt": "注文が無い会員も含めて、会員ごとの注文の数を出したい。どの結び方？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "`members LEFT JOIN orders`",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "`members INNER JOIN orders`",
+          "correct": false,
+          "whyNot": "注文の無い会員が消え、0 件の人が出ない。"
+        },
+        {
+          "id": "c",
+          "text": "`orders` だけを数える",
+          "correct": false,
+          "whyNot": "注文の無い会員は、そもそも orders にいない。"
+        }
+      ],
+      "explanation": "残したい表を左に置いて LEFT JOIN する。"
+    },
+    {
+      "id": "q3",
+      "kind": "cause",
+      "prompt": "結果の行が、注文の数よりずっと多くなった。原因は？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "結ぶ条件（`ON`）が誤っている",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "`SELECT` の列が多い",
+          "correct": false,
+          "whyNot": "列を増やしても、行は増えない。"
+        },
+        {
+          "id": "c",
+          "text": "表の行が勝手に増えた",
+          "correct": false,
+          "whyNot": "`SELECT` は表を変えない。"
+        }
+      ],
+      "explanation": "条件が誤っていると、全ての組み合わせに近い行が出る。"
+    }
+  ],
+  "practice": {
+    "mode": "sql",
+    "purpose": "港の店の注文の表 `orders` と会員の表 `members` がある。`orders.member_id` が `members.id` を指している。注文の一覧に会員の名前を付ける。",
+    "environment": "sql-sqlite",
+    "setup": {
+      "sql": "CREATE TABLE members (id INTEGER PRIMARY KEY, name TEXT NOT NULL, city TEXT NOT NULL) STRICT;\nINSERT INTO members VALUES (1, '青木', '東京'), (2, '石田', '大阪'), (3, '上野', '東京'), (4, '遠藤', '横浜');\nCREATE TABLE orders (id INTEGER PRIMARY KEY, member_id INTEGER NOT NULL, item TEXT NOT NULL, price INTEGER NOT NULL) STRICT;\nINSERT INTO orders VALUES (101, 1, '灯台の模型', 3000), (102, 2, '船の鈴', 1200), (103, 1, '海図', 800), (104, 3, '双眼鏡', 5000);"
+    },
+    "steps": [
+      {
+        "id": "inner",
+        "purpose": "注文の品物（`item`）と、その注文の会員の名前（`name`）を、`orders` の `id` の順に取り出す。",
+        "check": {
+          "kind": "ran",
+          "uses": [
+            "JOIN",
+            "ON"
+          ],
+          "result": "灯台の模型 青木\n船の鈴 石田\n海図 青木\n双眼鏡 上野"
+        },
+        "afterward": "注文ごとに会員の名前が付いた。`ON` の条件で、対応する行どうしが結ばれた。",
+        "hints": [
+          "`FROM 表 JOIN 表 ON 条件` の形。条件は `orders.member_id = members.id`。",
+          "`SELECT item, name FROM orders JOIN members ON orders.member_id = members.id ORDER BY orders.id` の形。",
+          "`SELECT item, name FROM orders JOIN members ON orders.member_id = members.id ORDER BY orders.id` を実行する。品物と名前の 4 行が出れば達成。"
+        ],
+        "expectedErrors": [
+          "db-ambiguous",
+          "db-no-column",
+          "db-no-table",
+          "db-syntax",
+          "db-join-miss"
+        ]
+      },
+      {
+        "id": "ambiguous",
+        "purpose": "注文の番号と会員の名前を出す。`id` は両方の表にあるので、表の名前を付ける（`orders.id`）。注文の番号の順に出す。",
+        "check": {
+          "kind": "ran",
+          "uses": [
+            "JOIN",
+            "ON"
+          ],
+          "result": "101 青木\n102 石田\n103 青木\n104 上野"
+        },
+        "afterward": "同じ名前の列は、表の名前を付けて区別する。付けないと `ambiguous column name` と断られる。",
+        "hints": [
+          "`id` だけだと、どちらの表の列か分からない。",
+          "`SELECT orders.id, name FROM …` と書く。",
+          "`SELECT orders.id, name FROM orders JOIN members ON orders.member_id = members.id ORDER BY orders.id` を実行する。番号と名前の 4 行が出れば達成。"
+        ],
+        "expectedErrors": [
+          "db-ambiguous",
+          "db-no-column",
+          "db-syntax",
+          "db-join-miss"
+        ]
+      },
+      {
+        "id": "left",
+        "purpose": "注文が無い会員も含めて、全ての会員の名前と、注文の品物を出す。会員の `id` の順、同じ会員は注文の `id` の順に並べる。",
+        "check": {
+          "kind": "ran",
+          "uses": [
+            "LEFT",
+            "JOIN"
+          ],
+          "result": "青木 灯台の模型\n青木 海図\n石田 船の鈴\n上野 双眼鏡\n遠藤 NULL"
+        },
+        "afterward": "注文の無い遠藤さんも残り、品物は NULL になった。残したい表を左に置いて `LEFT JOIN` にする。",
+        "hints": [
+          "全ての会員を残すので、`members` を左に置く。",
+          "`FROM members LEFT JOIN orders ON …` の形。",
+          "`SELECT name, item FROM members LEFT JOIN orders ON orders.member_id = members.id ORDER BY members.id, orders.id` を実行する。5 行が出て、遠藤さんの品物が NULL なら達成。"
+        ],
+        "expectedErrors": [
+          "db-ambiguous",
+          "db-no-column",
+          "db-syntax",
+          "db-join-miss"
+        ]
+      }
+    ]
+  },
+  "result": {
+    "success": "共通の列で表を結び、同じ名前の列を区別して、会員全員の一覧も作れた。",
+    "partial": "ヒントを使って結べた。次は `ON` の条件を自分で考えてみよう。",
+    "retry": "結果が目的と違う。`ON` の 2 つの列と、残したい表の場所を確かめよう。"
+  },
+  "summary": {
+    "points": [
+      "共通の列で結ぶ",
+      "INNER JOIN と LEFT JOIN の違い",
+      "同じ名前の列には表の名前を付ける"
+    ],
+    "next": [
+      "db.i.02"
+    ],
+    "terms": [
+      "join",
+      "left-join",
+      "inner-join"
+    ]
+  }
+}

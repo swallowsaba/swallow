@@ -1,7 +1,7 @@
 import initSqlJs, { type Database, type SqlJsStatic } from 'sql.js';
 import { sqlConfig, type SqlDb } from './check';
 
-export { formatResult, matchesExpected, type ExecOutcome, type ResultSet, type Row, type SqlDb, type SqlValue } from './check';
+export { formatResult, isCommitted, matchesExpected, type ExecOutcome, type ResultSet, type Row, type SqlDb, type SqlValue } from './check';
 
 /**
  * DB の実戦（docs/learning-design.md 6 章: ブラウザ内で動く SQLite で本物の SQL を実行する）。sql.js の薄い包み。

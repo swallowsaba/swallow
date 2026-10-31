@@ -25,6 +25,14 @@ export interface SqlDb {
 /**
  * 問い合わせの結果が、期待する値と一致するか。期待する値は、行の並び（列の名前の付いた物）か、1 つの値（1 行 1 列の結果）
  */
+/** トランザクションの途中でないか（BEGIN は途中なら断られる。試した BEGIN はすぐ戻す） */
+export function isCommitted(db: SqlDb): boolean {
+  const r = db.exec('BEGIN');
+  if (!r.ok) return false;
+  db.exec('ROLLBACK');
+  return true;
+}
+
 export function matchesExpected(db: SqlDb, query: string, expected: unknown): boolean {
   let rows: Row[];
   try {

@@ -297,6 +297,196 @@
       "lessons": [
         "db.b.05"
       ]
+    },
+    {
+      "id": "join",
+      "word": "JOIN",
+      "reading": "じょいん",
+      "plain": "複数の表を、共通の列で結び付けて取り出す SQL の書き方。",
+      "why": "データは重複を避けて表に分けて持つ。使う時に JOIN で結べば、分けても一覧を作れる。",
+      "related": [
+        "table",
+        "column",
+        "foreign-key"
+      ],
+      "lessons": [
+        "db.i.01"
+      ]
+    },
+    {
+      "id": "inner-join",
+      "word": "INNER JOIN",
+      "reading": "いんなーじょいん",
+      "plain": "両方の表に対応する行がある物だけを取り出す結び方。JOIN とだけ書いても同じ。",
+      "why": "対応の無い行は結果から消える。注文の無い会員を出したい時は、別の結び方が要る。",
+      "related": [
+        "join",
+        "left-join"
+      ],
+      "lessons": [
+        "db.i.01"
+      ]
+    },
+    {
+      "id": "left-join",
+      "word": "LEFT JOIN",
+      "reading": "れふとじょいん",
+      "plain": "左の表の行を全て残して結ぶ書き方。右に対応が無い行の右の列は NULL になる。",
+      "why": "「注文が無い会員も含めて一覧にする」のような集計で、行が消えるのを防げる。",
+      "related": [
+        "join",
+        "inner-join"
+      ],
+      "lessons": [
+        "db.i.01"
+      ]
+    },
+    {
+      "id": "normalization",
+      "word": "正規化",
+      "reading": "せいきか",
+      "plain": "同じ情報を何度も持たないように、表を分けること。",
+      "why": "同じ情報が何か所にもあると、直し漏れで食い違う。1 か所にあれば、直すのも 1 か所で済む。",
+      "related": [
+        "table",
+        "foreign-key",
+        "join"
+      ],
+      "lessons": [
+        "db.i.02"
+      ]
+    },
+    {
+      "id": "foreign-key",
+      "word": "外部キー",
+      "reading": "がいぶきー",
+      "plain": "ほかの表の行を指す列。注文の表の member_id が、会員の表の id を指す、など。",
+      "why": "表どうしのつながりを示す。結ぶ時の相手になり、無い相手を指す行を防げる。",
+      "related": [
+        "primary-key",
+        "table",
+        "join"
+      ],
+      "lessons": [
+        "db.i.02"
+      ]
+    },
+    {
+      "id": "index",
+      "word": "インデックス（索引）",
+      "reading": "いんでっくす",
+      "plain": "検索を速くするための索引。列の値から行の場所をすぐ引けるようにする。",
+      "why": "索引が無いと全ての行を順に見るので、件数が増えると遅くなる。ただし書き込みは索引の更新の分だけ遅くなる。",
+      "related": [
+        "table",
+        "column",
+        "query-plan"
+      ],
+      "lessons": [
+        "db.i.03"
+      ]
+    },
+    {
+      "id": "query-plan",
+      "word": "実行計画",
+      "reading": "じっこうけいかく",
+      "plain": "DB が問い合わせをどう実行するつもりかの予定。全ての行を順に見るのか、索引を使うのかが分かる。",
+      "why": "遅い原因を、推測でなく確かめられる。",
+      "related": [
+        "index",
+        "sql"
+      ],
+      "lessons": [
+        "db.i.03"
+      ]
+    },
+    {
+      "id": "atomicity",
+      "word": "原子性",
+      "reading": "げんしせい",
+      "plain": "複数の更新が、全部成功するか、全部無かったことになるかのどちらかであること。",
+      "why": "お金や在庫で、片方だけ更新された中途半端な状態を防ぐ。",
+      "related": [
+        "transaction",
+        "consistency"
+      ],
+      "lessons": [
+        "db.i.04"
+      ]
+    },
+    {
+      "id": "nosql",
+      "word": "NoSQL",
+      "reading": "のーえすきゅーえる",
+      "plain": "表の形にこだわらない DB の総称。文書型・キーバリュー型などがある。",
+      "why": "形の変わりやすいデータや、大量の単純な読み書きに向く。その代わり、複雑な結合や厳密な整合は苦手な物が多い。",
+      "related": [
+        "database",
+        "document-db",
+        "kv-store"
+      ],
+      "lessons": [
+        "db.i.05"
+      ]
+    },
+    {
+      "id": "document-db",
+      "word": "文書型",
+      "reading": "ぶんしょがた",
+      "plain": "JSON のような文書を 1 件ずつそのまま保存する DB。件ごとに項目が違ってもよい。",
+      "why": "商品ごとに項目が違うなど、形を揃えにくいデータを、表を作り直さずに入れられる。",
+      "related": [
+        "nosql",
+        "json"
+      ],
+      "lessons": [
+        "db.i.05"
+      ]
+    },
+    {
+      "id": "kv-store",
+      "word": "キーバリュー型",
+      "reading": "きーばりゅーがた",
+      "plain": "鍵と値の組だけを持つ単純な DB。鍵を指定して読み書きする。",
+      "why": "単純な分とても速いので、セッションや一時保存に向く。",
+      "related": [
+        "nosql",
+        "cache",
+        "session"
+      ],
+      "lessons": [
+        "db.i.05"
+      ]
+    },
+    {
+      "id": "rdb",
+      "word": "RDB",
+      "reading": "あーるでぃーびー",
+      "plain": "表を結び付けて使う DB。行と列の決まった形で持ち、SQL で扱う。",
+      "why": "トランザクションで整合性を守れるので、お金や予約のように正確さが要るデータに向く。",
+      "related": [
+        "table",
+        "sql",
+        "transaction"
+      ],
+      "lessons": [
+        "db.i.02",
+        "db.i.05"
+      ]
+    },
+    {
+      "id": "sql-null",
+      "word": "NULL",
+      "reading": "ぬる",
+      "plain": "値が無いことを表す印。0 や空の文字とは違う。",
+      "why": "対応の無い行や未入力の値に出る。比べる時は = でなく IS NULL を使う。",
+      "related": [
+        "sql",
+        "left-join"
+      ],
+      "lessons": [
+        "db.i.01"
+      ]
     }
   ]
 }
