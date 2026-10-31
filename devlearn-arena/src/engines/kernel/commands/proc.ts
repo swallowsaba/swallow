@@ -107,10 +107,16 @@ function heldBytes(shell: ShellState): number {
   let total = 0;
   for (const p of shell.procs.processes.values()) {
     for (const path of p.openFiles) {
-      if (stat(shell.vfs, path) === undefined) total += 200_000;
+      if (stat(shell.vfs, path) === undefined) total += p.held?.[path] ?? 200_000;
     }
   }
   return total;
+}
+
+/** ディスクの大きさと使っている量（df と同じ。機械のディスクの大きさは setup の disk。無ければ 20G） */
+export function diskUse(shell: ShellState): { capacity: number; used: number } {
+  const capacity = Number(shell.vars.get('__DISK_SIZE') ?? String(20 * 1024 ** 3));
+  return { capacity, used: Math.min(capacity, sizeOf(shell, '/') + heldBytes(shell)) };
 }
 
 export const procCommands: CommandSpec[] = [
@@ -238,8 +244,7 @@ export const procCommands: CommandSpec[] = [
     handler: ({ argv, shell }) => {
       const human = argv.slice(1).some((a) => /^-[a-zA-Z]*h/.test(a));
       // 機械のディスクの大きさ（実戦の setup の disk。無ければ 20G）
-      const capacity = Number(shell.vars.get('__DISK_SIZE') ?? String(20 * 1024 ** 3));
-      const used = Math.min(capacity, sizeOf(shell, '/') + heldBytes(shell));
+      const { capacity, used } = diskUse(shell);
       const free = capacity - used;
       const show = (n: number): string => (human ? humanSize(n) : String(Math.ceil(n / 1024)));
       const pcent = `${String(Math.ceil((used / capacity) * 100 - 1e-9))}%`;

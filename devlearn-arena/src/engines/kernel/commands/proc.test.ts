@@ -103,8 +103,8 @@ describe('容量', () => {
     const before = run('df').out;
     run('rm /var/log/app.log');
     const after = run('df').out;
-    // 掴んでいるプロセスが居るので、消しても使用量が大きく減らない
-    expect(after).not.toBe(before);
+    // 掴んでいるプロセスが居るので、消しても使用量は変わらない（本物と同じ）
+    expect(after).toBe(before);
     expect(run('lsof /var/log/app.log').out).toContain('(deleted)');
     // 掴んでいるプロセスを止めれば戻る
     const pid = run('pgrep report-batch').out.trim();

@@ -40,7 +40,7 @@ export const PRACTICE_NAMES = { terminal: '仮想端末', simulation: '模擬環
  * 中級・上級を書き終えて範囲に入れた分野（docs/decisions.md の Q-04 の決着。範囲は 211 本すべて）。
  * 書き起こしの途中は、書き終えた分野を 1 つずつ足す（docs/progress/expand-scope.md）
  */
-const RELEASE_INTERMEDIATE: ReadonlySet<DomainId> = new Set(['found', 'sec', 'cicd', 'db', 'mon', 'cloud', 'linux', 'net', 'web', 'git', 'ctr', 'docker', 'k8s']);
+const RELEASE_INTERMEDIATE: ReadonlySet<DomainId> = new Set(['found', 'sec', 'cicd', 'db', 'mon', 'cloud', 'devops', 'linux', 'net', 'web', 'git', 'ctr', 'docker', 'k8s']);
 const RELEASE_ADVANCED: ReadonlySet<DomainId> = new Set([]);
 
 /** 公開の範囲のレッスンか（docs/decisions.md Q-04） */

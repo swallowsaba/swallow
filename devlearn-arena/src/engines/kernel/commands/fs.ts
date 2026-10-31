@@ -2,7 +2,7 @@ import { globMatch } from '../glob';
 import { basename, dirname, HOME, resolve } from '../path';
 import { changedState, type CommandResult, type CommandSpec, type ShellState } from '../registry';
 import { allows, formatMode } from '../perm';
-import { copy, fileSize, list, metaOf, mkdir, move, readFile, remove, setMeta, stat, touch, VfsError } from '../vfs';
+import { copy, fileSize, list, metaOf, mkdir, move, readFile, remove, setMeta, setSize, stat, touch, VfsError, writeFile } from '../vfs';
 import { fromLines, humanSize, parseArgs } from './args';
 import { currentGroups, currentUser, denied, deniedInParent, newFileMode } from './perm';
 
@@ -166,6 +166,32 @@ export const fsCommands: CommandSpec[] = [
     },
   },
   {
+    name: 'truncate',
+    summary: 'ファイルの大きさを変える（-s 0 で中身を空にする。掴まれているファイルでも容量が戻る）',
+    handler: ({ argv, shell }) => {
+      const args = argv.slice(1);
+      let size: string | undefined;
+      const files: string[] = [];
+      for (let i = 0; i < args.length; i += 1) {
+        const a = args[i] ?? '';
+        if (a === '-s' || a === '--size') { i += 1; size = args[i]; } else if (a.startsWith('--size=')) size = a.slice('--size='.length);
+        else if (/^-s\d/.test(a)) size = a.slice(2);
+        else files.push(a);
+      }
+      const help = "Try 'truncate --help' for more information.\n";
+      if (files.length === 0) return { stderr: `truncate: missing file operand\n${help}`, code: 1 };
+      if (size === undefined) return { stderr: `truncate: you must specify either '--size' or '--reference'\n${help}`, code: 1 };
+      if (!/^\d+$/.test(size)) return { stderr: `truncate: Invalid number: '${size}'\n`, code: 1 };
+      let vfs = shell.vfs;
+      for (const f of files) {
+        const path = resolve(shell.cwd, f);
+        vfs = writeFile(vfs, path, '');
+        if (size !== '0') vfs = setSize(vfs, path, Number(size));
+      }
+      return { patch: { vfs } };
+    },
+  },
+  {
     name: 'touch',
     summary: '空ファイルを作る',
     handler: ({ argv, shell }) => {
@@ -193,11 +219,15 @@ export const fsCommands: CommandSpec[] = [
       const recursive = flags.has('r') || flags.has('R');
       const force = flags.has('f');
       let vfs = shell.vfs;
+      let procs = shell.procs;
       for (const target of operands) {
         const path = resolve(shell.cwd, target);
         if (stat(vfs, path) !== undefined) {
           const blocked = deniedInParent(shell, target, 'rm', `cannot remove '${target}'`);
           if (blocked) return blocked;
+          // 掴まれているファイルは、消しても掴んでいる間は容量が戻らない
+          const size = fileSize(stat(vfs, path));
+          procs = { ...procs, processes: new Map([...procs.processes].map(([k, p]) => [k, p.openFiles.includes(path) ? { ...p, held: { ...p.held, [path]: size } } : p])) };
         }
         // ディレクトリは空でも -r が要る（本物と同じ）
         if (!recursive && stat(vfs, path)?.kind === 'dir') {
@@ -213,7 +243,7 @@ export const fsCommands: CommandSpec[] = [
           throw error;
         }
       }
-      return { patch: { vfs } };
+      return { patch: { vfs, procs } };
     },
   },
   {

@@ -1,0 +1,69 @@
+{
+  "lesson": "devops.i.02",
+  "variants": [
+    {
+      "name": "順に置く",
+      "steps": {
+        "one": [
+          {
+            "op": "put",
+            "item": "index",
+            "slot": "r1"
+          }
+        ],
+        "two": [
+          {
+            "op": "put",
+            "item": "img",
+            "slot": "r2"
+          }
+        ]
+      }
+    },
+    {
+      "name": "札を戻してから置く",
+      "steps": {
+        "one": [
+          {
+            "op": "take",
+            "item": "index"
+          },
+          {
+            "op": "put",
+            "item": "index",
+            "slot": "r1"
+          }
+        ],
+        "two": [
+          {
+            "op": "take",
+            "item": "img"
+          },
+          {
+            "op": "put",
+            "item": "img",
+            "slot": "r2"
+          }
+        ]
+      }
+    }
+  ],
+  "wrong": {
+    "step": "one",
+    "why": "関係の無い札を直す",
+    "input": [
+      {
+        "op": "put",
+        "item": "color",
+        "slot": "r1"
+      }
+    ],
+    "retry": [
+      {
+        "op": "put",
+        "item": "index",
+        "slot": "r1"
+      }
+    ]
+  }
+}

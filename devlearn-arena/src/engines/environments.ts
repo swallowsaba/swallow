@@ -44,6 +44,8 @@ const serviceSetup = z.object({
   unit: z.string().startsWith('/').optional(),
   /** プログラムが書き込む場所。動かす利用者がそこに書けなければ、起動に失敗する */
   writes: z.array(z.string().startsWith('/')).optional(),
+  /** ディスクが満杯（使用率 99% 以上）の間は 500 を返す（書けないサービス。trouble.i.01） */
+  diskGuard: z.boolean().optional(),
   /** API の鍵を受ける側: 受け付ける鍵の一覧のファイル（sec.i.05） */
   keyGuard: z.object({ file: z.string().startsWith('/') }).strict().optional(),
   /** API の鍵で頼む側: 環境のファイル・鍵の変数の名前・頼む先のポート */
@@ -193,6 +195,8 @@ export const setupSchema = z.object({
     user: z.string().optional(),
     state: z.enum(['R', 'S', 'D', 'Z', 'T']).optional(),
     ignoresTerm: z.boolean().optional(),
+    /** 掴んでいるファイル（消しても、掴んでいる間は容量が戻らない） */
+    openFiles: z.array(z.string().startsWith('/')).optional(),
   }).strict()).optional(),
   /** 利用者のグループ（グループ → 入っている利用者）。/etc/group に書く（src/engines/kernel/users.ts） */
   groups: z.record(z.string().regex(/^[a-z][a-z0-9-]*$/), z.array(z.string())).optional(),
@@ -421,6 +425,7 @@ export function shellOptions(environment: string, setup: unknown): SessionOption
       // 初めから動いているサービスは、置いたファイルのユニットを読み込んだ状態で、その User= で動いている
       ...(v.unit !== undefined ? { unit: v.unit, unitLoaded: s.files?.[v.unit] ?? '', ...(v.active ? { user: unitValue(s.files?.[v.unit] ?? '', 'User') ?? 'root' } : {}) } : {}),
       ...(v.writes !== undefined ? { writes: v.writes } : {}),
+      ...(v.diskGuard !== undefined ? { diskGuard: v.diskGuard } : {}),
       ...(v.keyGuard !== undefined ? { keyGuard: v.keyGuard, ...(v.active ? { validKeys: readKeys(s.files?.[v.keyGuard.file] ?? '') } : {}) } : {}),
       ...(v.keyClient !== undefined ? { keyClient: v.keyClient, ...(v.active ? { heldKey: readEnvValue(s.files?.[v.keyClient.envFile] ?? '', v.keyClient.name) } : {}) } : {}),
       ...(v.log !== undefined ? { log: v.log } : {}),

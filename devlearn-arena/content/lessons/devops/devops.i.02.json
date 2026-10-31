@@ -1,0 +1,344 @@
+{
+  "id": "devops.i.02",
+  "domain": "devops",
+  "level": "intermediate",
+  "theme": "改善",
+  "title": "監視と改善のループ",
+  "goal": "測って・直して・確かめる循環を回せる",
+  "minutes": 20,
+  "prerequisites": [
+    "mon.i.02"
+  ],
+  "related": [
+    "mon.i.04",
+    "cicd.a.02"
+  ],
+  "next": [
+    "devops.i.03"
+  ],
+  "terms": [
+    "monitoring",
+    "slo",
+    "server",
+    "response-time",
+    "log",
+    "service"
+  ],
+  "explain": {
+    "what": "{{term:monitoring}}と改善のループは、測る → 仮説 → 直す → また測る、を回し続けること。一度で終わらせず、数字で良くなったかを確かめる。",
+    "why": "測らなければ、良くなったかが分からない。直したつもりで別の所が悪くなっていても、気付けない。",
+    "use": "性能・信頼性・開発の流れの改善に使う。{{term:slo}} に結び付け、目標に届くまで輪を回す。",
+    "when": "「画面が遅い」と言われて直したが、本当に速くなったのか誰も分からない。前の値を測っていなかった。",
+    "figures": [
+      "devops-i02-loop"
+    ]
+  },
+  "understand": [
+    {
+      "kind": "order",
+      "prompt": "輪の順に並べる。",
+      "items": [
+        "今の値を測る",
+        "仮説を立てる",
+        "1 つだけ直す",
+        "また測って比べる"
+      ],
+      "see": "what"
+    },
+    {
+      "kind": "situation",
+      "prompt": "測らずに直した。何が問題？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "効果があったかが分からない",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "直す作業が遅くなる",
+          "correct": false,
+          "whyNot": "作業の速さは同じ。問題は確かめられないこと。"
+        },
+        {
+          "id": "c",
+          "text": "{{term:server}}が壊れる",
+          "correct": false,
+          "whyNot": "測らないことで壊れはしない。"
+        }
+      ],
+      "see": "why"
+    }
+  ],
+  "quiz": [
+    {
+      "id": "q1",
+      "kind": "situation",
+      "prompt": "直す前にすることは？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "今の値を測る",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "すぐに直す",
+          "correct": false,
+          "whyNot": "前の値が無いと比べられない。"
+        },
+        {
+          "id": "c",
+          "text": "全てを一度に直す",
+          "correct": false,
+          "whyNot": "どれが効いたか分からない。"
+        }
+      ],
+      "explanation": "前の値が、比べる元になる。"
+    },
+    {
+      "id": "q2",
+      "kind": "cause",
+      "prompt": "改善の効果が分からない。原因は？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "前の値を測っていない",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "改善が大きすぎた",
+          "correct": false,
+          "whyNot": "大きければ、むしろ分かりやすい。"
+        },
+        {
+          "id": "c",
+          "text": "グラフの色が悪い",
+          "correct": false,
+          "whyNot": "色は値に関係が無い。"
+        }
+      ],
+      "explanation": "比べる物が無ければ、言えない。"
+    },
+    {
+      "id": "q3",
+      "kind": "choice",
+      "prompt": "改善の目標に結び付けるとよいのは？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "SLO",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "書いたコードの行数",
+          "correct": false,
+          "whyNot": "利用者の品質とは関係が無い。"
+        },
+        {
+          "id": "c",
+          "text": "会議の回数",
+          "correct": false,
+          "whyNot": "品質の目標にならない。"
+        }
+      ],
+      "explanation": "利用者から見た目標に届けば、次の改善に移れる。"
+    }
+  ],
+  "practice": {
+    "mode": "simulation",
+    "purpose": "予約の画面の{{term:response-time}}は今 1200 ms。目標は 400 ms 以下。内訳の表を見て、「1 回目に直す」「2 回目に直す」に札を入れ、毎回の測った値を見て輪を 2 回回す。効かない札は「今回は直さない」に残す。",
+    "environment": "sim-assign",
+    "setup": {
+      "timeLabel": "測った応答時間",
+      "timeUnit": "ms",
+      "slots": [
+        {
+          "id": "r1",
+          "label": "1 回目に直す",
+          "capacity": 1,
+          "full": "1 回に直すのは 1 つだけ。どれが効いたか分からなくなる"
+        },
+        {
+          "id": "r2",
+          "label": "2 回目に直す",
+          "capacity": 1,
+          "full": "1 回に直すのは 1 つだけ。どれが効いたか分からなくなる"
+        },
+        {
+          "id": "skip",
+          "label": "今回は直さない"
+        }
+      ],
+      "items": [
+        {
+          "id": "base",
+          "label": "そのほかの処理",
+          "size": 0,
+          "keep": "これは直さない処理。動かせない",
+          "time": {
+            "skip": 100
+          }
+        },
+        {
+          "id": "index",
+          "label": "空き枠の検索に索引を付ける",
+          "size": 1,
+          "time": {
+            "r1": 100,
+            "r2": 100,
+            "skip": 800
+          }
+        },
+        {
+          "id": "img",
+          "label": "画像を小さくする",
+          "size": 1,
+          "time": {
+            "r1": 100,
+            "r2": 100,
+            "skip": 300
+          }
+        },
+        {
+          "id": "color",
+          "label": "ログの色を変える",
+          "size": 1,
+          "time": {
+            "r1": 0,
+            "r2": 0,
+            "skip": 0
+          },
+          "extra": true
+        }
+      ],
+      "initial": {
+        "base": "skip",
+        "index": "skip",
+        "img": "skip",
+        "color": "skip"
+      },
+      "panels": [
+        {
+          "kind": "table",
+          "title": "1 回目の前に測った内訳（全体 1200 ms）",
+          "columns": [
+            "処理",
+            "時間"
+          ],
+          "rows": [
+            [
+              "空き枠の検索",
+              "800 ms"
+            ],
+            [
+              "画像の転送",
+              "300 ms"
+            ],
+            [
+              "そのほか",
+              "100 ms"
+            ]
+          ]
+        },
+        {
+          "kind": "kv",
+          "title": "1 回目の後に測った値",
+          "rows": [
+            [
+              "全体",
+              "500 ms（目標に届いていない）"
+            ],
+            [
+              "画像の転送",
+              "300 ms が一番長い"
+            ]
+          ],
+          "when": "in index=r1"
+        },
+        {
+          "kind": "kv",
+          "title": "2 回目の後に測った値",
+          "rows": [
+            [
+              "全体",
+              "300 ms（目標 400 ms 以下）"
+            ]
+          ],
+          "when": "in index=r1 img=r2"
+        }
+      ]
+    },
+    "steps": [
+      {
+        "id": "one",
+        "purpose": "内訳の表で一番長い処理を直す札を「1 回目に直す」へ入れる。",
+        "check": {
+          "kind": "sim",
+          "expr": "in index=r1"
+        },
+        "afterward": "1200 ms が 500 ms に下がった。測って比べたので効果が言える。ただ、目標の 400 ms にはまだ届かない。",
+        "hints": [
+          "一番時間を使っている処理から。",
+          "空き枠の検索が 800 ms。",
+          "「空き枠の検索に索引を付ける」を「1 回目に直す」へドラッグして入れる。"
+        ],
+        "actions": [
+          {
+            "op": "put",
+            "item": "index",
+            "slot": "r1"
+          }
+        ],
+        "expectedErrors": [
+          "devops-loop-miss"
+        ]
+      },
+      {
+        "id": "two",
+        "purpose": "測り直した値を見て、次に長い処理を直す札を「2 回目に直す」へ入れる。",
+        "check": {
+          "kind": "sim",
+          "expr": "in img=r2 && time<=300"
+        },
+        "afterward": "300 ms で目標に届いた。ログの色は速さに関係が無いので直さない。各回の前後の値が残っているので、次の人も判断できる。",
+        "hints": [
+          "測り直すと、画像の転送が一番長い。",
+          "{{term:log}}の色は速さに関係が無い。",
+          "「画像を小さくする」を「2 回目に直す」へドラッグして入れる。"
+        ],
+        "actions": [
+          {
+            "op": "put",
+            "item": "img",
+            "slot": "r2"
+          }
+        ],
+        "expectedErrors": [
+          "devops-loop-miss"
+        ]
+      }
+    ]
+  },
+  "result": {
+    "success": "測って直して確かめる輪を 2 回回し、目標に届いた。",
+    "partial": "ヒントを使って回せた。次は、自分の{{term:service}}の内訳を測ってみよう。",
+    "retry": "まだ目標に届かない。測った内訳の一番長い処理を見よう。"
+  },
+  "summary": {
+    "points": [
+      "測ってから直す",
+      "直したらまた測る",
+      "目標に結び付ける"
+    ],
+    "next": [
+      "devops.i.03"
+    ],
+    "terms": [
+      "metrics",
+      "slo"
+    ]
+  }
+}

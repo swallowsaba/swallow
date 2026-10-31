@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 360" font-family="&quot;Noto Sans JP&quot;, sans-serif">
+  <title>時系列と影響、起きた仕組み、うまくいった事、担当と期限の付いた対策を書く</title>
+  <defs>
+    <marker id="arrow-gold" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="#f2b632" />
+    </marker>
+  </defs>
+  <g class="el" data-part="facts">
+    <rect x="20" y="110" width="132" height="110" rx="10" fill="#1a6fd6" />
+    <text x="86" y="159" text-anchor="middle" font-size="16" font-weight="700" fill="#eef2f6">事実</text>
+    <text x="86" y="181" text-anchor="middle" font-size="14" fill="#eef2f6">時系列・影響</text>
+  </g>
+  <g class="el" data-part="cause">
+    <rect x="176" y="110" width="132" height="110" rx="10" fill="#7a3fd0" />
+    <text x="242" y="159" text-anchor="middle" font-size="16" font-weight="700" fill="#eef2f6">原因</text>
+    <text x="242" y="181" text-anchor="middle" font-size="14" fill="#eef2f6">起きた仕組み</text>
+  </g>
+  <g class="el" data-part="good">
+    <rect x="332" y="110" width="132" height="110" rx="10" fill="#1f7a4d" />
+    <text x="398" y="159" text-anchor="middle" font-size="16" font-weight="700" fill="#eef2f6">うまくいった事</text>
+    <text x="398" y="181" text-anchor="middle" font-size="14" fill="#eef2f6">続けたい事</text>
+  </g>
+  <g class="el" data-part="action">
+    <rect x="488" y="110" width="132" height="110" rx="10" fill="#f2b632" />
+    <text x="554" y="159" text-anchor="middle" font-size="16" font-weight="700" fill="#0a1424">対策</text>
+    <text x="554" y="181" text-anchor="middle" font-size="14" fill="#0a1424">担当と期限</text>
+  </g>
+  <g class="el" data-part="flow">
+    <path d="M152 165 L173 165" fill="none" stroke="#f2b632" stroke-width="2" marker-end="url(#arrow-gold)" />
+    <path d="M308 165 L329 165" fill="none" stroke="#f2b632" stroke-width="2" marker-end="url(#arrow-gold)" />
+    <path d="M464 165 L485 165" fill="none" stroke="#f2b632" stroke-width="2" marker-end="url(#arrow-gold)" />
+  </g>
+  <g class="el" data-part="note">
+    <text x="320" y="340" text-anchor="middle" font-size="14" fill="#eef2f6">責めない。人でなく仕組みを直す</text>
+  </g>
+</svg>

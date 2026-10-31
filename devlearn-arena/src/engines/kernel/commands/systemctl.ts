@@ -168,8 +168,13 @@ export const systemctlCommands: CommandSpec[] = [
           return warned(staleUnits(shell, units), run(shell, 'start', units, (t, u) => startService(t, u, loaderOf(shell), readerOf(shell), accessOf(shell))));
         case 'stop':
           return run(shell, 'stop', units, stopService);
-        case 'restart':
-          return warned(staleUnits(shell, units), run(shell, 'restart', units, (t, u) => restartService(t, u, loaderOf(shell), readerOf(shell), accessOf(shell))));
+        case 'restart': {
+          const r = warned(staleUnits(shell, units), run(shell, 'restart', units, (t, u) => restartService(t, u, loaderOf(shell), readerOf(shell), accessOf(shell))));
+          // 動かし直すと、そのサービスのプロセスが掴んでいた、消されたファイルを放す（容量が戻る）
+          const names = units.map(unitName);
+          const processes = new Map([...shell.procs.processes].map(([k, p]) => [k, names.some((n) => p.command.split(/\s/)[0]?.endsWith(`/${n}`)) ? { ...p, held: {}, openFiles: p.openFiles.filter((f) => exists(shell.vfs, f)) } : p]));
+          return { ...r, patch: { ...r.patch, procs: { ...shell.procs, processes } } };
+        }
         case 'reload': {
           // 設定を読み直す。動いていなければ読み直せない（本物と同じ）
           const idle = units.find((u) => serviceOf(shell.services, u)?.active !== 'active');

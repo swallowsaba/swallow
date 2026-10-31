@@ -68,6 +68,8 @@ export interface Service {
   writes?: readonly string[];
   /** 動かしている利用者（ユニットの User=。無ければ root）。動いている間だけ意味がある */
   user?: string;
+  /** ディスクが満杯の間は 500 を返す（書けないサービス） */
+  diskGuard?: boolean;
   /** API の鍵を受ける側: 受け付ける鍵の一覧のファイル（動かす時・読み直す時に読む）。sec.i.05 */
   keyGuard?: { file: string };
   /** 読み込んだ鍵の一覧 */

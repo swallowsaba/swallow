@@ -113,6 +113,7 @@ interface PracticeStep {
 type CheckSpec =
   | { kind: 'fs'; path: string; exists?: boolean; contains?: string; lacks?: string[]; mode?: string } // lacks: どれも含まない（秘密の値が残っていない）。mode: 権限。'600' ならその値、'u+x'・'go-rwx' ならその権限が有る・無い
   | { kind: 'cwd'; equals: string }
+  | { kind: 'disk'; maxUse: number }            // ディスクの使用率（df の Use%）がこの値以下
   | { kind: 'service'; name: string; active?: boolean; enabled?: boolean; listen?: number; user?: string } // user: 動かしている利用者（ユニットファイルの User=。daemon-reload して動かし直すまで変わらない）
   | { kind: 'git'; expr: string }               // 例: 'branch:feature merged-into:main'
   | { kind: 'k8s'; expr: string }               // 例: 'deployment/web readyReplicas>=3'

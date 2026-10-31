@@ -1,0 +1,232 @@
+{
+  "id": "devops.i.01",
+  "domain": "devops",
+  "level": "intermediate",
+  "theme": "IaC",
+  "title": "Infrastructure as Code の基本概念",
+  "goal": "構成をコードで表す利点と、宣言型の読み方",
+  "minutes": 20,
+  "prerequisites": [
+    "devops.b.02",
+    "cloud.b.03"
+  ],
+  "related": [
+    "cloud.b.03",
+    "k8s.i.01"
+  ],
+  "next": [
+    "devops.i.02"
+  ],
+  "terms": [
+    "iac",
+    "network",
+    "server",
+    "declarative",
+    "review",
+    "git",
+    "web",
+    "app",
+    "diff",
+    "file",
+    "db",
+    "cluster",
+    "image",
+    "port"
+  ],
+  "explain": {
+    "what": "{{term:iac}} は、{{term:server}}や{{term:network}}の構成を、手順でなくコードで表す考え方。あるべき形を書く{{term:declarative}}な書き方がよく使われる。",
+    "why": "手作業の構成は再現できず、本番と検証で差が生まれる。誰がいつ何を変えたかも残らない。コードなら何度でも同じ形を作れる。",
+    "use": "同じ環境を何度でも作る時と、変更を記録する時に使う。定義を {{term:git}} で管理し、{{term:review}}してから適用する。",
+    "when": "本番と検証で設定が違っていた。誰かが本番を手で直したらしいが、記録が無く、いつ変わったのかも分からない。",
+    "figures": [
+      "devops-i01-iac"
+    ]
+  },
+  "understand": [
+    {
+      "kind": "match",
+      "prompt": "文と書き方を結ぶ。",
+      "pairs": [
+        [
+          "{{term:web}} は 2 台であるべき",
+          "宣言型"
+        ],
+        [
+          "サーバを 1 台足す",
+          "手順型"
+        ]
+      ],
+      "see": "what"
+    },
+    {
+      "kind": "yesno",
+      "prompt": "構成のコードも Git で管理する。",
+      "answer": true,
+      "why": "変更の履歴が残り、レビューでき、戻すこともできる。{{term:app}}のコードと同じに扱う。",
+      "see": "use"
+    }
+  ],
+  "quiz": [
+    {
+      "id": "q1",
+      "kind": "term",
+      "prompt": "「宣言型」の説明として正しいのは？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "あるべき形を書く",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "実行する手順を順に書く",
+          "correct": false,
+          "whyNot": "それは手順型。"
+        },
+        {
+          "id": "c",
+          "text": "画面で設定する",
+          "correct": false,
+          "whyNot": "コードにならず、記録も残らない。"
+        }
+      ],
+      "explanation": "今の形との{{term:diff}}は、道具が埋める。"
+    },
+    {
+      "id": "q2",
+      "kind": "predict",
+      "prompt": "同じ定義を 2 回適用すると？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "同じ形のまま。何も増えない",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "2 倍に増える",
+          "correct": false,
+          "whyNot": "あるべき形を書いているので、増えない。"
+        },
+        {
+          "id": "c",
+          "text": "エラーになる",
+          "correct": false,
+          "whyNot": "同じ形なら、何もしないだけ。"
+        }
+      ],
+      "explanation": "何度適用しても同じ形になる。"
+    },
+    {
+      "id": "q3",
+      "kind": "situation",
+      "prompt": "誰かが本番を手で直して、定義と差ができた。どうする？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "要る変更なら定義に書き、適用し直して揃える",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "差があるまま放っておく",
+          "correct": false,
+          "whyNot": "次の適用で消えるか、定義を信じられなくなる。"
+        },
+        {
+          "id": "c",
+          "text": "定義を捨てて、手作業に戻す",
+          "correct": false,
+          "whyNot": "再現できない状態に戻ってしまう。"
+        }
+      ],
+      "explanation": "定義を正にする。"
+    }
+  ],
+  "practice": {
+    "mode": "editor",
+    "purpose": "定義の{{term:file}} `infra.yaml` を書き換えて、Web を 2 台・{{term:db}} を 1 台にする。保存すると `kubectl apply` で適用する。今の{{term:cluster}}は、誰かが手で Web を 3 台のままにしている。",
+    "environment": "k8s-cluster",
+    "setup": {
+      "hostname": "console",
+      "cwd": "/home/learner/infra",
+      "dirs": [
+        "/home/learner/infra"
+      ],
+      "files": {
+        "/home/learner/infra/infra.yaml": "apiVersion: apps/v1\nkind: Deployment\nmetadata:\n  name: web\nspec:\n  replicas: 3\n  selector:\n    matchLabels:\n      app: web\n  template:\n    metadata:\n      labels:\n        app: web\n    spec:\n      containers:\n      - name: web\n        image: city-shop:1.0\n        ports:\n        - containerPort: 80\n"
+      },
+      "cluster": {
+        "nodes": 2,
+        "ageDays": 3,
+        "manifests": "apiVersion: apps/v1\nkind: Deployment\nmetadata:\n  name: web\nspec:\n  replicas: 3\n  selector:\n    matchLabels:\n      app: web\n  template:\n    metadata:\n      labels:\n        app: web\n    spec:\n      containers:\n      - name: web\n        image: city-shop:1.0\n        ports:\n        - containerPort: 80\n"
+      },
+      "edit": {
+        "path": "/home/learner/infra/infra.yaml",
+        "apply": [
+          "kubectl apply -f infra.yaml",
+          "kubectl get pods -w",
+          "kubectl get deployments"
+        ]
+      }
+    },
+    "steps": [
+      {
+        "id": "web",
+        "purpose": "`web` の `replicas` を 2 に書き換える。",
+        "check": {
+          "kind": "k8s",
+          "expr": "deployment/web replicas=2 readyReplicas=2"
+        },
+        "afterward": "`configured` と出て、Web が 2 台になった。手順でなく、あるべき数を書いただけ。もう一度適用しても `unchanged` と言うだけで何も変わらない。",
+        "hints": [
+          "あるべき形を書く。",
+          "`replicas: 3` を `replicas: 2` に替える。",
+          "`apiVersion: apps/v1\nkind: Deployment\nmetadata:\n  name: web\nspec:\n  replicas: 2\n  selector:\n    matchLabels:\n      app: web\n  template:\n    metadata:\n      labels:\n        app: web\n    spec:\n      containers:\n      - name: web\n        image: city-shop:1.0\n        ports:\n        - containerPort: 80\n` と保存する。"
+        ],
+        "expectedErrors": [
+          "devops-replicas-miss",
+          "k8s-yaml"
+        ]
+      },
+      {
+        "id": "db",
+        "purpose": "`---` で区切って、`db` の定義を足す。`replicas` は 1、{{term:image}}は `city-db:1.0`、{{term:port}}は 5432。",
+        "check": {
+          "kind": "k8s",
+          "expr": "deployment/web readyReplicas=2 && deployment/db readyReplicas=1"
+        },
+        "afterward": "`db` は `created`、`web` は `unchanged`。差分だけが適用された。このファイルを Git に入れれば、同じ環境を何度でも作れる。",
+        "hints": [
+          "1 つのファイルに複数の定義を書く時は、`---` で区切る。",
+          "`web` と同じ形で、名前とイメージとポートを替える。",
+          "`apiVersion: apps/v1\nkind: Deployment\nmetadata:\n  name: web\nspec:\n  replicas: 2\n  selector:\n    matchLabels:\n      app: web\n  template:\n    metadata:\n      labels:\n        app: web\n    spec:\n      containers:\n      - name: web\n        image: city-shop:1.0\n        ports:\n        - containerPort: 80\n---\napiVersion: apps/v1\nkind: Deployment\nmetadata:\n  name: db\nspec:\n  replicas: 1\n  selector:\n    matchLabels:\n      app: db\n  template:\n    metadata:\n      labels:\n        app: db\n    spec:\n      containers:\n      - name: db\n        image: city-db:1.0\n        ports:\n        - containerPort: 5432\n` と保存する。"
+        ],
+        "expectedErrors": [
+          "devops-replicas-miss",
+          "k8s-yaml"
+        ]
+      }
+    ]
+  },
+  "result": {
+    "success": "構成をコードで表し、定義と実際を揃えられた。",
+    "partial": "ヒントを使って揃えられた。次は、このファイルを Git で管理する所まで考えてみよう。",
+    "retry": "定義と実際に差がある。`kubectl get deployments` の数を確かめよう。"
+  },
+  "summary": {
+    "points": [
+      "構成をコードで表す",
+      "何度適用しても同じ形",
+      "変更は Git で管理する"
+    ],
+    "next": [
+      "devops.i.02"
+    ],
+    "terms": [
+      "iac",
+      "declarative",
+      "drift"
+    ]
+  }
+}

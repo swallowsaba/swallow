@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 360" font-family="&quot;Noto Sans JP&quot;, sans-serif">
+  <title>手順型は「何をするか」、宣言型は「どうあるべきか」を書く。宣言型は何度適用しても同じ形になる</title>
+  <g class="el" data-part="proc">
+    <rect x="20" y="40" width="280" height="240" rx="10" fill="#c0392b" />
+    <text x="160" y="121" text-anchor="middle" font-size="16" font-weight="700" fill="#eef2f6">手順型</text>
+    <text x="160" y="143" text-anchor="middle" font-size="14" fill="#eef2f6">サーバを 1 台足す</text>
+    <text x="160" y="165" text-anchor="middle" font-size="14" fill="#eef2f6">もう 1 台足す</text>
+    <text x="160" y="187" text-anchor="middle" font-size="14" fill="#eef2f6">2 回動かすと 4 台になる</text>
+    <text x="160" y="209" text-anchor="middle" font-size="14" fill="#eef2f6">手順の途中で失敗すると困る</text>
+  </g>
+  <g class="el" data-part="decl">
+    <rect x="340" y="40" width="280" height="240" rx="10" fill="#1f7a4d" />
+    <text x="480" y="121" text-anchor="middle" font-size="16" font-weight="700" fill="#eef2f6">宣言型</text>
+    <text x="480" y="143" text-anchor="middle" font-size="14" fill="#eef2f6">Web は 2 台であるべき</text>
+    <text x="480" y="165" text-anchor="middle" font-size="14" fill="#eef2f6">DB は 1 台であるべき</text>
+    <text x="480" y="187" text-anchor="middle" font-size="14" fill="#eef2f6">何度適用しても 2 台と 1 台</text>
+    <text x="480" y="209" text-anchor="middle" font-size="14" fill="#eef2f6">差分だけを直す</text>
+  </g>
+  <g class="el" data-part="note">
+    <text x="320" y="340" text-anchor="middle" font-size="14" fill="#eef2f6">定義は Git で管理し、変更を記録する</text>
+  </g>
+</svg>

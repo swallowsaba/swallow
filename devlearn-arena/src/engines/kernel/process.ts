@@ -21,6 +21,8 @@ export interface Process {
   ignoresTerm: boolean;
   /** 掴んでいるファイル。消しても容量が戻らない状況を再現する */
   openFiles: readonly string[];
+  /** 掴んだまま消されたファイルの大きさ（場所 → バイト）。掴んでいる間は容量が戻らない */
+  held?: Readonly<Record<string, number>>;
   startedAt: number;
 }
 

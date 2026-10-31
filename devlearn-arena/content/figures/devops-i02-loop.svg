@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 360" font-family="&quot;Noto Sans JP&quot;, sans-serif">
+  <title>測る、仮説、直す、また測る、の輪を回す</title>
+  <defs>
+    <marker id="arrow-gold" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="#f2b632" />
+    </marker>
+  </defs>
+  <g class="el" data-part="measure">
+    <rect x="20" y="110" width="132" height="110" rx="10" fill="#1a6fd6" />
+    <text x="86" y="159" text-anchor="middle" font-size="16" font-weight="700" fill="#eef2f6">測る</text>
+    <text x="86" y="181" text-anchor="middle" font-size="14" fill="#eef2f6">今の値を記録</text>
+  </g>
+  <g class="el" data-part="guess">
+    <rect x="176" y="110" width="132" height="110" rx="10" fill="#7a3fd0" />
+    <text x="242" y="159" text-anchor="middle" font-size="16" font-weight="700" fill="#eef2f6">仮説</text>
+    <text x="242" y="181" text-anchor="middle" font-size="14" fill="#eef2f6">どこが遅いか</text>
+  </g>
+  <g class="el" data-part="fix">
+    <rect x="332" y="110" width="132" height="110" rx="10" fill="#f2b632" />
+    <text x="398" y="159" text-anchor="middle" font-size="16" font-weight="700" fill="#0a1424">直す</text>
+    <text x="398" y="181" text-anchor="middle" font-size="14" fill="#0a1424">1 つだけ変える</text>
+  </g>
+  <g class="el" data-part="again">
+    <rect x="488" y="110" width="132" height="110" rx="10" fill="#1f7a4d" />
+    <text x="554" y="159" text-anchor="middle" font-size="16" font-weight="700" fill="#eef2f6">また測る</text>
+    <text x="554" y="181" text-anchor="middle" font-size="14" fill="#eef2f6">前の値と比べる</text>
+  </g>
+  <g class="el" data-part="flow">
+    <path d="M152 165 L173 165" fill="none" stroke="#f2b632" stroke-width="2" marker-end="url(#arrow-gold)" />
+    <path d="M308 165 L329 165" fill="none" stroke="#f2b632" stroke-width="2" marker-end="url(#arrow-gold)" />
+    <path d="M464 165 L485 165" fill="none" stroke="#f2b632" stroke-width="2" marker-end="url(#arrow-gold)" />
+    <path d="M600 230 L600 280 L40 280 L40 234" fill="none" stroke="#f2b632" stroke-width="2" marker-end="url(#arrow-gold)" />
+  </g>
+  <g class="el" data-part="note">
+    <text x="320" y="340" text-anchor="middle" font-size="14" fill="#eef2f6">測らなければ、良くなったかが分からない</text>
+  </g>
+</svg>

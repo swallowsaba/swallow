@@ -14,6 +14,7 @@ import { isCommitted, matchesExpected, type ExecOutcome, type SqlDb } from '@/en
 import type { CommandRegistry, ShellState } from '@/engines/kernel/registry';
 import { portsOf, serviceOf } from '@/engines/kernel/services';
 import { execute, lineCommands, type CommandPart } from '@/engines/kernel/shell';
+import { diskUse } from '@/engines/kernel/commands/proc';
 import { sshHolds } from '@/engines/kernel/commands/ssh';
 import { exists, isDir, metaOf, readFile, writeFile } from '@/engines/kernel/vfs';
 import { initialShell, resolveSetup } from '@/engines/environments';
@@ -40,7 +41,7 @@ import type { PracticeAttempt } from '@/game/types';
 /* ---------- 状態による判定 ---------- */
 
 /** 端末の実戦で判定できる形 */
-export const SHELL_CHECKS: ReadonlySet<CheckSpec['kind']> = new Set(['fs', 'cwd', 'service', 'http', 'tls', 'git', 'k8s', 'net', 'container', 'ci', 'alert', 'ran', 'answer']);
+export const SHELL_CHECKS: ReadonlySet<CheckSpec['kind']> = new Set(['fs', 'cwd', 'service', 'disk', 'http', 'tls', 'git', 'k8s', 'net', 'container', 'ci', 'alert', 'ran', 'answer']);
 
 /** 模擬環境（模）の実戦で判定できる形（docs/content-spec.md 2.4.1） */
 export const SIM_CHECKS: ReadonlySet<CheckSpec['kind']> = new Set(['sim']);
@@ -160,6 +161,10 @@ export function checkState(check: CheckSpec, input: CheckInput): boolean {
       if (isDir(shell.vfs, path)) return false;
       const text = readFile(shell.vfs, path);
       return (check.contains === undefined || text.includes(check.contains)) && (check.lacks ?? []).every((x) => !text.includes(x));
+    }
+    case 'disk': {
+      const { capacity, used } = diskUse(shell);
+      return Math.ceil((used / capacity) * 100 - 1e-9) <= check.maxUse;
     }
     case 'service': {
       const s = serviceOf(shell.services, check.name);

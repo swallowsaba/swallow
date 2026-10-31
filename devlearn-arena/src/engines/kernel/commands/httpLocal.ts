@@ -12,6 +12,7 @@ import type { Service } from '../services';
 import { groupsOfUser } from '../users';
 import { exists, isDir, metaOf, readFile, writeFile } from '../vfs';
 import { pickServer, type Location, type ServerBlock } from '../webConfig';
+import { diskUse } from './proc';
 
 /** /etc/hosts で手元（127.0.0.1・::1）を指す名前 */
 function hostsLocalNames(shell: ShellState): string[] {
@@ -169,7 +170,13 @@ export function httpEnvOf(shell: ShellState): HttpEnv {
             respond: (req) => (servers.length > 0 ? serveConfigured(shell, () => env, s, servers, req) : plainAnswer(s, req)),
           };
         }
-        if (!s.config && s.port === port) return { server: s.name, respond: (req) => plainAnswer(s, req, () => env) };
+        if (!s.config && s.port === port) {
+          const full = (): boolean => {
+            const { capacity, used } = diskUse(shell);
+            return s.diskGuard === true && used / capacity >= 0.99;
+          };
+          return { server: s.name, respond: (req) => (full() ? { status: 500, body: pageOf(500) } : plainAnswer(s, req, () => env)) };
+        }
       }
       const served = servedAt(shell.containers, port, (p) => (exists(shell.vfs, p) && !isDir(shell.vfs, p) ? readFile(shell.vfs, p) : null));
       if (served) {

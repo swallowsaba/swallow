@@ -1,0 +1,140 @@
+{
+  "lesson": "devops.i.03",
+  "variants": [
+    {
+      "name": "先に事実から",
+      "steps": {
+        "write": [
+          {
+            "op": "put",
+            "item": "a2",
+            "slot": "action"
+          },
+          {
+            "op": "put",
+            "item": "a1",
+            "slot": "action"
+          },
+          {
+            "op": "put",
+            "item": "c1",
+            "slot": "cause"
+          },
+          {
+            "op": "put",
+            "item": "t1",
+            "slot": "facts"
+          }
+        ],
+        "no-blame": [
+          {
+            "op": "put",
+            "item": "b2",
+            "slot": "drop"
+          },
+          {
+            "op": "put",
+            "item": "b1",
+            "slot": "drop"
+          }
+        ]
+      }
+    },
+    {
+      "name": "先に書かない札を外す",
+      "steps": {
+        "write": [
+          {
+            "op": "put",
+            "item": "b1",
+            "slot": "drop"
+          },
+          {
+            "op": "put",
+            "item": "b2",
+            "slot": "drop"
+          },
+          {
+            "op": "put",
+            "item": "t1",
+            "slot": "facts"
+          },
+          {
+            "op": "put",
+            "item": "c1",
+            "slot": "cause"
+          },
+          {
+            "op": "put",
+            "item": "a1",
+            "slot": "action"
+          },
+          {
+            "op": "put",
+            "item": "a2",
+            "slot": "action"
+          }
+        ],
+        "no-blame": []
+      }
+    }
+  ],
+  "wrong": {
+    "step": "write",
+    "why": "責める文を原因に入れて、全ての札を置く",
+    "input": [
+      {
+        "op": "put",
+        "item": "t1",
+        "slot": "facts"
+      },
+      {
+        "op": "put",
+        "item": "a1",
+        "slot": "action"
+      },
+      {
+        "op": "put",
+        "item": "a2",
+        "slot": "action"
+      },
+      {
+        "op": "put",
+        "item": "b2",
+        "slot": "drop"
+      },
+      {
+        "op": "put",
+        "item": "c1",
+        "slot": "drop"
+      },
+      {
+        "op": "put",
+        "item": "b1",
+        "slot": "cause"
+      }
+    ],
+    "retry": [
+      {
+        "op": "put",
+        "item": "t1",
+        "slot": "facts"
+      },
+      {
+        "op": "put",
+        "item": "c1",
+        "slot": "cause"
+      },
+      {
+        "op": "put",
+        "item": "a1",
+        "slot": "action"
+      },
+      {
+        "op": "put",
+        "item": "a2",
+        "slot": "action"
+      }
+    ]
+  }
+}

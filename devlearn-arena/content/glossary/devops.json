@@ -45,6 +45,49 @@
       "lessons": [
         "devops.b.03"
       ]
+    },
+    {
+      "id": "iac",
+      "word": "Infrastructure as Code",
+      "reading": "いんふらすとらくちゃあずこーど",
+      "plain": "サーバやネットワークの構成を、手順でなくコードで表す考え方。",
+      "why": "手作業の構成は再現できず、本番と検証で差が生まれる。コードなら何度でも同じ形を作れ、変更も記録できる。",
+      "related": [
+        "declarative",
+        "automation",
+        "git"
+      ],
+      "lessons": [
+        "devops.i.01"
+      ]
+    },
+    {
+      "id": "drift",
+      "word": "差分のずれ",
+      "reading": "さぶんのずれ",
+      "plain": "コードの定義と実際の環境が食い違っていること。誰かが手で直すと起きる。",
+      "why": "放っておくと、定義を信じられなくなる。定義を適用し直して揃える。",
+      "related": [
+        "iac",
+        "declarative"
+      ],
+      "lessons": [
+        "devops.i.01"
+      ]
+    },
+    {
+      "id": "postmortem",
+      "word": "ポストモーテム",
+      "reading": "ぽすともーてむ",
+      "plain": "障害の後に、責めずに事実と原因と対策をまとめる振り返りの文書。",
+      "why": "人を責めると事実が隠れ、同じ事故が起きる。仕組みを直す材料にする。",
+      "related": [
+        "runbook",
+        "on-call"
+      ],
+      "lessons": [
+        "devops.i.03"
+      ]
     }
   ]
 }
