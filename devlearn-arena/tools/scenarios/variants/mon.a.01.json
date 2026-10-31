@@ -1,0 +1,99 @@
+{
+  "lesson": "mon.a.01",
+  "variants": [
+    {
+      "name": "順を変えて移す",
+      "steps": {
+        "record": [
+          {
+            "op": "put",
+            "item": "restart",
+            "slot": "record"
+          },
+          {
+            "op": "put",
+            "item": "mem",
+            "slot": "record"
+          },
+          {
+            "op": "put",
+            "item": "cpu",
+            "slot": "record"
+          }
+        ],
+        "ticket": [
+          {
+            "op": "put",
+            "item": "disk",
+            "slot": "ticket"
+          }
+        ]
+      }
+    },
+    {
+      "name": "戻してから置く",
+      "steps": {
+        "record": [
+          {
+            "op": "put",
+            "item": "cpu",
+            "slot": "record"
+          },
+          {
+            "op": "put",
+            "item": "mem",
+            "slot": "record"
+          },
+          {
+            "op": "take",
+            "item": "restart"
+          },
+          {
+            "op": "put",
+            "item": "restart",
+            "slot": "record"
+          }
+        ],
+        "ticket": [
+          {
+            "op": "take",
+            "item": "disk"
+          },
+          {
+            "op": "put",
+            "item": "disk",
+            "slot": "ticket"
+          }
+        ]
+      }
+    }
+  ],
+  "wrong": {
+    "step": "record",
+    "why": "症状の通知を消す",
+    "input": [
+      {
+        "op": "put",
+        "item": "errors",
+        "slot": "record"
+      }
+    ],
+    "retry": [
+      {
+        "op": "put",
+        "item": "cpu",
+        "slot": "record"
+      },
+      {
+        "op": "put",
+        "item": "mem",
+        "slot": "record"
+      },
+      {
+        "op": "put",
+        "item": "restart",
+        "slot": "record"
+      }
+    ]
+  }
+}

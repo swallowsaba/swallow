@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 360" font-family="&quot;Noto Sans JP&quot;, sans-serif">
+  <title>複数の区画・複数の地域・控えと手順。目標は RTO と RPO で決める</title>
+  <g class="el" data-part="zone">
+    <rect x="20" y="60" width="180" height="110" rx="10" fill="#1a6fd6" />
+    <text x="110" y="109" text-anchor="middle" font-size="16" font-weight="700" fill="#eef2f6">複数の区画</text>
+    <text x="110" y="131" text-anchor="middle" font-size="14" fill="#eef2f6">区画の障害に備える</text>
+  </g>
+  <g class="el" data-part="region">
+    <rect x="230" y="60" width="180" height="110" rx="10" fill="#7a3fd0" />
+    <text x="320" y="109" text-anchor="middle" font-size="16" font-weight="700" fill="#eef2f6">複数の地域</text>
+    <text x="320" y="131" text-anchor="middle" font-size="14" fill="#eef2f6">地域の障害に備える</text>
+  </g>
+  <g class="el" data-part="steps">
+    <rect x="440" y="60" width="180" height="110" rx="10" fill="#f2b632" />
+    <text x="530" y="109" text-anchor="middle" font-size="16" font-weight="700" fill="#0a1424">控えと手順</text>
+    <text x="530" y="131" text-anchor="middle" font-size="14" fill="#0a1424">試して確かめる</text>
+  </g>
+  <g class="el" data-part="rto">
+    <rect x="20" y="200" width="290" height="100" rx="10" fill="#1f7a4d" />
+    <text x="165" y="244" text-anchor="middle" font-size="16" font-weight="700" fill="#eef2f6">RTO</text>
+    <text x="165" y="266" text-anchor="middle" font-size="14" fill="#eef2f6">戻すまでの目標時間</text>
+  </g>
+  <g class="el" data-part="rpo">
+    <rect x="330" y="200" width="290" height="100" rx="10" fill="#c0392b" />
+    <text x="475" y="244" text-anchor="middle" font-size="16" font-weight="700" fill="#eef2f6">RPO</text>
+    <text x="475" y="266" text-anchor="middle" font-size="14" fill="#eef2f6">失ってよいデータの量</text>
+  </g>
+  <g class="el" data-part="note">
+    <text x="320" y="340" text-anchor="middle" font-size="14" fill="#eef2f6">大きな障害は起きる前提で備える</text>
+  </g>
+</svg>

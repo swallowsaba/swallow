@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 360" font-family="&quot;Noto Sans JP&quot;, sans-serif">
+  <title>大きな 1 回と小さな 10 回の、失敗の影響と戻しやすさ</title>
+  <g class="el" data-part="big">
+    <rect x="20" y="60" width="280" height="230" rx="10" fill="#c0392b" />
+    <text x="160" y="147" text-anchor="middle" font-size="16" font-weight="700" fill="#eef2f6">大きな 1 回</text>
+    <text x="160" y="169" text-anchor="middle" font-size="14" fill="#eef2f6">3 か月分を一度に</text>
+    <text x="160" y="191" text-anchor="middle" font-size="14" fill="#eef2f6">壊すと影響が大きい</text>
+    <text x="160" y="213" text-anchor="middle" font-size="14" fill="#eef2f6">何が壊したか分からない</text>
+  </g>
+  <g class="el" data-part="many">
+    <rect x="340" y="60" width="280" height="230" rx="10" fill="#1f7a4d" />
+    <text x="480" y="147" text-anchor="middle" font-size="16" font-weight="700" fill="#eef2f6">小さな 10 回</text>
+    <text x="480" y="169" text-anchor="middle" font-size="14" fill="#eef2f6">少しずつ頻繁に</text>
+    <text x="480" y="191" text-anchor="middle" font-size="14" fill="#eef2f6">壊しても影響が小さい</text>
+    <text x="480" y="213" text-anchor="middle" font-size="14" fill="#eef2f6">すぐ戻せる</text>
+  </g>
+  <g class="el" data-part="note">
+    <text x="320" y="340" text-anchor="middle" font-size="14" fill="#eef2f6">小さく分けると、いつでも戻せる</text>
+  </g>
+</svg>

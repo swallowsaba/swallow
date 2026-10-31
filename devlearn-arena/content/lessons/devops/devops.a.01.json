@@ -1,0 +1,313 @@
+{
+  "id": "devops.a.01",
+  "domain": "devops",
+  "level": "advanced",
+  "theme": "安全な変更",
+  "title": "小さく頻繁に変える",
+  "goal": "変更の大きさと失敗率の関係を説明し、手順を設計できる",
+  "minutes": 20,
+  "prerequisites": [
+    "cicd.a.01"
+  ],
+  "related": [
+    "cicd.a.01",
+    "k8s.i.08"
+  ],
+  "next": [
+    "devops.a.02"
+  ],
+  "terms": [
+    "feature-flag",
+    "branch",
+    "log",
+    "commit"
+  ],
+  "explain": {
+    "what": "変更を小さく分けて、頻繁に届ける進め方。",
+    "why": "大きな変更ほど失敗しやすく、原因の特定も戻すのも難しい。",
+    "use": "安全な本番の更新で使う。各段で動く状態を保ち、いつでも戻せるようにする。",
+    "when": "3 か月分の変更を一度に出して、何が壊したか分からない。",
+    "figures": [
+      "devops-a01-small"
+    ]
+  },
+  "understand": [
+    {
+      "kind": "relation",
+      "prompt": "2 つの関係は？",
+      "a": "変更を小さくする",
+      "b": "失敗した時の影響と、戻す手間が小さくなる",
+      "answer": "cause",
+      "why": "1 度に変える量が少ないので、原因が絞れる。",
+      "see": "why"
+    },
+    {
+      "kind": "situation",
+      "prompt": "未完成の機能を本番に入れて、利用者に見せないようにするには？",
+      "see": "use",
+      "choices": [
+        {
+          "id": "a",
+          "text": "{{term:feature-flag}}で隠す",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "{{term:branch}}に 3 か月置く",
+          "correct": false,
+          "whyNot": "後でまとめて出すことになり、大きな変更に戻る。"
+        },
+        {
+          "id": "c",
+          "text": "利用者に知らせて我慢してもらう",
+          "correct": false,
+          "whyNot": "未完成を見せる必要は無い。"
+        }
+      ]
+    }
+  ],
+  "quiz": [
+    {
+      "id": "q1",
+      "kind": "situation",
+      "prompt": "大きな機能を出す。どうする？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "分けて出す",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "一度に出す",
+          "correct": false,
+          "whyNot": "失敗の影響が大きい。"
+        },
+        {
+          "id": "c",
+          "text": "出さない",
+          "correct": false,
+          "whyNot": "価値が届かない。"
+        }
+      ],
+      "explanation": "各段で動く状態を保つ。"
+    },
+    {
+      "id": "q2",
+      "kind": "cause",
+      "prompt": "更新で壊れたが、何が壊したか分からない。原因は？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "一度に出しすぎ",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "{{term:log}}が長い",
+          "correct": false,
+          "whyNot": "問題はログではない。"
+        },
+        {
+          "id": "c",
+          "text": "{{term:commit}}の名前が短い",
+          "correct": false,
+          "whyNot": "名前では解けない。"
+        }
+      ],
+      "explanation": "変更が多いと候補も多い。"
+    },
+    {
+      "id": "q3",
+      "kind": "choice",
+      "prompt": "未完成の機能を本番に出すには？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "機能の切り替えで隠す",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "コメントに書く",
+          "correct": false,
+          "whyNot": "動きは隠せない。"
+        },
+        {
+          "id": "c",
+          "text": "名前を変える",
+          "correct": false,
+          "whyNot": "動きは隠せない。"
+        }
+      ],
+      "explanation": "設定で入り切りする。"
+    }
+  ],
+  "practice": {
+    "mode": "simulation",
+    "purpose": "会員の表の住所の列を、新しい形に変える。1 回で出すと、途中で古いコードが動かなくなる。5 つの更新に分け、各段で古いコードも新しいコードも動く順に並べる。",
+    "environment": "sim-order",
+    "setup": {
+      "unit": "回",
+      "items": [
+        {
+          "id": "add",
+          "label": "新しい列を足す（まだ使わない）"
+        },
+        {
+          "id": "dual",
+          "label": "新旧の両方に書く",
+          "needs": [
+            "add"
+          ]
+        },
+        {
+          "id": "copy",
+          "label": "古いデータを新しい列へ写す",
+          "needs": [
+            "dual"
+          ]
+        },
+        {
+          "id": "switch",
+          "label": "機能の切り替えで、読む先を新しい列にする",
+          "needs": [
+            "copy"
+          ]
+        },
+        {
+          "id": "drop",
+          "label": "古い列を消す",
+          "needs": [
+            "switch"
+          ]
+        },
+        {
+          "id": "all",
+          "label": "全てを 1 回の更新で出す",
+          "extra": true,
+          "stop": "何が壊したか分からず、戻す時に全てを戻すことになる"
+        }
+      ],
+      "panels": [
+        {
+          "kind": "kv",
+          "title": "今の様子",
+          "rows": [
+            [
+              "動いているコード",
+              "古い列を読み書きする"
+            ],
+            [
+              "利用者",
+              "止められない"
+            ],
+            [
+              "戻し方",
+              "各段は 1 つずつ戻せる"
+            ]
+          ]
+        },
+        {
+          "kind": "text",
+          "title": "各段の様子",
+          "body": "全ての段で、古いコードも新しいコードも動く。問題が出れば、機能の切り替えを切るだけで戻せる。",
+          "when": "seq add<dual<copy<switch<drop"
+        }
+      ]
+    },
+    "steps": [
+      {
+        "id": "first",
+        "purpose": "先に、壊さずに足す段を並べる。「新しい列を足す（まだ使わない）」→「新旧の両方に書く」→「古いデータを新しい列へ写す」の順。",
+        "check": {
+          "kind": "sim",
+          "expr": "seq add<dual<copy && deps"
+        },
+        "afterward": "足すだけなので、古いコードは動いたまま。どの段でも戻せる。",
+        "hints": [
+          "古いコードが動いたまま足せる物から。",
+          "書く前に列が要る。写す前に両方へ書く。",
+          "「新しい列を足す（まだ使わない）」「新旧の両方に書く」「古いデータを新しい列へ写す」を、この順に上から並べる。"
+        ],
+        "expectedErrors": [
+          "devops-a-order"
+        ],
+        "actions": [
+          {
+            "op": "arrange",
+            "stages": [
+              [
+                "add"
+              ],
+              [
+                "dual"
+              ],
+              [
+                "copy"
+              ]
+            ]
+          }
+        ]
+      },
+      {
+        "id": "rest",
+        "purpose": "続けて、読む先を切り替え、最後に古い物を消す。「全てを 1 回の更新で出す」は使わない。",
+        "check": {
+          "kind": "sim",
+          "expr": "seq add<dual<copy<switch<drop && deps && !has all"
+        },
+        "afterward": "5 回に分けて出せた。読む先は設定で切るので、問題があればすぐ戻せる。消すのは最後の 1 回だけ。",
+        "hints": [
+          "消すと戻せないので最後。",
+          "読む先の切り替えは、写した後。",
+          "「新しい列を足す（まだ使わない）」「新旧の両方に書く」「古いデータを新しい列へ写す」の下に、「機能の切り替えで、読む先を新しい列にする」「古い列を消す」を、この順に足して並べる。"
+        ],
+        "expectedErrors": [
+          "devops-a-order"
+        ],
+        "actions": [
+          {
+            "op": "arrange",
+            "stages": [
+              [
+                "add"
+              ],
+              [
+                "dual"
+              ],
+              [
+                "copy"
+              ],
+              [
+                "switch"
+              ],
+              [
+                "drop"
+              ]
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "result": {
+    "success": "安全な進め方を設計できた。",
+    "partial": "ヒントを使って設計できた。次は、自分の変更を 3 つに分けてみよう。",
+    "retry": "まだ途中で壊れる。先に要る物が前の段にあるかを見よう。"
+  },
+  "summary": {
+    "points": [
+      "小さく分ける",
+      "頻繁に届ける",
+      "いつでも戻せる"
+    ],
+    "next": [
+      "devops.a.02"
+    ],
+    "terms": [
+      "feature-flag",
+      "rollback"
+    ]
+  }
+}

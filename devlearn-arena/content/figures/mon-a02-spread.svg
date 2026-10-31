@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 360" font-family="&quot;Noto Sans JP&quot;, sans-serif">
+  <title>依存の図と、遅れが伝わる経路</title>
+  <defs>
+    <marker id="arrow-gold" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="#f2b632" />
+    </marker>
+  </defs>
+  <g class="el" data-part="web">
+    <rect x="20" y="30" width="150" height="80" rx="10" fill="#1a6fd6" />
+    <text x="95" y="75" text-anchor="middle" font-size="16" font-weight="700" fill="#eef2f6">画面</text>
+  </g>
+  <g class="el" data-part="order">
+    <rect x="20" y="135" width="150" height="80" rx="10" fill="#1a6fd6" />
+    <text x="95" y="180" text-anchor="middle" font-size="16" font-weight="700" fill="#eef2f6">注文</text>
+  </g>
+  <g class="el" data-part="search">
+    <rect x="20" y="240" width="150" height="80" rx="10" fill="#1a6fd6" />
+    <text x="95" y="285" text-anchor="middle" font-size="16" font-weight="700" fill="#eef2f6">検索</text>
+  </g>
+  <g class="el" data-part="auth">
+    <rect x="260" y="135" width="150" height="80" rx="10" fill="#c0392b" />
+    <text x="335" y="169" text-anchor="middle" font-size="16" font-weight="700" fill="#eef2f6">認証</text>
+    <text x="335" y="191" text-anchor="middle" font-size="14" fill="#eef2f6">遅れの元</text>
+  </g>
+  <g class="el" data-part="db">
+    <rect x="470" y="135" width="150" height="80" rx="10" fill="#f2b632" />
+    <text x="545" y="180" text-anchor="middle" font-size="16" font-weight="700" fill="#0a1424">認証の DB</text>
+  </g>
+  <g class="el" data-part="flow">
+    <path d="M170 70 L257 165" fill="none" stroke="#f2b632" stroke-width="2" marker-end="url(#arrow-gold)" />
+    <path d="M170 175 L257 175" fill="none" stroke="#f2b632" stroke-width="2" marker-end="url(#arrow-gold)" />
+    <path d="M170 280 L257 185" fill="none" stroke="#f2b632" stroke-width="2" marker-end="url(#arrow-gold)" />
+    <path d="M410 175 L467 175" fill="none" stroke="#f2b632" stroke-width="2" marker-end="url(#arrow-gold)" />
+  </g>
+  <g class="el" data-part="note">
+    <text x="320" y="340" text-anchor="middle" font-size="14" fill="#eef2f6">共通の依存先の遅れが、全体に広がる</text>
+  </g>
+</svg>

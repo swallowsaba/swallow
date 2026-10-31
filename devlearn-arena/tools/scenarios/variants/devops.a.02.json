@@ -1,0 +1,103 @@
+{
+  "lesson": "devops.a.02",
+  "variants": [
+    {
+      "name": "戻してから置く",
+      "steps": {
+        "roles": [
+          {
+            "op": "put",
+            "item": "aoki",
+            "slot": "lead"
+          },
+          {
+            "op": "put",
+            "item": "ishida",
+            "slot": "dig"
+          },
+          {
+            "op": "put",
+            "item": "ueno",
+            "slot": "talk"
+          }
+        ],
+        "share": [
+          {
+            "op": "take",
+            "item": "rota"
+          },
+          {
+            "op": "put",
+            "item": "rota",
+            "slot": "use"
+          },
+          {
+            "op": "take",
+            "item": "record"
+          },
+          {
+            "op": "put",
+            "item": "record",
+            "slot": "use"
+          }
+        ]
+      }
+    },
+    {
+      "name": "先に仕組みを決める",
+      "steps": {
+        "roles": [
+          {
+            "op": "put",
+            "item": "rota",
+            "slot": "use"
+          },
+          {
+            "op": "put",
+            "item": "record",
+            "slot": "use"
+          },
+          {
+            "op": "put",
+            "item": "ueno",
+            "slot": "talk"
+          },
+          {
+            "op": "put",
+            "item": "ishida",
+            "slot": "dig"
+          },
+          {
+            "op": "put",
+            "item": "aoki",
+            "slot": "lead"
+          }
+        ],
+        "share": []
+      }
+    }
+  ],
+  "wrong": {
+    "step": "share",
+    "why": "負担を偏らせる札を使う",
+    "input": [
+      {
+        "op": "put",
+        "item": "fixed",
+        "slot": "use"
+      }
+    ],
+    "retry": [
+      {
+        "op": "put",
+        "item": "rota",
+        "slot": "use"
+      },
+      {
+        "op": "put",
+        "item": "record",
+        "slot": "use"
+      }
+    ]
+  }
+}

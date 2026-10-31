@@ -248,6 +248,34 @@
       "lessons": [
         "cloud.i.04"
       ]
+    },
+    {
+      "id": "rto",
+      "word": "RTO",
+      "reading": "あーるてぃーおー",
+      "plain": "障害から戻すまでの目標時間。",
+      "why": "目標が決まると、備える範囲と費用が決まる。",
+      "related": [
+        "rpo",
+        "availability-zone"
+      ],
+      "lessons": [
+        "cloud.a.02"
+      ]
+    },
+    {
+      "id": "rpo",
+      "word": "RPO",
+      "reading": "あーるぴーおー",
+      "plain": "障害で失ってよいデータの量。時間で表す（直前の 1 時間分まで、など）。",
+      "why": "控えを取る頻度は、ここから決まる。",
+      "related": [
+        "rto",
+        "backup"
+      ],
+      "lessons": [
+        "cloud.a.02"
+      ]
     }
   ]
 }

@@ -1,0 +1,414 @@
+{
+  "id": "mon.a.01",
+  "domain": "mon",
+  "level": "advanced",
+  "theme": "設計",
+  "title": "鳴りすぎないアラート",
+  "goal": "症状に基づく通知と、優先度の設計ができる",
+  "minutes": 20,
+  "prerequisites": [
+    "mon.i.04"
+  ],
+  "related": [
+    "sec.a.03",
+    "devops.a.02"
+  ],
+  "next": [
+    "mon.a.02"
+  ],
+  "terms": [
+    "cpu",
+    "memory",
+    "server",
+    "pod",
+    "disk"
+  ],
+  "explain": {
+    "what": "原因ではなく症状（利用者への影響）で鳴らし、優先度を分ける設計。",
+    "why": "鳴りすぎると慣れてしまい、本当の異常を見逃す。",
+    "use": "運用の改善で使う。起こす通知は、人がすぐ動く意味のある物だけにする。",
+    "when": "1 晩に 200 件の通知が来て、当番が眠れない。",
+    "figures": [
+      "mon-a01-alerts"
+    ]
+  },
+  "understand": [
+    {
+      "kind": "relation",
+      "prompt": "2 つの関係は？",
+      "a": "原因ごとに通知を鳴らす",
+      "b": "1 つの障害で多くの通知が鳴る",
+      "answer": "cause",
+      "why": "1 つの障害は多くの原因の指標を動かす。症状は 1 つなので、まとめて知らせられる。",
+      "see": "why"
+    },
+    {
+      "kind": "situation",
+      "prompt": "同じ時刻に {{term:cpu}} と{{term:memory}}と再起動の通知が 30 件鳴った。どうする？",
+      "see": "use",
+      "choices": [
+        {
+          "id": "a",
+          "text": "1 つの症状の通知にまとめる",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "全て別々に起こす",
+          "correct": false,
+          "whyNot": "読む間に時間が過ぎる。"
+        },
+        {
+          "id": "c",
+          "text": "全て消す",
+          "correct": false,
+          "whyNot": "原因を調べる記録として残す。"
+        }
+      ]
+    }
+  ],
+  "quiz": [
+    {
+      "id": "q1",
+      "kind": "situation",
+      "prompt": "CPU が高いだけ。利用者は困っていない。どうする？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "知らせず記録する",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "すぐ起こす",
+          "correct": false,
+          "whyNot": "困っていないなら起こす意味が無い。"
+        },
+        {
+          "id": "c",
+          "text": "記録も消す",
+          "correct": false,
+          "whyNot": "調べる時に要る。"
+        }
+      ],
+      "explanation": "調査の材料として残す。"
+    },
+    {
+      "id": "q2",
+      "kind": "situation",
+      "prompt": "利用者のエラーが増えた。どうする？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "知らせる",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "朝まで待つ",
+          "correct": false,
+          "whyNot": "利用者が今困っている。"
+        },
+        {
+          "id": "c",
+          "text": "記録だけ",
+          "correct": false,
+          "whyNot": "気づくのが遅れる。"
+        }
+      ],
+      "explanation": "これが症状の通知。"
+    },
+    {
+      "id": "q3",
+      "kind": "cause",
+      "prompt": "通知が鳴りすぎる。原因は？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "原因ごとに鳴らしている",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "{{term:server}}が多すぎる",
+          "correct": false,
+          "whyNot": "台数の問題ではない。"
+        },
+        {
+          "id": "c",
+          "text": "当番が少ない",
+          "correct": false,
+          "whyNot": "当番を増やしても通知は減らない。"
+        }
+      ],
+      "explanation": "症状で鳴らす形に変える。"
+    },
+    {
+      "id": "q4",
+      "kind": "predict",
+      "prompt": "原因ごとの通知を症状の通知に変えると？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "通知の数が大きく減る",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "障害が増える",
+          "correct": false,
+          "whyNot": "通知を変えても障害は増えない。"
+        },
+        {
+          "id": "c",
+          "text": "同じ数のまま",
+          "correct": false,
+          "whyNot": "1 つの症状にまとまる。"
+        }
+      ],
+      "explanation": "定期的に見直す。"
+    }
+  ],
+  "practice": {
+    "mode": "simulation",
+    "purpose": "1 晩に 200 件の通知が鳴っている。全ての規則が「すぐ起こす」に入っている。起こす通知を、意味のある 5 件以下に作り直す。ただし症状の通知を消すと、次の障害を見逃す。",
+    "environment": "sim-assign",
+    "setup": {
+      "timeLabel": "1 晩に起こされる回数",
+      "timeUnit": "件",
+      "slots": [
+        {
+          "id": "page",
+          "label": "すぐ起こす"
+        },
+        {
+          "id": "ticket",
+          "label": "翌朝の札にする"
+        },
+        {
+          "id": "record",
+          "label": "記録だけ"
+        }
+      ],
+      "items": [
+        {
+          "id": "errors",
+          "label": "利用者のエラー率が 1% を超えた",
+          "time": {
+            "page": 2,
+            "ticket": 0,
+            "record": 0
+          },
+          "refuse": {
+            "record": "利用者の影響を消すと見逃す",
+            "ticket": "利用者の影響を朝まで待つと見逃す"
+          }
+        },
+        {
+          "id": "slow",
+          "label": "応答が 2 秒を超える利用者が増えた",
+          "time": {
+            "page": 2,
+            "ticket": 0,
+            "record": 0
+          },
+          "refuse": {
+            "record": "利用者の影響を消すと見逃す",
+            "ticket": "利用者の影響を朝まで待つと見逃す"
+          }
+        },
+        {
+          "id": "budget",
+          "label": "エラーバジェットが急に減っている",
+          "time": {
+            "page": 1,
+            "ticket": 0,
+            "record": 0
+          },
+          "refuse": {
+            "record": "目標の異常を消すと見逃す"
+          }
+        },
+        {
+          "id": "disk",
+          "label": "ディスクが 80% を超えた",
+          "time": {
+            "page": 10,
+            "ticket": 0,
+            "record": 0
+          }
+        },
+        {
+          "id": "cpu",
+          "label": "CPU が 80% を超えた",
+          "time": {
+            "page": 110,
+            "ticket": 0,
+            "record": 0
+          }
+        },
+        {
+          "id": "mem",
+          "label": "メモリが 75% を超えた",
+          "time": {
+            "page": 45,
+            "ticket": 0,
+            "record": 0
+          }
+        },
+        {
+          "id": "restart",
+          "label": "Pod が 1 回再起動した",
+          "time": {
+            "page": 30,
+            "ticket": 0,
+            "record": 0
+          }
+        }
+      ],
+      "initial": {
+        "errors": "page",
+        "slow": "page",
+        "budget": "page",
+        "disk": "page",
+        "cpu": "page",
+        "mem": "page",
+        "restart": "page"
+      },
+      "panels": [
+        {
+          "kind": "table",
+          "title": "昨夜の通知",
+          "columns": [
+            "規則",
+            "件数",
+            "利用者に影響"
+          ],
+          "rows": [
+            [
+              "CPU",
+              "110",
+              "無し"
+            ],
+            [
+              "メモリ",
+              "45",
+              "無し"
+            ],
+            [
+              "Pod の再起動",
+              "30",
+              "無し"
+            ],
+            [
+              "ディスク",
+              "10",
+              "無し（数日は持つ）"
+            ],
+            [
+              "エラー率",
+              "2",
+              "有り"
+            ],
+            [
+              "応答の遅さ",
+              "2",
+              "有り"
+            ],
+            [
+              "エラーバジェット",
+              "1",
+              "有り"
+            ]
+          ]
+        },
+        {
+          "kind": "text",
+          "title": "障害の模擬",
+          "body": "夜の 2 時に DB が止まった。エラー率の通知だけが鳴り、当番がすぐ起きて対応した。CPU の通知は記録に残り、調査に使えた。",
+          "when": "in errors=page slow=page budget=page && time<=5"
+        }
+      ]
+    },
+    "steps": [
+      {
+        "id": "record",
+        "purpose": "原因の指標で、利用者に影響が無い物を「記録だけ」へ移す。「CPU が 80% を超えた」「メモリが 75% を超えた」「{{term:pod}} が 1 回再起動した」の 3 つ。",
+        "check": {
+          "kind": "sim",
+          "expr": "in cpu=record mem=record restart=record"
+        },
+        "afterward": "185 件が消えた。調査の時に読める記録としては残っている。",
+        "hints": [
+          "表の「利用者に影響」が無し。",
+          "消すのではなく記録に残す。",
+          "「CPU が 80% を超えた」と「メモリが 75% を超えた」と「Pod が 1 回再起動した」を「記録だけ」へドラッグして入れる。"
+        ],
+        "expectedErrors": [
+          "mon-a-alert"
+        ],
+        "actions": [
+          {
+            "op": "put",
+            "item": "cpu",
+            "slot": "record"
+          },
+          {
+            "op": "put",
+            "item": "mem",
+            "slot": "record"
+          },
+          {
+            "op": "put",
+            "item": "restart",
+            "slot": "record"
+          }
+        ]
+      },
+      {
+        "id": "ticket",
+        "purpose": "急がないが対応は要る物を朝に回す。「{{term:disk}}が 80% を超えた」を「翌朝の札にする」へ移す。起こされる回数が 5 件以下で、症状の通知が残っていれば達成。",
+        "check": {
+          "kind": "sim",
+          "expr": "in disk=ticket errors=page slow=page budget=page && time<=5"
+        },
+        "afterward": "200 件が 5 件になった。障害の模擬でも、必要な時だけ鳴った。優先度を分けると、当番は起きた時に必ず動ける。",
+        "hints": [
+          "数日は持つので、夜に起こす意味は無い。",
+          "朝に対応できれば足りる。",
+          "「ディスクが 80% を超えた」を「翌朝の札にする」へドラッグして入れる。"
+        ],
+        "expectedErrors": [
+          "mon-a-alert"
+        ],
+        "actions": [
+          {
+            "op": "put",
+            "item": "disk",
+            "slot": "ticket"
+          }
+        ]
+      }
+    ]
+  },
+  "result": {
+    "success": "通知を意味のある物に絞れた。",
+    "partial": "ヒントを使って絞れた。次は、規則を足す時に「起きて何をするか」を先に考えよう。",
+    "retry": "まだ多い。「利用者に影響」の欄を見直そう。"
+  },
+  "summary": {
+    "points": [
+      "症状で鳴らす",
+      "優先度を分ける",
+      "定期的に見直す"
+    ],
+    "next": [
+      "mon.a.02"
+    ],
+    "terms": [
+      "alert",
+      "on-call",
+      "error-budget"
+    ]
+  }
+}

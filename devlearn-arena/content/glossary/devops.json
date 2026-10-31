@@ -88,6 +88,34 @@
       "lessons": [
         "devops.i.03"
       ]
+    },
+    {
+      "id": "feature-flag",
+      "word": "機能の切り替え",
+      "reading": "きのうのきりかえ",
+      "plain": "コードは配っておき、設定で機能を入り切りする仕組み。",
+      "why": "未完成の機能を隠して小さく出せる。問題があればすぐ切れる。",
+      "related": [
+        "rollback",
+        "canary-release"
+      ],
+      "lessons": [
+        "devops.a.01"
+      ]
+    },
+    {
+      "id": "incident-commander",
+      "word": "指揮する人",
+      "reading": "しきするひと",
+      "plain": "障害の間、全体を見て決め、割り振る役。自分では直さない。",
+      "why": "決める人が居ないと、同じ調査を重ね、外への連絡も止まる。",
+      "related": [
+        "on-call",
+        "postmortem"
+      ],
+      "lessons": [
+        "devops.a.02"
+      ]
     }
   ]
 }

@@ -1,0 +1,125 @@
+{
+  "lesson": "mon.a.02",
+  "variants": [
+    {
+      "name": "先に巻き込まれた側を置く",
+      "steps": {
+        "source": [
+          {
+            "op": "put",
+            "item": "web",
+            "slot": "victim"
+          },
+          {
+            "op": "put",
+            "item": "order",
+            "slot": "victim"
+          },
+          {
+            "op": "put",
+            "item": "search",
+            "slot": "victim"
+          },
+          {
+            "op": "put",
+            "item": "auth",
+            "slot": "source"
+          }
+        ],
+        "stop": [
+          {
+            "op": "put",
+            "item": "timeout",
+            "slot": "on"
+          },
+          {
+            "op": "put",
+            "item": "limit",
+            "slot": "on"
+          }
+        ]
+      }
+    },
+    {
+      "name": "戻してから置き直す",
+      "steps": {
+        "source": [
+          {
+            "op": "put",
+            "item": "auth",
+            "slot": "victim"
+          },
+          {
+            "op": "put",
+            "item": "auth",
+            "slot": "source"
+          },
+          {
+            "op": "put",
+            "item": "web",
+            "slot": "victim"
+          },
+          {
+            "op": "put",
+            "item": "order",
+            "slot": "victim"
+          },
+          {
+            "op": "put",
+            "item": "search",
+            "slot": "victim"
+          }
+        ],
+        "stop": [
+          {
+            "op": "take",
+            "item": "limit"
+          },
+          {
+            "op": "put",
+            "item": "limit",
+            "slot": "on"
+          },
+          {
+            "op": "put",
+            "item": "timeout",
+            "slot": "on"
+          }
+        ]
+      }
+    }
+  ],
+  "wrong": {
+    "step": "source",
+    "why": "症状の場所を元と見る",
+    "input": [
+      {
+        "op": "put",
+        "item": "web",
+        "slot": "source"
+      }
+    ],
+    "retry": [
+      {
+        "op": "put",
+        "item": "auth",
+        "slot": "source"
+      },
+      {
+        "op": "put",
+        "item": "web",
+        "slot": "victim"
+      },
+      {
+        "op": "put",
+        "item": "order",
+        "slot": "victim"
+      },
+      {
+        "op": "put",
+        "item": "search",
+        "slot": "victim"
+      }
+    ]
+  }
+}

@@ -1,0 +1,139 @@
+{
+  "lesson": "cloud.a.01",
+  "variants": [
+    {
+      "name": "逆向きに線を引く",
+      "steps": {
+        "iaas": [
+          {
+            "op": "connect",
+            "a": "vm",
+            "b": "lb"
+          },
+          {
+            "op": "connect",
+            "a": "lb",
+            "b": "user"
+          },
+          {
+            "op": "send",
+            "from": "user",
+            "to": "vm"
+          }
+        ],
+        "paas": [
+          {
+            "op": "connect",
+            "a": "paas",
+            "b": "user"
+          },
+          {
+            "op": "send",
+            "from": "user",
+            "to": "paas"
+          }
+        ],
+        "ctr": [
+          {
+            "op": "connect",
+            "a": "pod",
+            "b": "ingress"
+          },
+          {
+            "op": "connect",
+            "a": "ingress",
+            "b": "user"
+          },
+          {
+            "op": "send",
+            "from": "user",
+            "to": "pod"
+          }
+        ],
+        "choose": [
+          {
+            "op": "connect",
+            "a": "paas",
+            "b": "choice"
+          }
+        ]
+      }
+    },
+    {
+      "name": "先にコンテナの線を引いておく",
+      "steps": {
+        "iaas": [
+          {
+            "op": "connect",
+            "a": "user",
+            "b": "ingress"
+          },
+          {
+            "op": "connect",
+            "a": "ingress",
+            "b": "pod"
+          },
+          {
+            "op": "connect",
+            "a": "user",
+            "b": "lb"
+          },
+          {
+            "op": "connect",
+            "a": "lb",
+            "b": "vm"
+          },
+          {
+            "op": "send",
+            "from": "user",
+            "to": "vm"
+          }
+        ],
+        "paas": [
+          {
+            "op": "connect",
+            "a": "user",
+            "b": "paas"
+          },
+          {
+            "op": "send",
+            "from": "user",
+            "to": "paas"
+          }
+        ],
+        "ctr": [
+          {
+            "op": "send",
+            "from": "user",
+            "to": "pod"
+          }
+        ],
+        "choose": [
+          {
+            "op": "connect",
+            "a": "choice",
+            "b": "paas"
+          }
+        ]
+      }
+    }
+  ],
+  "wrong": {
+    "step": "choose",
+    "why": "手間を見ずに選ぶ",
+    "input": [
+      {
+        "op": "connect",
+        "a": "choice",
+        "b": "vm"
+      }
+    ],
+    "retry": [
+      {
+        "op": "connect",
+        "a": "choice",
+        "b": "paas"
+      }
+    ]
+  }
+}

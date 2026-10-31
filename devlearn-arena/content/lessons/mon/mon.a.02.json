@@ -1,0 +1,431 @@
+{
+  "id": "mon.a.02",
+  "domain": "mon",
+  "level": "advanced",
+  "theme": "分散",
+  "title": "分散システムの調査",
+  "goal": "遅延の伝播と部分的な障害を見抜ける",
+  "minutes": 20,
+  "prerequisites": [
+    "mon.i.03",
+    "k8s.a.03"
+  ],
+  "related": [
+    "k8s.a.03",
+    "net.a.01"
+  ],
+  "next": [],
+  "terms": [
+    "service",
+    "terminal",
+    "retry-storm",
+    "response-time",
+    "authentication",
+    "log"
+  ],
+  "explain": {
+    "what": "遅れや失敗が{{term:service}}の間を伝わる様子を見抜くこと。",
+    "why": "1 つの遅れが全体に広がり、症状の場所と原因の場所が離れる。",
+    "use": "大きなシステムの障害で使う。依存の図で、全員が呼ぶ先を探す。",
+    "when": "全てのサービスが少しずつ遅い。どれも自分は悪くないように見える。",
+    "figures": [
+      "mon-a02-spread"
+    ]
+  },
+  "understand": [
+    {
+      "kind": "figure-pick",
+      "figure": "mon-a02-spread",
+      "prompt": "遅れの元の場所を押す。",
+      "answer": [
+        "auth"
+      ],
+      "see": "use"
+    },
+    {
+      "kind": "situation",
+      "prompt": "再試行はなぜ負荷を増やす？",
+      "see": "why",
+      "choices": [
+        {
+          "id": "a",
+          "text": "弱った相手に、失敗した分の呼び出しをさらに送るから",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "速くなるから",
+          "correct": false,
+          "whyNot": "弱った相手には逆効果。"
+        },
+        {
+          "id": "c",
+          "text": "回数は変わらないから",
+          "correct": false,
+          "whyNot": "回数が増える。"
+        }
+      ]
+    }
+  ],
+  "quiz": [
+    {
+      "id": "q1",
+      "kind": "cause",
+      "prompt": "全部のサービスが遅い。何を疑う？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "共通の依存先",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "全てのサービスの同時の不具合",
+          "correct": false,
+          "whyNot": "同時に壊れるのは考えにくい。"
+        },
+        {
+          "id": "c",
+          "text": "利用者の{{term:terminal}}",
+          "correct": false,
+          "whyNot": "全員が同時に遅くはならない。"
+        }
+      ],
+      "explanation": "依存の図で、全員が呼ぶ先を探す。"
+    },
+    {
+      "id": "q2",
+      "kind": "situation",
+      "prompt": "遅れの伝わりを止めるには？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "時間切れと再試行の制限を入れる",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "再試行を増やす",
+          "correct": false,
+          "whyNot": "さらに詰まる。"
+        },
+        {
+          "id": "c",
+          "text": "待ち時間を長くする",
+          "correct": false,
+          "whyNot": "長く待つ呼び出しが溜まる。"
+        }
+      ],
+      "explanation": "早くあきらめて、呼び出しを溜めない。"
+    },
+    {
+      "id": "q3",
+      "kind": "predict",
+      "prompt": "再試行を無制限にすると？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "さらに詰まる",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "全てが速くなる",
+          "correct": false,
+          "whyNot": "負荷が増えるだけ。"
+        },
+        {
+          "id": "c",
+          "text": "何も変わらない",
+          "correct": false,
+          "whyNot": "呼び出しが増える。"
+        }
+      ],
+      "explanation": "{{term:retry-storm}}と呼ぶ。"
+    }
+  ],
+  "practice": {
+    "mode": "simulation",
+    "purpose": "全てのサービスが遅い。目標は{{term:response-time}} 300 ms 以下。依存の図と応答時間の表を読み、遅れの元を特定し、伝わりを止める対策を入れる。",
+    "environment": "sim-assign",
+    "setup": {
+      "timeLabel": "画面の応答時間",
+      "timeUnit": "ms",
+      "slots": [
+        {
+          "id": "source",
+          "label": "遅れの元",
+          "capacity": 1,
+          "full": "元は 1 つ。全員が呼ぶ先を探す"
+        },
+        {
+          "id": "victim",
+          "label": "巻き込まれた側"
+        },
+        {
+          "id": "on",
+          "label": "入れる対策"
+        },
+        {
+          "id": "off",
+          "label": "入れない対策"
+        }
+      ],
+      "items": [
+        {
+          "id": "web",
+          "label": "画面",
+          "size": 1,
+          "refuse": {
+            "on": "対策の札ではない",
+            "off": "対策の札ではない",
+            "source": "画面は元ではない。呼ぶ側にすぎない"
+          }
+        },
+        {
+          "id": "order",
+          "label": "注文",
+          "size": 1,
+          "refuse": {
+            "on": "対策の札ではない",
+            "off": "対策の札ではない",
+            "source": "注文は元ではない。呼ぶ側にすぎない"
+          }
+        },
+        {
+          "id": "search",
+          "label": "検索",
+          "size": 1,
+          "refuse": {
+            "on": "対策の札ではない",
+            "off": "対策の札ではない",
+            "source": "検索は元ではない。呼ぶ側にすぎない"
+          }
+        },
+        {
+          "id": "auth",
+          "label": "認証",
+          "size": 1,
+          "refuse": {
+            "on": "対策の札ではない",
+            "off": "対策の札ではない"
+          }
+        },
+        {
+          "id": "limit",
+          "label": "再試行を 2 回までにする",
+          "time": {
+            "on": 0,
+            "off": 2600
+          },
+          "refuse": {
+            "source": "対策の札。サービスの枠には入らない",
+            "victim": "対策の札。サービスの枠には入らない"
+          }
+        },
+        {
+          "id": "timeout",
+          "label": "時間切れを 30 秒から 1 秒にする",
+          "time": {
+            "on": 0,
+            "off": 1400
+          },
+          "refuse": {
+            "source": "対策の札。サービスの枠には入らない",
+            "victim": "対策の札。サービスの枠には入らない"
+          }
+        },
+        {
+          "id": "fix",
+          "label": "認証の DB の詰まりを解く",
+          "time": {
+            "on": 200,
+            "off": 200
+          },
+          "keep": "DB の担当が直している。動かせない"
+        },
+        {
+          "id": "more",
+          "label": "再試行を 10 回に増やす",
+          "extra": true,
+          "time": {
+            "on": 3000,
+            "off": 0
+          },
+          "refuse": {
+            "source": "対策の札。サービスの枠には入らない",
+            "victim": "対策の札。サービスの枠には入らない"
+          }
+        }
+      ],
+      "initial": {
+        "limit": "off",
+        "timeout": "off",
+        "fix": "on",
+        "more": "off"
+      },
+      "panels": [
+        {
+          "kind": "table",
+          "title": "依存の図（誰が誰を呼ぶか）",
+          "columns": [
+            "呼ぶ側",
+            "呼ばれる側"
+          ],
+          "rows": [
+            [
+              "画面",
+              "認証"
+            ],
+            [
+              "注文",
+              "認証"
+            ],
+            [
+              "検索",
+              "認証"
+            ],
+            [
+              "認証",
+              "認証の DB"
+            ]
+          ]
+        },
+        {
+          "kind": "table",
+          "title": "各サービスの応答時間（ms）",
+          "columns": [
+            "サービス",
+            "いつも",
+            "今"
+          ],
+          "rows": [
+            [
+              "画面",
+              "120",
+              "4200"
+            ],
+            [
+              "注文",
+              "150",
+              "4300"
+            ],
+            [
+              "検索",
+              "90",
+              "4100"
+            ],
+            [
+              "認証",
+              "30",
+              "3900"
+            ]
+          ]
+        },
+        {
+          "kind": "log",
+          "title": "認証の記録",
+          "lines": [
+            "14:02 DB の接続を待つ処理: 40",
+            "14:03 同じ呼び出し元からの再試行: 毎秒 900",
+            "14:04 DB の接続を待つ処理: 380"
+          ]
+        },
+        {
+          "kind": "text",
+          "title": "様子",
+          "body": "再試行が減り、認証の詰まりが解けた。全てのサービスの応答が元に戻った。",
+          "when": "in limit=on timeout=on && time<=300"
+        }
+      ]
+    },
+    "steps": [
+      {
+        "id": "source",
+        "purpose": "依存の図と表を読み、全員が呼ぶ先を「遅れの元」へ入れる。呼ぶ側の 3 つは「巻き込まれた側」へ入れる。",
+        "check": {
+          "kind": "sim",
+          "expr": "in auth=source web=victim order=victim search=victim"
+        },
+        "afterward": "3 つとも{{term:authentication}}を呼び、認証の遅れがそのまま上に乗っている。症状は画面で、元は認証。場所が離れていた。",
+        "hints": [
+          "全員が呼ぶ先は 1 つ。",
+          "いつもとの差が同じくらいなのは、同じ元の遅れを受けているから。",
+          "「認証」を「遅れの元」へ、「画面」と「注文」と「検索」を「巻き込まれた側」へドラッグして入れる。"
+        ],
+        "expectedErrors": [
+          "mon-a-spread"
+        ],
+        "actions": [
+          {
+            "op": "put",
+            "item": "auth",
+            "slot": "source"
+          },
+          {
+            "op": "put",
+            "item": "web",
+            "slot": "victim"
+          },
+          {
+            "op": "put",
+            "item": "order",
+            "slot": "victim"
+          },
+          {
+            "op": "put",
+            "item": "search",
+            "slot": "victim"
+          }
+        ]
+      },
+      {
+        "id": "stop",
+        "purpose": "伝わりを止める。「再試行を 2 回までにする」と「時間切れを 30 秒から 1 秒にする」を「入れる対策」へ入れる。応答が 300 ms 以下に戻れば達成。",
+        "check": {
+          "kind": "sim",
+          "expr": "in limit=on timeout=on more=off && time<=300"
+        },
+        "afterward": "呼び出しが減り、詰まりが解けた。再試行を増やすと逆に悪くなる。制限が伝わりを止めた。",
+        "hints": [
+          "{{term:log}}の毎秒 900 の再試行が負荷の元。",
+          "早くあきらめて、呼び出しを溜めない。",
+          "「再試行を 2 回までにする」と「時間切れを 30 秒から 1 秒にする」を「入れる対策」へドラッグして入れる。"
+        ],
+        "expectedErrors": [
+          "mon-a-spread"
+        ],
+        "actions": [
+          {
+            "op": "put",
+            "item": "limit",
+            "slot": "on"
+          },
+          {
+            "op": "put",
+            "item": "timeout",
+            "slot": "on"
+          }
+        ]
+      }
+    ]
+  },
+  "result": {
+    "success": "伝わりを見抜いて止められた。",
+    "partial": "ヒントを使って止められた。次は、依存の図を先に見てみよう。",
+    "retry": "まだ戻らない。全員が呼ぶ先と、再試行の設定を見直そう。"
+  },
+  "summary": {
+    "points": [
+      "症状と原因の場所は離れる",
+      "共通の依存先を探す",
+      "伝わりを止める仕組み"
+    ],
+    "next": [],
+    "terms": [
+      "retry-storm",
+      "trace",
+      "span"
+    ]
+  }
+}

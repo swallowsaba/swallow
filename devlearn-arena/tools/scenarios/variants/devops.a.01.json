@@ -1,0 +1,163 @@
+{
+  "lesson": "devops.a.01",
+  "variants": [
+    {
+      "name": "1 段ずつ増やす",
+      "steps": {
+        "first": [
+          {
+            "op": "arrange",
+            "stages": [
+              [
+                "add"
+              ]
+            ]
+          },
+          {
+            "op": "arrange",
+            "stages": [
+              [
+                "add"
+              ],
+              [
+                "dual"
+              ]
+            ]
+          },
+          {
+            "op": "arrange",
+            "stages": [
+              [
+                "add"
+              ],
+              [
+                "dual"
+              ],
+              [
+                "copy"
+              ]
+            ]
+          }
+        ],
+        "rest": [
+          {
+            "op": "arrange",
+            "stages": [
+              [
+                "add"
+              ],
+              [
+                "dual"
+              ],
+              [
+                "copy"
+              ],
+              [
+                "switch"
+              ]
+            ]
+          },
+          {
+            "op": "arrange",
+            "stages": [
+              [
+                "add"
+              ],
+              [
+                "dual"
+              ],
+              [
+                "copy"
+              ],
+              [
+                "switch"
+              ],
+              [
+                "drop"
+              ]
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "一度に全てを並べる",
+      "steps": {
+        "first": [
+          {
+            "op": "arrange",
+            "stages": [
+              [
+                "add"
+              ],
+              [
+                "dual"
+              ],
+              [
+                "copy"
+              ],
+              [
+                "switch"
+              ],
+              [
+                "drop"
+              ]
+            ]
+          }
+        ],
+        "rest": []
+      }
+    }
+  ],
+  "wrong": {
+    "step": "rest",
+    "why": "全てを 1 回にまとめる札を入れる",
+    "input": [
+      {
+        "op": "arrange",
+        "stages": [
+          [
+            "all"
+          ],
+          [
+            "add"
+          ],
+          [
+            "dual"
+          ],
+          [
+            "copy"
+          ],
+          [
+            "switch"
+          ],
+          [
+            "drop"
+          ]
+        ]
+      }
+    ],
+    "retry": [
+      {
+        "op": "arrange",
+        "stages": [
+          [
+            "add"
+          ],
+          [
+            "dual"
+          ],
+          [
+            "copy"
+          ],
+          [
+            "switch"
+          ],
+          [
+            "drop"
+          ]
+        ]
+      }
+    ]
+  }
+}

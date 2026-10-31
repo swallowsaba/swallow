@@ -1,0 +1,369 @@
+{
+  "id": "cloud.a.02",
+  "domain": "cloud",
+  "level": "advanced",
+  "theme": "障害",
+  "title": "障害に強い構成",
+  "goal": "地域・区画の障害を想定して設計できる",
+  "minutes": 20,
+  "prerequisites": [
+    "cloud.i.01",
+    "mon.i.03"
+  ],
+  "related": [
+    "mon.i.03",
+    "devops.a.01"
+  ],
+  "next": [],
+  "terms": [
+    "service",
+    "rpo",
+    "rto",
+    "slo",
+    "web",
+    "db"
+  ],
+  "explain": {
+    "what": "区画や地域の障害を想定し、止まらない・戻せる構成を作ること。",
+    "why": "大きな障害は起きる前提で備える。起きてから考えると、戻すまでが長くなる。",
+    "use": "重要な{{term:service}}で使う。戻すまでの時間と失うデータの量の目標から、備える範囲を決める。",
+    "when": "地域全体の障害で、1 つの地域に置いた全てが止まった。",
+    "figures": [
+      "cloud-a02-dr"
+    ]
+  },
+  "understand": [
+    {
+      "kind": "relation",
+      "prompt": "2 つの関係は？",
+      "a": "備える範囲を広げる",
+      "b": "費用が増える",
+      "answer": "cause",
+      "why": "同じ物を別の場所にも持つので、費用がかかる。目標に合う範囲にする。",
+      "see": "why"
+    },
+    {
+      "kind": "situation",
+      "prompt": "{{term:rpo}} が 1 時間。控えの頻度は？",
+      "see": "use",
+      "choices": [
+        {
+          "id": "a",
+          "text": "1 時間に 1 回以上",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "1 日に 1 回",
+          "correct": false,
+          "whyNot": "最大 1 日分を失う。"
+        },
+        {
+          "id": "c",
+          "text": "頻度は関係しない",
+          "correct": false,
+          "whyNot": "控えの間の更新を失う。"
+        }
+      ]
+    }
+  ],
+  "quiz": [
+    {
+      "id": "q1",
+      "kind": "situation",
+      "prompt": "地域の障害にも備えるには？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "別の地域に控えと構成を置く",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "同じ地域に台数を増やす",
+          "correct": false,
+          "whyNot": "一緒に止まる。"
+        },
+        {
+          "id": "c",
+          "text": "同じ区画に控えを置く",
+          "correct": false,
+          "whyNot": "一緒に失う。"
+        }
+      ],
+      "explanation": "離れた所に置く。"
+    },
+    {
+      "id": "q2",
+      "kind": "term",
+      "prompt": "戻すまでの目標時間を何と言う？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "{{term:rto}}",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "RPO",
+          "correct": false,
+          "whyNot": "それは失ってよいデータの量。"
+        },
+        {
+          "id": "c",
+          "text": "{{term:slo}}",
+          "correct": false,
+          "whyNot": "それは品質の目標全体。"
+        }
+      ],
+      "explanation": "目標があるから、手順を自動にするか決められる。"
+    },
+    {
+      "id": "q3",
+      "kind": "cause",
+      "prompt": "控えはあるのに、時間内に戻らなかった。原因は？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "手順を試していない",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "控えが新しすぎた",
+          "correct": false,
+          "whyNot": "新しさは問題ではない。"
+        },
+        {
+          "id": "c",
+          "text": "地域が多すぎた",
+          "correct": false,
+          "whyNot": "数の問題ではない。"
+        }
+      ],
+      "explanation": "手順は試して初めて、かかる時間が分かる。"
+    }
+  ],
+  "practice": {
+    "mode": "simulation",
+    "purpose": "予約のサービスは、全てが 1 つの区画にあり、切り替えは手作業。目標は RTO 60 分・RPO 1 時間。区画の障害と地域の障害の両方で、目標の時間内に戻せる構成にする。",
+    "environment": "sim-assign",
+    "setup": {
+      "timeLabel": "地域の障害から戻すまで",
+      "timeUnit": "分",
+      "slots": [
+        {
+          "id": "same",
+          "label": "同じ区画"
+        },
+        {
+          "id": "zone",
+          "label": "別の区画"
+        },
+        {
+          "id": "region",
+          "label": "別の地域"
+        },
+        {
+          "id": "manual",
+          "label": "手作業で切り替える"
+        },
+        {
+          "id": "auto",
+          "label": "自動で切り替える"
+        }
+      ],
+      "items": [
+        {
+          "id": "web",
+          "label": "Web の予備",
+          "time": {
+            "same": 60,
+            "zone": 5,
+            "region": 5
+          },
+          "refuse": {
+            "manual": "切り替え方ではなく置き場所ではない札",
+            "auto": "切り替え方ではなく置き場所を選ぶ札"
+          }
+        },
+        {
+          "id": "db",
+          "label": "DB の写し",
+          "time": {
+            "same": 120,
+            "zone": 10,
+            "region": 10
+          },
+          "refuse": {
+            "manual": "切り替え方ではなく置き場所を選ぶ札",
+            "auto": "切り替え方ではなく置き場所を選ぶ札"
+          }
+        },
+        {
+          "id": "bk",
+          "label": "毎時の控え",
+          "time": {
+            "same": 240,
+            "zone": 240,
+            "region": 20
+          },
+          "refuse": {
+            "manual": "切り替え方ではなく置き場所を選ぶ札",
+            "auto": "切り替え方ではなく置き場所を選ぶ札"
+          }
+        },
+        {
+          "id": "switch",
+          "label": "切り替えの手順",
+          "time": {
+            "manual": 180,
+            "auto": 15
+          },
+          "refuse": {
+            "same": "手順は置き場所ではない",
+            "zone": "手順は置き場所ではない",
+            "region": "手順は置き場所ではない"
+          }
+        }
+      ],
+      "initial": {
+        "web": "same",
+        "db": "same",
+        "bk": "same",
+        "switch": "manual"
+      },
+      "panels": [
+        {
+          "kind": "kv",
+          "title": "目標",
+          "rows": [
+            [
+              "RTO",
+              "60 分"
+            ],
+            [
+              "RPO",
+              "1 時間（控えは毎時）"
+            ]
+          ]
+        },
+        {
+          "kind": "text",
+          "title": "区画の障害の模擬",
+          "body": "東の区画を止めた。別の区画の Web と DB に移り、15 分で戻った。目標の内。",
+          "when": "in web=zone db=zone"
+        },
+        {
+          "kind": "text",
+          "title": "地域の障害の模擬",
+          "body": "地域全体を止めた。別の地域の控えからデータは戻せるが、手作業の切り替えで時間がかかる。",
+          "when": "in bk=region switch=manual"
+        },
+        {
+          "kind": "text",
+          "title": "切り替えの練習",
+          "body": "地域の障害の模擬で、自動の切り替えが動き、50 分で戻った。手順を試したので、かかる時間が分かった。",
+          "when": "in bk=region switch=auto web=zone db=zone"
+        }
+      ]
+    },
+    "steps": [
+      {
+        "id": "zone",
+        "purpose": "区画の障害に備える。「{{term:web}} の予備」と「{{term:db}} の写し」を「別の区画」へ移す。",
+        "check": {
+          "kind": "sim",
+          "expr": "in web=zone db=zone"
+        },
+        "afterward": "1 つの区画が止まっても、別の区画で続く。一番起きやすい障害への備え。",
+        "hints": [
+          "同じ区画だと一緒に止まる。",
+          "2 つとも移す。",
+          "「Web の予備」と「DB の写し」を「別の区画」へドラッグして入れる。"
+        ],
+        "expectedErrors": [
+          "cloud-a-dr"
+        ],
+        "actions": [
+          {
+            "op": "put",
+            "item": "web",
+            "slot": "zone"
+          },
+          {
+            "op": "put",
+            "item": "db",
+            "slot": "zone"
+          }
+        ]
+      },
+      {
+        "id": "region",
+        "purpose": "地域の障害に備える。「毎時の控え」を「別の地域」へ移す。",
+        "check": {
+          "kind": "sim",
+          "expr": "in bk=region"
+        },
+        "afterward": "データは守れる。ただ、手作業の切り替えでは時間がかかる。「地域の障害の模擬」を読む。",
+        "hints": [
+          "地域全体が止まると、同じ地域の控えは使えない。",
+          "離れた場所へ。",
+          "「毎時の控え」を「別の地域」へドラッグして入れる。"
+        ],
+        "expectedErrors": [
+          "cloud-a-dr"
+        ],
+        "actions": [
+          {
+            "op": "put",
+            "item": "bk",
+            "slot": "region"
+          }
+        ]
+      },
+      {
+        "id": "switch",
+        "purpose": "「切り替えの手順」を「自動で切り替える」へ移す。地域の障害から戻すまでが 60 分以内なら達成。",
+        "check": {
+          "kind": "sim",
+          "expr": "in switch=auto bk=region && time<=60"
+        },
+        "afterward": "50 分で戻った。手順を自動にして試したので、目標を満たすと確かめられた。",
+        "hints": [
+          "手作業の 180 分が目標を超えている。",
+          "手順を自動にする。",
+          "「切り替えの手順」を「自動で切り替える」へドラッグして入れる。"
+        ],
+        "expectedErrors": [
+          "cloud-a-dr"
+        ],
+        "actions": [
+          {
+            "op": "put",
+            "item": "switch",
+            "slot": "auto"
+          }
+        ]
+      }
+    ]
+  },
+  "result": {
+    "success": "大きな障害に備えた構成を作れた。",
+    "partial": "ヒントを使って作れた。次は、目標から備える範囲を先に決めてみよう。",
+    "retry": "まだ目標を満たしていない。戻すまでの時間と、どの札が長いかを見よう。"
+  },
+  "summary": {
+    "points": [
+      "起きる前提で備える",
+      "目標の時間とデータ量を決める",
+      "手順を試す"
+    ],
+    "next": [],
+    "terms": [
+      "rto",
+      "rpo",
+      "availability-zone"
+    ]
+  }
+}

@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 360" font-family="&quot;Noto Sans JP&quot;, sans-serif">
+  <title>3 つの形を、手間・自由・増やし方で比べる</title>
+  <g class="el" data-part="iaas">
+    <rect x="20" y="50" width="180" height="240" rx="10" fill="#1a6fd6" />
+    <text x="110" y="142" text-anchor="middle" font-size="16" font-weight="700" fill="#eef2f6">IaaS</text>
+    <text x="110" y="164" text-anchor="middle" font-size="14" fill="#eef2f6">手間 多い</text>
+    <text x="110" y="186" text-anchor="middle" font-size="14" fill="#eef2f6">自由 多い</text>
+    <text x="110" y="208" text-anchor="middle" font-size="14" fill="#eef2f6">増やす 手で</text>
+  </g>
+  <g class="el" data-part="paas">
+    <rect x="230" y="50" width="180" height="240" rx="10" fill="#1f7a4d" />
+    <text x="320" y="142" text-anchor="middle" font-size="16" font-weight="700" fill="#eef2f6">PaaS</text>
+    <text x="320" y="164" text-anchor="middle" font-size="14" fill="#eef2f6">手間 少ない</text>
+    <text x="320" y="186" text-anchor="middle" font-size="14" fill="#eef2f6">自由 少ない</text>
+    <text x="320" y="208" text-anchor="middle" font-size="14" fill="#eef2f6">増やす 設定で</text>
+  </g>
+  <g class="el" data-part="ctr">
+    <rect x="440" y="50" width="180" height="240" rx="10" fill="#7a3fd0" />
+    <text x="530" y="142" text-anchor="middle" font-size="16" font-weight="700" fill="#eef2f6">コンテナ</text>
+    <text x="530" y="164" text-anchor="middle" font-size="14" fill="#eef2f6">手間 中ぐらい</text>
+    <text x="530" y="186" text-anchor="middle" font-size="14" fill="#eef2f6">自由 中ぐらい</text>
+    <text x="530" y="208" text-anchor="middle" font-size="14" fill="#eef2f6">増やす 自動で</text>
+  </g>
+  <g class="el" data-part="note">
+    <text x="320" y="340" text-anchor="middle" font-size="14" fill="#eef2f6">要件で選び、選んだ理由を残す</text>
+  </g>
+</svg>

@@ -1,0 +1,356 @@
+{
+  "id": "devops.a.02",
+  "domain": "devops",
+  "level": "advanced",
+  "theme": "組織",
+  "title": "チームと文化",
+  "goal": "役割・責任・情報共有の仕組みを設計できる",
+  "minutes": 20,
+  "prerequisites": [
+    "devops.i.03"
+  ],
+  "related": [
+    "git.a.02",
+    "sec.a.03"
+  ],
+  "next": [],
+  "terms": [
+    "incident-commander",
+    "api",
+    "db"
+  ],
+  "explain": {
+    "what": "役割・責任・情報の共有の仕組みを作ること。",
+    "why": "道具だけ入れても、仕組みと文化が無ければ回らない。",
+    "use": "チームの設計で使う。障害の時に誰が何をするかを先に決める。",
+    "when": "障害の時に誰が何をするか決まっていない。全員が同じ物を調べている。",
+    "figures": [
+      "devops-a02-team"
+    ]
+  },
+  "understand": [
+    {
+      "kind": "relation",
+      "prompt": "2 つの関係は？",
+      "a": "{{term:incident-commander}}を決める",
+      "b": "調査と連絡が重ならず、抜けなくなる",
+      "answer": "cause",
+      "why": "全体を見て割り振る人が居ると、同じ調査を重ねない。",
+      "see": "why"
+    },
+    {
+      "kind": "situation",
+      "prompt": "情報が個人の連絡に閉じると、何が起きる？",
+      "see": "use",
+      "choices": [
+        {
+          "id": "a",
+          "text": "後から来た人が状況を聞き直し、対応が遅れる",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "速く伝わる",
+          "correct": false,
+          "whyNot": "伝わるのは宛先だけ。"
+        },
+        {
+          "id": "c",
+          "text": "秘密が守れる",
+          "correct": false,
+          "whyNot": "障害の情報は皆が読めるほうがよい。"
+        }
+      ]
+    }
+  ],
+  "quiz": [
+    {
+      "id": "q1",
+      "kind": "situation",
+      "prompt": "障害の時、まずチームで決めることは？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "指揮する人",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "原因",
+          "correct": false,
+          "whyNot": "まだ分からない。"
+        },
+        {
+          "id": "c",
+          "text": "責任者の処分",
+          "correct": false,
+          "whyNot": "責めても直らない。"
+        }
+      ],
+      "explanation": "決める人が居ると動きが揃う。"
+    },
+    {
+      "id": "q2",
+      "kind": "choice",
+      "prompt": "共有の仕組みとして良いのは？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "記録を残し誰でも見られる",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "担当者の頭の中",
+          "correct": false,
+          "whyNot": "休むと分からなくなる。"
+        },
+        {
+          "id": "c",
+          "text": "個人宛の連絡",
+          "correct": false,
+          "whyNot": "宛先以外に届かない。"
+        }
+      ],
+      "explanation": "手順書や振り返りも同じ。"
+    },
+    {
+      "id": "q3",
+      "kind": "cause",
+      "prompt": "同じ人に負担が集中している。原因は？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "当番の仕組みが無い",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "その人が優秀すぎる",
+          "correct": false,
+          "whyNot": "仕組みの問題。"
+        },
+        {
+          "id": "c",
+          "text": "障害が少ない",
+          "correct": false,
+          "whyNot": "少なくても偏る。"
+        }
+      ],
+      "explanation": "当番を回し、手順を共有する。"
+    }
+  ],
+  "practice": {
+    "mode": "simulation",
+    "purpose": "先月の障害は 3 時間かかった。誰が決めるか決まっておらず、全員が同じ物を調べ、案内も止まっていた。役割と当番と共有の仕組みを決め、障害の模擬で滞りなく回るようにする。",
+    "environment": "sim-assign",
+    "setup": {
+      "slots": [
+        {
+          "id": "lead",
+          "label": "指揮",
+          "capacity": 1,
+          "full": "指揮は 1 人。多いと決まらない"
+        },
+        {
+          "id": "dig",
+          "label": "調査"
+        },
+        {
+          "id": "talk",
+          "label": "連絡",
+          "capacity": 1,
+          "full": "連絡は 1 人にまとめる"
+        },
+        {
+          "id": "use",
+          "label": "使う仕組み"
+        },
+        {
+          "id": "no",
+          "label": "使わない仕組み"
+        }
+      ],
+      "items": [
+        {
+          "id": "aoki",
+          "label": "青木（全体の構成を知っている）",
+          "size": 1,
+          "refuse": {
+            "use": "人は役に入れる",
+            "no": "人は役に入れる",
+            "dig": "青木が調査に入ると、全体を見る人が居なくなる。役に合わない",
+            "talk": "青木が連絡に入ると、全体を見る人が居なくなる。役に合わない"
+          }
+        },
+        {
+          "id": "ishida",
+          "label": "石田（API と DB に詳しい）",
+          "size": 1,
+          "refuse": {
+            "use": "人は役に入れる",
+            "no": "人は役に入れる",
+            "lead": "石田が指揮に入ると、直せる人が居なくなる。役に合わない",
+            "talk": "石田が連絡に入ると、直せる人が居なくなる。役に合わない"
+          }
+        },
+        {
+          "id": "ueno",
+          "label": "上野（窓口と案内を担当している）",
+          "size": 1,
+          "refuse": {
+            "use": "人は役に入れる",
+            "no": "人は役に入れる",
+            "lead": "上野は窓口の担当。役に合わない",
+            "dig": "上野は窓口の担当。役に合わない"
+          }
+        },
+        {
+          "id": "rota",
+          "label": "当番を週ごとに回す",
+          "refuse": {
+            "lead": "仕組みの札",
+            "dig": "仕組みの札",
+            "talk": "仕組みの札"
+          }
+        },
+        {
+          "id": "fixed",
+          "label": "いつも青木が夜も起きる",
+          "refuse": {
+            "use": "負担が 1 人に偏る",
+            "lead": "仕組みの札",
+            "dig": "仕組みの札",
+            "talk": "仕組みの札"
+          }
+        },
+        {
+          "id": "record",
+          "label": "時刻付きの記録を皆が読める場所に残す",
+          "refuse": {
+            "lead": "仕組みの札",
+            "dig": "仕組みの札",
+            "talk": "仕組みの札"
+          }
+        },
+        {
+          "id": "dm",
+          "label": "個人宛の連絡で伝える",
+          "refuse": {
+            "use": "宛先以外は読めない",
+            "lead": "仕組みの札",
+            "dig": "仕組みの札",
+            "talk": "仕組みの札"
+          }
+        }
+      ],
+      "initial": {
+        "fixed": "no",
+        "dm": "no",
+        "rota": "no",
+        "record": "no"
+      },
+      "panels": [
+        {
+          "kind": "log",
+          "title": "先月の障害の様子",
+          "lines": [
+            "02:10 通知が青木に届く。青木が 1 人で調べる",
+            "02:40 石田と上野が別々に同じログを読む",
+            "03:30 窓口に問い合わせが溜まる。案内は誰も出していない",
+            "05:10 復旧"
+          ]
+        },
+        {
+          "kind": "text",
+          "title": "障害の模擬",
+          "body": "指揮の青木が割り振り、石田が調べ、上野が 30 分ごとに案内を出した。記録があるので、交代の人もすぐ入れた。40 分で復旧。",
+          "when": "in aoki=lead ishida=dig ueno=talk rota=use record=use"
+        }
+      ]
+    },
+    "steps": [
+      {
+        "id": "roles",
+        "purpose": "役割を決める。「青木（全体の構成を知っている）」を「指揮」へ、「石田（{{term:api}} と {{term:db}} に詳しい）」を「調査」へ、「上野（窓口と案内を担当している）」を「連絡」へ。",
+        "check": {
+          "kind": "sim",
+          "expr": "in aoki=lead ishida=dig ueno=talk"
+        },
+        "afterward": "決める人・直す人・伝える人が分かれた。指揮は自分で直さず、全体を見る。",
+        "hints": [
+          "得意な事に合わせる。",
+          "全体を知る人が指揮。",
+          "「青木（全体の構成を知っている）」を「指揮」へ、「石田（API と DB に詳しい）」を「調査」へ、「上野（窓口と案内を担当している）」を「連絡」へドラッグして入れる。"
+        ],
+        "expectedErrors": [
+          "devops-a-team"
+        ],
+        "actions": [
+          {
+            "op": "put",
+            "item": "aoki",
+            "slot": "lead"
+          },
+          {
+            "op": "put",
+            "item": "ishida",
+            "slot": "dig"
+          },
+          {
+            "op": "put",
+            "item": "ueno",
+            "slot": "talk"
+          }
+        ]
+      },
+      {
+        "id": "share",
+        "purpose": "負担を偏らせず、情報を共有する。「当番を週ごとに回す」と「時刻付きの記録を皆が読める場所に残す」を「使う仕組み」へ入れる。",
+        "check": {
+          "kind": "sim",
+          "expr": "in rota=use record=use fixed=no dm=no"
+        },
+        "afterward": "障害の模擬は 40 分で復旧した。当番を回すので、夜の負担も偏らない。",
+        "hints": [
+          "1 人に寄せない。",
+          "読めない情報は無いのと同じ。",
+          "「当番を週ごとに回す」と「時刻付きの記録を皆が読める場所に残す」を「使う仕組み」へドラッグして入れる。"
+        ],
+        "expectedErrors": [
+          "devops-a-team"
+        ],
+        "actions": [
+          {
+            "op": "put",
+            "item": "rota",
+            "slot": "use"
+          },
+          {
+            "op": "put",
+            "item": "record",
+            "slot": "use"
+          }
+        ]
+      }
+    ]
+  },
+  "result": {
+    "success": "回る仕組みを作れた。",
+    "partial": "ヒントを使って作れた。次は、自分のチームで指揮する人を誰にするか考えよう。",
+    "retry": "まだ滞る。誰が決めるのか、情報は読めるのかを見直そう。"
+  },
+  "summary": {
+    "points": [
+      "役割と責任を決める",
+      "情報を共有する",
+      "負担を偏らせない"
+    ],
+    "next": [],
+    "terms": [
+      "incident-commander",
+      "on-call",
+      "postmortem"
+    ]
+  }
+}

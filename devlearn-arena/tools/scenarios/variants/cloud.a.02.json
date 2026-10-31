@@ -1,0 +1,101 @@
+{
+  "lesson": "cloud.a.02",
+  "variants": [
+    {
+      "name": "先に写しを動かす",
+      "steps": {
+        "zone": [
+          {
+            "op": "put",
+            "item": "db",
+            "slot": "zone"
+          },
+          {
+            "op": "put",
+            "item": "web",
+            "slot": "zone"
+          }
+        ],
+        "region": [
+          {
+            "op": "put",
+            "item": "bk",
+            "slot": "region"
+          }
+        ],
+        "switch": [
+          {
+            "op": "put",
+            "item": "switch",
+            "slot": "auto"
+          }
+        ]
+      }
+    },
+    {
+      "name": "戻してから置く",
+      "steps": {
+        "zone": [
+          {
+            "op": "take",
+            "item": "web"
+          },
+          {
+            "op": "put",
+            "item": "web",
+            "slot": "zone"
+          },
+          {
+            "op": "take",
+            "item": "db"
+          },
+          {
+            "op": "put",
+            "item": "db",
+            "slot": "zone"
+          }
+        ],
+        "region": [
+          {
+            "op": "take",
+            "item": "bk"
+          },
+          {
+            "op": "put",
+            "item": "bk",
+            "slot": "region"
+          }
+        ],
+        "switch": [
+          {
+            "op": "take",
+            "item": "switch"
+          },
+          {
+            "op": "put",
+            "item": "switch",
+            "slot": "auto"
+          }
+        ]
+      }
+    }
+  ],
+  "wrong": {
+    "step": "region",
+    "why": "手順を置き場所へ入れる",
+    "input": [
+      {
+        "op": "put",
+        "item": "switch",
+        "slot": "region"
+      }
+    ],
+    "retry": [
+      {
+        "op": "put",
+        "item": "bk",
+        "slot": "region"
+      }
+    ]
+  }
+}

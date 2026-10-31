@@ -1,0 +1,476 @@
+{
+  "id": "cloud.a.01",
+  "domain": "cloud",
+  "level": "advanced",
+  "theme": "設計",
+  "title": "同じ要件を 3 つの形で作る",
+  "goal": "IaaS・PaaS・コンテナの構成を比べて選べる",
+  "minutes": 20,
+  "prerequisites": [
+    "cloud.i.02",
+    "k8s.b.06"
+  ],
+  "related": [
+    "k8s.a.01",
+    "devops.i.01"
+  ],
+  "next": [
+    "cloud.a.02"
+  ],
+  "terms": [
+    "iaas",
+    "paas",
+    "container",
+    "service",
+    "os",
+    "web",
+    "vm",
+    "curl",
+    "app",
+    "ingress",
+    "pod",
+    "cluster"
+  ],
+  "explain": {
+    "what": "同じ要件を、{{term:iaas}}・{{term:paas}}・{{term:container}}の 3 つの形で作り比べること。",
+    "why": "形ごとに手間と自由が違う。違いを知らないと、要件に合わない形を選んでしまう。",
+    "use": "設計の判断で使う。要件を先に書き、形を比べ、選んだ理由を残す。",
+    "when": "新しい{{term:service}}の土台を選ぶ。運用できる人の数や利用者の波から考える。",
+    "figures": [
+      "cloud-a01-forms"
+    ]
+  },
+  "understand": [
+    {
+      "kind": "relation",
+      "prompt": "2 つの関係は？",
+      "a": "任せる範囲が広い形を選ぶ",
+      "b": "自分で細かく制御できる所が減る",
+      "answer": "cause",
+      "why": "手間が減る代わりに、自由も減る。得だけの形は無い。",
+      "see": "why"
+    },
+    {
+      "kind": "situation",
+      "prompt": "利用者の波が大きく、数を自動で増やしたい。合う形は？",
+      "see": "use",
+      "choices": [
+        {
+          "id": "a",
+          "text": "コンテナ（自動で増やせる）",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "手で増やす IaaS",
+          "correct": false,
+          "whyNot": "波に間に合わない恐れがある。"
+        },
+        {
+          "id": "c",
+          "text": "何でも同じ",
+          "correct": false,
+          "whyNot": "形によって増やし方が違う。"
+        }
+      ]
+    }
+  ],
+  "quiz": [
+    {
+      "id": "q1",
+      "kind": "situation",
+      "prompt": "少人数で運用する。どの形を選ぶ？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "任せる範囲が広い形（PaaS）",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "{{term:os}} から全て自分で触る形",
+          "correct": false,
+          "whyNot": "更新の手間が少人数では続かない。"
+        },
+        {
+          "id": "c",
+          "text": "台数の多い形",
+          "correct": false,
+          "whyNot": "人数の問題は台数では解けない。"
+        }
+      ],
+      "explanation": "手間を減らせる。"
+    },
+    {
+      "id": "q2",
+      "kind": "situation",
+      "prompt": "OS の設定まで細かく制御したい。どの形？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "IaaS",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "PaaS",
+          "correct": false,
+          "whyNot": "OS は任せるので触れない。"
+        },
+        {
+          "id": "c",
+          "text": "どれでも同じ",
+          "correct": false,
+          "whyNot": "触れる範囲が違う。"
+        }
+      ],
+      "explanation": "自由が多い分、手間も増える。"
+    },
+    {
+      "id": "q3",
+      "kind": "choice",
+      "prompt": "規模の変化が大きい。どの形が向く？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "コンテナ",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "手で増やす形",
+          "correct": false,
+          "whyNot": "波に間に合わない。"
+        },
+        {
+          "id": "c",
+          "text": "1 台を大きくする形",
+          "correct": false,
+          "whyNot": "上限があり、止まる。"
+        }
+      ],
+      "explanation": "数を自動で増やす仕組みと相性がよい。"
+    },
+    {
+      "id": "q4",
+      "kind": "predict",
+      "prompt": "利用者が 10 倍になった。手で台数を増やす形だと？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "間に合わない恐れがある",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "自動で増える",
+          "correct": false,
+          "whyNot": "手で増やす形では増えない。"
+        },
+        {
+          "id": "c",
+          "text": "何も起きない",
+          "correct": false,
+          "whyNot": "負荷が増えて遅くなる。"
+        }
+      ],
+      "explanation": "増やす方法も形の選択に入れる。"
+    }
+  ],
+  "practice": {
+    "mode": "simulation",
+    "purpose": "市の案内の {{term:web}} を、3 つの形で作って確かめ、要件に最も合う形を選ぶ。形ごとに線を引き、頼みを送る。最後に「採用する形」をつなぐ。",
+    "environment": "sim-connect",
+    "setup": {
+      "nodes": [
+        {
+          "id": "user",
+          "label": "利用者",
+          "icon": "user",
+          "x": 5,
+          "y": 50
+        },
+        {
+          "id": "lb",
+          "label": "振り分け",
+          "icon": "router",
+          "x": 35,
+          "y": 12,
+          "note": "IaaS。自分で設定"
+        },
+        {
+          "id": "vm",
+          "label": "仮想マシン",
+          "icon": "server",
+          "x": 68,
+          "y": 12,
+          "note": "OS の更新も自分で"
+        },
+        {
+          "id": "paas",
+          "label": "PaaS のアプリ",
+          "icon": "cloud",
+          "x": 50,
+          "y": 50,
+          "note": "OS は任せる"
+        },
+        {
+          "id": "ingress",
+          "label": "Ingress",
+          "icon": "router",
+          "x": 35,
+          "y": 88,
+          "note": "コンテナ"
+        },
+        {
+          "id": "pod",
+          "label": "Pod",
+          "icon": "app",
+          "x": 68,
+          "y": 88,
+          "note": "クラスタの運用が要る"
+        },
+        {
+          "id": "choice",
+          "label": "採用する形",
+          "icon": "box",
+          "x": 92,
+          "y": 50
+        }
+      ],
+      "forbid": [
+        {
+          "a": "choice",
+          "b": "vm",
+          "message": "要件に合わない: OS の更新を 2 人で続ける手間がかかる。OS に触る必要も無い"
+        },
+        {
+          "a": "choice",
+          "b": "pod",
+          "message": "要件に合わない: クラスタの運用の手間がかかる。自動で増やす要件も無い"
+        },
+        {
+          "a": "choice",
+          "b": "user",
+          "message": "要件に合わない: 選べるのは、作った 3 つの形"
+        }
+      ],
+      "sends": [
+        {
+          "from": "user",
+          "to": "vm",
+          "label": "curl 仮想マシンの Web"
+        },
+        {
+          "from": "user",
+          "to": "paas",
+          "label": "curl PaaS の Web"
+        },
+        {
+          "from": "user",
+          "to": "pod",
+          "label": "curl Pod の Web"
+        }
+      ],
+      "panels": [
+        {
+          "kind": "kv",
+          "title": "要件",
+          "rows": [
+            [
+              "運用する人",
+              "2 人"
+            ],
+            [
+              "利用者",
+              "1 日 2000 人。波は小さい"
+            ],
+            [
+              "作り",
+              "普通の Web。OS に触る必要は無い"
+            ]
+          ]
+        },
+        {
+          "kind": "table",
+          "title": "比較",
+          "columns": [
+            "形",
+            "手間",
+            "自由",
+            "増やし方"
+          ],
+          "rows": [
+            [
+              "IaaS",
+              "多い",
+              "多い",
+              "手で"
+            ],
+            [
+              "PaaS",
+              "少ない",
+              "少ない",
+              "設定で"
+            ],
+            [
+              "コンテナ",
+              "中ぐらい",
+              "中ぐらい",
+              "自動で"
+            ]
+          ]
+        },
+        {
+          "kind": "text",
+          "title": "選んだ理由",
+          "body": "2 人で続けられる手間で、要件の規模を満たす。OS の更新を任せられる。変わった時は、この理由を見直す。",
+          "when": "link choice paas"
+        }
+      ]
+    },
+    "steps": [
+      {
+        "id": "iaas",
+        "purpose": "IaaS の形を作る。「利用者」→「振り分け」→「{{term:vm}}」とつなぎ、「{{term:curl}} 仮想マシンの Web」を押す。",
+        "check": {
+          "kind": "sim",
+          "expr": "sent user vm"
+        },
+        "afterward": "動いた。この形では、振り分けの設定も OS の更新も自分で行う。",
+        "hints": [
+          "線を 2 本引く。",
+          "振り分けの後ろに仮想マシン。",
+          "「利用者」から「振り分け」へ、「振り分け」から「仮想マシン」へドラッグしてつなぎ、「curl 仮想マシンの Web」を押す。"
+        ],
+        "expectedErrors": [
+          "cloud-send-stuck"
+        ],
+        "actions": [
+          {
+            "op": "connect",
+            "a": "user",
+            "b": "lb"
+          },
+          {
+            "op": "connect",
+            "a": "lb",
+            "b": "vm"
+          },
+          {
+            "op": "send",
+            "from": "user",
+            "to": "vm"
+          }
+        ]
+      },
+      {
+        "id": "paas",
+        "purpose": "PaaS の形を作る。「利用者」→「PaaS の{{term:app}}」とつなぎ、「curl PaaS の Web」を押す。",
+        "check": {
+          "kind": "sim",
+          "expr": "sent user paas"
+        },
+        "afterward": "線は 1 本で動いた。振り分けも OS も任せている。その分、細かい設定は触れない。",
+        "hints": [
+          "振り分けは中に含まれる。",
+          "線は 1 本。",
+          "「利用者」から「PaaS のアプリ」へドラッグしてつなぎ、「curl PaaS の Web」を押す。"
+        ],
+        "expectedErrors": [
+          "cloud-send-stuck"
+        ],
+        "actions": [
+          {
+            "op": "connect",
+            "a": "user",
+            "b": "paas"
+          },
+          {
+            "op": "send",
+            "from": "user",
+            "to": "paas"
+          }
+        ]
+      },
+      {
+        "id": "ctr",
+        "purpose": "コンテナの形を作る。「利用者」→「{{term:ingress}}」→「{{term:pod}}」とつなぎ、「curl Pod の Web」を押す。",
+        "check": {
+          "kind": "sim",
+          "expr": "sent user pod"
+        },
+        "afterward": "動いた。数を自動で増やせるが、{{term:cluster}}を運用する手間がある。",
+        "hints": [
+          "線を 2 本引く。",
+          "入口の後ろに Pod。",
+          "「利用者」から「Ingress」へ、「Ingress」から「Pod」へドラッグしてつなぎ、「curl Pod の Web」を押す。"
+        ],
+        "expectedErrors": [
+          "cloud-send-stuck"
+        ],
+        "actions": [
+          {
+            "op": "connect",
+            "a": "user",
+            "b": "ingress"
+          },
+          {
+            "op": "connect",
+            "a": "ingress",
+            "b": "pod"
+          },
+          {
+            "op": "send",
+            "from": "user",
+            "to": "pod"
+          }
+        ]
+      },
+      {
+        "id": "choose",
+        "purpose": "要件の表と比較の表を読み、要件に最も合う形へ「採用する形」をつなぐ。",
+        "check": {
+          "kind": "sim",
+          "expr": "link choice paas"
+        },
+        "afterward": "2 人で続けられる形を選んだ。選んだ理由を残すと、要件が変わった時に見直せる。",
+        "hints": [
+          "人数が一番の制約。",
+          "手間が少なく、要件の規模に足りる形。",
+          "「採用する形」から「PaaS のアプリ」へドラッグしてつなぐ。"
+        ],
+        "expectedErrors": [
+          "cloud-a-pick"
+        ],
+        "actions": [
+          {
+            "op": "connect",
+            "a": "choice",
+            "b": "paas"
+          }
+        ]
+      }
+    ]
+  },
+  "result": {
+    "success": "3 つを作り比べ、要件で選べた。",
+    "partial": "ヒントを使って選べた。次は、要件が変わると選ぶ形がどう変わるかを考えよう。",
+    "retry": "まだ終わっていない。動かない形と、比較の表を見直そう。"
+  },
+  "summary": {
+    "points": [
+      "形ごとに得失がある",
+      "要件で選ぶ",
+      "選んだ理由を残す"
+    ],
+    "next": [
+      "cloud.a.02"
+    ],
+    "terms": [
+      "iaas",
+      "paas",
+      "container"
+    ]
+  }
+}
