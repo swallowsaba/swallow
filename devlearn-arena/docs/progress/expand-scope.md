@@ -49,7 +49,7 @@
 | 【1】決着 | — | 終わり（`docs/decisions.md` の「Q-04 の決着」・Q-04 の行・`docs/development-plan.md` の Phase 10） |
 | 中級 | found | 終わり（3 本。下の「中級 found」） |
 | 中級 | sec | 終わり（5 本。下の「中級 sec」） |
-| 中級 | cicd | 未着手 |
+| 中級 | cicd | 終わり（5 本。下の「中級 cicd」） |
 | 中級 | db | 未着手 |
 | 中級 | mon | 未着手 |
 | 中級 | cloud | 未着手 |
@@ -121,3 +121,29 @@
 - `useradd`（`-r`・`-s`・`-d`・`-m`・`-M`。`/etc/passwd` と `/etc/group` に書く）。`id` は居ない利用者を断る
 - API の鍵を読むサービス: setup の `services` の `keyGuard`（受ける側。鍵の一覧のファイル。無い鍵は 401）と `keyClient`（頼む側。環境のファイルの鍵を動かす時に読む。断られると 502）。`curl -H 'Authorization: …'` を渡す。判定は `http` の `auth`
 - 名前ごとの証明書（SNI）・`openssl` の `-modulus`・`md5`・鍵の対の確かめ（`key values mismatch`）
+
+### 中級 cicd（5 本）
+
+| ID | 実戦 | verify-all | verify-free（別解） | verify-wrong |
+|---|---|---|---|---|
+| cicd.i.01 runner | 編 | 合格 | 合格（2 通り） | 合格 |
+| cicd.i.02 設定ファイルを書く | 編 | 合格 | 合格（2 通り） | 合格 |
+| cicd.i.03 秘密情報をパイプラインに渡す | 編 | 合格 | 合格（2 通り） | 合格 |
+| cicd.i.04 失敗したパイプラインを直す | 端 | 合格 | 合格（2 通り） | 合格 |
+| cicd.i.05 開発・検証・本番 | 編 | 合格 | 合格（2 通り） | 合格 |
+
+| 不合格 | 原因 | 直したこと |
+|---|---|---|
+| cicd.i.03 が最後のヒントで達成にならない | 模擬の不具合: job の `env` に書いた `${{ secrets.… }}` を置き換えていなかった（手順の `env` だけだった） | ワークフローと job の `env` も実行の時に置き換える（テストを先に書いた。`src/engines/cicd/runnerEnv.test.ts`） |
+| cicd.i.04 でログを読むだけの `gh run view --log-failed` にエラーの案内が出た | 書き起こしの誤り: テストの失敗の案内を出力に当てたので、読むための打鍵にも当たった | 案内を外した（失敗はログを読むこと自体が手順の目的） |
+| cicd.i.05 で誤った設定を保存すると、やり直しても達成にならない | 書き起こしの誤り: 達成の条件に「本番が 1.4.0 のまま」を入れたが、本番に配ると戻せない | 条件から外し、本番に入ったことは案内（`cicd-direct-prod`）で知らせる |
+
+設計を直した物: cicd.i.01 と cicd.i.05 を「模」から「編」、cicd.i.04 を「編」から「端」にした（`REWORK-PRACTICE.txt` 原則 1。ワークフローの YAML という本物の道具がある。cicd.i.04 は設定とコードの 2 つのファイルを直す）。`docs/lessons/cicd.md` と `docs/curriculum.md` の表を先に直した。
+
+模擬環境に足した物（テストを先に書いた。`src/engines/cicd/runnerEnv.test.ts`）:
+- `actions.runners`（自前の runner のラベルと網）。`runs-on` のラベルで選び、合う物が無ければ `No runner matching the specified labels`。配る先の `network` は、その網の runner からだけ届く
+- `actions.secrets`（`${{ secrets.名前 }}`。ログでは値を `***` に伏せる）と、script の `token`（要る鍵が空か違えば配らない）
+- `actions.environments`（`reviewers` のある環境の job は承認を待つ。`gh run view` に `Waiting for review` が出る。承認は GitHub の画面の操作なので、模擬は待つ所までにした）
+- `ci` の式の `logged:文字`・`trigger:きっかけ`、結果の `waiting`
+
+コミットの記録: このコミットの本文 `bdc9b2a` は、台本の誤りで本文の無いメッセージになった（検査は全て通っている。main の履歴は書き換えず、この記録に残す）。
