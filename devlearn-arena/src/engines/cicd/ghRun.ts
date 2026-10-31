@@ -7,7 +7,7 @@ import { stamp } from './runner';
  * 端末で ID を書かずに打つと、本物の gh は選ぶ画面を出すが、ここでは一番新しい実行を選んだことにする。
  */
 
-const MARK: Record<Conclusion, string> = { success: '✓', failure: 'X', skipped: '-' };
+const MARK: Record<Conclusion, string> = { success: '✓', failure: 'X', skipped: '-', waiting: '*' };
 
 /** 4m0s・31s・1h2m3s（gh の経過の書き方） */
 export function elapsed(seconds: number): string {
@@ -55,6 +55,7 @@ export function runList(runs: readonly RunRecord[], now: number, opts: { workflo
 
 function jobLines(jobs: readonly JobRecord[], verbose: boolean): string[] {
   return jobs.flatMap((j) => {
+    if (j.conclusion === 'waiting') return [`${MARK.waiting} ${j.name} (ID ${String(j.id)})`, `  Waiting for review: ${j.waitingFor ?? ''} needs approval to start deploying changes.`];
     const head = j.conclusion === 'skipped' ? `${MARK.skipped} ${j.name} (ID ${String(j.id)})` : `${MARK[j.conclusion]} ${j.name} in ${elapsed(j.seconds)} (ID ${String(j.id)})`;
     const steps = verbose || j.conclusion === 'failure' ? j.steps.map((s) => `  ${MARK[s.conclusion]} ${s.name}`) : [];
     return [head, ...steps];

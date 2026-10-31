@@ -20,6 +20,8 @@ import type { Conclusion, RunRecord } from './types';
  *   deployed:名前=版             配る先の今の版
  *   release:名前~文字            配る先の今の版の中身に、その文字がある
  *   kept:名前=版                 配る先に、その版が置いてある
+ *   logged:文字                  一番新しい実行のログに、その文字がある（Secrets の値は伏せてある）
+ *   trigger:きっかけ             一番新しい実行のワークフローの on に、そのきっかけがある
  */
 
 function forgeOf(shell: ShellState): GitServer | undefined {
@@ -55,6 +57,7 @@ function termHolds(shell: ShellState, server: GitServer, term: string): boolean 
   const el = /^elapsed<=(.+)$/.exec(term);
   if (el) return run !== undefined && !run.invalid && run.seconds <= toSeconds(el[1] ?? '');
   const m = /^([a-z]+)(?::([^=~]+))?(?:([=~])(.*))?$/.exec(term);
+  // job・step の結果には waiting（承認待ち）もある
   if (!m) return bad();
   const [, key = '', arg = '', op, value = ''] = m;
   const jobOf = (r: RunRecord | undefined, k: string) => r?.jobs.find((j) => j.key === k);
@@ -92,6 +95,10 @@ function termHolds(shell: ShellState, server: GitServer, term: string): boolean 
       const want = value === '' ? [] : value.split(',');
       return got.length === want.length && want.every((w) => got.includes(w));
     }
+    case 'logged':
+      return run?.jobs.some((j) => j.steps.some((s) => s.log.some((l) => l.includes(words(`${arg}${op ?? ''}${value}`))))) === true;
+    case 'trigger':
+      return run?.triggers?.includes(arg) === true;
     case 'artifact':
       return run?.artifacts.some((a) => a.name === arg) === true;
     case 'got':

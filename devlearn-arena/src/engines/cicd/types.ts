@@ -3,7 +3,7 @@
  * 保存から戻せるように、どれも JSON にできる値だけで持つ。
  */
 
-export type Conclusion = 'success' | 'failure' | 'skipped';
+export type Conclusion = 'success' | 'failure' | 'skipped' | 'waiting';
 
 export interface StepRecord {
   /** 画面に出る名前（name が無ければ「Run <uses か run の 1 行目>」） */
@@ -31,6 +31,8 @@ export interface JobRecord {
   downloaded: string[];
   /** 動かなかった訳（依存が成功しなかった） */
   skippedBecause?: string;
+  /** 承認を待っている環境 */
+  waitingFor?: string;
 }
 
 export interface ArtifactRecord {
@@ -62,11 +64,13 @@ export interface RunRecord {
   sha: string;
   event: 'push';
   startedAt: number;
-  conclusion: 'success' | 'failure';
+  conclusion: 'success' | 'failure' | 'waiting';
   seconds: number;
   jobs: JobRecord[];
   artifacts: ArtifactRecord[];
   shape: JobShape[];
+  /** ワークフローが動くきっかけ（on の鍵） */
+  triggers?: string[];
   /** ワークフローのファイルの誤り（あれば job は動かない） */
   invalid?: string[];
 }

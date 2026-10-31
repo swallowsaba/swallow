@@ -1,0 +1,321 @@
+{
+  "id": "cicd.i.02",
+  "domain": "cicd",
+  "level": "intermediate",
+  "theme": "設定",
+  "title": "設定ファイルを書く",
+  "goal": "GitHub Actions と GitLab CI の設定を読み書きできる",
+  "minutes": 20,
+  "prerequisites": [
+    "cicd.b.05"
+  ],
+  "related": [
+    "git.i.03",
+    "devops.i.01"
+  ],
+  "next": [
+    "cicd.i.03",
+    "cicd.i.04",
+    "cicd.a.02"
+  ],
+  "terms": [
+    "github-actions",
+    "gitlab",
+    "config-file",
+    "yaml",
+    "ci",
+    "review",
+    "repository",
+    "pull-request",
+    "test",
+    "file"
+  ],
+  "explain": {
+    "what": "{{term:ci}} の流れは、{{term:yaml}} の{{term:config-file}}に書く。{{term:github-actions}} でも {{term:gitlab}} CI でも、きっかけ・仕事・手順の 3 つで書く。名前は違うが形は同じ。",
+    "why": "流れをコードにすれば、変更を履歴に残し、{{term:review}}できる。人が画面で設定すると、誰がいつ変えたかが分からない。",
+    "use": "新しい{{term:repository}}に CI を入れる時に使う。いつ動くか・何を動かすか・どの順かを書く。",
+    "when": "新しいリポジトリには、まだ CI が無い。{{term:pull-request}}のたびに、組み立てと{{term:test}}が自動で動くようにしたい。",
+    "figures": [
+      "cicd-i02-config"
+    ]
+  },
+  "understand": [
+    {
+      "kind": "figure-pick",
+      "figure": "cicd-i02-config",
+      "prompt": "図の中で、いつ動くかを決める部分を押す。",
+      "answer": [
+        "trigger"
+      ],
+      "see": "what"
+    },
+    {
+      "kind": "match",
+      "prompt": "GitHub Actions の書き方と、GitLab CI の書き方を結ぶ。",
+      "pairs": [
+        [
+          "`steps` の `run`",
+          "`script` の行"
+        ],
+        [
+          "`on: pull_request`",
+          "`rules` の `merge_request`"
+        ]
+      ],
+      "see": "what"
+    }
+  ],
+  "quiz": [
+    {
+      "id": "q1",
+      "kind": "cause",
+      "prompt": "設定が `Unexpected value` で読めないと言われた。一番多い原因は？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "字下げの誤り",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "テストの失敗",
+          "correct": false,
+          "whyNot": "テストは、設定が読めた後に動く。"
+        },
+        {
+          "id": "c",
+          "text": "{{term:file}}が大きすぎる",
+          "correct": false,
+          "whyNot": "大きさでは、この文は出ない。"
+        }
+      ],
+      "explanation": "YAML は字下げで親子を決める。ずれると、別の鍵の下に入る。"
+    },
+    {
+      "id": "q2",
+      "kind": "situation",
+      "prompt": "プルリクエストでも動かしたい。何を足す？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "`on` に `pull_request`",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "`jobs` に新しい仕事",
+          "correct": false,
+          "whyNot": "仕事を足しても、きっかけが push だけなら動かない。"
+        },
+        {
+          "id": "c",
+          "text": "`runs-on` にラベル",
+          "correct": false,
+          "whyNot": "`runs-on` はどの機械で動くかを決める。いつ動くかではない。"
+        }
+      ],
+      "explanation": "いつ動くかは `on` に書く。"
+    },
+    {
+      "id": "q3",
+      "kind": "predict",
+      "prompt": "手順の 1 つが失敗した。何が起きる？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "その仕事が失敗し、後の手順は動かない",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "その手順だけ飛ばして、続きが動く",
+          "correct": false,
+          "whyNot": "飛ばして続けると、壊れた物を配ってしまう。"
+        },
+        {
+          "id": "c",
+          "text": "自動でやり直して必ず通す",
+          "correct": false,
+          "whyNot": "自動ではやり直さない。直すのは人。"
+        }
+      ],
+      "explanation": "失敗したら止める。これで壊れた物が先へ進まない。"
+    }
+  ],
+  "practice": {
+    "mode": "editor",
+    "purpose": "予約サイトの `.github/workflows/ci.yml` を書く。`main` への push で、部品を入れて（`npm ci`）、組み立て（`npm run build`）、テスト（`npm test`）が順に動くようにし、次にプルリクエストでも動くようにする。",
+    "environment": "linux-basic",
+    "setup": {
+      "hostname": "reserve-dev",
+      "cwd": "/home/learner/reserve",
+      "dirs": [
+        "/home/learner/reserve/src",
+        "/home/learner/reserve/.github/workflows"
+      ],
+      "sites": [],
+      "files": {
+        "/home/learner/reserve/package.json": "{\n  \"name\": \"reserve-site\",\n  \"version\": \"1.5.0\",\n  \"private\": true,\n  \"scripts\": {\n    \"build\": \"esbuild src/server.ts --bundle --outfile=dist/server.js\",\n    \"test\": \"vitest run\"\n  },\n  \"devDependencies\": {\n    \"vitest\": \"^2.1.0\",\n    \"esbuild\": \"^0.24.0\"\n  }\n}\n",
+        "/home/learner/reserve/.gitignore": "node_modules/\ndist/\n",
+        "/home/learner/reserve/src/server.ts": "export const app = '港の予約';\n",
+        "/home/learner/reserve/.github/workflows/ci.yml": "# 予約サイトの CI（ここに書く）\n"
+      },
+      "edit": {
+        "path": "/home/learner/reserve/.github/workflows/ci.yml",
+        "apply": [
+          "git add .github/workflows/ci.yml",
+          "git commit -q -m 'CI を入れる'",
+          "git push -q origin main",
+          "gh run view",
+          "gh run view --log-failed"
+        ]
+      },
+      "run": [
+        "export __NOW='2026-10-15 09:00'",
+        "git init -q",
+        "git remote add origin https://git.city.example/city/reserve.git",
+        "npm install",
+        "git add .",
+        "git commit -q -m '予約サイト 1.5.0'"
+      ],
+      "gitServers": [
+        {
+          "url": "https://git.city.example/city/reserve.git",
+          "run": [],
+          "forge": {
+            "repo": "city/reserve",
+            "actions": {
+              "firstRun": 40,
+              "installSeconds": 15,
+              "scripts": {
+                "build": {
+                  "kind": "build",
+                  "seconds": 30,
+                  "sources": "src",
+                  "bundle": "dist/server.js",
+                  "log": [
+                    "",
+                    "  dist/server.js  1.1kb",
+                    ""
+                  ]
+                },
+                "test": {
+                  "kind": "test",
+                  "seconds": 20,
+                  "log": [
+                    " Test Files  1 passed (1)",
+                    "      Tests  3 passed (3)"
+                  ]
+                }
+              },
+              "sites": [
+                {
+                  "host": "reserve.example",
+                  "chain": [
+                    {
+                      "id": "leaf-reserve.example",
+                      "subject": "reserve.example",
+                      "issuer": "Minato Issuing CA",
+                      "sans": [
+                        "reserve.example"
+                      ],
+                      "notBefore": "2026-01-01",
+                      "notAfter": "2027-01-01",
+                      "ca": false
+                    },
+                    {
+                      "id": "inter",
+                      "subject": "Minato Issuing CA",
+                      "issuer": "Minato Root CA",
+                      "sans": [],
+                      "notBefore": "2024-01-01",
+                      "notAfter": "2030-01-01",
+                      "ca": true
+                    }
+                  ],
+                  "releases": [
+                    {
+                      "version": "1.4.0",
+                      "files": {}
+                    }
+                  ],
+                  "current": "1.4.0",
+                  "routes": {
+                    "/": {
+                      "status": 200,
+                      "body": "版 {version}"
+                    },
+                    "/health": {
+                      "status": 200,
+                      "body": "{\"status\":\"ok\"}"
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    "steps": [
+      {
+        "id": "push",
+        "purpose": "`on` に `push`（`branches: [main]`）、`jobs` に仕事 `check` を書く。`runs-on: ubuntu-latest` で、手順は取り出し（`actions/checkout@v4`）・`npm ci`・`npm run build`・`npm test` の順。",
+        "check": {
+          "kind": "ci",
+          "expr": "head run=success order:check=actions/checkout,npm+ci,npm+run+build,npm+test"
+        },
+        "afterward": "push で全ての手順が動き、緑になった。きっかけ・仕事・手順の 3 つで、流れをコードにできた。",
+        "hints": [
+          "きっかけは `on`、仕事は `jobs`、手順は `steps`。一番左から書き、字下げで親子を決める。",
+          "手順は `- uses: actions/checkout@v4` と `- run: コマンド` の並び。",
+          "`name: ci\non:\n  push:\n    branches: [main]\njobs:\n  check:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@v4\n      - run: npm ci\n      - run: npm run build\n      - run: npm test\n` と保存する。"
+        ],
+        "expectedErrors": [
+          "cicd-config-empty",
+          "cicd-workflow-invalid",
+          "cicd-test-before-build"
+        ]
+      },
+      {
+        "id": "pr",
+        "purpose": "プルリクエストでも動くように、`on` に `pull_request`（`branches: [main]`）を足す。",
+        "check": {
+          "kind": "ci",
+          "expr": "head run=success trigger:push trigger:pull_request"
+        },
+        "afterward": "push でもプルリクエストでも動くようになった。取り込む前に、テストの結果を見られる。",
+        "hints": [
+          "いつ動くかは `on` の下に並べる。",
+          "`push:` と同じ深さに `pull_request:` と `branches: [main]` を足す。",
+          "`name: ci\non:\n  push:\n    branches: [main]\n  pull_request:\n    branches: [main]\njobs:\n  check:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@v4\n      - run: npm ci\n      - run: npm run build\n      - run: npm test\n` と保存する。"
+        ],
+        "expectedErrors": [
+          "cicd-workflow-invalid"
+        ]
+      }
+    ]
+  },
+  "result": {
+    "success": "設定を自分で書き、流れをコードにできた。",
+    "partial": "ヒントを使って書けた。次は GitLab CI の書き方でも読んでみよう。",
+    "retry": "まだ読めない行がある。`gh run view` の行番号の所の字下げを確かめよう。"
+  },
+  "summary": {
+    "points": [
+      "流れは YAML で書く",
+      "きっかけ・仕事・手順の 3 つ",
+      "字下げに注意する"
+    ],
+    "next": [
+      "cicd.i.03",
+      "cicd.i.04",
+      "cicd.a.02"
+    ],
+    "terms": [
+      "yaml",
+      "workflow",
+      "job"
+    ]
+  }
+}

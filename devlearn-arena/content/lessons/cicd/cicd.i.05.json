@@ -1,0 +1,389 @@
+{
+  "id": "cicd.i.05",
+  "domain": "cicd",
+  "level": "intermediate",
+  "theme": "環境",
+  "title": "開発・検証・本番",
+  "goal": "環境ごとの違いと昇格の流れを設計できる",
+  "minutes": 20,
+  "prerequisites": [
+    "cicd.b.05"
+  ],
+  "related": [
+    "git.a.02",
+    "cloud.i.01"
+  ],
+  "next": [
+    "cicd.a.01"
+  ],
+  "terms": [
+    "promotion",
+    "env-var"
+  ],
+  "explain": {
+    "what": "開発・検証・本番は、目的の違う環境。同じ版を順に上げていく。これを{{term:promotion}}と言う。本番に入れる前に、本番に近い所で試す。",
+    "why": "手元で動いても、本番に近い所で試さないと、設定の違いで壊れる。人の承認を挟めば、配る時を選べ、誤った配布を止められる。",
+    "use": "安全に届けるために使う。本番の仕事には承認を必須にし、検証を通った版だけが進めるようにする。",
+    "when": "main に入った変更が、そのまま本番に配られている。検証で動いたのに本番で動かないことも何度かあった。",
+    "figures": [
+      "cicd-i05-envs"
+    ]
+  },
+  "understand": [
+    {
+      "kind": "order",
+      "prompt": "版を上げる順に並べる。",
+      "items": [
+        "開発",
+        "検証",
+        "承認",
+        "本番"
+      ],
+      "see": "what"
+    },
+    {
+      "kind": "situation",
+      "prompt": "検証では動いたのに本番で動かない。一番多い原因は？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "環境の設定の違い",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "コードが本番で書き換わる",
+          "correct": false,
+          "whyNot": "同じ版なのでコードは同じ。違うのは設定と周りの環境。"
+        },
+        {
+          "id": "c",
+          "text": "本番の方が機械が速い",
+          "correct": false,
+          "whyNot": "速いことが原因で動かなくなることは少ない。"
+        }
+      ],
+      "see": "why"
+    }
+  ],
+  "quiz": [
+    {
+      "id": "q1",
+      "kind": "situation",
+      "prompt": "本番に入れる前にすることは？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "本番に近い検証の環境で確かめる",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "本番に入れてから直す",
+          "correct": false,
+          "whyNot": "利用者が先に壊れた物に当たる。"
+        },
+        {
+          "id": "c",
+          "text": "手元で動いたので何もしない",
+          "correct": false,
+          "whyNot": "手元と本番は環境が違う。"
+        }
+      ],
+      "explanation": "本番に近い所で先に壊す。"
+    },
+    {
+      "id": "q2",
+      "kind": "cause",
+      "prompt": "本番だけ動かない。コードは検証と同じ版。原因は？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "設定や{{term:env-var}}の差",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "コードの誤り",
+          "correct": false,
+          "whyNot": "同じコードが検証では動いた。"
+        },
+        {
+          "id": "c",
+          "text": "検証の環境の故障",
+          "correct": false,
+          "whyNot": "検証は動いている。動かないのは本番。"
+        }
+      ],
+      "explanation": "まず 2 つの環境の設定の差を比べる。"
+    },
+    {
+      "id": "q3",
+      "kind": "choice",
+      "prompt": "本番への配布に付けるとよい物は？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "人の承認",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "検証を飛ばす近道",
+          "correct": false,
+          "whyNot": "急ぐ時ほど壊しやすい。"
+        },
+        {
+          "id": "c",
+          "text": "全員が押せる配布のボタン",
+          "correct": false,
+          "whyNot": "誰が決めたかが分からなくなる。"
+        }
+      ],
+      "explanation": "承認を通った物だけが本番に入る。"
+    }
+  ],
+  "practice": {
+    "mode": "editor",
+    "purpose": "`main` に入ると、そのまま本番に配られている。設定 `release.yml` を、まず検証 `staging.example` に配り、本番 `reserve.example` は検証の後に承認を待つ形にする。環境 `production` には、承認する人が登録してある。",
+    "environment": "linux-basic",
+    "setup": {
+      "hostname": "reserve-dev",
+      "cwd": "/home/learner/reserve",
+      "dirs": [
+        "/home/learner/reserve/src",
+        "/home/learner/reserve/.github/workflows"
+      ],
+      "sites": [],
+      "files": {
+        "/home/learner/reserve/package.json": "{\n  \"name\": \"reserve-site\",\n  \"version\": \"1.5.0\",\n  \"private\": true,\n  \"scripts\": {\n    \"build\": \"esbuild src/server.ts --bundle --outfile=dist/server.js\",\n    \"deploy\": \"rsync -av dist/ deploy@reserve.example:/srv/reserve/\",\n    \"deploy:staging\": \"rsync -av dist/ deploy@staging.example:/srv/reserve/\"\n  },\n  \"devDependencies\": {\n    \"vitest\": \"^2.1.0\",\n    \"esbuild\": \"^0.24.0\"\n  }\n}\n",
+        "/home/learner/reserve/.gitignore": "node_modules/\ndist/\n",
+        "/home/learner/reserve/src/server.ts": "export const app = '港の予約';\n",
+        "/home/learner/reserve/.github/workflows/release.yml": "name: release\non:\n  push:\n    branches: [main]\njobs:\n  production:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@v4\n      - run: npm ci\n      - run: npm run build\n      - run: npm run deploy\n"
+      },
+      "edit": {
+        "path": "/home/learner/reserve/.github/workflows/release.yml",
+        "apply": [
+          "git add .github/workflows/release.yml",
+          "git commit -q -m '検証を通してから本番へ配る'",
+          "git push -q origin main",
+          "gh run view",
+          "gh run view --log-failed",
+          "gh run view --log | grep -E 'switched|staged'"
+        ]
+      },
+      "run": [
+        "export __NOW='2026-10-15 09:00'",
+        "git init -q",
+        "git remote add origin https://git.city.example/city/reserve.git",
+        "npm install",
+        "git add .",
+        "git commit -q -m '予約サイト 1.5.0'"
+      ],
+      "gitServers": [
+        {
+          "url": "https://git.city.example/city/reserve.git",
+          "run": [],
+          "forge": {
+            "repo": "city/reserve",
+            "actions": {
+              "firstRun": 40,
+              "installSeconds": 15,
+              "scripts": {
+                "build": {
+                  "kind": "build",
+                  "seconds": 30,
+                  "sources": "src",
+                  "bundle": "dist/server.js",
+                  "log": [
+                    "",
+                    "  dist/server.js  1.1kb",
+                    ""
+                  ]
+                },
+                "test": {
+                  "kind": "test",
+                  "seconds": 20,
+                  "log": [
+                    " Test Files  1 passed (1)",
+                    "      Tests  3 passed (3)"
+                  ]
+                },
+                "deploy": {
+                  "kind": "deploy",
+                  "seconds": 10,
+                  "out": "dist",
+                  "site": "reserve.example",
+                  "log": [
+                    "switched to {version}"
+                  ]
+                },
+                "deploy:staging": {
+                  "kind": "deploy",
+                  "seconds": 10,
+                  "out": "dist",
+                  "site": "staging.example",
+                  "log": [
+                    "staged {version}"
+                  ]
+                }
+              },
+              "sites": [
+                {
+                  "host": "reserve.example",
+                  "chain": [
+                    {
+                      "id": "leaf-reserve.example",
+                      "subject": "reserve.example",
+                      "issuer": "Minato Issuing CA",
+                      "sans": [
+                        "reserve.example"
+                      ],
+                      "notBefore": "2026-01-01",
+                      "notAfter": "2027-01-01",
+                      "ca": false
+                    },
+                    {
+                      "id": "inter",
+                      "subject": "Minato Issuing CA",
+                      "issuer": "Minato Root CA",
+                      "sans": [],
+                      "notBefore": "2024-01-01",
+                      "notAfter": "2030-01-01",
+                      "ca": true
+                    }
+                  ],
+                  "releases": [
+                    {
+                      "version": "1.4.0",
+                      "files": {}
+                    }
+                  ],
+                  "current": "1.4.0",
+                  "routes": {
+                    "/": {
+                      "status": 200,
+                      "body": "版 {version}"
+                    },
+                    "/health": {
+                      "status": 200,
+                      "body": "{\"status\":\"ok\"}"
+                    }
+                  }
+                },
+                {
+                  "host": "staging.example",
+                  "chain": [
+                    {
+                      "id": "leaf-staging.example",
+                      "subject": "staging.example",
+                      "issuer": "Minato Issuing CA",
+                      "sans": [
+                        "staging.example"
+                      ],
+                      "notBefore": "2026-01-01",
+                      "notAfter": "2027-01-01",
+                      "ca": false
+                    },
+                    {
+                      "id": "inter",
+                      "subject": "Minato Issuing CA",
+                      "issuer": "Minato Root CA",
+                      "sans": [],
+                      "notBefore": "2024-01-01",
+                      "notAfter": "2030-01-01",
+                      "ca": true
+                    }
+                  ],
+                  "releases": [
+                    {
+                      "version": "1.4.0",
+                      "files": {}
+                    }
+                  ],
+                  "current": "1.4.0",
+                  "routes": {
+                    "/": {
+                      "status": 200,
+                      "body": "版 {version}"
+                    },
+                    "/health": {
+                      "status": 200,
+                      "body": "{\"status\":\"ok\"}"
+                    }
+                  }
+                }
+              ],
+              "environments": {
+                "production": {
+                  "reviewers": [
+                    "kato"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    "steps": [
+      {
+        "id": "staging",
+        "purpose": "仕事の名前を `staging` に替え、配る手順を `npm run deploy:staging` にする。まず検証だけに配る。",
+        "check": {
+          "kind": "ci",
+          "expr": "head job:staging=success deployed:staging.example=1.5.0"
+        },
+        "afterward": "検証は 1.5.0、本番は 1.4.0 のまま。ここで検証の環境を確かめられる。",
+        "hints": [
+          "本番へ直接配らない。まず検証へ配る。",
+          "`production:` を `staging:` に、`npm run deploy` を `npm run deploy:staging` に替える。",
+          "`name: release\non:\n  push:\n    branches: [main]\njobs:\n  staging:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@v4\n      - run: npm ci\n      - run: npm run build\n      - run: npm run deploy:staging\n` と保存する。"
+        ],
+        "expectedErrors": [
+          "cicd-direct-prod",
+          "cicd-workflow-invalid"
+        ]
+      },
+      {
+        "id": "approve",
+        "purpose": "本番の仕事 `production` を足す。`needs: staging` で検証の後に動かし、`environment: production` で承認を待つ。手順は取り出し・`npm ci`・`npm run build`・`npm run deploy`。",
+        "check": {
+          "kind": "ci",
+          "expr": "head job:staging=success needs:production=staging job:production=waiting"
+        },
+        "afterward": "検証の後で本番の仕事が `Waiting for review` になり、止まった。承認する人が画面で承認すると、同じ版が本番へ進む。検証を通らず、承認も無しに本番へ入ることは、もう無い。",
+        "hints": [
+          "順は `needs`、承認は `environment`。",
+          "`production:` の下に `runs-on`・`needs: staging`・`environment: production`・`steps` を書く。",
+          "`name: release\non:\n  push:\n    branches: [main]\njobs:\n  staging:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@v4\n      - run: npm ci\n      - run: npm run build\n      - run: npm run deploy:staging\n  production:\n    runs-on: ubuntu-latest\n    needs: staging\n    environment: production\n    steps:\n      - uses: actions/checkout@v4\n      - run: npm ci\n      - run: npm run build\n      - run: npm run deploy\n` と保存する。"
+        ],
+        "expectedErrors": [
+          "cicd-direct-prod",
+          "cicd-workflow-invalid",
+          "cicd-needs-unknown"
+        ]
+      }
+    ]
+  },
+  "result": {
+    "success": "検証を通してから承認で本番へ進む流れを作れた。",
+    "partial": "ヒントを使って作れた。次は、環境の設定の違いを比べてみよう。",
+    "retry": "本番へ直接入っている。`needs` と `environment` を確かめよう。"
+  },
+  "summary": {
+    "points": [
+      "環境を分ける",
+      "同じ版を順に上げる",
+      "本番は承認付きにする"
+    ],
+    "next": [
+      "cicd.a.01"
+    ],
+    "terms": [
+      "promotion",
+      "deploy",
+      "continuous-delivery"
+    ]
+  }
+}

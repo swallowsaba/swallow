@@ -279,11 +279,11 @@ lab は複数分野の組み合わせ
 | cicd.b.03 | 初級 | build/test | ビルドとテスト | 失敗したら止まる理由と、結果の読み方 | 端 | cicd.b.02 | trouble.b.02, docker.i.02 | cicd.b.04 |
 | cicd.b.04 | 初級 | artifact | 成果物（artifact） | 作った物を次の段に渡す仕組みを説明できる | 編 | cicd.b.03 | docker.i.05, ctr.b.05 | cicd.b.05 |
 | cicd.b.05 | 初級 | deploy | デプロイ | 環境へ配る段と、確認の段を置ける | 編 | cicd.b.04 | k8s.i.08, devops.b.03 | cicd.i.02, cicd.i.05, devops.b.03 |
-| cicd.i.01 | 中級 | runner | runner | ジョブを実行する機械の役割と種類を説明できる | 模 | cicd.b.02 | cloud.b.03, docker.b.01 | cicd.i.02 |
+| cicd.i.01 | 中級 | runner | runner | ジョブを実行する機械の役割と種類を説明できる | 編 | cicd.b.02 | cloud.b.03, docker.b.01 | cicd.i.02 |
 | cicd.i.02 | 中級 | 設定 | 設定ファイルを書く | GitHub Actions と GitLab CI の設定を読み書きできる | 編 | cicd.b.05 | git.i.03, devops.i.01 | cicd.i.03, cicd.i.04, cicd.a.02 |
 | cicd.i.03 | 中級 | 秘密情報 | 秘密情報をパイプラインに渡す | Secrets を使い、ログに出さない設定ができる | 編 | cicd.i.02, sec.b.05 | sec.i.05, k8s.i.02 | sec.i.05, lab.i.02 |
-| cicd.i.04 | 中級 | 障害 | 失敗したパイプラインを直す | ログから失敗の段と原因を特定し直せる | 編 | cicd.i.02, trouble.b.02 | trouble.b.02, git.a.01 | cicd.i.05 |
-| cicd.i.05 | 中級 | 環境 | 開発・検証・本番 | 環境ごとの違いと昇格の流れを設計できる | 模 | cicd.b.05 | git.a.02, cloud.i.01 | cicd.a.01 |
+| cicd.i.04 | 中級 | 障害 | 失敗したパイプラインを直す | ログから失敗の段と原因を特定し直せる | 端 | cicd.i.02, trouble.b.02 | trouble.b.02, git.a.01 | cicd.i.05 |
+| cicd.i.05 | 中級 | 環境 | 開発・検証・本番 | 環境ごとの違いと昇格の流れを設計できる | 編 | cicd.b.05 | git.a.02, cloud.i.01 | cicd.a.01 |
 | cicd.a.01 | 上級 | 戦略 | デプロイ戦略 | ローリング・ブルーグリーン・カナリアを比べて選べる | 模 | cicd.i.05, k8s.i.08 | devops.a.01, k8s.i.08 | devops.a.01 |
 | cicd.a.02 | 上級 | 速さ | パイプラインを速くする | キャッシュと並列で時間を縮められる | 編 | cicd.i.02 | docker.a.01, web.i.04 | cicd.a.03 |
 | cicd.a.03 | 上級 | 品質 | 品質の門 | レビュー・保護・必須チェックを組める | 編 | git.a.02 | git.a.02, sec.a.04 | — |

@@ -1,0 +1,37 @@
+{
+  "lesson": "cicd.i.02",
+  "variants": [
+    {
+      "name": "on を 1 行で・仕事の名前を変える",
+      "steps": {
+        "push": [
+          "name: ci\non:\n  push:\n    branches:\n      - main\njobs:\n  check:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@v4\n      - run: npm ci\n      - run: npm run build\n      - run: npm test\n"
+        ],
+        "pr": [
+          "name: ci\non: [push, pull_request]\njobs:\n  check:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@v4\n      - run: npm ci\n      - run: npm run build\n      - run: npm test\n"
+        ]
+      }
+    },
+    {
+      "name": "手順に名前を付ける",
+      "steps": {
+        "push": [
+          "name: ci\non:\n  push:\n    branches: [main]\njobs:\n  check:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@v4\n      - name: 部品\n        run: npm ci\n      - name: 組み立て\n        run: npm run build\n      - run: npm test\n"
+        ],
+        "pr": [
+          "name: ci\non:\n  push:\n    branches: [main]\n  pull_request:\n    branches: [main]\njobs:\n  check:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@v4\n      - name: 部品\n        run: npm ci\n      - run: npm run build\n      - run: npm test\n"
+        ]
+      }
+    }
+  ],
+  "wrong": {
+    "step": "push",
+    "why": "jobs を書き忘れる",
+    "input": [
+      "name: ci\non:\n  push:\n    branches: [main]\n"
+    ],
+    "retry": [
+      "name: ci\non:\n  push:\n    branches: [main]\njobs:\n  check:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@v4\n      - run: npm ci\n      - run: npm run build\n      - run: npm test\n"
+    ]
+  }
+}

@@ -1,0 +1,378 @@
+{
+  "id": "cicd.i.01",
+  "domain": "cicd",
+  "level": "intermediate",
+  "theme": "runner",
+  "title": "runner",
+  "goal": "ジョブを実行する機械の役割と種類を説明できる",
+  "minutes": 20,
+  "prerequisites": [
+    "cicd.b.02"
+  ],
+  "related": [
+    "cloud.b.03",
+    "docker.b.01"
+  ],
+  "next": [
+    "cicd.i.02"
+  ],
+  "terms": [
+    "pipeline",
+    "runner",
+    "service",
+    "ci",
+    "test",
+    "log",
+    "env-var",
+    "repository",
+    "workflow"
+  ],
+  "explain": {
+    "what": "{{term:runner}} は、{{term:pipeline}}の仕事を実際に動かす機械。{{term:service}}が用意する物と、自分たちで用意する物（自前）がある。仕事の設定に書いたラベルで選ぶ。",
+    "why": "どこで動くかで、使える道具と届く網が変わる。提供される runner は毎回まっさらで、社内の網にも届かない。手元で動いても、そこでは動かないことがある。",
+    "use": "{{term:ci}} の構成を決める時に使う。ふつうの仕事は提供される機械で動かし、社内の網に届く必要がある仕事だけを自前の機械で動かす。",
+    "when": "手元では通る{{term:test}}が、CI では「道具が無い」「名前が引けない」で失敗する。何が手元と違うのかを、{{term:log}}から見分けたい。",
+    "figures": [
+      "cicd-i01-runner"
+    ]
+  },
+  "understand": [
+    {
+      "kind": "relation",
+      "prompt": "2 つの関係を選ぶ。",
+      "a": "提供される runner は毎回まっさらな機械",
+      "b": "手元に入れた部品は、CI で入れ直す必要がある",
+      "answer": "cause",
+      "why": "前の実行の物は残らない。要る物は毎回の手順の中で入れる。",
+      "see": "why"
+    },
+    {
+      "kind": "situation",
+      "prompt": "手元では通るテストが CI でだけ失敗した。まず何を疑う？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "手元と runner の環境の違い（道具・網・{{term:env-var}}）",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "CI のサービスの故障",
+          "correct": false,
+          "whyNot": "故障なら全ての仕事が止まる。まず自分の仕事のログを読む。"
+        },
+        {
+          "id": "c",
+          "text": "テストの数が多すぎる",
+          "correct": false,
+          "whyNot": "数が多いと遅くはなるが、手元で通るテストが失敗する理由にはならない。"
+        }
+      ],
+      "see": "when"
+    }
+  ],
+  "quiz": [
+    {
+      "id": "q1",
+      "kind": "cause",
+      "prompt": "CI のログに `vitest: not found` と出た。手元では動く。原因は？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "runner に部品を入れる手順（`npm ci`）が無い",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "テストの中身が誤っている",
+          "correct": false,
+          "whyNot": "テストはまだ動いていない。道具そのものが見つかっていない。"
+        },
+        {
+          "id": "c",
+          "text": "{{term:repository}}が壊れている",
+          "correct": false,
+          "whyNot": "手元では動くので、リポジトリの中身は揃っている。"
+        }
+      ],
+      "explanation": "runner は毎回まっさら。部品は手順の中で入れる。"
+    },
+    {
+      "id": "q2",
+      "kind": "situation",
+      "prompt": "仕事が社内の網の台帳に接続する必要がある。どの runner で動かす？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "社内の網にいる自前の runner",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "提供される runner のまま、台帳を外へ公開する",
+          "correct": false,
+          "whyNot": "社内の物を外へ開くのは危ない。runner の方を網の中に置く。"
+        },
+        {
+          "id": "c",
+          "text": "手元の機械で手で動かす",
+          "correct": false,
+          "whyNot": "動くが、自動にならない。CI の意味が無くなる。"
+        }
+      ],
+      "explanation": "届く必要がある網の中に runner を置き、ラベルで選ぶ。"
+    },
+    {
+      "id": "q3",
+      "kind": "choice",
+      "prompt": "動かす runner を選ぶ指定はどれ？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "ラベル（`runs-on`）",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "{{term:workflow}}の名前（`name`）",
+          "correct": false,
+          "whyNot": "`name` は画面に出る名前。動かす機械は決まらない。"
+        },
+        {
+          "id": "c",
+          "text": "枝の名前（`branches`）",
+          "correct": false,
+          "whyNot": "`branches` は、いつ動くかを決める。どこで動くかではない。"
+        }
+      ],
+      "explanation": "`runs-on` に書いたラベルを全て持つ runner が、仕事を取り出す。"
+    }
+  ],
+  "practice": {
+    "mode": "editor",
+    "purpose": "予約サイトの CI `ci.yml` が赤い。手元では通るのに、提供される runner では `npm test` が `vitest: not found` で止まる。その後の確かめは、社内の網の `intra.city.example` に届く自前の runner（ラベル `self-hosted` と `city-net`）でないと通らない。",
+    "environment": "linux-basic",
+    "setup": {
+      "hostname": "reserve-dev",
+      "cwd": "/home/learner/reserve",
+      "dirs": [
+        "/home/learner/reserve/src",
+        "/home/learner/reserve/.github/workflows"
+      ],
+      "sites": [],
+      "files": {
+        "/home/learner/reserve/package.json": "{\n  \"name\": \"reserve-site\",\n  \"version\": \"1.5.0\",\n  \"private\": true,\n  \"scripts\": {\n    \"build\": \"esbuild src/server.ts --bundle --outfile=dist/server.js\",\n    \"test\": \"vitest run\"\n  },\n  \"devDependencies\": {\n    \"vitest\": \"^2.1.0\",\n    \"esbuild\": \"^0.24.0\"\n  }\n}\n",
+        "/home/learner/reserve/.gitignore": "node_modules/\ndist/\n",
+        "/home/learner/reserve/src/server.ts": "export const app = '港の予約';\n",
+        "/home/learner/reserve/.github/workflows/ci.yml": "# 予約サイトの確かめ\nname: ci\non:\n  push:\n    branches: [main]\njobs:\n  check:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@v4\n      - run: npm test\n      - name: 社内の台帳に届くか確かめる\n        run: curl -fsS https://intra.city.example/health\n"
+      },
+      "edit": {
+        "path": "/home/learner/reserve/.github/workflows/ci.yml",
+        "apply": [
+          "git add .github/workflows/ci.yml",
+          "git commit -q -m 'runner の準備と指定を直す'",
+          "git push -q origin main",
+          "gh run view",
+          "gh run view --log-failed"
+        ]
+      },
+      "run": [
+        "export __NOW='2026-10-15 09:00'",
+        "git init -q",
+        "git remote add origin https://git.city.example/city/reserve.git",
+        "npm install",
+        "git add .",
+        "git commit -q -m '予約サイト 1.5.0'"
+      ],
+      "gitServers": [
+        {
+          "url": "https://git.city.example/city/reserve.git",
+          "run": [],
+          "forge": {
+            "repo": "city/reserve",
+            "actions": {
+              "firstRun": 40,
+              "installSeconds": 15,
+              "scripts": {
+                "build": {
+                  "kind": "build",
+                  "seconds": 30,
+                  "sources": "src",
+                  "bundle": "dist/server.js",
+                  "log": [
+                    "",
+                    "  dist/server.js  1.1kb",
+                    ""
+                  ]
+                },
+                "test": {
+                  "kind": "test",
+                  "seconds": 20,
+                  "log": [
+                    " Test Files  1 passed (1)",
+                    "      Tests  3 passed (3)"
+                  ]
+                }
+              },
+              "sites": [
+                {
+                  "host": "reserve.example",
+                  "chain": [
+                    {
+                      "id": "leaf-reserve.example",
+                      "subject": "reserve.example",
+                      "issuer": "Minato Issuing CA",
+                      "sans": [
+                        "reserve.example"
+                      ],
+                      "notBefore": "2026-01-01",
+                      "notAfter": "2027-01-01",
+                      "ca": false
+                    },
+                    {
+                      "id": "inter",
+                      "subject": "Minato Issuing CA",
+                      "issuer": "Minato Root CA",
+                      "sans": [],
+                      "notBefore": "2024-01-01",
+                      "notAfter": "2030-01-01",
+                      "ca": true
+                    }
+                  ],
+                  "releases": [
+                    {
+                      "version": "1.4.0",
+                      "files": {}
+                    }
+                  ],
+                  "current": "1.4.0",
+                  "routes": {
+                    "/": {
+                      "status": 200,
+                      "body": "版 {version}"
+                    },
+                    "/health": {
+                      "status": 200,
+                      "body": "{\"status\":\"ok\"}"
+                    }
+                  }
+                },
+                {
+                  "host": "intra.city.example",
+                  "chain": [
+                    {
+                      "id": "leaf-intra.city.example",
+                      "subject": "intra.city.example",
+                      "issuer": "Minato Issuing CA",
+                      "sans": [
+                        "intra.city.example"
+                      ],
+                      "notBefore": "2026-01-01",
+                      "notAfter": "2027-01-01",
+                      "ca": false
+                    },
+                    {
+                      "id": "inter",
+                      "subject": "Minato Issuing CA",
+                      "issuer": "Minato Root CA",
+                      "sans": [],
+                      "notBefore": "2024-01-01",
+                      "notAfter": "2030-01-01",
+                      "ca": true
+                    }
+                  ],
+                  "releases": [
+                    {
+                      "version": "1.4.0",
+                      "files": {}
+                    }
+                  ],
+                  "current": "1.4.0",
+                  "routes": {
+                    "/": {
+                      "status": 200,
+                      "body": "版 {version}"
+                    },
+                    "/health": {
+                      "status": 200,
+                      "body": "{\"status\":\"ok\"}"
+                    }
+                  },
+                  "network": "city"
+                }
+              ],
+              "runners": [
+                {
+                  "labels": [
+                    "self-hosted",
+                    "city-net"
+                  ],
+                  "network": "city"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    "steps": [
+      {
+        "id": "tool",
+        "purpose": "`npm test` の前に、部品を入れる `npm ci` の手順を足す。`npm test` が通れば、この手順は達成。後ろの確かめはまだ失敗してよい。",
+        "check": {
+          "kind": "ci",
+          "expr": "head step:check/npm+test=success"
+        },
+        "afterward": "`npm test` が通った。runner は毎回まっさらな機械なので、部品は手順の中で入れる。次の確かめの手順はまだ `Could not resolve host` で止まっている。",
+        "hints": [
+          "手元に入れた部品は、runner には無い。部品を入れる手順が要る。",
+          "`actions/checkout` の次の行に `- run: npm ci` を足す。",
+          "`# 予約サイトの確かめ\nname: ci\non:\n  push:\n    branches: [main]\njobs:\n  check:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@v4\n      - run: npm ci\n      - run: npm test\n      - name: 社内の台帳に届くか確かめる\n        run: curl -fsS https://intra.city.example/health\n` と保存する。"
+        ],
+        "expectedErrors": [
+          "cicd-tool-missing",
+          "cicd-workflow-invalid"
+        ]
+      },
+      {
+        "id": "label",
+        "purpose": "確かめの `curl` が `Could not resolve host` で止まっている。`runs-on` を、社内の網にいる自前の runner のラベル（`self-hosted` と `city-net`）に替える。",
+        "check": {
+          "kind": "ci",
+          "expr": "head job:check=success"
+        },
+        "afterward": "自前の runner で動き、社内の台帳に届いて全ての手順が緑になった。ラベルで、仕事を動かす機械を選んだ。",
+        "hints": [
+          "社外の機械からは、社内の名前を引けない。動かす機械を替える。",
+          "`runs-on: [self-hosted, city-net]` の形で 2 つのラベルを書く。",
+          "`# 予約サイトの確かめ\nname: ci\non:\n  push:\n    branches: [main]\njobs:\n  check:\n    runs-on: [self-hosted, city-net]\n    steps:\n      - uses: actions/checkout@v4\n      - run: npm ci\n      - run: npm test\n      - name: 社内の台帳に届くか確かめる\n        run: curl -fsS https://intra.city.example/health\n` と保存する。"
+        ],
+        "expectedErrors": [
+          "cicd-runner-net",
+          "cicd-no-runner-label",
+          "cicd-workflow-invalid"
+        ]
+      }
+    ]
+  },
+  "result": {
+    "success": "ログから手元との違いを見つけ、準備と runner の指定を直せた。",
+    "partial": "ヒントを使って直せた。次は、ログのどの行で違いに気付けるかを確かめよう。",
+    "retry": "まだ赤い。`gh run view` の止まった手順の行を読み、道具か網かを見分けよう。"
+  },
+  "summary": {
+    "points": [
+      "仕事は runner で動く",
+      "手元との環境の差に注意する",
+      "動かす機械はラベルで選ぶ"
+    ],
+    "next": [
+      "cicd.i.02"
+    ],
+    "terms": [
+      "runner",
+      "job",
+      "ci"
+    ]
+  }
+}

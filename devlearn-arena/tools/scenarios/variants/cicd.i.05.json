@@ -1,0 +1,37 @@
+{
+  "lesson": "cicd.i.05",
+  "variants": [
+    {
+      "name": "environment を name で書く",
+      "steps": {
+        "staging": [
+          "name: release\non:\n  push:\n    branches: [main]\njobs:\n  staging:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@v4\n      - run: npm ci\n      - run: npm run build\n      - run: npm run deploy:staging\n"
+        ],
+        "approve": [
+          "name: release\non:\n  push:\n    branches: [main]\njobs:\n  staging:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@v4\n      - run: npm ci\n      - run: npm run build\n      - run: npm run deploy:staging\n  production:\n    runs-on: ubuntu-latest\n    needs: staging\n    environment:\n      name: production\n    steps:\n      - uses: actions/checkout@v4\n      - run: npm ci\n      - run: npm run build\n      - run: npm run deploy\n"
+        ]
+      }
+    },
+    {
+      "name": "手順に名前を付ける",
+      "steps": {
+        "staging": [
+          "name: release\non:\n  push:\n    branches: [main]\njobs:\n  staging:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@v4\n      - run: npm ci\n      - run: npm run build\n      - name: 検証へ\n        run: npm run deploy:staging\n"
+        ],
+        "approve": [
+          "name: release\non:\n  push:\n    branches: [main]\njobs:\n  staging:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@v4\n      - run: npm ci\n      - run: npm run build\n      - name: 検証へ\n        run: npm run deploy:staging\n  production:\n    runs-on: ubuntu-latest\n    needs: [staging]\n    environment: production\n    steps:\n      - uses: actions/checkout@v4\n      - run: npm ci\n      - run: npm run build\n      - run: npm run deploy\n"
+        ]
+      }
+    }
+  ],
+  "wrong": {
+    "step": "staging",
+    "why": "本番へ配る手順のまま、名前だけ替える",
+    "input": [
+      "name: release\non:\n  push:\n    branches: [main]\njobs:\n  staging:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@v4\n      - run: npm ci\n      - run: npm run build\n      - run: npm run deploy\n"
+    ],
+    "retry": [
+      "name: release\non:\n  push:\n    branches: [main]\njobs:\n  staging:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@v4\n      - run: npm ci\n      - run: npm run build\n      - run: npm run deploy:staging\n"
+    ]
+  }
+}

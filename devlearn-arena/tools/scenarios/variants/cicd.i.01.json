@@ -1,0 +1,34 @@
+{
+  "lesson": "cicd.i.01",
+  "variants": [
+    {
+      "name": "npm install で入れる・名前を付ける",
+      "steps": {
+        "tool": [
+          "# 予約サイトの確かめ\nname: ci\non:\n  push:\n    branches: [main]\njobs:\n  check:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@v4\n      - name: 部品を入れる\n        run: npm install\n      - name: テスト\n        run: npm test\n      - name: 社内の台帳に届くか確かめる\n        run: curl -fsS https://intra.city.example/health\n"
+        ],
+        "label": [
+          "# 予約サイトの確かめ\nname: ci\non:\n  push:\n    branches: [main]\njobs:\n  check:\n    runs-on: [self-hosted, city-net]\n    steps:\n      - uses: actions/checkout@v4\n      - name: 部品を入れる\n        run: npm install\n      - name: テスト\n        run: npm test\n      - name: 社内の台帳に届くか確かめる\n        run: curl -fsS https://intra.city.example/health\n"
+        ]
+      }
+    },
+    {
+      "name": "ラベルを縦に書く・手順の前に node を準備する",
+      "steps": {
+        "tool": [
+          "# 予約サイトの確かめ\nname: ci\non:\n  push:\n    branches: [main]\njobs:\n  check:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@v4\n      - uses: actions/setup-node@v4\n        with:\n          node-version: 20\n      - run: npm ci\n      - run: npm test\n      - name: 社内の台帳に届くか確かめる\n        run: curl -fsS https://intra.city.example/health\n"
+        ],
+        "label": [
+          "# 予約サイトの確かめ\nname: ci\non:\n  push:\n    branches: [main]\njobs:\n  check:\n    runs-on:\n      - self-hosted\n      - city-net\n    steps:\n      - uses: actions/checkout@v4\n      - uses: actions/setup-node@v4\n        with:\n          node-version: 20\n      - run: npm ci\n      - run: npm test\n      - name: 社内の台帳に届くか確かめる\n        run: curl -fsS https://intra.city.example/health\n"
+        ]
+      }
+    }
+  ],
+  "wrong": {
+    "step": "label",
+    "why": "持っていないラベルを書く",
+    "input": [
+      "# 予約サイトの確かめ\nname: ci\non:\n  push:\n    branches: [main]\njobs:\n  check:\n    runs-on: [self-hosted, gpu]\n    steps:\n      - uses: actions/checkout@v4\n      - run: npm ci\n      - run: npm test\n      - name: 社内の台帳に届くか確かめる\n        run: curl -fsS https://intra.city.example/health\n"
+    ]
+  }
+}

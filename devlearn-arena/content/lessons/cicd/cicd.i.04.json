@@ -1,0 +1,342 @@
+{
+  "id": "cicd.i.04",
+  "domain": "cicd",
+  "level": "intermediate",
+  "theme": "障害",
+  "title": "失敗したパイプラインを直す",
+  "goal": "ログから失敗の段と原因を特定し直せる",
+  "minutes": 20,
+  "prerequisites": [
+    "cicd.i.02",
+    "trouble.b.02"
+  ],
+  "related": [
+    "trouble.b.02",
+    "git.a.01"
+  ],
+  "next": [
+    "cicd.i.05"
+  ],
+  "terms": [
+    "pipeline",
+    "test",
+    "log",
+    "ci",
+    "pull-request",
+    "npm",
+    "config-file",
+    "gh-secrets",
+    "env-var",
+    "runner",
+    "workflow",
+    "file",
+    "commit"
+  ],
+  "explain": {
+    "what": "失敗した{{term:pipeline}}は、止まった段と最初の誤りの行を{{term:log}}から見つけ、直してもう一度流す。設定の誤りと{{term:test}}の失敗では、直す場所が違う。",
+    "why": "止まったままでは、誰も配れない。後ろの段の赤は前の段の結果のことが多いので、最初の赤から読まないと、関係の無い所を直してしまう。",
+    "use": "日々の運用で使う。誰かの変更で {{term:ci}} が赤くなったら、すぐに原因を見つけて緑に戻す。",
+    "when": "{{term:pull-request}}に赤い × が付いた。何十行ものログのどこを読めばよいか分からない。",
+    "figures": [
+      "cicd-i04-fix"
+    ]
+  },
+  "understand": [
+    {
+      "kind": "figure-pick",
+      "figure": "cicd-i04-fix",
+      "prompt": "図の中で、最初に見る所（止まった段）を押す。",
+      "answer": [
+        "stage"
+      ],
+      "see": "what"
+    },
+    {
+      "kind": "situation",
+      "prompt": "ログの次の行のうち、原因はどれ？ `npm ERR! code 1` ／ `FAIL tests/price.test.ts` ／ `Process completed with exit code 1`",
+      "choices": [
+        {
+          "id": "a",
+          "text": "`FAIL tests/price.test.ts`",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "`Process completed with exit code 1`",
+          "correct": false,
+          "whyNot": "失敗した結果の知らせ。どの失敗でも出る。"
+        },
+        {
+          "id": "c",
+          "text": "`npm ERR! code 1`",
+          "correct": false,
+          "whyNot": "{{term:npm}} が、道具の失敗を伝えただけ。原因は、その前の行にある。"
+        }
+      ],
+      "see": "why"
+    }
+  ],
+  "quiz": [
+    {
+      "id": "q1",
+      "kind": "cause",
+      "prompt": "ログに `FAIL tests/cart.test.ts` と出た。何の失敗？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "テストの失敗。コードか期待の誤り",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "組み立ての失敗",
+          "correct": false,
+          "whyNot": "組み立ての失敗なら、型や文法のエラーが出て、テストまで進まない。"
+        },
+        {
+          "id": "c",
+          "text": "{{term:config-file}}の読み込みの失敗",
+          "correct": false,
+          "whyNot": "読めなければ、仕事は 1 つも動かない。"
+        }
+      ],
+      "explanation": "テストは動いた。その 1 件が期待と違った。"
+    },
+    {
+      "id": "q2",
+      "kind": "situation",
+      "prompt": "ログに `DEPLOY_TOKEN is not set` と出た。どこを直す？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "{{term:gh-secrets}} の登録と、設定の渡し方",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "テストのコード",
+          "correct": false,
+          "whyNot": "テストではなく、配布に要る値が来ていない。"
+        },
+        {
+          "id": "c",
+          "text": "手元の{{term:env-var}}",
+          "correct": false,
+          "whyNot": "動くのは {{term:runner}}。手元の値は届かない。"
+        }
+      ],
+      "explanation": "runner に値が届いていない。置き場と渡し方を見る。"
+    },
+    {
+      "id": "q3",
+      "kind": "order",
+      "prompt": "直す手順を順に並べる。",
+      "order": [
+        "止まった段を見つける",
+        "最初の誤りの行を読む",
+        "原因を直して push する",
+        "全ての段の緑を確かめる"
+      ],
+      "explanation": "読む前に直さない。直した後は流して確かめる。"
+    }
+  ],
+  "practice": {
+    "mode": "terminal",
+    "purpose": "予約サイトの CI が赤い。`gh run view` と `gh run view --log-failed` で読み、誤りを 2 つ直して緑に戻す。設定 `.github/workflows/ci.yml` の仕事の名前の誤りと、`src/price.ts` の計算の誤り。",
+    "environment": "linux-basic",
+    "setup": {
+      "hostname": "reserve-dev",
+      "cwd": "/home/learner/reserve",
+      "dirs": [
+        "/home/learner/reserve/src",
+        "/home/learner/reserve/.github/workflows"
+      ],
+      "sites": [],
+      "files": {
+        "/home/learner/reserve/package.json": "{\n  \"name\": \"reserve-site\",\n  \"version\": \"1.5.0\",\n  \"private\": true,\n  \"scripts\": {\n    \"build\": \"esbuild src/server.ts --bundle --outfile=dist/server.js\",\n    \"test\": \"vitest run\"\n  },\n  \"devDependencies\": {\n    \"vitest\": \"^2.1.0\",\n    \"esbuild\": \"^0.24.0\"\n  }\n}\n",
+        "/home/learner/reserve/.gitignore": "node_modules/\ndist/\n",
+        "/home/learner/reserve/src/server.ts": "export const app = '港の予約';\n",
+        "/home/learner/reserve/.github/workflows/ci.yml": "name: ci\non:\n  push:\n    branches: [main]\njobs:\n  build:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@v4\n      - run: npm ci\n      - run: npm run build\n  test:\n    runs-on: ubuntu-latest\n    needs: biuld\n    steps:\n      - uses: actions/checkout@v4\n      - run: npm ci\n      - run: npm test\n",
+        "/home/learner/reserve/src/price.ts": "export const TAX_RATE = 0.1;\nexport const withTax = (yen) => Math.round(yen * (1 - TAX_RATE));\n"
+      },
+      "run": [
+        "export __NOW='2026-10-15 09:00'",
+        "git init -q",
+        "git remote add origin https://git.city.example/city/reserve.git",
+        "npm install",
+        "git add .",
+        "git commit -q -m '予約サイト 1.5.0'",
+        "git push -q -u origin main"
+      ],
+      "gitServers": [
+        {
+          "url": "https://git.city.example/city/reserve.git",
+          "run": [],
+          "forge": {
+            "repo": "city/reserve",
+            "actions": {
+              "firstRun": 40,
+              "installSeconds": 15,
+              "scripts": {
+                "build": {
+                  "kind": "build",
+                  "seconds": 30,
+                  "sources": "src",
+                  "bundle": "dist/server.js",
+                  "log": [
+                    "",
+                    "  dist/server.js  1.1kb",
+                    ""
+                  ]
+                },
+                "test": {
+                  "kind": "test",
+                  "seconds": 20,
+                  "log": [
+                    " Test Files  1 passed (1)",
+                    "      Tests  3 passed (3)"
+                  ],
+                  "faults": [
+                    {
+                      "when": [
+                        {
+                          "path": "src/price.ts",
+                          "has": "1 - TAX_RATE"
+                        }
+                      ],
+                      "code": 1,
+                      "log": [
+                        " FAIL  tests/price.test.ts > withTax > 税込みの値段",
+                        "AssertionError: expected 900 to be 1100",
+                        "      Tests  1 failed | 2 passed (3)"
+                      ]
+                    }
+                  ]
+                }
+              },
+              "sites": [
+                {
+                  "host": "reserve.example",
+                  "chain": [
+                    {
+                      "id": "leaf-reserve.example",
+                      "subject": "reserve.example",
+                      "issuer": "Minato Issuing CA",
+                      "sans": [
+                        "reserve.example"
+                      ],
+                      "notBefore": "2026-01-01",
+                      "notAfter": "2027-01-01",
+                      "ca": false
+                    },
+                    {
+                      "id": "inter",
+                      "subject": "Minato Issuing CA",
+                      "issuer": "Minato Root CA",
+                      "sans": [],
+                      "notBefore": "2024-01-01",
+                      "notAfter": "2030-01-01",
+                      "ca": true
+                    }
+                  ],
+                  "releases": [
+                    {
+                      "version": "1.4.0",
+                      "files": {}
+                    }
+                  ],
+                  "current": "1.4.0",
+                  "routes": {
+                    "/": {
+                      "status": 200,
+                      "body": "版 {version}"
+                    },
+                    "/health": {
+                      "status": 200,
+                      "body": "{\"status\":\"ok\"}"
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    "steps": [
+      {
+        "id": "read",
+        "purpose": "`gh run view` で、{{term:workflow}}の{{term:file}}の誤りを読む。知らない仕事として書かれている名前を答えの欄に入れる。",
+        "check": {
+          "kind": "answer",
+          "equals": "biuld"
+        },
+        "afterward": "`needs: biuld` が、無い仕事を指している。設定が読めないので、仕事は 1 つも動いていない。",
+        "hints": [
+          "設定の誤りは `gh run view` の `ANNOTATIONS` に出る。",
+          "`depends on unknown job` の後ろの名前を読む。",
+          "`gh run view` を打ち、`biuld` と答える。"
+        ],
+        "expectedErrors": [
+          "cicd-read-last"
+        ]
+      },
+      {
+        "id": "needs",
+        "purpose": "`needs: biuld` を `needs: build` に直し、{{term:commit}}して push する。今度は設定が読め、組み立ては通るが、テストが赤くなる。",
+        "check": {
+          "kind": "ci",
+          "expr": "head job:build=success job:test=failure"
+        },
+        "afterward": "設定は読めた。`build` は緑で、`test` が赤。1 つ直すと、隠れていた次の誤りが見えた。",
+        "hints": [
+          "1 行の置き換えは `sed -i`。",
+          "`sed -i 's/biuld/build/' .github/workflows/ci.yml` の後に `git commit -am` と `git push`。",
+          "`sed -i 's/biuld/build/' .github/workflows/ci.yml` `git commit -am '仕事の名前を直す'` `git push origin main` `gh run view` を打つ。"
+        ],
+        "expectedErrors": [
+          "cicd-workflow-invalid",
+          "cicd-needs-unknown",
+          "git-nothing-to-commit"
+        ]
+      },
+      {
+        "id": "fix",
+        "purpose": "`gh run view --log-failed` で失敗の行を読み、`src/price.ts` の計算を直して push する。全ての仕事が緑になれば達成。",
+        "check": {
+          "kind": "ci",
+          "expr": "head run=success job:build=success job:test=success"
+        },
+        "afterward": "全ての段が緑に戻った。税を引いていた計算を足す形に直した。最初の赤から順に読めば、関係の無い所を直さずに済む。",
+        "hints": [
+          "`FAIL` の行と `expected` の行が原因。",
+          "`cat src/price.ts` で計算を読むと `1 - TAX_RATE`。税は足す。",
+          "`gh run view --log-failed` `sed -i 's/1 - TAX_RATE/1 + TAX_RATE/' src/price.ts` `git commit -am '税込みの計算を直す'` `git push origin main` `gh run view` を打つ。"
+        ],
+        "expectedErrors": [
+          "git-nothing-to-commit"
+        ]
+      }
+    ]
+  },
+  "result": {
+    "success": "止まった段から順に読み、設定とコードの両方を直して緑に戻せた。",
+    "partial": "ヒントを使って直せた。次は、ログの最初の誤りの行を自分で見つけてみよう。",
+    "retry": "まだ赤い。`gh run view --log-failed` で、今止まっている段を読もう。"
+  },
+  "summary": {
+    "points": [
+      "最初に失敗した段から読む",
+      "最初の誤りの行が原因",
+      "直したら流して確かめる"
+    ],
+    "next": [
+      "cicd.i.05"
+    ],
+    "terms": [
+      "pipeline",
+      "log",
+      "test"
+    ]
+  }
+}

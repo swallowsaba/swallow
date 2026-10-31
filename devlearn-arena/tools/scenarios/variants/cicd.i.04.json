@@ -1,0 +1,62 @@
+{
+  "lesson": "cicd.i.04",
+  "variants": [
+    {
+      "name": "log を絞って読む・commit を分ける",
+      "steps": {
+        "read": [
+          "gh run list",
+          "gh run view",
+          "BIULD"
+        ],
+        "needs": [
+          "sed -i 's/needs: biuld/needs: build/' .github/workflows/ci.yml",
+          "git add .github/workflows/ci.yml",
+          "git commit -m '仕事の名前を直す'",
+          "git push"
+        ],
+        "fix": [
+          "gh run view --log-failed | grep FAIL",
+          "cat src/price.ts",
+          "sed -i 's/1 - TAX_RATE/1 + TAX_RATE/' src/price.ts",
+          "git add src/price.ts",
+          "git commit -m '税を足す'",
+          "git push origin main"
+        ]
+      }
+    },
+    {
+      "name": "差分を見ながら直す",
+      "steps": {
+        "read": [
+          "cat .github/workflows/ci.yml",
+          "gh run view",
+          "biuld"
+        ],
+        "needs": [
+          "sed -i 's/biuld/build/' .github/workflows/ci.yml",
+          "git diff",
+          "git commit -am 'fix needs'",
+          "git push origin main",
+          "gh run view"
+        ],
+        "fix": [
+          "gh run view --log",
+          "sed -i 's/(1 - /(1 + /' src/price.ts",
+          "git diff",
+          "git commit -am 'fix tax'",
+          "git push origin main",
+          "gh run list"
+        ]
+      }
+    }
+  ],
+  "wrong": {
+    "step": "fix",
+    "why": "テストの計算を直さずに、空の変更を押そうとする",
+    "input": [
+      "git commit -am 'もう一度'"
+    ],
+    "commands": false
+  }
+}

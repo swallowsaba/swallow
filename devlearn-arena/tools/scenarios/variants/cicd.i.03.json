@@ -1,0 +1,32 @@
+{
+  "lesson": "cicd.i.03",
+  "variants": [
+    {
+      "name": "手順の env に渡す",
+      "steps": {
+        "name": [
+          "name: deploy\non:\n  push:\n    branches: [main]\njobs:\n  release:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@v4\n      - run: npm ci\n      - run: npm run build\n      - name: 鍵を確かめる\n        run: echo \"token=$DEPLOY_TOKEN\"\n        env:\n          DEPLOY_TOKEN: ${{ secrets.DEPLOY_TOKEN }}\n      - run: npm run deploy\n        env:\n          DEPLOY_TOKEN: ${{ secrets.DEPLOY_TOKEN }}\n"
+        ],
+        "log": [
+          "name: deploy\non:\n  push:\n    branches: [main]\njobs:\n  release:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@v4\n      - run: npm ci\n      - run: npm run build\n      - run: npm run deploy\n        env:\n          DEPLOY_TOKEN: ${{ secrets.DEPLOY_TOKEN }}\n"
+        ]
+      }
+    },
+    {
+      "name": "空白を詰めて書く・一度に echo も消す",
+      "steps": {
+        "name": [
+          "name: deploy\non:\n  push:\n    branches: [main]\njobs:\n  release:\n    runs-on: ubuntu-latest\n    env:\n      DEPLOY_TOKEN: ${{secrets.DEPLOY_TOKEN}}\n    steps:\n      - uses: actions/checkout@v4\n      - run: npm ci\n      - run: npm run build\n      - run: npm run deploy\n"
+        ],
+        "log": []
+      }
+    }
+  ],
+  "wrong": {
+    "step": "name",
+    "why": "Secrets の名前を間違える",
+    "input": [
+      "name: deploy\non:\n  push:\n    branches: [main]\njobs:\n  release:\n    runs-on: ubuntu-latest\n    env:\n      DEPLOY_TOKEN: ${{ secrets.DEPLOY_KEY }}\n    steps:\n      - uses: actions/checkout@v4\n      - run: npm ci\n      - run: npm run build\n      - name: 鍵を確かめる\n        run: echo \"token=$DEPLOY_TOKEN\"\n      - run: npm run deploy\n"
+    ]
+  }
+}

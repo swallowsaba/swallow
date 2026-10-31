@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 360" font-family="&quot;Noto Sans JP&quot;, sans-serif">
+  <title>同じ版を開発から検証、承認を経て本番へ順に上げる</title>
+  <defs>
+    <marker id="arrow-gold" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="#f2b632" />
+    </marker>
+  </defs>
+  <g class="el" data-part="dev">
+    <rect x="20" y="120" width="132" height="110" rx="10" fill="#1a6fd6" />
+    <text x="86" y="169" text-anchor="middle" font-size="16" font-weight="700" fill="#eef2f6">開発</text>
+    <text x="86" y="191" text-anchor="middle" font-size="14" fill="#eef2f6">手元・検証用の値</text>
+  </g>
+  <g class="el" data-part="staging">
+    <rect x="176" y="120" width="132" height="110" rx="10" fill="#7a3fd0" />
+    <text x="242" y="169" text-anchor="middle" font-size="16" font-weight="700" fill="#eef2f6">検証</text>
+    <text x="242" y="191" text-anchor="middle" font-size="14" fill="#eef2f6">本番に近い設定</text>
+  </g>
+  <g class="el" data-part="approve">
+    <rect x="332" y="120" width="132" height="110" rx="10" fill="#f2b632" />
+    <text x="398" y="169" text-anchor="middle" font-size="16" font-weight="700" fill="#0a1424">承認</text>
+    <text x="398" y="191" text-anchor="middle" font-size="14" fill="#0a1424">人が確かめる</text>
+  </g>
+  <g class="el" data-part="prod">
+    <rect x="488" y="120" width="132" height="110" rx="10" fill="#1f7a4d" />
+    <text x="554" y="169" text-anchor="middle" font-size="16" font-weight="700" fill="#eef2f6">本番</text>
+    <text x="554" y="191" text-anchor="middle" font-size="14" fill="#eef2f6">利用者が使う</text>
+  </g>
+  <g class="el" data-part="flow">
+    <path d="M152 175 L173 175" fill="none" stroke="#f2b632" stroke-width="2" marker-end="url(#arrow-gold)" />
+    <path d="M308 175 L329 175" fill="none" stroke="#f2b632" stroke-width="2" marker-end="url(#arrow-gold)" />
+    <path d="M464 175 L485 175" fill="none" stroke="#f2b632" stroke-width="2" marker-end="url(#arrow-gold)" />
+  </g>
+  <g class="el" data-part="note">
+    <text x="320" y="340" text-anchor="middle" font-size="14" fill="#eef2f6">環境の違いは設定の値だけにする</text>
+  </g>
+</svg>

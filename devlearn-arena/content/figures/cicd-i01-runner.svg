@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 360" font-family="&quot;Noto Sans JP&quot;, sans-serif">
+  <title>依頼を runner が取り出して実行し、結果を返す。提供される runner は社外、自前の runner は社内の網に届く</title>
+  <defs>
+    <marker id="arrow-gold" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="#f2b632" />
+    </marker>
+  </defs>
+  <g class="el" data-part="queue">
+    <rect x="20" y="110" width="160" height="110" rx="10" fill="#1a6fd6" />
+    <text x="100" y="159" text-anchor="middle" font-size="16" font-weight="700" fill="#eef2f6">仕事の依頼</text>
+    <text x="100" y="181" text-anchor="middle" font-size="14" fill="#eef2f6">runs-on で選ぶ</text>
+  </g>
+  <g class="el" data-part="hosted">
+    <rect x="260" y="30" width="360" height="120" rx="10" fill="#1f7a4d" />
+    <text x="440" y="73" text-anchor="middle" font-size="16" font-weight="700" fill="#eef2f6">提供される runner</text>
+    <text x="440" y="95" text-anchor="middle" font-size="14" fill="#eef2f6">毎回まっさらな機械</text>
+    <text x="440" y="117" text-anchor="middle" font-size="14" fill="#eef2f6">社内の網には届かない</text>
+  </g>
+  <g class="el" data-part="self">
+    <rect x="260" y="180" width="360" height="120" rx="10" fill="#7a3fd0" />
+    <text x="440" y="223" text-anchor="middle" font-size="16" font-weight="700" fill="#eef2f6">自前の runner</text>
+    <text x="440" y="245" text-anchor="middle" font-size="14" fill="#eef2f6">ラベルで選ぶ</text>
+    <text x="440" y="267" text-anchor="middle" font-size="14" fill="#eef2f6">社内の網に届く</text>
+  </g>
+  <g class="el" data-part="flow">
+    <path d="M180 150 L254 100" fill="none" stroke="#f2b632" stroke-width="2" marker-end="url(#arrow-gold)" />
+    <path d="M180 180 L254 230" fill="none" stroke="#f2b632" stroke-width="2" marker-end="url(#arrow-gold)" />
+  </g>
+  <g class="el" data-part="note">
+    <text x="320" y="340" text-anchor="middle" font-size="14" fill="#eef2f6">手元と違う機械で動くので、道具と届く網が変わる</text>
+  </g>
+</svg>

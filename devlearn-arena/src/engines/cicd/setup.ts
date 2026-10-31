@@ -46,6 +46,8 @@ export const scriptSchema = z.object({
   log: z.array(z.string()).default([]),
   /** deploy・rollback・prune: 配る先の名前 */
   site: z.string().optional(),
+  /** 配るのに要る鍵: 環境変数 env の値が、Secrets の secret の値と同じでなければ、log で止まる */
+  token: z.object({ env: z.string(), secret: z.string(), log: z.array(z.string()).min(1), code: z.number().int().min(1).max(255).default(1) }).strict().optional(),
 }).strict();
 
 const routeSchema = z.object({ status: z.number().int().min(100).max(599), body: z.string() }).strict();
@@ -59,6 +61,8 @@ const certSchema = z.object({
 export const siteSchema = z.object({
   host: z.string().regex(/^[a-z0-9.-]+$/),
   port: z.number().int().default(443),
+  /** 社内の網の名前。書くと、その網の runner からだけ届く（名前も引けない） */
+  network: z.string().optional(),
   chain: z.array(certSchema).optional(),
   /** 置いてある版（古い順）。files は版の中のファイル（版の中の場所 → 中身） */
   releases: z.array(z.object({ version: z.string().min(1), files: z.record(z.string()).default({}) }).strict()).min(1),
@@ -80,6 +84,12 @@ export const actionsSetupSchema = z.object({
   /** package.json の scripts の名前 → 振る舞い。書いていない script は、本物と同じくシェルで動かす */
   scripts: z.record(scriptSchema).default({}),
   sites: z.array(siteSchema).default([]),
+  /** リポジトリの Secrets（名前 → 値）。${{ secrets.名前 }} で渡し、ログでは値を *** に伏せる */
+  secrets: z.record(z.string()).default({}),
+  /** 自前の runner（ラベルと、つながる社内の網）。提供される runner は ubuntu-* */
+  runners: z.array(z.object({ labels: z.array(z.string()).min(1), network: z.string().optional() }).strict()).default([]),
+  /** 環境の決まり。reviewers を書くと、その環境の job は承認を待つ */
+  environments: z.record(z.object({ reviewers: z.array(z.string()).default([]) }).strict()).default({}),
 }).strict();
 
 export type ActionsSetup = z.infer<typeof actionsSetupSchema>;

@@ -1,0 +1,348 @@
+{
+  "id": "cicd.i.03",
+  "domain": "cicd",
+  "level": "intermediate",
+  "theme": "秘密情報",
+  "title": "秘密情報をパイプラインに渡す",
+  "goal": "Secrets を使い、ログに出さない設定ができる",
+  "minutes": 20,
+  "prerequisites": [
+    "cicd.i.02",
+    "sec.b.05"
+  ],
+  "related": [
+    "sec.i.05",
+    "k8s.i.02"
+  ],
+  "next": [
+    "sec.i.05",
+    "lab.i.02"
+  ],
+  "terms": [
+    "log",
+    "config-file",
+    "repository",
+    "ci",
+    "authentication",
+    "workflow",
+    "env-var",
+    "gh-secrets",
+    "file",
+    "commit",
+    "pull-request",
+    "test"
+  ],
+  "explain": {
+    "what": "配る先の鍵などの秘密は、設定の外の置き場に置き、実行の時だけ仕事に渡す。設定に書くのは名前だけ。値は{{term:log}}で伏せられる。",
+    "why": "{{term:config-file}}に書くと、{{term:repository}}を読める人全員に見え、履歴にも残る。ログに書くと、ログを読める人全員に見える。",
+    "use": "配る先への{{term:authentication}}に使う。{{term:ci}} が本番へ配る時、鍵は人の手元にも設定ファイルにも置かない。",
+    "when": "配布の設定に鍵がそのまま書いてあり、確かめのために画面にも出している。誰でも読める状態を直したい。",
+    "figures": [
+      "cicd-i03-secrets"
+    ]
+  },
+  "understand": [
+    {
+      "kind": "yesno",
+      "prompt": "{{term:workflow}}の設定ファイルに、鍵の値をそのまま書いてよい。",
+      "answer": false,
+      "why": "リポジトリを読める人全員に見え、消しても履歴に残る。置き場に置いて名前で引く。",
+      "see": "why"
+    },
+    {
+      "kind": "situation",
+      "prompt": "ログに秘密が出てしまう書き方はどれ？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "設定に直接書いた値を `echo` する",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "置き場の値を{{term:env-var}}で渡し、`echo` しない",
+          "correct": false,
+          "whyNot": "実行の時だけ渡し、書き出してもいない。正しい書き方。"
+        },
+        {
+          "id": "c",
+          "text": "置き場の名前を設定に書く",
+          "correct": false,
+          "whyNot": "名前は秘密ではない。値は置き場の中にある。"
+        }
+      ],
+      "see": "why"
+    }
+  ],
+  "quiz": [
+    {
+      "id": "q1",
+      "kind": "situation",
+      "prompt": "配布に使う鍵を、どこに置く？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "リポジトリの設定の {{term:gh-secrets}}",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "ワークフローの{{term:file}}",
+          "correct": false,
+          "whyNot": "全員に見え、履歴に残る。"
+        },
+        {
+          "id": "c",
+          "text": "リポジトリの `.env` ファイル",
+          "correct": false,
+          "whyNot": "{{term:commit}}すれば同じこと。履歴に残る。"
+        }
+      ],
+      "explanation": "値は置き場に置き、設定には名前だけを書く。"
+    },
+    {
+      "id": "q2",
+      "kind": "cause",
+      "prompt": "ログに鍵がそのまま出ていた。原因は？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "設定に直接書いた値を `echo` した",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "`npm ci` を動かした",
+          "correct": false,
+          "whyNot": "`npm ci` は部品を入れるだけ。鍵は書き出さない。"
+        },
+        {
+          "id": "c",
+          "text": "ログの保存の期間が長い",
+          "correct": false,
+          "whyNot": "期間は読める時間を変えるだけ。書き出したことが原因。"
+        }
+      ],
+      "explanation": "置き場の値なら伏せられるが、直接書いた値は伏せられない。"
+    },
+    {
+      "id": "q3",
+      "kind": "choice",
+      "prompt": "外部の人の{{term:pull-request}}で動く仕事に、秘密を渡す？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "渡さない",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "渡す。{{term:test}}に要るので",
+          "correct": false,
+          "whyNot": "外部の人は設定を書き換えられる。秘密を外へ送る手順を足されるかもしれない。"
+        },
+        {
+          "id": "c",
+          "text": "伏せてあるので渡してよい",
+          "correct": false,
+          "whyNot": "伏せるのはログの表示だけ。値そのものは送り出せる。"
+        }
+      ],
+      "explanation": "書き換えられる人に秘密を渡さない。"
+    }
+  ],
+  "practice": {
+    "mode": "editor",
+    "purpose": "配布の設定 `deploy.yml` に鍵が直接書いてあり、`echo` でログにも出ている。リポジトリの Secrets には、同じ値が `DEPLOY_TOKEN` の名前で登録してある。設定から値を消し、名前で渡し、ログに出さない。",
+    "environment": "linux-basic",
+    "setup": {
+      "hostname": "reserve-dev",
+      "cwd": "/home/learner/reserve",
+      "dirs": [
+        "/home/learner/reserve/src",
+        "/home/learner/reserve/.github/workflows"
+      ],
+      "sites": [],
+      "files": {
+        "/home/learner/reserve/package.json": "{\n  \"name\": \"reserve-site\",\n  \"version\": \"1.5.0\",\n  \"private\": true,\n  \"scripts\": {\n    \"build\": \"esbuild src/server.ts --bundle --outfile=dist/server.js\",\n    \"deploy\": \"rsync -av dist/ deploy@reserve.example:/srv/reserve/\"\n  },\n  \"devDependencies\": {\n    \"vitest\": \"^2.1.0\",\n    \"esbuild\": \"^0.24.0\"\n  }\n}\n",
+        "/home/learner/reserve/.gitignore": "node_modules/\ndist/\n",
+        "/home/learner/reserve/src/server.ts": "export const app = '港の予約';\n",
+        "/home/learner/reserve/.github/workflows/deploy.yml": "name: deploy\non:\n  push:\n    branches: [main]\njobs:\n  release:\n    runs-on: ubuntu-latest\n    env:\n      DEPLOY_TOKEN: tok-3f9a1c7e\n    steps:\n      - uses: actions/checkout@v4\n      - run: npm ci\n      - run: npm run build\n      - name: 鍵を確かめる\n        run: echo \"token=$DEPLOY_TOKEN\"\n      - run: npm run deploy\n"
+      },
+      "edit": {
+        "path": "/home/learner/reserve/.github/workflows/deploy.yml",
+        "apply": [
+          "git add .github/workflows/deploy.yml",
+          "git commit -q -m '鍵を Secrets から渡す'",
+          "git push -q origin main",
+          "gh run view",
+          "gh run view --log-failed"
+        ]
+      },
+      "run": [
+        "export __NOW='2026-10-15 09:00'",
+        "git init -q",
+        "git remote add origin https://git.city.example/city/reserve.git",
+        "npm install",
+        "git add .",
+        "git commit -q -m '予約サイト 1.5.0'"
+      ],
+      "gitServers": [
+        {
+          "url": "https://git.city.example/city/reserve.git",
+          "run": [],
+          "forge": {
+            "repo": "city/reserve",
+            "actions": {
+              "firstRun": 40,
+              "installSeconds": 15,
+              "scripts": {
+                "build": {
+                  "kind": "build",
+                  "seconds": 30,
+                  "sources": "src",
+                  "bundle": "dist/server.js",
+                  "log": [
+                    "",
+                    "  dist/server.js  1.1kb",
+                    ""
+                  ]
+                },
+                "test": {
+                  "kind": "test",
+                  "seconds": 20,
+                  "log": [
+                    " Test Files  1 passed (1)",
+                    "      Tests  3 passed (3)"
+                  ]
+                },
+                "deploy": {
+                  "kind": "deploy",
+                  "seconds": 10,
+                  "out": "dist",
+                  "site": "reserve.example",
+                  "log": [
+                    "switched to {version}"
+                  ],
+                  "token": {
+                    "env": "DEPLOY_TOKEN",
+                    "secret": "DEPLOY_TOKEN",
+                    "log": [
+                      "deploy: 401 Unauthorized (token is empty or wrong)"
+                    ],
+                    "code": 5
+                  }
+                }
+              },
+              "sites": [
+                {
+                  "host": "reserve.example",
+                  "chain": [
+                    {
+                      "id": "leaf-reserve.example",
+                      "subject": "reserve.example",
+                      "issuer": "Minato Issuing CA",
+                      "sans": [
+                        "reserve.example"
+                      ],
+                      "notBefore": "2026-01-01",
+                      "notAfter": "2027-01-01",
+                      "ca": false
+                    },
+                    {
+                      "id": "inter",
+                      "subject": "Minato Issuing CA",
+                      "issuer": "Minato Root CA",
+                      "sans": [],
+                      "notBefore": "2024-01-01",
+                      "notAfter": "2030-01-01",
+                      "ca": true
+                    }
+                  ],
+                  "releases": [
+                    {
+                      "version": "1.4.0",
+                      "files": {}
+                    }
+                  ],
+                  "current": "1.4.0",
+                  "routes": {
+                    "/": {
+                      "status": 200,
+                      "body": "版 {version}"
+                    },
+                    "/health": {
+                      "status": 200,
+                      "body": "{\"status\":\"ok\"}"
+                    }
+                  }
+                }
+              ],
+              "secrets": {
+                "DEPLOY_TOKEN": "tok-3f9a1c7e"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "steps": [
+      {
+        "id": "name",
+        "purpose": "`DEPLOY_TOKEN:` の値を、Secrets から引く形 `${{ secrets.DEPLOY_TOKEN }}` に替える。配布が成功し、ログから値が消えれば達成。",
+        "check": {
+          "kind": "ci",
+          "expr": "head run=success deployed:reserve.example=1.5.0 !logged:tok-3f9a1c7e"
+        },
+        "afterward": "配布は成功し、`echo` の行は `token=***` と伏せられた。値は設定から消え、実行の時だけ渡される。前の記録には残るので、この後は鍵を取り換える。",
+        "hints": [
+          "設定に書くのは名前だけ。値は置き場から引く。",
+          "`${{ secrets.名前 }}` の形で書く。名前は登録した `DEPLOY_TOKEN`。",
+          "`name: deploy\non:\n  push:\n    branches: [main]\njobs:\n  release:\n    runs-on: ubuntu-latest\n    env:\n      DEPLOY_TOKEN: ${{ secrets.DEPLOY_TOKEN }}\n    steps:\n      - uses: actions/checkout@v4\n      - run: npm ci\n      - run: npm run build\n      - name: 鍵を確かめる\n        run: echo \"token=$DEPLOY_TOKEN\"\n      - run: npm run deploy\n` と保存する。"
+        ],
+        "expectedErrors": [
+          "cicd-token-empty",
+          "cicd-workflow-invalid"
+        ]
+      },
+      {
+        "id": "log",
+        "purpose": "伏せられても、鍵をログへ書き出す手順は要らない。`鍵を確かめる` の手順（`name` と `run` の 2 行）を消す。",
+        "check": {
+          "kind": "ci",
+          "expr": "head run=success deployed:reserve.example=1.5.0 !logged:token= !has:release/echo"
+        },
+        "afterward": "鍵を書き出す手順が無くなった。伏せるのは文字が同じ時だけなので、加工して出すと漏れる。そもそも書き出さない。",
+        "hints": [
+          "書き出さなければ漏れない。",
+          "`- name: 鍵を確かめる` とその次の `run:` の行を消す。",
+          "`name: deploy\non:\n  push:\n    branches: [main]\njobs:\n  release:\n    runs-on: ubuntu-latest\n    env:\n      DEPLOY_TOKEN: ${{ secrets.DEPLOY_TOKEN }}\n    steps:\n      - uses: actions/checkout@v4\n      - run: npm ci\n      - run: npm run build\n      - run: npm run deploy\n` と保存する。"
+        ],
+        "expectedErrors": [
+          "cicd-token-empty",
+          "cicd-workflow-invalid"
+        ]
+      }
+    ]
+  },
+  "result": {
+    "success": "秘密を置き場から実行の時だけ渡し、ログにも出さなくできた。",
+    "partial": "ヒントを使って直せた。履歴に残った鍵を取り換えることも忘れずに。",
+    "retry": "鍵が空か、ログに出ている。`secrets.` の後ろの名前を確かめよう。"
+  },
+  "summary": {
+    "points": [
+      "秘密は Secrets に置く",
+      "実行の時だけ渡す",
+      "ログに書き出さない"
+    ],
+    "next": [
+      "sec.i.05"
+    ],
+    "terms": [
+      "gh-secrets",
+      "secret-info",
+      "env-var"
+    ]
+  }
+}

@@ -201,6 +201,7 @@ function runModel(shell: ShellState, m: { server: GitServer; forge: Forge }, pkg
   }
   if (s.kind === 'test') return done(s.log.map((l) => fill(l, vars)), 0);
 
+  if (s.token && shell.vars.get(s.token.env) !== m.forge.setup.actions?.secrets[s.token.secret]) return done(s.token.log.map((l) => fill(l, vars)), s.token.code, {}, true);
   const hit = siteIn(m.forge, s.site);
   if (!hit) return { stdout: head, stderr: `ssh: Could not resolve hostname ${s.site ?? ''}: Name or service not known\n`, stderrLast: true, code: 255 };
   const { at, site } = hit;

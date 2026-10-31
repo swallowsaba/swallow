@@ -8,6 +8,7 @@ import { createShellState } from '@/engines/kernel/session';
 import { exists, isDir, list, mkdir, readFile, writeFile, type VfsState } from '@/engines/kernel/vfs';
 import { DEMO_ROOT } from '@/engines/tls/tls';
 import { digestOf } from './project';
+import type { ActionsSetup } from './setup';
 import type { ArtifactRecord, Conclusion, JobRecord, JobShape, RunRecord, StepRecord } from './types';
 import { readWorkflow, triggeredBy, type WfJob, type WfStep, type Workflow } from './workflow';
 
@@ -64,6 +65,18 @@ function allowed(cond: string | undefined, failed: boolean): boolean {
   if (c === 'failure()') return failed;
   if (c === 'cancelled()') return false;
   return !failed;
+}
+
+/** runs-on のラベルに合う runner。提供される runner は ubuntu-*、自前の runner は全てのラベルを持つ物。無ければ null */
+function runnerFor(actions: ActionsSetup | undefined, labels: readonly string[]): { network?: string } | null {
+  if (labels.length === 0 || labels.every((l) => /^ubuntu-/.test(l))) return {};
+  const hit = actions?.runners.find((r) => labels.every((l) => r.labels.includes(l)));
+  return hit ? { ...(hit.network !== undefined ? { network: hit.network } : {}) } : null;
+}
+
+/** Secrets の値をログの中で *** に伏せる（本物と同じく、値が短くても長くても文字が同じなら伏せる） */
+function masked(log: readonly string[], values: readonly string[]): string[] {
+  return log.map((l) => values.reduce((t, v) => (v === '' ? t : t.split(v).join('***')), l));
 }
 
 const KNOWN_ACTIONS = ['actions/checkout@', 'actions/setup-node@', 'actions/upload-artifact@', 'actions/download-artifact@'];
@@ -134,11 +147,19 @@ function runJob(rc: RunContext, job: WfJob, index: number, start: number, server
     '  Image: ubuntu-24.04',
     `  Version: 20241006.1.0`,
   ];
+  const labels = job.runsOn.split(',').map((l) => l.trim()).filter((l) => l !== '');
+  const runner = runnerFor(rc.forge.setup.actions, labels);
+  if (!runner) {
+    const failed: StepRecord = { name: 'Set up job', conclusion: 'failure', startedAt: start, seconds: 0, log: [`##[error]No runner matching the specified labels was found: ${labels.join(', ')}.`] };
+    return { record: record([failed], 'failure', 0, []), servers, end: start };
+  }
   if (unknown) {
     const failed: StepRecord = { name: 'Set up job', conclusion: 'failure', startedAt: start, seconds: 0, log: [...setupLog, `##[error]Unable to resolve action \`${unknown.uses ?? ''}\`, repository or version not found`] };
     return { record: record([failed], 'failure', 0, []), servers, end: start };
   }
 
+  const secrets = rc.forge.setup.actions?.secrets ?? {};
+  const secretValues = Object.values(secrets);
   const ghCtx: Record<string, string> = {
     'github.sha': args.sha,
     'github.ref_name': args.branch,
@@ -149,6 +170,7 @@ function runJob(rc: RunContext, job: WfJob, index: number, start: number, server
     'github.workflow': workflow.name,
     'github.event_name': 'push',
     'runner.os': 'Linux',
+    ...Object.fromEntries(Object.entries(secrets).map(([k, v]) => [`secrets.${k}`, v])),
   };
   const baseVars: Record<string, string> = {
     HOME: '/home/runner',
@@ -163,8 +185,8 @@ function runJob(rc: RunContext, job: WfJob, index: number, start: number, server
     GITHUB_RUN_ID: String(rc.id),
     GITHUB_RUN_NUMBER: String(rc.number),
     RUNNER_OS: 'Linux',
-    ...workflow.env,
-    ...job.env,
+    ...(runner.network !== undefined ? { __RUNNER_NET: runner.network } : {}),
+    ...Object.fromEntries(Object.entries({ ...workflow.env, ...job.env }).map(([k, v]) => [k, expand(v, ghCtx)])),
   };
   let state: ShellState = createShellState({
     files: { '/home/runner': null, [workspace]: null, '/tmp': null },
@@ -188,7 +210,7 @@ function runJob(rc: RunContext, job: WfJob, index: number, start: number, server
     const out = runStep(rc, step, ctx, state, workspace, t, baseVars);
     state = out.state;
     if (out.downloaded) downloaded.push(...out.downloaded);
-    steps.push({ name: expand(step.name, ctx), conclusion: out.ok ? 'success' : 'failure', startedAt: t, seconds: out.seconds, log: out.log, ...(step.uses ? { uses: step.uses } : {}), ...(step.run ? { run: step.run } : {}) });
+    steps.push({ name: expand(step.name, ctx), conclusion: out.ok ? 'success' : 'failure', startedAt: t, seconds: out.seconds, log: masked(out.log, secretValues), ...(step.uses ? { uses: step.uses } : {}), ...(step.run ? { run: step.run } : {}) });
     t += out.seconds;
     if (!out.ok) failed = true;
   }
@@ -334,6 +356,14 @@ function runWorkflow(args: PushArgs, forge: Forge, workflow: Workflow, number: n
       });
       continue;
     }
+    const reviewers = next.j.environment !== undefined ? (rc.forge.setup.actions?.environments[next.j.environment]?.reviewers ?? []) : [];
+    if (next.j.environment !== undefined && reviewers.length > 0) {
+      done.set(next.j.key, {
+        record: { id: id * 10 + next.i + 1, key: next.j.key, name: next.j.name, needs: next.j.needs, conclusion: 'waiting', startedAt: next.start, seconds: 0, steps: [], downloaded: [], waitingFor: next.j.environment },
+        servers: current, end: next.start,
+      });
+      continue;
+    }
     const before = rc.artifacts.length;
     const r = runJob({ ...rc, args: { ...rc.args, servers: current } }, next.j, next.i, next.start, current);
     for (const a of rc.artifacts.slice(before)) a.job = next.j.key;
@@ -346,8 +376,8 @@ function runWorkflow(args: PushArgs, forge: Forge, workflow: Workflow, number: n
   return {
     run: {
       id, number, workflow: workflow.name, file: workflow.file, title: subjectOf(serverOf(rc).state, args.sha), branch: args.branch, sha: args.sha, event: 'push',
-      startedAt: args.nowSeconds, conclusion: jobs.some((j) => j.conclusion === 'failure') ? 'failure' : 'success', seconds: end - args.nowSeconds,
-      jobs, artifacts: rc.artifacts.map((a) => ({ name: a.name, job: a.job, files: a.files, digest: a.digest })), shape,
+      startedAt: args.nowSeconds, conclusion: jobs.some((j) => j.conclusion === 'failure') ? 'failure' : jobs.some((j) => j.conclusion === 'waiting') ? 'waiting' : 'success', seconds: end - args.nowSeconds,
+      jobs, artifacts: rc.artifacts.map((a) => ({ name: a.name, job: a.job, files: a.files, digest: a.digest })), shape, triggers: Object.keys(workflow.on),
     },
     servers: current,
   };

@@ -2932,7 +2932,7 @@
       "title": "runner",
       "goal": "ジョブを実行する機械の役割と種類を説明できる",
       "practice": [
-        "simulation"
+        "editor"
       ],
       "prerequisites": [
         "cicd.b.02"
@@ -2999,7 +2999,7 @@
       "title": "失敗したパイプラインを直す",
       "goal": "ログから失敗の段と原因を特定し直せる",
       "practice": [
-        "editor"
+        "terminal"
       ],
       "prerequisites": [
         "cicd.i.02",
@@ -3021,7 +3021,7 @@
       "title": "開発・検証・本番",
       "goal": "環境ごとの違いと昇格の流れを設計できる",
       "practice": [
-        "simulation"
+        "editor"
       ],
       "prerequisites": [
         "cicd.b.05"

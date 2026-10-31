@@ -23,6 +23,8 @@ export interface WfJob {
   name: string;
   needs: string[];
   runsOn: string;
+  /** 配る環境の名前（environment: の文字か name） */
+  environment?: string;
   if?: string;
   env: Record<string, string>;
   steps: WfStep[];
@@ -183,6 +185,7 @@ export function readWorkflow(file: string, text: string): WorkflowRead {
       name: typeof raw['name'] === 'string' ? raw['name'] : key,
       needs: strings(raw['needs']),
       runsOn: strings(raw['runs-on']).join(', '),
+      ...(typeof raw['environment'] === 'string' ? { environment: raw['environment'] } : isRecord(raw['environment']) && typeof raw['environment']['name'] === 'string' ? { environment: raw['environment']['name'] } : {}),
       ...(typeof raw['if'] === 'string' ? { if: raw['if'] } : {}),
       env: stringMap(raw['env']),
       steps,

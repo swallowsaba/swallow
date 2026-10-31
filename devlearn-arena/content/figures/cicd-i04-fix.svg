@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 360" font-family="&quot;Noto Sans JP&quot;, sans-serif">
+  <title>止まった段を見つけ、最初の誤りの行を読み、直す場所を決めて、もう一度流す</title>
+  <defs>
+    <marker id="arrow-gold" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="#f2b632" />
+    </marker>
+  </defs>
+  <g class="el" data-part="stage">
+    <rect x="20" y="40" width="180" height="100" rx="10" fill="#c0392b" />
+    <text x="110" y="84" text-anchor="middle" font-size="16" font-weight="700" fill="#eef2f6">止まった段</text>
+    <text x="110" y="106" text-anchor="middle" font-size="14" fill="#eef2f6">X test</text>
+  </g>
+  <g class="el" data-part="line">
+    <rect x="230" y="40" width="180" height="100" rx="10" fill="#f2b632" />
+    <text x="320" y="84" text-anchor="middle" font-size="16" font-weight="700" fill="#0a1424">最初の誤りの行</text>
+    <text x="320" y="106" text-anchor="middle" font-size="14" fill="#0a1424">FAIL … expected</text>
+  </g>
+  <g class="el" data-part="place">
+    <rect x="440" y="40" width="180" height="100" rx="10" fill="#7a3fd0" />
+    <text x="530" y="84" text-anchor="middle" font-size="16" font-weight="700" fill="#eef2f6">直す場所</text>
+    <text x="530" y="106" text-anchor="middle" font-size="14" fill="#eef2f6">設定か、コードか</text>
+  </g>
+  <g class="el" data-part="again">
+    <rect x="130" y="190" width="380" height="100" rx="10" fill="#1f7a4d" />
+    <text x="320" y="234" text-anchor="middle" font-size="16" font-weight="700" fill="#eef2f6">直して push する</text>
+    <text x="320" y="256" text-anchor="middle" font-size="14" fill="#eef2f6">全ての段が緑になるまで</text>
+  </g>
+  <g class="el" data-part="flow">
+    <path d="M200 90 L226 90" fill="none" stroke="#f2b632" stroke-width="2" marker-end="url(#arrow-gold)" />
+    <path d="M410 90 L436 90" fill="none" stroke="#f2b632" stroke-width="2" marker-end="url(#arrow-gold)" />
+    <path d="M530 140 L440 186" fill="none" stroke="#f2b632" stroke-width="2" marker-end="url(#arrow-gold)" />
+  </g>
+  <g class="el" data-part="note">
+    <text x="320" y="340" text-anchor="middle" font-size="14" fill="#eef2f6">後ろの段の赤は、前の段の失敗の結果であることが多い</text>
+  </g>
+</svg>

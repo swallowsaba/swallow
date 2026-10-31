@@ -11,7 +11,10 @@
         "`npm test` の手順を書いていない（検査の手順を飛ばしている）。"
       ],
       "hint": "流れは上から順に動き、失敗した所で止まる。取ってくる → 部品を入れる → 組み立てる → 検査する → 配る の順に並べよう。壊れた本番は「初めに戻す」で初めの 1.4.0 に戻せる。",
-      "terms": ["ci", "continuous-delivery"]
+      "terms": [
+        "ci",
+        "continuous-delivery"
+      ]
     },
     {
       "id": "cicd-test-before-build",
@@ -22,7 +25,9 @@
         "`npm ci`（部品を入れる）や `actions/checkout`（取ってくる）を消した・順を入れ替えた。"
       ],
       "hint": "上から 取ってくる → 部品を入れる → 組み立てる → 検査する の順に並べ、保存し直そう。",
-      "terms": ["ci"]
+      "terms": [
+        "ci"
+      ]
     },
     {
       "id": "cicd-missing-script",
@@ -34,7 +39,9 @@
         "`npm test` は `npm run test` と同じ。`npm run` の後ろに `npm test` と書いた。"
       ],
       "hint": "package.json の `scripts` の名前（`build`・`test`・`deploy`）をそのまま使おう。",
-      "terms": ["npm"]
+      "terms": [
+        "npm"
+      ]
     },
     {
       "id": "cicd-workflow-invalid",
@@ -47,7 +54,10 @@
         "手順に `run:` も `uses:` も無い（`There's not enough info to determine what you meant`）。"
       ],
       "hint": "知らせの行と桁の所を見て、上の手順と字下げを揃えよう。",
-      "terms": ["workflow", "yaml"]
+      "terms": [
+        "workflow",
+        "yaml"
+      ]
     },
     {
       "id": "cicd-deps",
@@ -59,7 +69,10 @@
         "`deploy` が、一番時間のかかる `e2e` の後に、さらに別の検査も順に待っている。"
       ],
       "hint": "`unit`・`lint`・`e2e` の `needs:` は、どれも `build` だけにしよう。`deploy` は `[unit, lint, e2e]` を待つ。",
-      "terms": ["job", "pipeline"]
+      "terms": [
+        "job",
+        "pipeline"
+      ]
     },
     {
       "id": "cicd-needs-unknown",
@@ -71,7 +84,9 @@
         "表の名前（単体の検査）を書いた。`needs` には、`jobs:` の下の鍵（`unit`・`lint`・`e2e`）を書く。"
       ],
       "hint": "`jobs:` のすぐ下に並んだ名前（`build`・`unit`・`lint`・`e2e`・`deploy`）から選ぼう。",
-      "terms": ["job"]
+      "terms": [
+        "job"
+      ]
     },
     {
       "id": "cicd-read-last",
@@ -83,7 +98,11 @@
         "期待した値（`Expected`）と、実際の値（`Received`）を取り違えた。"
       ],
       "hint": "`gh run view <ID>` で `X` の付いたジョブを見つけ、`--log-failed` のログを上から読み、最初の誤りの行で止まろう。",
-      "terms": ["build", "test", "log"]
+      "terms": [
+        "build",
+        "test",
+        "log"
+      ]
     },
     {
       "id": "gh-run-not-found",
@@ -94,7 +113,9 @@
         "`#58` のような、記録の題の番号を ID として打った。ID は `gh run list` の `ID` の列の長い数。"
       ],
       "hint": "`gh run list` を打ち、`ID` の列の数をそのまま `gh run view` に渡そう。",
-      "terms": ["github"]
+      "terms": [
+        "github"
+      ]
     },
     {
       "id": "git-nothing-to-commit",
@@ -107,7 +128,9 @@
         "直したのが別のファイルだった。"
       ],
       "hint": "`cat src/price.ts` で今の中身を見て、置き換える前の文字をそのまま写そう。",
-      "terms": ["commit"]
+      "terms": [
+        "commit"
+      ]
     },
     {
       "id": "cicd-artifact-missing",
@@ -120,7 +143,9 @@
         "受け取るジョブの `needs` に、上げるジョブ（`build`）が無く、上げる前に受け取ろうとした。"
       ],
       "hint": "`actions/upload-artifact` の `name:` と同じ名前を、`actions/download-artifact` の `name:` に書こう。",
-      "terms": ["artifact"]
+      "terms": [
+        "artifact"
+      ]
     },
     {
       "id": "cicd-upload-empty",
@@ -132,7 +157,10 @@
         "`npm run build` より前に、`actions/upload-artifact` の手順を置いた（まだ `dist/` が無い）。"
       ],
       "hint": "`npm run build` の後ろに、`path: dist/` で上げよう。",
-      "terms": ["artifact", "build"]
+      "terms": [
+        "artifact",
+        "build"
+      ]
     },
     {
       "id": "cicd-e2e-no-dist",
@@ -144,7 +172,9 @@
         "受け取った場所（`path:`）が `dist/` ではない。"
       ],
       "hint": "`test` のジョブで、`actions/download-artifact` で `app` を `path: dist/` に受け取ろう。",
-      "terms": ["artifact"]
+      "terms": [
+        "artifact"
+      ]
     },
     {
       "id": "cicd-no-verify",
@@ -156,7 +186,11 @@
         "`curl` に `-f` を付けていない。`-f` が無いと、500 の返事でも成功（終了の値 0）で終わる。"
       ],
       "hint": "`npm run deploy` の後ろに `run: curl -fsS https://reserve.example/health` を足そう。",
-      "terms": ["health-check", "status-code", "curl"]
+      "terms": [
+        "health-check",
+        "status-code",
+        "curl"
+      ]
     },
     {
       "id": "cicd-no-previous",
@@ -168,7 +202,112 @@
         "確かめる手順が無く、流れが成功のまま `前の版を消す` まで進んだ。"
       ],
       "hint": "確かめる手順を、`前の版を消す` より前に置こう。消えた 1.4.0 は「初めに戻す」で戻せる。",
-      "terms": ["rollback"]
+      "terms": [
+        "rollback"
+      ]
+    },
+    {
+      "id": "cicd-tool-missing",
+      "match": "vitest: not found",
+      "output": true,
+      "meaning": "runner に `vitest` が入っていない。runner は毎回まっさらな機械で、手元に入れた部品はそこに無い。",
+      "causes": [
+        "`npm test` の前に `npm ci` を動かしていない。",
+        "`npm ci` を `npm test` より後ろに書いた。"
+      ],
+      "hint": "`actions/checkout` の次に `- run: npm ci` を足そう。",
+      "terms": [
+        "npm",
+        "runner"
+      ]
+    },
+    {
+      "id": "cicd-runner-net",
+      "match": "Could not resolve host: intra.city.example",
+      "output": true,
+      "meaning": "runner から `intra.city.example` の名前が引けない。提供される runner は社外の機械なので、社内の網には届かない。",
+      "causes": [
+        "`runs-on` が `ubuntu-latest` のまま（提供される runner）。",
+        "自前の runner のラベルを書いたが、`self-hosted` か `city-net` が欠けている。"
+      ],
+      "hint": "`runs-on: [self-hosted, city-net]` と書いて、社内の網にいる runner を選ぼう。",
+      "terms": [
+        "runner",
+        "name-resolution"
+      ]
+    },
+    {
+      "id": "cicd-no-runner-label",
+      "match": "No runner matching the specified labels",
+      "output": true,
+      "meaning": "書いたラベルを全て持つ runner が無い。仕事を動かす機械が見つからない。",
+      "causes": [
+        "ラベルの綴りが違う。自前の runner のラベルは `self-hosted` と `city-net`。",
+        "`[ ]` の中に、runner が持っていないラベルを足した。"
+      ],
+      "hint": "`runs-on: [self-hosted, city-net]` の形か確かめよう。",
+      "terms": [
+        "runner"
+      ]
+    },
+    {
+      "id": "cicd-config-empty",
+      "match": "Required property is missing: (jobs|on)",
+      "output": true,
+      "meaning": "ワークフローのファイルに、要る鍵が無い。`on` か `jobs` が足りない。",
+      "causes": [
+        "`on:` か `jobs:` を書いていない。",
+        "字下げがずれて、別の鍵の下に入った。"
+      ],
+      "hint": "`on`（きっかけ）と `jobs`（仕事）を一番左から書こう。",
+      "terms": [
+        "yaml",
+        "workflow"
+      ]
+    },
+    {
+      "id": "cicd-token-empty",
+      "match": "401 Unauthorized",
+      "output": true,
+      "meaning": "配る先が鍵を断った。`DEPLOY_TOKEN` が空か、違う値になっている。",
+      "causes": [
+        "`secrets.` の後ろの名前が、登録した名前（`DEPLOY_TOKEN`）と違う。",
+        "`npm run deploy` の手順や job に、`env` で渡していない。"
+      ],
+      "hint": "`DEPLOY_TOKEN: ${{ secrets.DEPLOY_TOKEN }}` の形で渡しているか確かめよう。",
+      "terms": [
+        "gh-secrets"
+      ]
+    },
+    {
+      "id": "cicd-test-red",
+      "match": "FAIL  tests/price",
+      "output": true,
+      "outputOf": "\\bgh\\b",
+      "meaning": "テストの 1 件が失敗した。税込みの値段が期待と違う。",
+      "causes": [
+        "`src/price.ts` の計算が誤っている（税を引いている）。",
+        "期待の方が誤っている（今回は計算の方）。"
+      ],
+      "hint": "`cat src/price.ts` で計算を読み、`1 - TAX_RATE` を `1 + TAX_RATE` に直そう。",
+      "terms": [
+        "test"
+      ]
+    },
+    {
+      "id": "cicd-direct-prod",
+      "match": "switched to 1\\.5\\.0",
+      "output": true,
+      "meaning": "本番に、承認を通らずそのまま入った。",
+      "causes": [
+        "本番の job に `environment: production` を書いていない。",
+        "`needs: staging` が無く、検証を待たずに動いた。"
+      ],
+      "hint": "本番の job に `needs: staging` と `environment: production` を書こう。",
+      "terms": [
+        "deploy",
+        "promotion"
+      ]
     }
   ]
 }

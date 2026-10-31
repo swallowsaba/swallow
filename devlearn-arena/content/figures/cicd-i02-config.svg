@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 360" font-family="&quot;Noto Sans JP&quot;, sans-serif">
+  <title>GitHub Actions と GitLab CI の設定は、きっかけ・仕事・手順の 3 つが対応する</title>
+  <g class="el" data-part="trigger">
+    <rect x="20" y="40" width="600" height="80" rx="10" fill="#1a6fd6" />
+    <text x="320" y="74" text-anchor="middle" font-size="16" font-weight="700" fill="#eef2f6">きっかけ</text>
+    <text x="320" y="96" text-anchor="middle" font-size="14" fill="#eef2f6">on: push・pull_request ／ rules: if … merge_request</text>
+  </g>
+  <g class="el" data-part="job">
+    <rect x="20" y="135" width="600" height="80" rx="10" fill="#7a3fd0" />
+    <text x="320" y="169" text-anchor="middle" font-size="16" font-weight="700" fill="#eef2f6">仕事</text>
+    <text x="320" y="191" text-anchor="middle" font-size="14" fill="#eef2f6">jobs: の下の名前 ／ 一番左に書く仕事の名前</text>
+  </g>
+  <g class="el" data-part="step">
+    <rect x="20" y="230" width="600" height="80" rx="10" fill="#1f7a4d" />
+    <text x="320" y="264" text-anchor="middle" font-size="16" font-weight="700" fill="#eef2f6">手順</text>
+    <text x="320" y="286" text-anchor="middle" font-size="14" fill="#eef2f6">steps: の run ／ script: の行</text>
+  </g>
+  <g class="el" data-part="note">
+    <text x="320" y="340" text-anchor="middle" font-size="14" fill="#eef2f6">左が GitHub Actions、右が GitLab CI。名前は違うが形は同じ</text>
+  </g>
+</svg>

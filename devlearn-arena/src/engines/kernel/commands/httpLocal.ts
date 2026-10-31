@@ -134,7 +134,7 @@ function plainAnswer(s: Service, req: LocalRequest, env?: () => HttpEnv): Route 
 function deployedSites(shell: ShellState): Site[] {
   return [...(shell.gitServers?.values() ?? [])].flatMap((g) => {
     const setups = g.forge?.setup.actions?.sites ?? [];
-    return setups.flatMap((s) => {
+    return setups.filter((s) => s.network === undefined || s.network === shell.vars.get('__RUNNER_NET')).flatMap((s) => {
       const state = g.forge?.sites?.find((x) => x.host === s.host);
       return state ? [siteOf(s, state)] : [];
     });
