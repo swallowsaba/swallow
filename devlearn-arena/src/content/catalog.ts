@@ -36,9 +36,13 @@ export function domainDef(id: DomainId): Domain | undefined {
 export const LEVEL_NAMES = { beginner: '初級', intermediate: '中級', advanced: '上級' } as const;
 export const PRACTICE_NAMES = { terminal: '仮想端末', simulation: '模擬環境', sql: 'ブラウザ内 SQL', editor: '設定の編集' } as const;
 
-/** 初回公開で中級まで揃える分野（docs/decisions.md Q-04。ほかの分野は初級だけ） */
-const FIRST_RELEASE_INTERMEDIATE: ReadonlySet<DomainId> = new Set(['linux', 'net', 'web', 'git', 'ctr', 'docker', 'k8s']);
+/**
+ * 中級・上級を書き終えて範囲に入れた分野（docs/decisions.md の Q-04 の決着。範囲は 211 本すべて）。
+ * 書き起こしの途中は、書き終えた分野を 1 つずつ足す（docs/progress/expand-scope.md）
+ */
+const RELEASE_INTERMEDIATE: ReadonlySet<DomainId> = new Set(['linux', 'net', 'web', 'git', 'ctr', 'docker', 'k8s']);
+const RELEASE_ADVANCED: ReadonlySet<DomainId> = new Set([]);
 
-/** 初回公開の範囲のレッスンか（docs/decisions.md Q-04） */
+/** 公開の範囲のレッスンか（docs/decisions.md Q-04） */
 export const inFirstRelease = (e: Pick<CatalogEntry, 'domain' | 'level'>): boolean =>
-  e.level === 'beginner' || (e.level === 'intermediate' && FIRST_RELEASE_INTERMEDIATE.has(e.domain));
+  e.level === 'beginner' || (e.level === 'intermediate' && RELEASE_INTERMEDIATE.has(e.domain)) || (e.level === 'advanced' && RELEASE_ADVANCED.has(e.domain));

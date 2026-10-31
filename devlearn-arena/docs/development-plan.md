@@ -140,7 +140,9 @@ Phase 0〜15 の後に、都市を作る仕組みを Permit Pending の形にす
 - **実装対象**: 推奨学習順に、分野ごとにレッスンを作る。**分野ごとに完成条件・テスト・視覚確認を記録する**。
   順番: found → linux → net → web（＋ sec 初級の TLS）→ git → trouble 初級 → sec 初級の残り → db → cicd（模擬を作る）→ ctr → docker → k8s → mon（模擬を作る）→ cloud → devops → lab。
   模擬環境（模）の型（`src/engines/sim`）と画面は、最初の分野（found）で作り、分野ごとに足りない物を足す（`docs/decisions.md` D-16。型と使い方は D-19 で改めた）
-- **実装しないもの**: 上級の全て（初回範囲外のもの）。分野ごとの専用の模擬環境（D-16。将来拡張）
+- **範囲**: 初めは全 16 分野の初級と、linux・net・web・git・ctr・docker・k8s の中級（131 本）。Q-04 の決着（`EXPAND-SCOPE.txt`）で `docs/curriculum.md` の 211 本すべてに広げた。
+  残る 80 本（中級 34・上級 46）は、中級の残り（found・sec・cicd・db・mon・cloud・devops・trouble・lab）→ 上級（linux・net・web・sec・git・cicd・ctr・docker・k8s・db・cloud・mon・devops・trouble・found・lab）の順に、1 分野ずつ書き起こして確かめる（`docs/progress/expand-scope.md`）
+- **実装しないもの**: 分野ごとの専用の模擬環境（D-16。将来拡張）。上級と lab で足りない振る舞いは、既にある模擬環境（`src/engines/`）に本物に合わせて足す
 - **成果物**: 初回公開の範囲の全レッスン（分野ごと）、模擬環境（模）の型
 - **完成条件**: 範囲内の全レッスンが検証を通り、最後のヒントで通る
 - **テスト**: コンテンツの検証（全件）

@@ -185,6 +185,18 @@
 
 ---
 
+### Q-04 の決着 初回公開の範囲を 211 本すべてに広げる（利用者の指示: `EXPAND-SCOPE.txt`）
+
+- 問題: 要決定事項 Q-04「初回公開の範囲」は、全 16 分野の初級と、Linux・ネットワーク・Web・Git・コンテナ・Docker・Kubernetes の中級まで（131 本）だった。
+  残る 80 本（中級 34・上級 46）は、目録にあり開けるが「準備中」と出る
+- **決着**（利用者の指示）: 範囲を `docs/curriculum.md` の 211 本すべてに広げる。Q-04 の表の行を書き換え、`docs/development-plan.md` の Phase 10 の範囲も直す。
+  残る 80 本は、中級の残り（found・sec・cicd・db・mon・cloud・devops・trouble・lab）を先に、その後に上級を推奨学習順の分野の並び（linux・net・web・sec・git・cicd・ctr・docker・k8s・db・cloud・mon・devops・trouble・found・lab）で、1 分野ずつ書き起こして確かめる
+- **変えない物**: 7 段の学習フロー、`docs/lessons/` の設計、実戦の決まり（`CLAUDE.md` 15.1・`REWORK-PRACTICE.txt` の原則 1〜5）。既にある 131 本の中身（直すべき不具合が見つかった時だけ直し、理由を記録に書く）
+- 書き起こしの途中は、書き終えた分野の難易度だけを範囲として検証する（`src/content/catalog.ts` の `inFirstRelease`）。全て書き終えた時に、全 211 本が範囲になる
+- 進め方と結果: `docs/progress/expand-scope.md`
+
+---
+
 ## 要決定事項（利用者の判断が必要）
 
 実装は、決まるまで**既定の案**で進める。既定の案を変える場合は、この表を更新してから変える。
@@ -194,7 +206,7 @@
 | Q-01 | 想定する学習者 | IT 未経験〜初級エンジニア。中学生以上が読める日本語 |
 | Q-02 | 英語対応 | 初回は日本語のみ。文言はデータに分けて後から足せる形にする |
 | Q-03 | 効果音・音楽 | 初回は効果音のみ（自作、または CC0）。既定は消音 |
-| Q-04 | 初回公開の範囲 | 全 16 分野の初級レッスンと、Linux・ネットワーク・Web・Git・コンテナ・Docker・Kubernetes の中級まで（`docs/development-plan.md` の Phase 10） |
+| Q-04 | 初回公開の範囲 | 決着（利用者の指示。上の「Q-04 の決着」）: `docs/curriculum.md` の 211 本すべて（全 16 分野の初級・中級・上級）。初めは全 16 分野の初級と、Linux・ネットワーク・Web・Git・コンテナ・Docker・Kubernetes の中級まで（131 本。`docs/development-plan.md` の Phase 10）だった |
 | Q-05 | アカウントと端末間の同期（指示書 38 章「必要になった場合のみ」） | 初回は無し（ブラウザ内保存と、保存データの書き出し・読み込み）。必要と決まった場合だけ Phase 15 で Cloudflare Workers の無料枠を検討 |
 
 ---
