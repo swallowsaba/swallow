@@ -10,7 +10,7 @@ import { describeAutoscaler, describeClaim, describeDeployment, describeIngress,
 import { describeResource, renderTable } from './kubectlGet';
 import { create, expose, run } from './kubectlCreate';
 import { nodeCtl, taint } from './kubectlNodes';
-import { setProbe, setResources } from './kubectlSet';
+import { setEnv, setProbe, setResources } from './kubectlSet';
 import { opsSubcommands } from './kubectlOps';
 import { autoscale, top, watchHpa } from './kubectlAutoscale';
 import { parseOutput, renderResources } from './kubectlOutput';
@@ -307,9 +307,11 @@ const coreSubcommands: Record<string, KubectlHandler> = {
   set: (ctx) => {
     const { cluster, namespace, operands } = ctx;
     if (operands[0] === 'selector') {
-      const kind = KINDS[operands[1] ?? ''] ?? '';
-      const name = operands[2];
-      const pairs = operands.slice(3).flatMap((o) => o.split(',')).filter((o) => o.includes('='));
+      // `service/shop` の形と `service shop` の形の両方を受ける
+      const [typed = '', slashName] = (operands[1] ?? '').split('/');
+      const kind = KINDS[typed] ?? '';
+      const name = slashName ?? operands[2];
+      const pairs = operands.slice(slashName === undefined ? 3 : 2).flatMap((o) => o.split(',')).filter((o) => o.includes('='));
       if (kind !== 'services' || name === undefined || pairs.length === 0) {
         return { stderr: 'usage: kubectl set selector svc <name> <key>=<value>\n', code: 1 };
       }
@@ -367,6 +369,7 @@ const coreSubcommands: Record<string, KubectlHandler> = {
     }
 
     if (operands[0] === 'resources') return setResources(ctx);
+    if (operands[0] === 'env') return setEnv(ctx);
     if (operands[0] === 'probe') return setProbe(ctx);
 
     return { stderr: 'usage: kubectl set <selector|image|resources|probe> ...\n', code: 1 };

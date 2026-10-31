@@ -688,6 +688,113 @@
         "readiness-probe",
         "rolling-update"
       ]
+    },
+    {
+      "id": "k8s-a-app-misread",
+      "match": "答えが合っていない",
+      "meaning": "保存したが、まだ全ての道が通っていない。",
+      "causes": [
+        "Service の名前と、つなぐ側に書いた名前が違う。",
+        "Ingress の規則に、その道が無い。",
+        "Pod がまだ動き出していない。"
+      ],
+      "hint": "`kubectl get pods` と `kubectl get endpoints` を読み、止まった部品を探そう。",
+      "terms": [
+        "k8s-service"
+      ]
+    },
+    {
+      "id": "k8s-a-db-notfound",
+      "match": "getaddrinfo ENOTFOUND",
+      "meaning": "API が、DB の場所の名前を引けなかった。その名前の Service が無い。",
+      "causes": [
+        "`DATABASE_URL` の名前が、DB の Service の名前と違う。",
+        "DB の Service を作っていない。"
+      ],
+      "hint": "`kubectl get services` の名前と、`DATABASE_URL` の `@` の後ろを比べよう。",
+      "terms": [
+        "k8s-service"
+      ],
+      "output": true
+    },
+    {
+      "id": "k8s-a-db-refused",
+      "match": "connect ECONNREFUSED",
+      "meaning": "DB の Service はあるが、後ろに動いている DB が無い。",
+      "causes": [
+        "DB の Pod が動いていない。",
+        "Service の札が DB の Pod と合っていない。"
+      ],
+      "hint": "`kubectl get endpoints db` を見よう。",
+      "terms": [
+        "k8s-endpoints"
+      ],
+      "output": true
+    },
+    {
+      "id": "k8s-a-state-misread",
+      "match": "答えが合っていない",
+      "meaning": "答えが、`kubectl get pods` の結果と違う。",
+      "causes": [
+        "別の Pod の行を読んだ。",
+        "Pod の名前の全体を答えた（ここでは最初の語の app の名前）。"
+      ],
+      "hint": "`STATUS` の欄を上から読もう。",
+      "terms": [
+        "pod-status"
+      ]
+    },
+    {
+      "id": "k8s-a-still-stuck",
+      "match": "exceeded its progress deadline|Insufficient (?:cpu|memory)",
+      "meaning": "直したはずの Pod が、まだ動かない。",
+      "causes": [
+        "別の状態に変わった（次の原因が出てきた）。",
+        "値を直しきれていない。"
+      ],
+      "hint": "`kubectl get pods` で今の状態を読み直そう。",
+      "terms": [
+        "pod-status"
+      ]
+    },
+    {
+      "id": "k8s-a-set-env",
+      "match": "at least one environment variable must be provided",
+      "meaning": "`kubectl set env` に、名前と値を渡していない。",
+      "causes": [
+        "`名前=値` を書き忘れた。",
+        "`=` を付けずに名前だけを書いた。"
+      ],
+      "hint": "`kubectl set env deployment/api 名前=値` の形で打とう。",
+      "terms": [
+        "env-var"
+      ]
+    },
+    {
+      "id": "k8s-a-apply-file",
+      "match": "the path \"[^\"]+\" does not exist",
+      "meaning": "`kubectl apply -f` のファイルが無い。",
+      "causes": [
+        "ファイルの名前が違う。",
+        "今いる場所が違う。"
+      ],
+      "hint": "`ls` でファイルの名前を確かめよう。",
+      "terms": [
+        "kubectl"
+      ]
+    },
+    {
+      "id": "k8s-a-node-name",
+      "match": "nodes \"[^\"]+\" not found",
+      "meaning": "その名前の Node が無い。",
+      "causes": [
+        "Node の名前の綴りが違う。",
+        "`pod` の名前を書いた。"
+      ],
+      "hint": "`kubectl get nodes` で名前を確かめよう。",
+      "terms": [
+        "k8s-node"
+      ]
     }
   ]
 }

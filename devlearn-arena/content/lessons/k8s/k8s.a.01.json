@@ -1,0 +1,293 @@
+{
+  "id": "k8s.a.01",
+  "domain": "k8s",
+  "level": "advanced",
+  "theme": "アプリ",
+  "title": "Kubernetes 上のアプリ",
+  "goal": "Web・API・DB の 3 層を動かし公開できる",
+  "minutes": 20,
+  "prerequisites": [
+    "k8s.i.04",
+    "k8s.i.03"
+  ],
+  "related": [
+    "lab.a.01",
+    "db.b.01"
+  ],
+  "next": [
+    "lab.a.01"
+  ],
+  "terms": [
+    "deployment",
+    "configmap",
+    "k8s-service",
+    "ingress",
+    "pvc",
+    "web",
+    "api",
+    "db",
+    "app",
+    "pod",
+    "cluster",
+    "service",
+    "memory",
+    "pv",
+    "file"
+  ],
+  "explain": {
+    "what": "{{term:web}}・{{term:api}}・{{term:db}} の 3 層を、これまでの部品（{{term:deployment}}・{{term:k8s-service}}・{{term:pvc}}・{{term:configmap}}・{{term:ingress}}）を組み合わせて動かす。",
+    "why": "実際の{{term:app}}は 1 つの部品では動かない。部品どうしのつなぎ方を間違えると、途中で止まる。",
+    "use": "本番の構成で使う。つなぐのは Service の名前で、{{term:pod}} が入れ替わっても変わらない。",
+    "when": "新しい{{term:service}}を{{term:cluster}}に載せる。DB には PVC を付け、数は 1 つにする。",
+    "figures": [
+      "k8s-a01-stack"
+    ]
+  },
+  "understand": [
+    {
+      "kind": "figure-pick",
+      "figure": "k8s-a01-stack",
+      "prompt": "API が DB を探す時に使う部品を押す。",
+      "answer": [
+        "svc-db"
+      ],
+      "see": "use"
+    },
+    {
+      "kind": "relation",
+      "prompt": "2 つの関係は？",
+      "a": "Service の名前を変える",
+      "b": "つなぐ側の設定も直す必要がある",
+      "answer": "cause",
+      "why": "つなぐ側は、Service の名前で相手を探している。",
+      "see": "use"
+    }
+  ],
+  "quiz": [
+    {
+      "id": "q1",
+      "kind": "order",
+      "prompt": "作る順に並べる。",
+      "order": [
+        "DB",
+        "API",
+        "Web",
+        "Ingress"
+      ],
+      "explanation": "頼まれる側から作ると、途中で止まる部品を切り分けやすい。"
+    },
+    {
+      "id": "q2",
+      "kind": "cause",
+      "prompt": "API が DB に届かず、`getaddrinfo ENOTFOUND database` と言う。原因は？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "書いた名前の Service が無い",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "DB の{{term:memory}}が足りない",
+          "correct": false,
+          "whyNot": "それなら名前は引けて、DB 側が止まる。"
+        },
+        {
+          "id": "c",
+          "text": "Ingress の規則の誤り",
+          "correct": false,
+          "whyNot": "Ingress は外の入口で、中の名前引きには関係しない。"
+        }
+      ],
+      "explanation": "クラスタの中の名前は Service の名前。`kubectl get services` で比べる。"
+    },
+    {
+      "id": "q3",
+      "kind": "situation",
+      "prompt": "DB の Deployment の数はいくつにする？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "1 つ。データを持つので、ただ増やすと食い違う",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "3 つ。多いほど安全",
+          "correct": false,
+          "whyNot": "それぞれが別のデータを持ち、食い違う。複製には別の仕組みが要る。"
+        },
+        {
+          "id": "c",
+          "text": "Web と同じ数",
+          "correct": false,
+          "whyNot": "状態を持つ物と持たない物は扱いが違う。"
+        }
+      ],
+      "explanation": "状態を持つ物は特別に扱う。Web や API は増やせる。"
+    }
+  ],
+  "practice": {
+    "mode": "editor",
+    "purpose": "店を公開する `city.yaml` を書く。初めは DB と設定だけがある。`/` に頼むと画面（`city-shop:1.0`）が、`/api/items` と `POST /api/login` に頼むと API（`city-store-api:1.0`。3000 番）が答えるようにする。入口の係（ingress-nginx）は入っていて、名前 `city.example` は入口を指す。保存すると、送って Pod と Service を見て、3 つの道に頼む。",
+    "environment": "k8s-cluster",
+    "setup": {
+      "hostname": "console",
+      "cwd": "/home/learner/city",
+      "dirs": [
+        "/home/learner/city"
+      ],
+      "files": {
+        "/etc/hosts": "127.0.0.1 localhost\n203.0.113.10 city.example\n",
+        "/home/learner/city/city.yaml": "apiVersion: v1\nkind: ConfigMap\nmetadata:\n  name: api-config\ndata:\n  DATABASE_URL: postgres://app@db:5432/reserve\n---\napiVersion: apps/v1\nkind: Deployment\nmetadata:\n  name: db\nspec:\n  replicas: 1\n  selector:\n    matchLabels:\n      app: db\n  template:\n    metadata:\n      labels:\n        app: db\n    spec:\n      containers:\n      - name: db\n        image: city-db:1.0\n        ports:\n        - containerPort: 5432\n"
+      },
+      "cluster": {
+        "nodes": 2,
+        "ageDays": 3,
+        "ingress": {
+          "address": "203.0.113.10"
+        },
+        "manifests": "apiVersion: v1\nkind: PersistentVolume\nmetadata:\n  name: pv-db-1\nspec:\n  capacity:\n    storage: 5Gi\n  accessModes:\n  - ReadWriteOnce\n  storageClassName: manual\n  hostPath:\n    path: /srv/pv/db-1\n"
+      },
+      "edit": {
+        "path": "/home/learner/city/city.yaml",
+        "apply": [
+          "kubectl apply -f city.yaml",
+          "kubectl get pods -w",
+          "kubectl get services",
+          "curl -s -o /dev/null -w '%{http_code}\\n' http://city.example/",
+          "curl -s -o /dev/null -w '%{http_code}\\n' http://city.example/api/items",
+          "curl -s -o /dev/null -w '%{http_code}\\n' -X POST http://city.example/api/login"
+        ]
+      }
+    },
+    "steps": [
+      {
+        "id": "db",
+        "purpose": "DB に PVC `db-data` を付け（大きさ 1Gi・種類 `manual`）、Service `db`（5432 番）を足す。Pod を作り直してもデータが残り、名前で届くようにする。",
+        "check": {
+          "kind": "k8s",
+          "expr": "pvc/db-data status=Bound && deployment/db readyUpdated=1 rows.reservations>=3 && service/db endpoints=1"
+        },
+        "afterward": "DB が {{term:pv}} に書くようになり、`db` という名前で届くようになった。Pod の住所は変わるが、この名前は変わらない。",
+        "hints": [
+          "足す部品は 2 つ。PVC と Service。",
+          "Deployment に `volumeMounts`（`/var/lib/postgresql/data`）と `volumes` を足す。",
+          "`apiVersion: v1\nkind: ConfigMap\nmetadata:\n  name: api-config\ndata:\n  DATABASE_URL: postgres://app@db:5432/reserve\n---\napiVersion: v1\nkind: PersistentVolumeClaim\nmetadata:\n  name: db-data\nspec:\n  storageClassName: manual\n  accessModes:\n  - ReadWriteOnce\n  resources:\n    requests:\n      storage: 1Gi\n---\napiVersion: apps/v1\nkind: Deployment\nmetadata:\n  name: db\nspec:\n  replicas: 1\n  selector:\n    matchLabels:\n      app: db\n  template:\n    metadata:\n      labels:\n        app: db\n    spec:\n      containers:\n      - name: db\n        image: city-db:1.0\n        ports:\n        - containerPort: 5432\n        volumeMounts:\n        - name: data\n          mountPath: /var/lib/postgresql/data\n      volumes:\n      - name: data\n        persistentVolumeClaim:\n          claimName: db-data\n---\napiVersion: v1\nkind: Service\nmetadata:\n  name: db\nspec:\n  selector:\n    app: db\n  ports:\n  - port: 5432\n    targetPort: 5432\n` と保存する。"
+        ],
+        "expectedErrors": [
+          "k8s-a-app-misread",
+          "k8s-pvc-pending",
+          "k8s-mount-name",
+          "k8s-yaml"
+        ]
+      },
+      {
+        "id": "api",
+        "purpose": "API の Deployment `api` と Service `api`（3000 番）を足す。DB の場所は ConfigMap `api-config` の `DATABASE_URL` から受け取る。",
+        "check": {
+          "kind": "k8s",
+          "expr": "deployment/api readyUpdated>=1 restarts=0 && service/api endpoints>=1"
+        },
+        "afterward": "API が動いた。ConfigMap の `postgres://app@db:5432/reserve` の `db` が、1 つ前に作った Service の名前。ここが食い違うと、API は動くのに頼みが 500 になる。",
+        "hints": [
+          "Deployment と Service の 2 つ。",
+          "`envFrom:` の `configMapRef:` で受け取る。",
+          "`apiVersion: v1\nkind: ConfigMap\nmetadata:\n  name: api-config\ndata:\n  DATABASE_URL: postgres://app@db:5432/reserve\n---\napiVersion: v1\nkind: PersistentVolumeClaim\nmetadata:\n  name: db-data\nspec:\n  storageClassName: manual\n  accessModes:\n  - ReadWriteOnce\n  resources:\n    requests:\n      storage: 1Gi\n---\napiVersion: apps/v1\nkind: Deployment\nmetadata:\n  name: db\nspec:\n  replicas: 1\n  selector:\n    matchLabels:\n      app: db\n  template:\n    metadata:\n      labels:\n        app: db\n    spec:\n      containers:\n      - name: db\n        image: city-db:1.0\n        ports:\n        - containerPort: 5432\n        volumeMounts:\n        - name: data\n          mountPath: /var/lib/postgresql/data\n      volumes:\n      - name: data\n        persistentVolumeClaim:\n          claimName: db-data\n---\napiVersion: v1\nkind: Service\nmetadata:\n  name: db\nspec:\n  selector:\n    app: db\n  ports:\n  - port: 5432\n    targetPort: 5432\n---\napiVersion: apps/v1\nkind: Deployment\nmetadata:\n  name: api\nspec:\n  replicas: 1\n  selector:\n    matchLabels:\n      app: api\n  template:\n    metadata:\n      labels:\n        app: api\n    spec:\n      containers:\n      - name: api\n        image: city-store-api:1.0\n        ports:\n        - containerPort: 3000\n        envFrom:\n        - configMapRef:\n            name: api-config\n---\napiVersion: v1\nkind: Service\nmetadata:\n  name: api\nspec:\n  selector:\n    app: api\n  ports:\n  - port: 3000\n    targetPort: 3000\n` と保存する。"
+        ],
+        "expectedErrors": [
+          "k8s-a-app-misread",
+          "k8s-config-missing",
+          "k8s-yaml"
+        ]
+      },
+      {
+        "id": "web",
+        "purpose": "画面の Deployment `web`（2 つ。80 番）と Service `web`、Ingress `city` を足し、`/` を web に渡す。売店の画面が返れば達成。",
+        "check": {
+          "kind": "http",
+          "url": "http://city.example/",
+          "status": 200,
+          "contains": "市の売店"
+        },
+        "afterward": "外から画面まで届いた。ただ `/api/items` は、まだ web に届いて 404 になる。",
+        "hints": [
+          "Web は状態を持たないので 2 つにできる。",
+          "Ingress は `host: city.example`、`path: /`。",
+          "`apiVersion: v1\nkind: ConfigMap\nmetadata:\n  name: api-config\ndata:\n  DATABASE_URL: postgres://app@db:5432/reserve\n---\napiVersion: v1\nkind: PersistentVolumeClaim\nmetadata:\n  name: db-data\nspec:\n  storageClassName: manual\n  accessModes:\n  - ReadWriteOnce\n  resources:\n    requests:\n      storage: 1Gi\n---\napiVersion: apps/v1\nkind: Deployment\nmetadata:\n  name: db\nspec:\n  replicas: 1\n  selector:\n    matchLabels:\n      app: db\n  template:\n    metadata:\n      labels:\n        app: db\n    spec:\n      containers:\n      - name: db\n        image: city-db:1.0\n        ports:\n        - containerPort: 5432\n        volumeMounts:\n        - name: data\n          mountPath: /var/lib/postgresql/data\n      volumes:\n      - name: data\n        persistentVolumeClaim:\n          claimName: db-data\n---\napiVersion: v1\nkind: Service\nmetadata:\n  name: db\nspec:\n  selector:\n    app: db\n  ports:\n  - port: 5432\n    targetPort: 5432\n---\napiVersion: apps/v1\nkind: Deployment\nmetadata:\n  name: api\nspec:\n  replicas: 1\n  selector:\n    matchLabels:\n      app: api\n  template:\n    metadata:\n      labels:\n        app: api\n    spec:\n      containers:\n      - name: api\n        image: city-store-api:1.0\n        ports:\n        - containerPort: 3000\n        envFrom:\n        - configMapRef:\n            name: api-config\n---\napiVersion: v1\nkind: Service\nmetadata:\n  name: api\nspec:\n  selector:\n    app: api\n  ports:\n  - port: 3000\n    targetPort: 3000\n---\napiVersion: apps/v1\nkind: Deployment\nmetadata:\n  name: web\nspec:\n  replicas: 2\n  selector:\n    matchLabels:\n      app: web\n  template:\n    metadata:\n      labels:\n        app: web\n    spec:\n      containers:\n      - name: web\n        image: city-shop:1.0\n        ports:\n        - containerPort: 80\n---\napiVersion: v1\nkind: Service\nmetadata:\n  name: web\nspec:\n  selector:\n    app: web\n  ports:\n  - port: 80\n    targetPort: 80\n---\napiVersion: networking.k8s.io/v1\nkind: Ingress\nmetadata:\n  name: city\nspec:\n  ingressClassName: nginx\n  rules:\n  - host: city.example\n    http:\n      paths:\n      - path: /\n        pathType: Prefix\n        backend:\n          service:\n            name: web\n            port:\n              number: 80\n` と保存する。"
+        ],
+        "expectedErrors": [
+          "k8s-a-app-misread",
+          "k8s-ingress-invalid",
+          "k8s-yaml"
+        ]
+      },
+      {
+        "id": "api-route",
+        "purpose": "Ingress に `/api` を Service `api` の 3000 番へ渡す規則を足す。商品の一覧が返れば達成。",
+        "check": {
+          "kind": "http",
+          "url": "http://city.example/api/items",
+          "status": 200,
+          "contains": "灯台の模型"
+        },
+        "afterward": "`Ingress → api → db` の全ての段がつながった。より長く合う `/api` の規則が選ばれる。",
+        "hints": [
+          "`paths:` に 1 つ足す。",
+          "`- path: /api`・`name: api`・`number: 3000`。",
+          "`apiVersion: v1\nkind: ConfigMap\nmetadata:\n  name: api-config\ndata:\n  DATABASE_URL: postgres://app@db:5432/reserve\n---\napiVersion: v1\nkind: PersistentVolumeClaim\nmetadata:\n  name: db-data\nspec:\n  storageClassName: manual\n  accessModes:\n  - ReadWriteOnce\n  resources:\n    requests:\n      storage: 1Gi\n---\napiVersion: apps/v1\nkind: Deployment\nmetadata:\n  name: db\nspec:\n  replicas: 1\n  selector:\n    matchLabels:\n      app: db\n  template:\n    metadata:\n      labels:\n        app: db\n    spec:\n      containers:\n      - name: db\n        image: city-db:1.0\n        ports:\n        - containerPort: 5432\n        volumeMounts:\n        - name: data\n          mountPath: /var/lib/postgresql/data\n      volumes:\n      - name: data\n        persistentVolumeClaim:\n          claimName: db-data\n---\napiVersion: v1\nkind: Service\nmetadata:\n  name: db\nspec:\n  selector:\n    app: db\n  ports:\n  - port: 5432\n    targetPort: 5432\n---\napiVersion: apps/v1\nkind: Deployment\nmetadata:\n  name: api\nspec:\n  replicas: 1\n  selector:\n    matchLabels:\n      app: api\n  template:\n    metadata:\n      labels:\n        app: api\n    spec:\n      containers:\n      - name: api\n        image: city-store-api:1.0\n        ports:\n        - containerPort: 3000\n        envFrom:\n        - configMapRef:\n            name: api-config\n---\napiVersion: v1\nkind: Service\nmetadata:\n  name: api\nspec:\n  selector:\n    app: api\n  ports:\n  - port: 3000\n    targetPort: 3000\n---\napiVersion: apps/v1\nkind: Deployment\nmetadata:\n  name: web\nspec:\n  replicas: 2\n  selector:\n    matchLabels:\n      app: web\n  template:\n    metadata:\n      labels:\n        app: web\n    spec:\n      containers:\n      - name: web\n        image: city-shop:1.0\n        ports:\n        - containerPort: 80\n---\napiVersion: v1\nkind: Service\nmetadata:\n  name: web\nspec:\n  selector:\n    app: web\n  ports:\n  - port: 80\n    targetPort: 80\n---\napiVersion: networking.k8s.io/v1\nkind: Ingress\nmetadata:\n  name: city\nspec:\n  ingressClassName: nginx\n  rules:\n  - host: city.example\n    http:\n      paths:\n      - path: /\n        pathType: Prefix\n        backend:\n          service:\n            name: web\n            port:\n              number: 80\n      - path: /api\n        pathType: Prefix\n        backend:\n          service:\n            name: api\n            port:\n              number: 3000\n` と保存する。"
+        ],
+        "expectedErrors": [
+          "k8s-a-app-misread",
+          "k8s-a-db-notfound",
+          "k8s-a-db-refused",
+          "k8s-ingress-invalid",
+          "k8s-yaml"
+        ]
+      },
+      {
+        "id": "login",
+        "purpose": "ログイン（`POST /api/login`）も 200 で答えることを確かめる。{{term:file}}が正しければ、もう満たしている。",
+        "check": {
+          "kind": "http",
+          "url": "http://city.example/api/login",
+          "status": 200,
+          "method": "POST",
+          "contains": "loggedIn"
+        },
+        "afterward": "画面・商品・ログインの全ての道が通った。3 層を、Service の名前でつないで動かせた。",
+        "hints": [
+          "同じ `/api` の規則で届く。",
+          "保存した結果の 3 つ目の番号を読む。",
+          "`apiVersion: v1\nkind: ConfigMap\nmetadata:\n  name: api-config\ndata:\n  DATABASE_URL: postgres://app@db:5432/reserve\n---\napiVersion: v1\nkind: PersistentVolumeClaim\nmetadata:\n  name: db-data\nspec:\n  storageClassName: manual\n  accessModes:\n  - ReadWriteOnce\n  resources:\n    requests:\n      storage: 1Gi\n---\napiVersion: apps/v1\nkind: Deployment\nmetadata:\n  name: db\nspec:\n  replicas: 1\n  selector:\n    matchLabels:\n      app: db\n  template:\n    metadata:\n      labels:\n        app: db\n    spec:\n      containers:\n      - name: db\n        image: city-db:1.0\n        ports:\n        - containerPort: 5432\n        volumeMounts:\n        - name: data\n          mountPath: /var/lib/postgresql/data\n      volumes:\n      - name: data\n        persistentVolumeClaim:\n          claimName: db-data\n---\napiVersion: v1\nkind: Service\nmetadata:\n  name: db\nspec:\n  selector:\n    app: db\n  ports:\n  - port: 5432\n    targetPort: 5432\n---\napiVersion: apps/v1\nkind: Deployment\nmetadata:\n  name: api\nspec:\n  replicas: 1\n  selector:\n    matchLabels:\n      app: api\n  template:\n    metadata:\n      labels:\n        app: api\n    spec:\n      containers:\n      - name: api\n        image: city-store-api:1.0\n        ports:\n        - containerPort: 3000\n        envFrom:\n        - configMapRef:\n            name: api-config\n---\napiVersion: v1\nkind: Service\nmetadata:\n  name: api\nspec:\n  selector:\n    app: api\n  ports:\n  - port: 3000\n    targetPort: 3000\n---\napiVersion: apps/v1\nkind: Deployment\nmetadata:\n  name: web\nspec:\n  replicas: 2\n  selector:\n    matchLabels:\n      app: web\n  template:\n    metadata:\n      labels:\n        app: web\n    spec:\n      containers:\n      - name: web\n        image: city-shop:1.0\n        ports:\n        - containerPort: 80\n---\napiVersion: v1\nkind: Service\nmetadata:\n  name: web\nspec:\n  selector:\n    app: web\n  ports:\n  - port: 80\n    targetPort: 80\n---\napiVersion: networking.k8s.io/v1\nkind: Ingress\nmetadata:\n  name: city\nspec:\n  ingressClassName: nginx\n  rules:\n  - host: city.example\n    http:\n      paths:\n      - path: /\n        pathType: Prefix\n        backend:\n          service:\n            name: web\n            port:\n              number: 80\n      - path: /api\n        pathType: Prefix\n        backend:\n          service:\n            name: api\n            port:\n              number: 3000\n` と保存する。"
+        ],
+        "expectedErrors": [
+          "k8s-a-app-misread",
+          "k8s-a-db-notfound",
+          "k8s-a-db-refused",
+          "k8s-yaml"
+        ]
+      }
+    ]
+  },
+  "result": {
+    "success": "部品を組み合わせ、3 層のアプリを公開できた。",
+    "partial": "ヒントを使って動かせた。次は、どの部品がどの名前で相手を探すかを、自分で言ってみよう。",
+    "retry": "まだ全ての道が通っていない。保存した結果の 3 つの番号と `kubectl get pods` から、止まった部品を探そう。"
+  },
+  "summary": {
+    "points": [
+      "部品を組み合わせる",
+      "つなぐのは Service の名前",
+      "状態を持つ物は特別に扱う"
+    ],
+    "next": [
+      "lab.a.01"
+    ],
+    "terms": [
+      "ingress",
+      "k8s-service",
+      "pvc"
+    ]
+  }
+}

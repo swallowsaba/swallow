@@ -107,6 +107,8 @@ function fieldOf(cluster: ClusterState, kind: Kind, ns: string, name: string, fi
     if (!n) return undefined;
     // cordoned: Pod を置かない印（cordon・drain）がある時だけ値がある。pods: その Node の上の Pod の数（区画を問わない）
     if (field === 'cordoned') return n.spec.unschedulable ? 1 : undefined;
+    // schedulable: 印が無く、Pod を置ける時だけ値がある（uncordon で戻したことを確かめる）
+    if (field === 'schedulable') return n.spec.unschedulable ? undefined : 1;
     if (field === 'pods') return [...cluster.pods.values()].filter((p) => p.status.nodeName === name).length;
   } else if (kind === 'pvc') {
     const c = cluster.persistentVolumeClaims.get(id);

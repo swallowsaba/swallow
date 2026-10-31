@@ -1,0 +1,60 @@
+{
+  "lesson": "k8s.a.04",
+  "variants": [
+    {
+      "name": "2 つに増やす・drain が cordon も行う",
+      "steps": {
+        "scale": [
+          "kubectl scale deploy/web --replicas=2",
+          "kubectl get pods -o wide -w"
+        ],
+        "cordon": [
+          "kubectl get nodes",
+          "kubectl cordon node-1"
+        ],
+        "drain": [
+          "kubectl drain node-1",
+          "kubectl get pods -o wide -w"
+        ],
+        "back": [
+          "kubectl uncordon node-1"
+        ]
+      }
+    },
+    {
+      "name": "Node の中を見てから",
+      "steps": {
+        "scale": [
+          "kubectl get nodes",
+          "kubectl get pods -o wide",
+          "kubectl scale deployment/web --replicas=4",
+          "kubectl rollout status deployment/web"
+        ],
+        "cordon": [
+          "kubectl cordon node-1",
+          "kubectl get nodes"
+        ],
+        "drain": [
+          "kubectl drain node-1 --ignore-daemonsets",
+          "kubectl get pods -o wide",
+          "kubectl rollout status deployment/web"
+        ],
+        "back": [
+          "kubectl get nodes",
+          "kubectl uncordon node-1",
+          "kubectl get nodes"
+        ]
+      }
+    }
+  ],
+  "wrong": {
+    "step": "cordon",
+    "why": "Node の名前を間違える",
+    "input": [
+      "kubectl cordon node-9"
+    ],
+    "retry": [
+      "kubectl cordon node-1"
+    ]
+  }
+}

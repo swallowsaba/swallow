@@ -200,7 +200,8 @@ describe('実戦（docs/learning-design.md 6・7 章）', () => {
       }
     }
     expect(missing).toEqual([]);
-  });
+    // 全てのレッスンを動かすので、レッスンが増えると時間も増える
+  }, 60_000);
 });
 
 describe('状態による判定の形', () => {

@@ -69,6 +69,21 @@ function updateContainers(
   };
 }
 
+/** `kubectl set env deployment/api 名前=値 名前-`（名前- は消す） */
+export function setEnv(ctx: KubectlContext): CommandResult {
+  const ref = targetOf(ctx.operands, 1);
+  const pairs = ctx.operands.slice(ref.slash ? 2 : 3);
+  if (pairs.length === 0) return { stderr: 'error: at least one environment variable must be provided\n', code: 1 };
+  return updateContainers(ctx, ref, (c) => {
+    const env = { ...c.env };
+    for (const p of pairs) {
+      if (p.endsWith('-') && !p.includes('=')) delete env[p.slice(0, -1)];
+      else env[p.slice(0, p.indexOf('='))] = p.slice(p.indexOf('=') + 1);
+    }
+    return { ...c, env };
+  }, 'env');
+}
+
 /** `kubectl set resources deploy/web --requests=cpu=200m,memory=256Mi --limits=...` */
 export function setResources(ctx: KubectlContext): CommandResult {
   const ref = targetOf(ctx.operands, 1);

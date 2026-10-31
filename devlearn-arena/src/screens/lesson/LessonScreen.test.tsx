@@ -42,8 +42,9 @@ vi.mock('@xterm/xterm', () => ({
 // 中身の読み込みに失敗させる（回線が無く、まだ読んでいないレッスン）
 const failLoad = vi.hoisted(() => ({ on: false }));
 vi.mock('@/content/lessons', async (importOriginal) => {
-  const real = await importOriginal<{ loadLesson: typeof loadLesson }>();
-  return { ...real, loadLesson: (id: string) => (failLoad.on ? Promise.reject(new Error('Failed to fetch dynamically imported module')) : real.loadLesson(id)) };
+  const real = await importOriginal<{ loadLesson: typeof loadLesson; AUTHORED: ReadonlySet<string> }>();
+  // k8s.a.04 を「まだ書き起こしていないレッスン」の例にする（範囲が全てのレッスンに広がると、本当に書いていない物は無くなる）
+  return { ...real, AUTHORED: new Set([...real.AUTHORED].filter((id) => id !== 'k8s.a.04')), loadLesson: (id: string) => (failLoad.on ? Promise.reject(new Error('Failed to fetch dynamically imported module')) : real.loadLesson(id)) };
 });
 vi.mock('@xterm/addon-fit', () => ({
   FitAddon: class {

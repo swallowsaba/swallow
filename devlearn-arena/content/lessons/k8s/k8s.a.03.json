@@ -1,0 +1,307 @@
+{
+  "id": "k8s.a.03",
+  "domain": "k8s",
+  "level": "advanced",
+  "theme": "障害",
+  "title": "繋がらない Service を直す",
+  "goal": "Endpoints が空・ポートの不一致・Ingress の誤りを直せる",
+  "minutes": 20,
+  "prerequisites": [
+    "k8s.i.04"
+  ],
+  "related": [
+    "net.a.01",
+    "web.a.02"
+  ],
+  "next": [
+    "mon.a.02"
+  ],
+  "terms": [
+    "k8s-endpoints",
+    "ingress",
+    "port",
+    "pod",
+    "k8s-service",
+    "k8s-node",
+    "image",
+    "memory"
+  ],
+  "explain": {
+    "what": "{{term:k8s-endpoints}} が空・{{term:port}}の食い違い・{{term:ingress}} の誤りを、段ごとに確かめて直す。",
+    "why": "{{term:pod}} は動いているのに届かない障害は多い。どの段で止まったかを見ないと、当て推量になる。",
+    "use": "障害対応で使う。返事の番号（404・503・502）で、止まった段の見当が付く。",
+    "when": "Pod は動いているのに、外から頼むと 503 になる。",
+    "figures": [
+      "k8s-a03-hops"
+    ]
+  },
+  "understand": [
+    {
+      "kind": "order",
+      "prompt": "確かめる順に並べる（外から）。",
+      "items": [
+        "Ingress の規則",
+        "{{term:k8s-service}}",
+        "Endpoints",
+        "Pod のポート"
+      ],
+      "see": "use"
+    },
+    {
+      "kind": "situation",
+      "prompt": "Endpoints が `<none>`。意味は？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "札の合う、準備のできた Pod が 1 つも無い",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "Service が無い",
+          "correct": false,
+          "whyNot": "Service はある。宛先が空。"
+        },
+        {
+          "id": "c",
+          "text": "Ingress が無い",
+          "correct": false,
+          "whyNot": "Endpoints は Service の宛先の一覧で、Ingress は関係しない。"
+        }
+      ],
+      "see": "what"
+    }
+  ],
+  "quiz": [
+    {
+      "id": "q1",
+      "kind": "cause",
+      "prompt": "Endpoints が空。原因は？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "札の食い違いか、Pod の準備ができていない",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "{{term:k8s-node}} の不足",
+          "correct": false,
+          "whyNot": "それなら Pod が `Pending` になる。"
+        },
+        {
+          "id": "c",
+          "text": "{{term:image}}の誤り",
+          "correct": false,
+          "whyNot": "それも準備ができない原因にはなるが、先に見るのは札と状態。"
+        }
+      ],
+      "explanation": "`kubectl get pods --show-labels` と Service の `selector` を比べる。"
+    },
+    {
+      "id": "q2",
+      "kind": "cause",
+      "prompt": "Endpoints に宛先はあるのに、つながらない（502）。原因は？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "`targetPort` の誤り",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "札の誤り",
+          "correct": false,
+          "whyNot": "札が違えば Endpoints は空になる。"
+        },
+        {
+          "id": "c",
+          "text": "名前の誤り",
+          "correct": false,
+          "whyNot": "名前が違えば、その前の Ingress で止まる。"
+        }
+      ],
+      "explanation": "`targetPort` は Pod が待ち受ける番号に合わせる。"
+    },
+    {
+      "id": "q3",
+      "kind": "cause",
+      "prompt": "外から頼むと入口が 404 と答える。原因は？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "Ingress の規則（名前か道）に合わない",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "Pod の{{term:memory}}不足",
+          "correct": false,
+          "whyNot": "Pod に届く前に入口が答えている。"
+        },
+        {
+          "id": "c",
+          "text": "`targetPort` の誤り",
+          "correct": false,
+          "whyNot": "それなら 502 になる。"
+        }
+      ],
+      "explanation": "`kubectl describe ingress` の `Rules` を読む。"
+    },
+    {
+      "id": "q4",
+      "kind": "situation",
+      "prompt": "最初に見るのは？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "`kubectl get endpoints`",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "`kubectl delete pod`",
+          "correct": false,
+          "whyNot": "原因が分かっていない。作り直しても札もポートも変わらない。"
+        },
+        {
+          "id": "c",
+          "text": "`kubectl scale`",
+          "correct": false,
+          "whyNot": "数の問題ではない。"
+        }
+      ],
+      "explanation": "宛先が入っているかで、札の問題かどうかが一度に分かる。"
+    },
+    {
+      "id": "q5",
+      "kind": "predict",
+      "prompt": "Service の札を Pod に合わせると？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "Endpoints に宛先が入る",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "Pod が作り直される",
+          "correct": false,
+          "whyNot": "Service を変えても Pod は変わらない。"
+        },
+        {
+          "id": "c",
+          "text": "何も変わらない",
+          "correct": false,
+          "whyNot": "札で宛先を選んでいるので、すぐ入る。"
+        }
+      ],
+      "explanation": "Pod は動いたまま、宛先だけが変わる。"
+    }
+  ],
+  "practice": {
+    "mode": "terminal",
+    "purpose": "売店の Pod は `Running` なのに、`http://city.example/` に届かない。`shop.yaml` の Service と `ingress.yaml` の Ingress に誤りが重なっている。外の段から順に直し、売店の画面を返す。番号は `curl -s -o /dev/null -w '%{http_code}\\n' http://city.example/` で確かめる。",
+    "environment": "k8s-cluster",
+    "setup": {
+      "hostname": "console",
+      "cwd": "/home/learner/city",
+      "dirs": [
+        "/home/learner/city"
+      ],
+      "files": {
+        "/etc/hosts": "127.0.0.1 localhost\n203.0.113.10 city.example\n",
+        "/home/learner/city/shop.yaml": "apiVersion: v1\nkind: Service\nmetadata:\n  name: shop\nspec:\n  selector:\n    app: store\n  ports:\n  - port: 80\n    targetPort: 8080\n",
+        "/home/learner/city/ingress.yaml": "apiVersion: networking.k8s.io/v1\nkind: Ingress\nmetadata:\n  name: city\nspec:\n  ingressClassName: nginx\n  rules:\n  - host: shop.example\n    http:\n      paths:\n      - path: /\n        pathType: Prefix\n        backend:\n          service:\n            name: shop\n            port:\n              number: 80\n"
+      },
+      "cluster": {
+        "nodes": 2,
+        "ageDays": 3,
+        "ingress": {
+          "address": "203.0.113.10"
+        },
+        "manifests": "apiVersion: apps/v1\nkind: Deployment\nmetadata:\n  name: shop\nspec:\n  replicas: 2\n  selector:\n    matchLabels:\n      app: shop\n  template:\n    metadata:\n      labels:\n        app: shop\n    spec:\n      containers:\n      - name: shop\n        image: city-shop:1.0\n        ports:\n        - containerPort: 80\n---\napiVersion: v1\nkind: Service\nmetadata:\n  name: shop\nspec:\n  selector:\n    app: store\n  ports:\n  - port: 80\n    targetPort: 8080\n---\napiVersion: networking.k8s.io/v1\nkind: Ingress\nmetadata:\n  name: city\nspec:\n  ingressClassName: nginx\n  rules:\n  - host: shop.example\n    http:\n      paths:\n      - path: /\n        pathType: Prefix\n        backend:\n          service:\n            name: shop\n            port:\n              number: 80\n"
+      }
+    },
+    "steps": [
+      {
+        "id": "rule",
+        "purpose": "番号は 404。入口の規則に合わない。`kubectl describe ingress city` の名前を読み、`ingress.yaml` の `host:` を `city.example` に直して送る。番号が 503 に変われば、次の段まで届いた。",
+        "check": {
+          "kind": "http",
+          "url": "http://city.example/",
+          "status": 503
+        },
+        "afterward": "入口は通った。今度は 503。入口の後ろの Service に、宛先が無い。",
+        "hints": [
+          "404 は入口の答え。",
+          "`host:` の名前が、頼む名前と違う。",
+          "`curl -s -o /dev/null -w '%{http_code}\\n' http://city.example/` `kubectl describe ingress city` `sed -i 's/shop.example/city.example/' ingress.yaml` `kubectl apply -f ingress.yaml` `curl -s -o /dev/null -w '%{http_code}\\n' http://city.example/` を打つ。"
+        ],
+        "expectedErrors": [
+          "k8s-ingress-invalid",
+          "k8s-a-apply-file",
+          "k8s-yaml"
+        ]
+      },
+      {
+        "id": "labels",
+        "purpose": "`kubectl get endpoints shop` は `<none>`。`kubectl get pods --show-labels` と `shop.yaml` の `selector` を比べ、Service の札を Pod に合わせて送る。宛先が 2 つ入れば達成。",
+        "check": {
+          "kind": "k8s",
+          "expr": "service/shop endpoints=2 selector.app=shop"
+        },
+        "afterward": "Pod は `app=shop`、Service は `app=store` を探していた。Pod は動いたまま、宛先が入った。",
+        "hints": [
+          "Endpoints が空なのは札か、Pod の準備。",
+          "Pod の札は `app=shop`。",
+          "`kubectl get endpoints shop` `kubectl get pods --show-labels` `sed -i 's/app: store/app: shop/' shop.yaml` `kubectl apply -f shop.yaml` `kubectl get endpoints shop` を打つ。"
+        ],
+        "expectedErrors": [
+          "k8s-a-apply-file",
+          "k8s-yaml"
+        ]
+      },
+      {
+        "id": "port",
+        "purpose": "番号は 502。宛先はあるが、Pod がそのポートで待っていない。売店は 80 番で待つ。`shop.yaml` の `targetPort` を直して送る。画面が返れば達成。",
+        "check": {
+          "kind": "http",
+          "url": "http://city.example/",
+          "status": 200,
+          "contains": "市の売店"
+        },
+        "afterward": "全ての段が通った。404 は入口、503 は宛先、502 は Pod のポート。番号が段を教えていた。",
+        "hints": [
+          "502 は、宛先には行くが答えがない。",
+          "`targetPort: 8080` が `containerPort: 80` と違う。",
+          "`curl -s -o /dev/null -w '%{http_code}\\n' http://city.example/` `sed -i 's/targetPort: 8080/targetPort: 80/' shop.yaml` `kubectl apply -f shop.yaml` `curl -s http://city.example/` を打つ。"
+        ],
+        "expectedErrors": [
+          "k8s-a-apply-file",
+          "k8s-yaml"
+        ]
+      }
+    ]
+  },
+  "result": {
+    "success": "段ごとに確かめて、重なった誤りを直せた。",
+    "partial": "ヒントを使って直せた。次は、番号を見た時点で止まった段を言ってみよう。",
+    "retry": "まだ届いていない。番号と `kubectl get endpoints shop` で、止まった段を確かめよう。"
+  },
+  "summary": {
+    "points": [
+      "段ごとに確かめる",
+      "Endpoints を見る",
+      "札とポートの食い違い"
+    ],
+    "next": [
+      "mon.a.02"
+    ],
+    "terms": [
+      "k8s-endpoints",
+      "k8s-selector",
+      "ingress"
+    ]
+  }
+}

@@ -94,6 +94,14 @@ function podAnswer(state: ClusterState, pod: Pod, port: number, method: string, 
     const serves = state.images === undefined ? undefined : fromRegistry(normalizeRef(c.image))?.serves;
     if (serves?.port !== port) continue;
     const only = path.split('?')[0] ?? '/';
+    // DB の場所（postgres://利用者@名前:ポート/DB）の名前の Service に、動いている Pod があるか
+    if (serves.dbEnv !== undefined) {
+      const url = pod.status.containerStatuses.find((s) => s.name === c.name)?.env?.[serves.dbEnv] ?? '';
+      const host = /^postgres(?:ql)?:\/\/(?:[^@/]+@)?([^:/]+)/.exec(url)?.[1] ?? '';
+      const db = state.services.get(key(pod.metadata.namespace, host));
+      if (db === undefined) return { status: 500, body: `{"error":"getaddrinfo ENOTFOUND ${host}"}`, headers: { 'Content-Type': 'application/json' } };
+      if (backendPods(state, pod.metadata.namespace, db).length === 0) return { status: 500, body: `{"error":"connect ECONNREFUSED ${host}:5432"}`, headers: { 'Content-Type': 'application/json' } };
+    }
     if (serves.routes) {
       const r = routeFor(serves.routes, method, path);
       if (r.status !== 404 || serves.notFound !== 'express') return r;

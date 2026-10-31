@@ -1,0 +1,238 @@
+{
+  "id": "k8s.a.04",
+  "domain": "k8s",
+  "level": "advanced",
+  "theme": "保守",
+  "title": "Node の保守",
+  "goal": "cordon/drain で止めずに保守できる",
+  "minutes": 20,
+  "prerequisites": [
+    "k8s.i.08"
+  ],
+  "related": [
+    "cloud.i.01",
+    "linux.a.01"
+  ],
+  "next": [],
+  "terms": [
+    "k8s-cordon",
+    "k8s-drain",
+    "k8s-node",
+    "pod",
+    "service",
+    "disk",
+    "os",
+    "deployment",
+    "option"
+  ],
+  "explain": {
+    "what": "{{term:k8s-cordon}}（新しく置かない）と {{term:k8s-drain}}（中の {{term:pod}} を移す）で、止めずに {{term:k8s-node}} を保守する。",
+    "why": "Node の更新や修理の時も、{{term:service}}を止めないため。",
+    "use": "運用で使う。Pod が 1 つだけだと、移す間に止まるので先に増やす。",
+    "when": "Node の {{term:os}} を更新したい。{{term:disk}}を交換したい。",
+    "figures": [
+      "k8s-a04-drain"
+    ]
+  },
+  "understand": [
+    {
+      "kind": "order",
+      "prompt": "4 段の順に並べる。",
+      "items": [
+        "cordon",
+        "drain",
+        "保守",
+        "uncordon"
+      ],
+      "see": "what"
+    },
+    {
+      "kind": "relation",
+      "prompt": "2 つの関係は？",
+      "a": "drain",
+      "b": "Pod が別の Node に作り直される",
+      "answer": "cause",
+      "why": "Pod を追い出すと、持ち主の {{term:deployment}} が別の Node に作り直す。",
+      "see": "what"
+    }
+  ],
+  "quiz": [
+    {
+      "id": "q1",
+      "kind": "choice",
+      "prompt": "新しく置かないようにする操作は？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "`cordon`",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "`scale`",
+          "correct": false,
+          "whyNot": "数を変える操作。"
+        },
+        {
+          "id": "c",
+          "text": "`rollout undo`",
+          "correct": false,
+          "whyNot": "前の版に戻す操作。"
+        }
+      ],
+      "explanation": "動いている Pod はそのまま残る。"
+    },
+    {
+      "id": "q2",
+      "kind": "predict",
+      "prompt": "`drain` を打つと？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "中の Pod が他の Node へ移る",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "Node が消える",
+          "correct": false,
+          "whyNot": "Node は残る。空になるだけ。"
+        },
+        {
+          "id": "c",
+          "text": "全ての Pod が止まる",
+          "correct": false,
+          "whyNot": "その Node の Pod だけで、作り直される。"
+        }
+      ],
+      "explanation": "`kubectl get pods -o wide` の `NODE` で確かめる。"
+    },
+    {
+      "id": "q3",
+      "kind": "cause",
+      "prompt": "`drain` が断られて進まない。原因は？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "移せない Pod がある（持ち主の無い Pod など）",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "Node の名前が短い",
+          "correct": false,
+          "whyNot": "名前は関係しない。"
+        },
+        {
+          "id": "c",
+          "text": "Pod が多すぎる",
+          "correct": false,
+          "whyNot": "数では断られない。"
+        }
+      ],
+      "explanation": "断りの文に Pod の名前と、付ける{{term:option}}が書いてある。"
+    }
+  ],
+  "practice": {
+    "mode": "terminal",
+    "purpose": "`node-1` の OS を更新する。`web` の Pod は今 1 つで、`node-1` の上にある。サービスを止めずに `node-1` を空け、更新の後に戻す。",
+    "environment": "k8s-cluster",
+    "setup": {
+      "hostname": "console",
+      "cluster": {
+        "nodes": 3,
+        "ageDays": 3,
+        "manifests": "apiVersion: apps/v1\nkind: Deployment\nmetadata:\n  name: web\nspec:\n  replicas: 1\n  selector:\n    matchLabels:\n      app: web\n  template:\n    metadata:\n      labels:\n        app: web\n    spec:\n      containers:\n      - name: web\n        image: city-shop:1.0\n        ports:\n        - containerPort: 80\n"
+      }
+    },
+    "steps": [
+      {
+        "id": "scale",
+        "purpose": "`kubectl get pods -o wide` で場所を見る。このまま移すと止まるので、先に `kubectl scale` で 3 つに増やす。",
+        "check": {
+          "kind": "k8s",
+          "expr": "deployment/web readyUpdated>=2 replicas>=2"
+        },
+        "afterward": "別の Node にも Pod ができた。1 つを移している間も、残りが答える。",
+        "hints": [
+          "1 つしか無いと、移す間に止まる。",
+          "`--replicas=3`。",
+          "`kubectl get pods -o wide` `kubectl scale deployment web --replicas=3` `kubectl rollout status deployment/web` を打つ。"
+        ],
+        "expectedErrors": [
+          "k8s-a-node-name"
+        ]
+      },
+      {
+        "id": "cordon",
+        "purpose": "`kubectl cordon node-1` で新しく置かないようにする。`kubectl get nodes` の `STATUS` に `SchedulingDisabled` が出る。",
+        "check": {
+          "kind": "k8s",
+          "expr": "node/node-1 cordoned"
+        },
+        "afterward": "この Node には、もう新しい Pod が来ない。動いている Pod はそのまま。",
+        "hints": [
+          "先に印を付ける。",
+          "`cordon` の後に Node の名前。",
+          "`kubectl cordon node-1` `kubectl get nodes` を打つ。"
+        ],
+        "expectedErrors": [
+          "k8s-a-node-name"
+        ]
+      },
+      {
+        "id": "drain",
+        "purpose": "`kubectl drain node-1 --ignore-daemonsets` で中の Pod を移す。`kubectl rollout status` で揃うのを待ち、`node-1` が空で 3 つとも動けば達成。",
+        "check": {
+          "kind": "k8s",
+          "expr": "node/node-1 cordoned pods=0 && deployment/web readyUpdated>=2"
+        },
+        "afterward": "Pod は `node-2`・`node-3` に移った。この間も残りの Pod が答え続けた。ここで OS を更新して再起動する。",
+        "hints": [
+          "移す間も止まらないのは、Pod を増やしたから。",
+          "`--ignore-daemonsets` は、各 Node に 1 つ要る Pod を残す。",
+          "`kubectl drain node-1 --ignore-daemonsets` `kubectl rollout status deployment/web` `kubectl get pods -o wide` を打つ。"
+        ],
+        "expectedErrors": [
+          "k8s-a-node-name",
+          "k8s-no-controller"
+        ]
+      },
+      {
+        "id": "back",
+        "purpose": "更新が終わった。`kubectl uncordon node-1` で印を外す。`kubectl get nodes` で `Ready` だけになれば達成。",
+        "check": {
+          "kind": "k8s",
+          "expr": "node/node-1 schedulable"
+        },
+        "afterward": "`node-1` にまた置けるようになった。Pod はすぐには戻らず、次に作る時から使われる。",
+        "hints": [
+          "最後に戻す。",
+          "`uncordon`。",
+          "`kubectl uncordon node-1` `kubectl get nodes` を打つ。"
+        ],
+        "expectedErrors": [
+          "k8s-a-node-name"
+        ]
+      }
+    ]
+  },
+  "result": {
+    "success": "止めずに Node を保守できた。",
+    "partial": "ヒントを使って保守できた。次は、なぜ先に増やすのかを言ってみよう。",
+    "retry": "まだ終わっていない。`kubectl get nodes` と `kubectl get pods -o wide` で、どこまで進んだかを見よう。"
+  },
+  "summary": {
+    "points": [
+      "cordon で止める",
+      "drain で移す",
+      "終わったら戻す"
+    ],
+    "next": [],
+    "terms": [
+      "k8s-cordon",
+      "k8s-drain",
+      "k8s-node"
+    ]
+  }
+}

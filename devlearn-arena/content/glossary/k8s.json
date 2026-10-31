@@ -635,6 +635,34 @@
       "lessons": [
         "k8s.i.08"
       ]
+    },
+    {
+      "id": "k8s-cordon",
+      "word": "cordon",
+      "reading": "こーどん",
+      "plain": "Node に「新しい Pod を置かない」印を付ける操作。動いている Pod はそのまま。",
+      "why": "保守の前に、これ以上増えないようにする。",
+      "related": [
+        "k8s-node",
+        "k8s-drain"
+      ],
+      "lessons": [
+        "k8s.a.04"
+      ]
+    },
+    {
+      "id": "k8s-drain",
+      "word": "drain",
+      "reading": "どれいん",
+      "plain": "Node の中の Pod を追い出し、ほかの Node へ移す操作。先に cordon の印も付ける。",
+      "why": "サービスを止めずに Node を空けられる。",
+      "related": [
+        "k8s-node",
+        "k8s-cordon"
+      ],
+      "lessons": [
+        "k8s.a.04"
+      ]
     }
   ]
 }

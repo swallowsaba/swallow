@@ -1,0 +1,44 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 360" font-family="&quot;Noto Sans JP&quot;, sans-serif">
+  <title>Ingress → Web → API → Service → DB（PVC 付き）。設定は ConfigMap と Secret</title>
+  <defs>
+    <marker id="arrow-gold" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="#f2b632" />
+    </marker>
+  </defs>
+  <g class="el" data-part="ingress">
+    <rect x="20" y="120" width="100" height="120" rx="10" fill="#f2b632" />
+    <text x="70" y="174" text-anchor="middle" font-size="16" font-weight="700" fill="#0a1424">Ingress</text>
+    <text x="70" y="196" text-anchor="middle" font-size="14" fill="#0a1424">入口</text>
+  </g>
+  <g class="el" data-part="web">
+    <rect x="145" y="120" width="100" height="120" rx="10" fill="#1a6fd6" />
+    <text x="195" y="174" text-anchor="middle" font-size="16" font-weight="700" fill="#eef2f6">Web</text>
+    <text x="195" y="196" text-anchor="middle" font-size="14" fill="#eef2f6">2 つ</text>
+  </g>
+  <g class="el" data-part="api">
+    <rect x="270" y="120" width="100" height="120" rx="10" fill="#7a3fd0" />
+    <text x="320" y="163" text-anchor="middle" font-size="16" font-weight="700" fill="#eef2f6">API</text>
+    <text x="320" y="185" text-anchor="middle" font-size="14" fill="#eef2f6">ConfigMap</text>
+    <text x="320" y="207" text-anchor="middle" font-size="14" fill="#eef2f6">Secret</text>
+  </g>
+  <g class="el" data-part="svc-db">
+    <rect x="395" y="120" width="100" height="120" rx="10" fill="#9aa9b5" />
+    <text x="445" y="174" text-anchor="middle" font-size="16" font-weight="700" fill="#0a1424">Service</text>
+    <text x="445" y="196" text-anchor="middle" font-size="14" fill="#0a1424">db</text>
+  </g>
+  <g class="el" data-part="db">
+    <rect x="520" y="120" width="100" height="120" rx="10" fill="#1f7a4d" />
+    <text x="570" y="163" text-anchor="middle" font-size="16" font-weight="700" fill="#eef2f6">DB</text>
+    <text x="570" y="185" text-anchor="middle" font-size="14" fill="#eef2f6">1 つ</text>
+    <text x="570" y="207" text-anchor="middle" font-size="14" fill="#eef2f6">PVC 付き</text>
+  </g>
+  <g class="el" data-part="flow">
+    <path d="M120 180 L142 180" fill="none" stroke="#f2b632" stroke-width="2" marker-end="url(#arrow-gold)" />
+    <path d="M245 180 L267 180" fill="none" stroke="#f2b632" stroke-width="2" marker-end="url(#arrow-gold)" />
+    <path d="M370 180 L392 180" fill="none" stroke="#f2b632" stroke-width="2" marker-end="url(#arrow-gold)" />
+    <path d="M495 180 L517 180" fill="none" stroke="#f2b632" stroke-width="2" marker-end="url(#arrow-gold)" />
+  </g>
+  <g class="el" data-part="note">
+    <text x="320" y="340" text-anchor="middle" font-size="14" fill="#eef2f6">部品をつなぐのは Service の名前</text>
+  </g>
+</svg>

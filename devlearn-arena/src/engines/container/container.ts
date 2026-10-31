@@ -37,6 +37,8 @@ export interface Image {
     routes?: Readonly<Record<string, { status: number; body: string }>>;
     /** 道が無い時の答えの形（express は Node.js の Express の Cannot GET。無ければ nginx の 404） */
     notFound?: 'express';
+    /** クラスタの中で、この環境変数の DB の名前の Service に DB が居なければ 500 で答える */
+    dbEnv?: string;
     /**
      * 動き出してから待ち受けるまでの秒数（データを読み込む間は、ポートで待ち受けない）。
      * あれば、クラスタの Pod は本物の確かめ（httpGet の liveness・readiness）でこのアプリを見る（src/engines/k8s/probes.ts）
@@ -298,6 +300,17 @@ export const REGISTRY: readonly Image[] = [
       },
     },
     startLog: ['api: version 1.0.0', 'api: listening on :3000'],
+  },
+  {
+    // 店の API（Node.js）。DB の場所を環境変数 DATABASE_URL で受け取り、その名前の Service に DB が居なければ 500 で答える（k8s.a.01）
+    ref: 'city-store-api:1.0', id: '3d7f9a1c0e52', size: '151MB', command: 'docker-entrypoint.sh node server.js',
+    bootLog: ['api: version 1.0.0'],
+    requiresEnv: { name: 'DATABASE_URL', error: ['Error: missing environment variable DATABASE_URL', '    at main (/app/server.js:6:11)'] },
+    serves: {
+      port: 3000, body: '', notFound: 'express', dbEnv: 'DATABASE_URL',
+      routes: { '/api/items': { status: 200, body: '{"items":[{"id":1,"name":"灯台の模型"},{"id":2,"name":"港の絵はがき"}]}' }, 'POST /api/login': { status: 200, body: '{"user":"guest","loggedIn":true}' }, '/api/health': { status: 200, body: '{"status":"ok"}' } },
+    },
+    startLog: ['api: listening on :3000'],
   },
   {
     // 市の案内（Node.js）。動き出してから地図のデータを 20 秒かけて読み込み、それから 8080 番で待ち受ける（k8s.i.05）

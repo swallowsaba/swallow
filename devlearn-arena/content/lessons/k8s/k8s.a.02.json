@@ -1,0 +1,309 @@
+{
+  "id": "k8s.a.02",
+  "domain": "k8s",
+  "level": "advanced",
+  "theme": "障害",
+  "title": "動かない Pod を直す",
+  "goal": "Pending・ImagePullBackOff・CrashLoopBackOff を切り分けて直せる",
+  "minutes": 20,
+  "prerequisites": [
+    "k8s.i.05",
+    "trouble.i.01"
+  ],
+  "related": [
+    "docker.a.02",
+    "trouble.a.01"
+  ],
+  "next": [
+    "trouble.a.01"
+  ],
+  "terms": [
+    "image",
+    "app",
+    "pod",
+    "authentication",
+    "kubectl",
+    "memory",
+    "k8s-node",
+    "log",
+    "k8s-service",
+    "deployment",
+    "cpu",
+    "image-tag",
+    "container",
+    "env-var",
+    "db"
+  ],
+  "explain": {
+    "what": "動かない {{term:pod}} を、状態の名前で 3 つに切り分けて直す（置く場所・{{term:image}}・{{term:app}}）。",
+    "why": "状態の名前で、原因の場所がほぼ決まる。順に見れば、闇雲に直さずに済む。",
+    "use": "障害対応で使う。置く場所・イメージ・アプリのどこで止まったかを見分ける。",
+    "when": "更新の後に Pod が動かない。いくつかの Pod が別々の理由で止まっている。",
+    "figures": [
+      "k8s-a02-states"
+    ]
+  },
+  "understand": [
+    {
+      "kind": "match",
+      "prompt": "状態と原因の場所を結ぶ。",
+      "pairs": [
+        [
+          "`Pending`",
+          "置く場所"
+        ],
+        [
+          "`ImagePullBackOff`",
+          "イメージの名前か{{term:authentication}}"
+        ],
+        [
+          "`CrashLoopBackOff`",
+          "アプリが起動直後に終わる"
+        ]
+      ],
+      "see": "what"
+    },
+    {
+      "kind": "order",
+      "prompt": "調べる順に並べる。",
+      "items": [
+        "{{term:kubectl}} get pods",
+        "kubectl describe",
+        "kubectl logs"
+      ],
+      "see": "use"
+    }
+  ],
+  "quiz": [
+    {
+      "id": "q1",
+      "kind": "cause",
+      "prompt": "`ImagePullBackOff` の原因は？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "イメージの名前か認証の誤り",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "{{term:memory}}不足",
+          "correct": false,
+          "whyNot": "イメージを取る前の段階なので、まだメモリは関係しない。"
+        },
+        {
+          "id": "c",
+          "text": "アプリの不具合",
+          "correct": false,
+          "whyNot": "アプリはまだ動いていない。"
+        }
+      ],
+      "explanation": "タグの綴りと、置き場の認証を確かめる。"
+    },
+    {
+      "id": "q2",
+      "kind": "cause",
+      "prompt": "`CrashLoopBackOff` の原因は？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "アプリが起動直後に終わる",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "{{term:k8s-node}} が足りない",
+          "correct": false,
+          "whyNot": "それなら置かれずに `Pending` になる。"
+        },
+        {
+          "id": "c",
+          "text": "イメージが無い",
+          "correct": false,
+          "whyNot": "それならイメージを取る段階で止まる。"
+        }
+      ],
+      "explanation": "`kubectl logs` でアプリの言葉を読む。"
+    },
+    {
+      "id": "q3",
+      "kind": "cause",
+      "prompt": "`Pending` の原因は？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "置ける Node が無い",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "アプリの{{term:log}}の誤り",
+          "correct": false,
+          "whyNot": "まだ動いていない。ログは無い。"
+        },
+        {
+          "id": "c",
+          "text": "{{term:k8s-service}} の札の誤り",
+          "correct": false,
+          "whyNot": "Service は置く場所に関係しない。"
+        }
+      ],
+      "explanation": "`describe` の知らせの `FailedScheduling` を読む。"
+    },
+    {
+      "id": "q4",
+      "kind": "situation",
+      "prompt": "最初に打つのは？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "`kubectl get pods` で状態を見る",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "`kubectl delete pod` で消す",
+          "correct": false,
+          "whyNot": "消しても同じ設計図から作られ、同じ理由で止まる。"
+        },
+        {
+          "id": "c",
+          "text": "`kubectl scale` で増やす",
+          "correct": false,
+          "whyNot": "止まる Pod が増えるだけ。"
+        }
+      ],
+      "explanation": "状態の名前で、次に見る所が決まる。"
+    },
+    {
+      "id": "q5",
+      "kind": "predict",
+      "prompt": "正しいイメージ名に直すと？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "`ImagePullBackOff` が解ける",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "`Pending` になる",
+          "correct": false,
+          "whyNot": "置く場所は決まっている。"
+        },
+        {
+          "id": "c",
+          "text": "何も変わらない",
+          "correct": false,
+          "whyNot": "{{term:deployment}} が新しい Pod を作り、イメージを取り直す。"
+        }
+      ],
+      "explanation": "ほかに原因があれば、次の状態が出てくる。"
+    }
+  ],
+  "practice": {
+    "mode": "terminal",
+    "purpose": "更新の後、3 つのアプリ（`board`・`shop`・`api`）が動かない。状態がそれぞれ違う。状態を読み分けて、全て `Running` にする。Node は 2 台で、1 台に {{term:cpu}} 4 個。",
+    "environment": "k8s-cluster",
+    "setup": {
+      "hostname": "console",
+      "cluster": {
+        "nodes": 2,
+        "ageDays": 3,
+        "recent": "apiVersion: apps/v1\nkind: Deployment\nmetadata:\n  name: board\nspec:\n  replicas: 1\n  selector:\n    matchLabels:\n      app: board\n  template:\n    metadata:\n      labels:\n        app: board\n    spec:\n      containers:\n      - name: board\n        image: city-board:1.0\n        ports:\n        - containerPort: 80\n        resources:\n          requests:\n            cpu: \"6\"\n---\napiVersion: apps/v1\nkind: Deployment\nmetadata:\n  name: shop\nspec:\n  replicas: 1\n  selector:\n    matchLabels:\n      app: shop\n  template:\n    metadata:\n      labels:\n        app: shop\n    spec:\n      containers:\n      - name: shop\n        image: city-shop:9.9\n        ports:\n        - containerPort: 80\n---\napiVersion: apps/v1\nkind: Deployment\nmetadata:\n  name: api\nspec:\n  replicas: 1\n  selector:\n    matchLabels:\n      app: api\n  template:\n    metadata:\n      labels:\n        app: api\n    spec:\n      containers:\n      - name: api\n        image: city-store-api:1.0\n        ports:\n        - containerPort: 3000\n"
+      }
+    },
+    "steps": [
+      {
+        "id": "read",
+        "purpose": "`kubectl get pods` で状態を読む。`ImagePullBackOff`（か `ErrImagePull`）の Pod のアプリの名前を答えの欄に入れる。",
+        "check": {
+          "kind": "answer",
+          "equals": "shop"
+        },
+        "afterward": "3 つの Pod が 3 つの状態で止まっている。状態ごとに見る所が違う。",
+        "hints": [
+          "`STATUS` の欄を読む。",
+          "Pod の名前の最初の語がアプリの名前。",
+          "`kubectl get pods` を打ち、`shop` と答える。"
+        ],
+        "expectedErrors": [
+          "k8s-a-state-misread"
+        ]
+      },
+      {
+        "id": "pending",
+        "purpose": "`Pending` の `board` を直す。`kubectl describe` か `kubectl get events` で理由を読み、`kubectl set resources` で要求を `cpu=100m` にする。動けば達成。",
+        "check": {
+          "kind": "k8s",
+          "expr": "deployment/board readyUpdated=1"
+        },
+        "afterward": "`Insufficient cpu`。どの Node の空きにも入らない要求だった。小さくすると置かれた。",
+        "hints": [
+          "`Pending` は置く場所の問題。",
+          "CPU 6 個は、1 台 4 個の Node に入らない。",
+          "`kubectl get events --field-selector type=Warning` `kubectl set resources deployment/board --requests=cpu=100m` `kubectl rollout status deployment/board` を打つ。"
+        ],
+        "expectedErrors": [
+          "k8s-a-still-stuck",
+          "k8s-quantity"
+        ]
+      },
+      {
+        "id": "image",
+        "purpose": "`shop` の{{term:image-tag}}が誤っている。正しい版は `city-shop:1.0`。`kubectl set image` で直す。",
+        "check": {
+          "kind": "k8s",
+          "expr": "deployment/shop readyUpdated=1 image=city-shop:1.0"
+        },
+        "afterward": "イメージが取れて動いた。`1.0` の綴りが違うだけで、Pod は動き出す前に止まる。",
+        "hints": [
+          "`ImagePullBackOff` はイメージの名前か認証。",
+          "{{term:container}}の名前は `shop`。",
+          "`kubectl set image deployment/shop shop=city-shop:1.0` `kubectl rollout status deployment/shop` を打つ。"
+        ],
+        "expectedErrors": [
+          "k8s-set-image-container",
+          "k8s-a-still-stuck"
+        ]
+      },
+      {
+        "id": "crash",
+        "purpose": "`api` は動いてすぐ終わる。`kubectl logs deployment/api` でアプリの言葉を読み、`kubectl set env` で足りない{{term:env-var}}を足す。{{term:db}} の場所は `postgres://app@db:5432/reserve`。",
+        "check": {
+          "kind": "k8s",
+          "expr": "deployment/api readyUpdated=1 restarts=0 env.DATABASE_URL"
+        },
+        "afterward": "`missing environment variable DATABASE_URL`。アプリの言葉に答えがあった。これで全て `Running` になった。",
+        "hints": [
+          "`CrashLoopBackOff` はアプリの問題。ログを読む。",
+          "足りない名前はログの 1 行目にある。",
+          "`kubectl logs deployment/api` `kubectl set env deployment/api DATABASE_URL=postgres://app@db:5432/reserve` `kubectl rollout status deployment/api` を打つ。"
+        ],
+        "expectedErrors": [
+          "k8s-a-set-env",
+          "k8s-a-still-stuck"
+        ]
+      }
+    ]
+  },
+  "result": {
+    "success": "状態から場所を切り分け、3 つの Pod を直せた。",
+    "partial": "ヒントを使って直せた。次は、状態を見た時点で見る所を言ってみよう。",
+    "retry": "まだ止まる Pod がある。`kubectl get pods` で残りの状態を読もう。"
+  },
+  "summary": {
+    "points": [
+      "状態の名前で場所が分かる",
+      "get → describe → logs",
+      "1 つずつ直す"
+    ],
+    "next": [
+      "trouble.a.01"
+    ],
+    "terms": [
+      "pod-status",
+      "k8s-event"
+    ]
+  }
+}

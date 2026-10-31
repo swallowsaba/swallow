@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 360" font-family="&quot;Noto Sans JP&quot;, sans-serif">
+  <title>Ingress → Service → Endpoints → Pod の各段で確かめる</title>
+  <defs>
+    <marker id="arrow-gold" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="#f2b632" />
+    </marker>
+  </defs>
+  <g class="el" data-part="ing">
+    <rect x="20" y="110" width="132" height="130" rx="10" fill="#f2b632" />
+    <text x="86" y="158" text-anchor="middle" font-size="16" font-weight="700" fill="#0a1424">Ingress</text>
+    <text x="86" y="180" text-anchor="middle" font-size="14" fill="#0a1424">404</text>
+    <text x="86" y="202" text-anchor="middle" font-size="14" fill="#0a1424">規則の誤り</text>
+  </g>
+  <g class="el" data-part="svc">
+    <rect x="176" y="110" width="132" height="130" rx="10" fill="#1a6fd6" />
+    <text x="242" y="158" text-anchor="middle" font-size="16" font-weight="700" fill="#eef2f6">Service</text>
+    <text x="242" y="180" text-anchor="middle" font-size="14" fill="#eef2f6">503</text>
+    <text x="242" y="202" text-anchor="middle" font-size="14" fill="#eef2f6">札の食い違い</text>
+  </g>
+  <g class="el" data-part="ep">
+    <rect x="332" y="110" width="132" height="130" rx="10" fill="#7a3fd0" />
+    <text x="398" y="169" text-anchor="middle" font-size="16" font-weight="700" fill="#eef2f6">Endpoints</text>
+    <text x="398" y="191" text-anchor="middle" font-size="14" fill="#eef2f6">&lt;none&gt; は空</text>
+  </g>
+  <g class="el" data-part="pod">
+    <rect x="488" y="110" width="132" height="130" rx="10" fill="#1f7a4d" />
+    <text x="554" y="158" text-anchor="middle" font-size="16" font-weight="700" fill="#eef2f6">Pod</text>
+    <text x="554" y="180" text-anchor="middle" font-size="14" fill="#eef2f6">502</text>
+    <text x="554" y="202" text-anchor="middle" font-size="14" fill="#eef2f6">ポートの誤り</text>
+  </g>
+  <g class="el" data-part="flow">
+    <path d="M152 175 L173 175" fill="none" stroke="#f2b632" stroke-width="2" marker-end="url(#arrow-gold)" />
+    <path d="M308 175 L329 175" fill="none" stroke="#f2b632" stroke-width="2" marker-end="url(#arrow-gold)" />
+    <path d="M464 175 L485 175" fill="none" stroke="#f2b632" stroke-width="2" marker-end="url(#arrow-gold)" />
+  </g>
+  <g class="el" data-part="note">
+    <text x="320" y="340" text-anchor="middle" font-size="14" fill="#eef2f6">返事の番号で、どの段まで届いたかが分かる</text>
+  </g>
+</svg>

@@ -1,0 +1,66 @@
+{
+  "lesson": "k8s.a.02",
+  "variants": [
+    {
+      "name": "describe で読む・種類と名前を分ける",
+      "steps": {
+        "read": [
+          "kubectl get pods",
+          "kubectl get pods -o wide",
+          " SHOP "
+        ],
+        "pending": [
+          "kubectl describe pod -l app=board",
+          "kubectl set resources deployment board --requests=cpu=200m",
+          "kubectl get pods -w"
+        ],
+        "image": [
+          "kubectl describe pod -l app=shop",
+          "kubectl set image deploy/shop shop=city-shop:1.0",
+          "kubectl get pods -w"
+        ],
+        "crash": [
+          "kubectl logs -l app=api",
+          "kubectl set env deploy/api DATABASE_URL=postgres://app@db:5432/reserve",
+          "kubectl get pods -w"
+        ]
+      }
+    },
+    {
+      "name": "イメージと環境変数を先に直す",
+      "steps": {
+        "read": [
+          "kubectl get deployments",
+          "kubectl get pods",
+          "shop"
+        ],
+        "pending": [
+          "kubectl get events",
+          "kubectl set resources deploy/board --requests=cpu=1",
+          "kubectl rollout status deploy/board"
+        ],
+        "image": [
+          "kubectl get events --field-selector type=Warning",
+          "kubectl set image deployment/shop shop=city-shop:1.0",
+          "kubectl rollout status deploy/shop"
+        ],
+        "crash": [
+          "kubectl logs deploy/api",
+          "kubectl set env deployment api DATABASE_URL=postgres://app@db:5432/reserve",
+          "kubectl rollout status deploy/api"
+        ]
+      }
+    }
+  ],
+  "wrong": {
+    "step": "crash",
+    "why": "値を渡さずに打つ",
+    "input": [
+      "kubectl set env deployment/api"
+    ],
+    "retry": [
+      "kubectl set env deployment/api DATABASE_URL=postgres://app@db:5432/reserve",
+      "kubectl rollout status deployment/api"
+    ]
+  }
+}

@@ -1,0 +1,60 @@
+{
+  "lesson": "k8s.a.03",
+  "variants": [
+    {
+      "name": "Service を kubectl set selector で直す",
+      "steps": {
+        "rule": [
+          "kubectl get ingress city",
+          "sed -i 's/host: shop.example/host: city.example/' ingress.yaml",
+          "kubectl apply -f ingress.yaml"
+        ],
+        "labels": [
+          "kubectl describe service shop",
+          "kubectl set selector service/shop app=shop",
+          "kubectl get endpoints shop"
+        ],
+        "port": [
+          "sed -i 's/app: store/app: shop/;s/targetPort: 8080/targetPort: 80/' shop.yaml",
+          "kubectl apply -f shop.yaml",
+          "curl -s http://city.example/"
+        ]
+      }
+    },
+    {
+      "name": "-H で名前を変えて確かめる",
+      "steps": {
+        "rule": [
+          "curl -s -o /dev/null -w \"%{http_code}\\n\" -H \"Host: shop.example\" http://city.example/",
+          "sed -i 's/shop\\.example/city.example/' ingress.yaml",
+          "kubectl apply -f ingress.yaml",
+          "curl -s -o /dev/null -w \"%{http_code}\\n\" http://city.example/"
+        ],
+        "labels": [
+          "kubectl get pods --show-labels",
+          "cat shop.yaml",
+          "sed -i 's/store/shop/' shop.yaml",
+          "kubectl apply -f shop.yaml",
+          "kubectl describe endpoints shop"
+        ],
+        "port": [
+          "kubectl describe service shop",
+          "sed -i 's/8080/80/' shop.yaml",
+          "kubectl apply -f shop.yaml",
+          "curl -s -o /dev/null -w \"%{http_code}\\n\" http://city.example/"
+        ]
+      }
+    }
+  ],
+  "wrong": {
+    "step": "rule",
+    "why": "ファイルの名前を誤る",
+    "input": [
+      "kubectl apply -f ingres.yaml"
+    ],
+    "retry": [
+      "sed -i 's/shop.example/city.example/' ingress.yaml",
+      "kubectl apply -f ingress.yaml"
+    ]
+  }
+}
