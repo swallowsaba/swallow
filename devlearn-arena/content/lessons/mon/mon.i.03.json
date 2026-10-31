@@ -1,0 +1,360 @@
+{
+  "id": "mon.i.03",
+  "domain": "mon",
+  "level": "intermediate",
+  "theme": "調査",
+  "title": "障害調査の手順",
+  "goal": "ログ・メトリクス・トレースを突き合わせて原因に迫れる",
+  "minutes": 20,
+  "prerequisites": [
+    "mon.i.01",
+    "trouble.b.01"
+  ],
+  "related": [
+    "trouble.a.02",
+    "sec.a.02"
+  ],
+  "next": [
+    "mon.a.02",
+    "cloud.a.02",
+    "trouble.a.02"
+  ],
+  "terms": [
+    "metrics",
+    "trace",
+    "log",
+    "server",
+    "repository",
+    "api",
+    "file"
+  ],
+  "explain": {
+    "what": "障害の調査は、影響と時刻を確かめ、その頃の変更を見て、{{term:log}}・{{term:metrics}}・{{term:trace}}を突き合わせ、仮説を確かめる手順で進める。",
+    "why": "1 つの材料だけでは原因を取り違える。障害の多くは何かを変えた直後に起きるので、「直前に何が変わったか」が一番の手掛かりになる。",
+    "use": "障害対応で使う。原因が確かでなくても、直前の変更を戻すのは影響の少ない確かめ方になる。",
+    "when": "エラーが増えたと通知が来た。さっき誰かが配布したらしい。関係があるのか、まだ分からない。",
+    "figures": [
+      "mon-i03-investigate"
+    ]
+  },
+  "understand": [
+    {
+      "kind": "order",
+      "prompt": "調査の順に並べる。",
+      "items": [
+        "影響と時刻を確かめる",
+        "その頃の変更を見る",
+        "材料を突き合わせる",
+        "仮説を確かめる"
+      ],
+      "see": "what"
+    },
+    {
+      "kind": "situation",
+      "prompt": "なぜ「直前の変更」を先に疑う？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "障害の多くは、何かを変えた直後に起きるから",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "変更した人を見つけて責めるため",
+          "correct": false,
+          "whyNot": "責めるためではない。変えた物が手掛かりになるから。"
+        },
+        {
+          "id": "c",
+          "text": "古いコードに誤りは無いから",
+          "correct": false,
+          "whyNot": "古いコードにも誤りはある。ただ、急に出るきっかけは変更であることが多い。"
+        }
+      ],
+      "see": "why"
+    }
+  ],
+  "quiz": [
+    {
+      "id": "q1",
+      "kind": "situation",
+      "prompt": "エラーが増え始めた時刻が分かった。次に見るのは？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "その頃の変更（配布・設定）",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "1 週間前のログ",
+          "correct": false,
+          "whyNot": "時刻が離れている。"
+        },
+        {
+          "id": "c",
+          "text": "{{term:server}}の機種",
+          "correct": false,
+          "whyNot": "急に変わる物ではない。"
+        }
+      ],
+      "explanation": "時刻で絞ってから、その頃に何が変わったかを見る。"
+    },
+    {
+      "id": "q2",
+      "kind": "cause",
+      "prompt": "グラフではエラーが増えているのに、ログにエラーが無い。何を疑う？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "どちらかの取り方（集める設定や場所）",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "障害は起きていない",
+          "correct": false,
+          "whyNot": "片方の材料だけで決めない。"
+        },
+        {
+          "id": "c",
+          "text": "グラフの色の設定",
+          "correct": false,
+          "whyNot": "色は値に関係が無い。"
+        }
+      ],
+      "explanation": "材料が食い違う時は、まず取り方を確かめる。"
+    },
+    {
+      "id": "q3",
+      "kind": "choice",
+      "prompt": "仮説の確かめ方として、よいのは？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "影響の少ない方法（直前の変更を戻すなど）",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "本番のデータを消して作り直す",
+          "correct": false,
+          "whyNot": "戻せない操作で確かめない。"
+        },
+        {
+          "id": "c",
+          "text": "思い付く変更を一度に全て試す",
+          "correct": false,
+          "whyNot": "どれが効いたか分からなくなる。"
+        }
+      ],
+      "explanation": "戻せる方法で、1 つずつ確かめる。"
+    }
+  ],
+  "practice": {
+    "mode": "terminal",
+    "purpose": "予約サイト `reserve.example` の `/health` がエラーを返していると通知が来た。さっき配布が 1 回動いた。症状・変更の順に調べ、直前の変更を戻して確かめる。{{term:repository}}は今いる場所。",
+    "environment": "linux-basic",
+    "setup": {
+      "hostname": "reserve-dev",
+      "cwd": "/home/learner/reserve",
+      "dirs": [
+        "/home/learner/reserve/src",
+        "/home/learner/reserve/.github/workflows"
+      ],
+      "sites": [],
+      "files": {
+        "/home/learner/reserve/package.json": "{\n  \"name\": \"reserve-site\",\n  \"version\": \"1.5.0\",\n  \"private\": true,\n  \"scripts\": {\n    \"build\": \"esbuild src/server.ts --bundle --outfile=dist/server.js\",\n    \"deploy\": \"rsync -av dist/ deploy@reserve.example:/srv/reserve/\"\n  },\n  \"devDependencies\": {\n    \"esbuild\": \"^0.24.0\"\n  }\n}\n",
+        "/home/learner/reserve/.gitignore": "node_modules/\ndist/\n",
+        "/home/learner/reserve/src/server.ts": "export const app = '港の予約';\n",
+        "/home/learner/reserve/src/pay.ts": "export const payUrl = 'https://pay.city.example/v1';\n",
+        "/home/learner/reserve/.github/workflows/release.yml": "name: release\non:\n  push:\n    branches: [main]\njobs:\n  release:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@v4\n      - run: npm ci\n      - run: npm run build\n      - run: npm run deploy\n"
+      },
+      "run": [
+        "export __NOW='2026-10-15 13:00'",
+        "git init -q",
+        "git remote add origin https://git.city.example/city/reserve.git",
+        "npm install",
+        "git add .",
+        "git commit -q -m '予約サイト 1.5.0'",
+        "git push -q -u origin main",
+        "export __NOW='2026-10-15 14:12'",
+        "sed -i 's|pay.city.example/v1|pay.city.example/v2|' src/pay.ts",
+        "git commit -q -am '決済の住所を新しい版へ替える'",
+        "git push -q origin main",
+        "export __NOW='2026-10-15 14:30'"
+      ],
+      "gitServers": [
+        {
+          "url": "https://git.city.example/city/reserve.git",
+          "run": [],
+          "forge": {
+            "repo": "city/reserve",
+            "actions": {
+              "firstRun": 40,
+              "installSeconds": 15,
+              "scripts": {
+                "build": {
+                  "kind": "build",
+                  "seconds": 30,
+                  "sources": "src",
+                  "bundle": "dist/server.js",
+                  "log": [
+                    "",
+                    "  dist/server.js  1.1kb",
+                    ""
+                  ]
+                },
+                "deploy": {
+                  "kind": "deploy",
+                  "seconds": 10,
+                  "out": "dist",
+                  "site": "reserve.example",
+                  "log": [
+                    "switched to {version}"
+                  ]
+                }
+              },
+              "sites": [
+                {
+                  "host": "reserve.example",
+                  "chain": [
+                    {
+                      "id": "leaf-reserve.example",
+                      "subject": "reserve.example",
+                      "issuer": "Minato Issuing CA",
+                      "sans": [
+                        "reserve.example"
+                      ],
+                      "notBefore": "2026-01-01",
+                      "notAfter": "2027-01-01",
+                      "ca": false
+                    },
+                    {
+                      "id": "inter",
+                      "subject": "Minato Issuing CA",
+                      "issuer": "Minato Root CA",
+                      "sans": [],
+                      "notBefore": "2024-01-01",
+                      "notAfter": "2030-01-01",
+                      "ca": true
+                    }
+                  ],
+                  "releases": [
+                    {
+                      "version": "1.4.0",
+                      "files": {}
+                    }
+                  ],
+                  "current": "1.4.0",
+                  "routes": {
+                    "/": {
+                      "status": 200,
+                      "body": "版 {version}"
+                    },
+                    "/health": {
+                      "status": 200,
+                      "body": "{\"status\":\"ok\"}"
+                    }
+                  },
+                  "faults": [
+                    {
+                      "when": [
+                        {
+                          "path": "server.js",
+                          "has": "pay.city.example/v2"
+                        }
+                      ],
+                      "routes": {
+                        "/health": {
+                          "status": 500,
+                          "body": "{\"status\":\"error\",\"reason\":\"payment api: 404\"}"
+                        }
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    "steps": [
+      {
+        "id": "symptom",
+        "purpose": "`curl -i https://reserve.example/health` で症状を確かめる。返事の状態の番号を答えの欄に入れる。",
+        "check": {
+          "kind": "answer",
+          "equals": "500"
+        },
+        "afterward": "500 と、理由の `payment api: 404` が出た。決済の {{term:api}} の呼び出しで何かが変わったらしい。",
+        "hints": [
+          "まず自分の目で症状を見る。",
+          "`curl -i` は返事の頭も出す。1 行目の番号を読む。",
+          "`curl -i https://reserve.example/health` を打ち、`500` と答える。"
+        ],
+        "expectedErrors": [
+          "mon-change-misread"
+        ]
+      },
+      {
+        "id": "change",
+        "purpose": "`gh run list` で配布の時刻を、`git log --oneline` と `git show --stat HEAD` で変更を読む。直前の変更が替えた{{term:file}}の場所を答えの欄に入れる。",
+        "check": {
+          "kind": "answer",
+          "equals": "src/pay.ts"
+        },
+        "afterward": "14:12 の配布で `src/pay.ts` の決済の住所が替わった。エラーの時刻とも、`payment api` の理由とも合う。材料が揃った。",
+        "hints": [
+          "一番新しい記録が、何を変えたかを見る。",
+          "`git show --stat HEAD` は、変えたファイルの一覧を出す。",
+          "`gh run list` `git log --oneline` `git show --stat HEAD` を打ち、`src/pay.ts` と答える。"
+        ],
+        "expectedErrors": [
+          "mon-change-misread"
+        ]
+      },
+      {
+        "id": "revert",
+        "purpose": "仮説を確かめる。直前の変更を `git revert` で戻して push し、`/health` が 200 に戻ることを確かめる。",
+        "check": {
+          "kind": "http",
+          "url": "https://reserve.example/health",
+          "status": 200
+        },
+        "afterward": "`/health` が 200 に戻った。変更を戻すと直るので、仮説は確かめられた。履歴は消えていないので、後で正しく直して出し直せる。",
+        "hints": [
+          "履歴を消さずに戻すのは `git revert`。",
+          "`git revert --no-edit HEAD` の後に `git push`。",
+          "`git revert --no-edit HEAD` `git push origin main` `gh run view` `curl -fsS https://reserve.example/health` を打つ。"
+        ],
+        "expectedErrors": [
+          "mon-still-500"
+        ]
+      }
+    ]
+  },
+  "result": {
+    "success": "材料を突き合わせ、直前の変更を戻して確かめられた。",
+    "partial": "ヒントを使って戻せた。次は、時刻と変更の一覧を自分で並べてみよう。",
+    "retry": "まだエラーが出ている。`gh run view` で配布が終わったかを確かめよう。"
+  },
+  "summary": {
+    "points": [
+      "影響と時刻から始める",
+      "直前の変更を疑う",
+      "材料を突き合わせる"
+    ],
+    "next": [
+      "mon.a.02",
+      "cloud.a.02",
+      "trouble.a.02"
+    ],
+    "terms": [
+      "log",
+      "metrics",
+      "trace"
+    ]
+  }
+}

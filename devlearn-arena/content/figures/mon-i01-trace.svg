@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 360" font-family="&quot;Noto Sans JP&quot;, sans-serif">
+  <title>1 つの依頼の区間を時間の順に積み重ねた図。一番長い区間が遅さの原因</title>
+  <g class="el" data-part="front">
+    <rect x="20" y="30" width="600" height="50" rx="10" fill="#1a6fd6" />
+    <text x="320" y="60" text-anchor="middle" font-size="16" font-weight="700" fill="#eef2f6">入口（全体 2400 ms）</text>
+  </g>
+  <g class="el" data-part="app">
+    <rect x="60" y="90" width="540" height="50" rx="10" fill="#7a3fd0" />
+    <text x="330" y="120" text-anchor="middle" font-size="16" font-weight="700" fill="#eef2f6">予約のアプリ 2300 ms</text>
+  </g>
+  <g class="el" data-part="auth">
+    <rect x="80" y="150" width="100" height="50" rx="10" fill="#1f7a4d" />
+    <text x="130" y="180" text-anchor="middle" font-size="16" font-weight="700" fill="#eef2f6">認証 60 ms</text>
+  </g>
+  <g class="el" data-part="db">
+    <rect x="190" y="150" width="400" height="50" rx="10" fill="#c0392b" />
+    <text x="390" y="180" text-anchor="middle" font-size="16" font-weight="700" fill="#eef2f6">DB の検索 2100 ms</text>
+  </g>
+  <g class="el" data-part="note">
+    <text x="320" y="340" text-anchor="middle" font-size="14" fill="#eef2f6">親は子の時間を含む。見るのは、子を持たない長い区間</text>
+  </g>
+</svg>

@@ -1,0 +1,74 @@
+{
+  "lesson": "mon.i.02",
+  "variants": [
+    {
+      "name": "順に答える",
+      "steps": {
+        "impact": [
+          {
+            "op": "answer",
+            "question": "impact",
+            "value": "エラーが増えている"
+          }
+        ],
+        "scope": [
+          {
+            "op": "answer",
+            "question": "scope",
+            "value": "予約の確定だけ"
+          }
+        ],
+        "cause": [
+          {
+            "op": "answer",
+            "question": "cause",
+            "value": "決済のAPI"
+          }
+        ]
+      }
+    },
+    {
+      "name": "答え直してから進む",
+      "steps": {
+        "impact": [
+          {
+            "op": "answer",
+            "question": "impact",
+            "value": "エラーが増えている"
+          }
+        ],
+        "scope": [
+          {
+            "op": "answer",
+            "question": "cause",
+            "value": "決済のAPI"
+          },
+          {
+            "op": "answer",
+            "question": "scope",
+            "value": "予約の確定だけ"
+          }
+        ],
+        "cause": []
+      }
+    }
+  ],
+  "wrong": {
+    "step": "cause",
+    "why": "資源のグラフを原因と見る",
+    "input": [
+      {
+        "op": "answer",
+        "question": "cause",
+        "value": "Web サーバの CPU"
+      }
+    ],
+    "retry": [
+      {
+        "op": "answer",
+        "question": "cause",
+        "value": "決済のAPI"
+      }
+    ]
+  }
+}

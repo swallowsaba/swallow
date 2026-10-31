@@ -4343,7 +4343,7 @@
       "title": "障害調査の手順",
       "goal": "ログ・メトリクス・トレースを突き合わせて原因に迫れる",
       "practice": [
-        "simulation"
+        "terminal"
       ],
       "prerequisites": [
         "mon.i.01",
@@ -4367,7 +4367,7 @@
       "title": "SLO の考え方",
       "goal": "目標と余裕（エラーバジェット）を決められる",
       "practice": [
-        "simulation"
+        "sql"
       ],
       "prerequisites": [
         "mon.b.04"

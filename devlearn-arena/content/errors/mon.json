@@ -192,6 +192,73 @@
       "terms": [
         "monitoring"
       ]
+    },
+    {
+      "id": "mon-span-parent",
+      "match": "答えが合っていない",
+      "meaning": "選んだ答えが、遅さの原因と違う。",
+      "causes": [
+        "全体を包む親の区間を原因と見た。親は子の時間を含むので、必ず長い。",
+        "呼び出しの回数と、1 回の長さを取り違えた。"
+      ],
+      "hint": "子を持たない区間のうち、一番長い物を探そう。",
+      "terms": [
+        "span"
+      ]
+    },
+    {
+      "id": "mon-dash-order",
+      "match": "答えが合っていない",
+      "meaning": "選んだ答えが、グラフと合っていない。",
+      "causes": [
+        "資源のグラフから読み始め、利用者への影響を見ていない。",
+        "原因と結果を取り違えた。同じ時刻に動いたグラフの、どれが先かを見る。"
+      ],
+      "hint": "上の段（利用者の指標）→ 中の段 → 下の段の順に読み、時刻を揃えよう。",
+      "terms": [
+        "dashboard"
+      ]
+    },
+    {
+      "id": "mon-change-misread",
+      "match": "答えが合っていない",
+      "meaning": "答えが、変更の中身と違う。",
+      "causes": [
+        "別の記録を読んだ。一番新しい記録を見る。",
+        "ファイルの名前でなく、記録の説明の文を答えた。"
+      ],
+      "hint": "`git show --stat HEAD` で、一番新しい記録が変えたファイルを読もう。",
+      "terms": [
+        "commit"
+      ]
+    },
+    {
+      "id": "mon-still-500",
+      "match": "returned error: 500",
+      "output": true,
+      "outputOf": "\\bcurl\\b",
+      "meaning": "`/health` がまだ 500 を返している。",
+      "causes": [
+        "まだ戻していない（`git revert` の後に `git push` していない）。",
+        "配布の仕事が終わっていない。`gh run view` で確かめる。"
+      ],
+      "hint": "`git revert` して `git push` し、配布が緑になってから、もう一度確かめよう。",
+      "terms": [
+        "rollback"
+      ]
+    },
+    {
+      "id": "mon-budget-miss",
+      "match": "答えが合っていない",
+      "meaning": "計算の結果か判断が、目的と違う。",
+      "causes": [
+        "期間を取り違えた。月の合計で計算する。",
+        "成功の割合と、失敗の割合を取り違えた。許される失敗は `1 - 0.999`。"
+      ],
+      "hint": "`SUM(total)`・`SUM(failed)` を出し、`SUM(total) * 0.001` と比べよう。",
+      "terms": [
+        "error-budget"
+      ]
     }
   ]
 }

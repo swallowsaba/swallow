@@ -1,0 +1,56 @@
+{
+  "lesson": "mon.i.03",
+  "variants": [
+    {
+      "name": "-s と -w で番号を出す・log -1 で読む",
+      "steps": {
+        "symptom": [
+          "curl -s -o /dev/null -w '%{http_code}' https://reserve.example/health",
+          "500"
+        ],
+        "change": [
+          "gh run list",
+          "git log -2 --stat",
+          "src/pay.ts"
+        ],
+        "revert": [
+          "git log --oneline",
+          "git revert --no-edit HEAD",
+          "git push",
+          "gh run view",
+          "curl -i https://reserve.example/health"
+        ]
+      }
+    },
+    {
+      "name": "差分を読む",
+      "steps": {
+        "symptom": [
+          "curl https://reserve.example/health",
+          "curl -I https://reserve.example/health",
+          "500"
+        ],
+        "change": [
+          "git show HEAD",
+          "git show --stat HEAD",
+          "SRC/PAY.TS"
+        ],
+        "revert": [
+          "git revert --no-edit HEAD",
+          "git push origin main"
+        ]
+      }
+    }
+  ],
+  "wrong": {
+    "step": "change",
+    "why": "コミットの説明の文を答える",
+    "commands": false,
+    "input": [
+      "決済の住所を新しい版へ替える"
+    ],
+    "retry": [
+      "src/pay.ts"
+    ]
+  }
+}

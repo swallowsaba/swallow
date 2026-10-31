@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 360" font-family="&quot;Noto Sans JP&quot;, sans-serif">
+  <title>目標から許される失敗の量が決まり、測った値と比べて残りで判断する</title>
+  <defs>
+    <marker id="arrow-gold" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="#f2b632" />
+    </marker>
+  </defs>
+  <g class="el" data-part="target">
+    <rect x="20" y="110" width="184" height="110" rx="10" fill="#1a6fd6" />
+    <text x="112" y="159" text-anchor="middle" font-size="16" font-weight="700" fill="#eef2f6">目標</text>
+    <text x="112" y="181" text-anchor="middle" font-size="14" fill="#eef2f6">月の 99.9% が成功</text>
+  </g>
+  <g class="el" data-part="measure">
+    <rect x="228" y="110" width="184" height="110" rx="10" fill="#7a3fd0" />
+    <text x="320" y="159" text-anchor="middle" font-size="16" font-weight="700" fill="#eef2f6">測った値</text>
+    <text x="320" y="181" text-anchor="middle" font-size="14" fill="#eef2f6">今月 99.88%</text>
+  </g>
+  <g class="el" data-part="budget">
+    <rect x="436" y="110" width="184" height="110" rx="10" fill="#f2b632" />
+    <text x="528" y="159" text-anchor="middle" font-size="16" font-weight="700" fill="#0a1424">許される失敗の量</text>
+    <text x="528" y="181" text-anchor="middle" font-size="14" fill="#0a1424">残りで判断する</text>
+  </g>
+  <g class="el" data-part="flow">
+    <path d="M204 165 L225 165" fill="none" stroke="#f2b632" stroke-width="2" marker-end="url(#arrow-gold)" />
+    <path d="M412 165 L433 165" fill="none" stroke="#f2b632" stroke-width="2" marker-end="url(#arrow-gold)" />
+  </g>
+  <g class="el" data-part="note">
+    <text x="320" y="340" text-anchor="middle" font-size="14" fill="#eef2f6">残っていれば攻める。使い切ったら守る</text>
+  </g>
+</svg>

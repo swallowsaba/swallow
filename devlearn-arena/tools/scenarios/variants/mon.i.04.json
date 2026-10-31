@@ -1,0 +1,45 @@
+{
+  "lesson": "mon.i.04",
+  "variants": [
+    {
+      "name": "小文字で書く・計算を分ける",
+      "steps": {
+        "budget": [
+          "select * from requests;",
+          "select cast(sum(total) * 0.001 as integer) from requests;"
+        ],
+        "left": [
+          "select day, failed from requests order by failed desc;",
+          "select 1000 - sum(failed) from requests;"
+        ],
+        "judge": [
+          "止める"
+        ]
+      }
+    },
+    {
+      "name": "割り算で書く",
+      "steps": {
+        "budget": [
+          "SELECT SUM(total) / 1000 FROM requests"
+        ],
+        "left": [
+          "SELECT (SUM(total) / 1000) - SUM(failed) FROM requests"
+        ],
+        "judge": [
+          " 止める "
+        ]
+      }
+    }
+  ],
+  "wrong": {
+    "step": "budget",
+    "why": "失敗の数の合計を出してしまう",
+    "input": [
+      "SELECT SUM(failed) FROM requests"
+    ],
+    "retry": [
+      "SELECT SUM(total) / 1000 FROM requests"
+    ]
+  }
+}

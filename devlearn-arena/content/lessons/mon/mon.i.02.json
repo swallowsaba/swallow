@@ -1,0 +1,405 @@
+{
+  "id": "mon.i.02",
+  "domain": "mon",
+  "level": "intermediate",
+  "theme": "可視化",
+  "title": "ダッシュボードを読む",
+  "goal": "複数のグラフから状況を説明できる",
+  "minutes": 20,
+  "prerequisites": [
+    "mon.b.03"
+  ],
+  "related": [
+    "linux.a.02",
+    "cloud.i.04"
+  ],
+  "next": [
+    "devops.i.02"
+  ],
+  "terms": [
+    "dashboard",
+    "cpu",
+    "db",
+    "response-time",
+    "error-rate",
+    "disk",
+    "api"
+  ],
+  "explain": {
+    "what": "{{term:dashboard}}は、複数のグラフを並べた画面。利用者の指標・資源・依存先を上から並べ、全体の状況を説明するために読む。",
+    "why": "1 つのグラフでは原因と結果を区別できない。{{term:cpu}} が高くても、利用者が困っていなければ急がなくてよい。",
+    "use": "日々の確認と、障害の時の把握に使う。影響・範囲・原因候補の順に、短く説明する。",
+    "when": "障害の会議で「今どうなっている？」と聞かれた。グラフはたくさんあるが、どこから話せばよいか分からない。",
+    "figures": [
+      "mon-i02-dashboard"
+    ]
+  },
+  "understand": [
+    {
+      "kind": "relation",
+      "prompt": "2 つの関係を選ぶ。",
+      "a": "依存先の {{term:db}} が遅くなる",
+      "b": "利用者の{{term:response-time}}が悪化する",
+      "answer": "cause",
+      "why": "上の段は症状、下の段は原因候補。時刻を揃えて、下の段の動きが先かを見る。",
+      "see": "why"
+    },
+    {
+      "kind": "situation",
+      "prompt": "2 つのグラフが違う時間の幅で表示されている。どうする？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "時刻の幅を揃えて見比べる",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "そのまま見比べる",
+          "correct": false,
+          "whyNot": "幅が違うと、同時に動いたかどうかが分からない。"
+        },
+        {
+          "id": "c",
+          "text": "片方だけを見る",
+          "correct": false,
+          "whyNot": "1 つでは原因と結果を区別できない。"
+        }
+      ],
+      "see": "use"
+    }
+  ],
+  "quiz": [
+    {
+      "id": "q1",
+      "kind": "situation",
+      "prompt": "ダッシュボードで最初に見るのは？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "利用者への影響（{{term:error-rate}}・応答時間）",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "CPU の使用率",
+          "correct": false,
+          "whyNot": "高くても利用者が困っていなければ急がない。"
+        },
+        {
+          "id": "c",
+          "text": "{{term:disk}}の空き",
+          "correct": false,
+          "whyNot": "原因候補の 1 つ。先に影響を見る。"
+        }
+      ],
+      "explanation": "まず困っている人がいるかを確かめる。"
+    },
+    {
+      "id": "q2",
+      "kind": "cause",
+      "prompt": "依存先の {{term:api}} の応答が遅くなった直後に、自分の画面のエラーが増えた。原因の候補は？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "依存先の API",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "自分の画面のデザイン",
+          "correct": false,
+          "whyNot": "時刻が合わない。"
+        },
+        {
+          "id": "c",
+          "text": "利用者の増加",
+          "correct": false,
+          "whyNot": "頼みの数のグラフが動いていなければ違う。"
+        }
+      ],
+      "explanation": "同じ時刻に、先に動いた物が原因の候補。"
+    },
+    {
+      "id": "q3",
+      "kind": "choice",
+      "prompt": "よいダッシュボードは？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "症状から原因へ、上から下に読める",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "取れる数値を全て並べた",
+          "correct": false,
+          "whyNot": "多すぎると、どこを見ればよいか分からない。"
+        },
+        {
+          "id": "c",
+          "text": "資源のグラフだけが並ぶ",
+          "correct": false,
+          "whyNot": "利用者への影響が分からない。"
+        }
+      ],
+      "explanation": "読む順が決まっている画面がよい。"
+    }
+  ],
+  "practice": {
+    "mode": "simulation",
+    "purpose": "障害の会議で、今の状況を説明する。予約サイトのダッシュボードの 3 段を読み、影響・範囲・原因候補の 3 つを答える。",
+    "environment": "sim-read",
+    "setup": {
+      "questions": [
+        {
+          "id": "impact",
+          "prompt": "利用者への影響は？",
+          "options": [
+            "エラーが増えている",
+            "影響は無い",
+            "応答は速くなった"
+          ]
+        },
+        {
+          "id": "scope",
+          "prompt": "影響の範囲は？",
+          "options": [
+            "全ての画面",
+            "予約の確定だけ",
+            "案内の画面だけ"
+          ]
+        },
+        {
+          "id": "cause",
+          "prompt": "原因の候補は？",
+          "options": [
+            "Web サーバの CPU",
+            "決済のAPI",
+            "頼みの数の増加"
+          ]
+        }
+      ],
+      "panels": [
+        {
+          "kind": "chart",
+          "title": "エラーの割合（利用者の指標）",
+          "unit": "%",
+          "x": [
+            "14:00",
+            "14:05",
+            "14:10",
+            "14:15",
+            "14:20",
+            "14:25",
+            "14:30"
+          ],
+          "series": [
+            {
+              "label": "予約の確定",
+              "values": [
+                0.2,
+                0.2,
+                0.3,
+                14,
+                22,
+                24,
+                23
+              ]
+            },
+            {
+              "label": "案内の画面",
+              "values": [
+                0.1,
+                0.1,
+                0.1,
+                0.2,
+                0.1,
+                0.1,
+                0.2
+              ]
+            }
+          ]
+        },
+        {
+          "kind": "chart",
+          "title": "CPU（資源）",
+          "unit": "%",
+          "x": [
+            "14:00",
+            "14:05",
+            "14:10",
+            "14:15",
+            "14:20",
+            "14:25",
+            "14:30"
+          ],
+          "series": [
+            {
+              "label": "Web サーバ",
+              "values": [
+                32,
+                30,
+                33,
+                35,
+                34,
+                33,
+                35
+              ]
+            }
+          ]
+        },
+        {
+          "kind": "chart",
+          "title": "頼みの数（資源）",
+          "unit": "回/分",
+          "x": [
+            "14:00",
+            "14:05",
+            "14:10",
+            "14:15",
+            "14:20",
+            "14:25",
+            "14:30"
+          ],
+          "series": [
+            {
+              "label": "頼みの数",
+              "values": [
+                510,
+                520,
+                505,
+                515,
+                500,
+                520,
+                510
+              ]
+            }
+          ]
+        },
+        {
+          "kind": "chart",
+          "title": "決済の API の応答時間（依存先）",
+          "unit": "秒",
+          "x": [
+            "14:00",
+            "14:05",
+            "14:10",
+            "14:15",
+            "14:20",
+            "14:25",
+            "14:30"
+          ],
+          "series": [
+            {
+              "label": "決済の API",
+              "values": [
+                0.3,
+                0.3,
+                0.4,
+                8.2,
+                9.5,
+                9.8,
+                9.6
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "steps": [
+      {
+        "id": "impact",
+        "purpose": "一番上のグラフから、利用者への影響を答える。",
+        "check": {
+          "kind": "sim",
+          "expr": "answered impact=エラーが増えている"
+        },
+        "afterward": "14:15 から予約の確定のエラーが 20% を超えた。まず、困っている人がいる。",
+        "hints": [
+          "資源より先に、利用者の指標を見る。",
+          "エラーの割合の線が、どの時刻から動いたかを見る。",
+          "「利用者への影響は？」は「エラーが増えている」を押す。"
+        ],
+        "actions": [
+          {
+            "op": "answer",
+            "question": "impact",
+            "value": "エラーが増えている"
+          }
+        ],
+        "expectedErrors": [
+          "mon-dash-order"
+        ]
+      },
+      {
+        "id": "scope",
+        "purpose": "同じグラフの 2 本の線から、影響の範囲を答える。",
+        "check": {
+          "kind": "sim",
+          "expr": "answered scope=予約の確定だけ"
+        },
+        "afterward": "案内の画面は平らなまま。予約の確定だけが悪い。全体の障害ではない。",
+        "hints": [
+          "線を 1 本ずつ見比べる。",
+          "案内の画面の線は動いているか。",
+          "「影響の範囲は？」は「予約の確定だけ」を押す。"
+        ],
+        "actions": [
+          {
+            "op": "answer",
+            "question": "scope",
+            "value": "予約の確定だけ"
+          }
+        ],
+        "expectedErrors": [
+          "mon-dash-order"
+        ]
+      },
+      {
+        "id": "cause",
+        "purpose": "14:15 に一緒に動いたグラフから、原因の候補を答える。",
+        "check": {
+          "kind": "sim",
+          "expr": "answered cause=決済のAPI"
+        },
+        "afterward": "CPU も頼みの数も平らで、決済の API の応答時間だけが 14:15 に跳ねた。「予約の確定で 20% のエラー。原因の候補は決済の API の遅れ」と 1 文で言える。",
+        "hints": [
+          "時刻を揃えて、14:15 に動いた線を探す。",
+          "CPU と頼みの数は動いていない。",
+          "「原因の候補は？」は「決済のAPI」を押す。"
+        ],
+        "actions": [
+          {
+            "op": "answer",
+            "question": "cause",
+            "value": "決済のAPI"
+          }
+        ],
+        "expectedErrors": [
+          "mon-dash-order"
+        ]
+      }
+    ]
+  },
+  "result": {
+    "success": "影響・範囲・原因候補の順に、状況を説明できた。",
+    "partial": "ヒントを使って説明できた。次は 1 文で言えるかを試そう。",
+    "retry": "資源のグラフから読み始めていないか、上の段から読み直そう。"
+  },
+  "summary": {
+    "points": [
+      "症状から見る",
+      "時刻を揃える",
+      "原因候補へ下りる"
+    ],
+    "next": [
+      "devops.i.02"
+    ],
+    "terms": [
+      "dashboard",
+      "metrics",
+      "error-rate"
+    ]
+  }
+}

@@ -1,0 +1,60 @@
+{
+  "lesson": "mon.i.01",
+  "variants": [
+    {
+      "name": "順に答える",
+      "steps": {
+        "service": [
+          {
+            "op": "answer",
+            "question": "svc",
+            "value": "予約のDB"
+          }
+        ],
+        "operation": [
+          {
+            "op": "answer",
+            "question": "op",
+            "value": "空き枠の検索"
+          }
+        ]
+      }
+    },
+    {
+      "name": "一度に答える",
+      "steps": {
+        "service": [
+          {
+            "op": "answer",
+            "question": "op",
+            "value": "空き枠の検索"
+          },
+          {
+            "op": "answer",
+            "question": "svc",
+            "value": "予約のDB"
+          }
+        ],
+        "operation": []
+      }
+    }
+  ],
+  "wrong": {
+    "step": "service",
+    "why": "親の区間を原因と見る",
+    "input": [
+      {
+        "op": "answer",
+        "question": "svc",
+        "value": "入口"
+      }
+    ],
+    "retry": [
+      {
+        "op": "answer",
+        "question": "svc",
+        "value": "予約のDB"
+      }
+    ]
+  }
+}

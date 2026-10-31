@@ -1,0 +1,240 @@
+{
+  "id": "mon.i.04",
+  "domain": "mon",
+  "level": "intermediate",
+  "theme": "目標",
+  "title": "SLO の考え方",
+  "goal": "目標と余裕（エラーバジェット）を決められる",
+  "minutes": 20,
+  "prerequisites": [
+    "mon.b.04"
+  ],
+  "related": [
+    "devops.i.02",
+    "cloud.i.01"
+  ],
+  "next": [
+    "mon.a.01"
+  ],
+  "terms": [
+    "error-budget",
+    "slo",
+    "alert",
+    "monitoring",
+    "server",
+    "cpu",
+    "sql"
+  ],
+  "explain": {
+    "what": "{{term:slo}} は、利用者から見た品質の目標。「月の 99.9% の依頼が成功する」のように決める。目標から、許される失敗の量（{{term:error-budget}}）が決まる。",
+    "why": "完璧を目指すと変更できなくなる。目標があれば、残りの量を見て、新機能を出すか安定を優先するかを、数字で決められる。",
+    "use": "{{term:alert}}の決め方と、変更の判断に使う。使える量が残っていれば攻め、使い切ったら守る。",
+    "when": "障害が続いている。来週に新機能を出す予定だが、出してよいのか、チームの意見が割れている。",
+    "figures": [
+      "mon-i04-slo"
+    ]
+  },
+  "understand": [
+    {
+      "kind": "relation",
+      "prompt": "2 つの関係を選ぶ。",
+      "a": "目標を 99.9% に決める",
+      "b": "許される失敗の量が 0.1% に決まる",
+      "answer": "cause",
+      "why": "目標の残りが、許される失敗の量。目標を厳しくするほど、許される量は減る。",
+      "see": "what"
+    },
+    {
+      "kind": "situation",
+      "prompt": "今月の許される失敗の量を使い切った。どう判断する？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "新機能を止め、安定を優先する",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "予定通り新機能を出す",
+          "correct": false,
+          "whyNot": "目標を破ったまま、さらに壊す機会を増やす。"
+        },
+        {
+          "id": "c",
+          "text": "目標を下げて、なかったことにする",
+          "correct": false,
+          "whyNot": "利用者の体験は変わらない。"
+        }
+      ],
+      "see": "use"
+    }
+  ],
+  "quiz": [
+    {
+      "id": "q1",
+      "kind": "predict",
+      "prompt": "目標が 99.9% の時、30 日の月に止まってよい時間は？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "約 43 分",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "約 7 時間",
+          "correct": false,
+          "whyNot": "それは 99% の時の桁に近い。"
+        },
+        {
+          "id": "c",
+          "text": "約 4 分",
+          "correct": false,
+          "whyNot": "それは 99.99% の時。"
+        }
+      ],
+      "explanation": "30 日 × 24 時間 × 60 分 × 0.001 ＝ 43.2 分。"
+    },
+    {
+      "id": "q2",
+      "kind": "situation",
+      "prompt": "許される失敗の量を使い切った。次のうち、優先するのは？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "安定を高める作業",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "大きな新機能",
+          "correct": false,
+          "whyNot": "変更は壊す機会になる。"
+        },
+        {
+          "id": "c",
+          "text": "{{term:monitoring}}を止める",
+          "correct": false,
+          "whyNot": "見えなくなるだけ。"
+        }
+      ],
+      "explanation": "残りの量が戻るまで守りに回る。"
+    },
+    {
+      "id": "q3",
+      "kind": "choice",
+      "prompt": "SLO の指標として向いているのは？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "利用者から見た成功の割合と速さ",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "{{term:server}}の {{term:cpu}} の使用率",
+          "correct": false,
+          "whyNot": "高くても利用者が困らなければ問題ではない。"
+        },
+        {
+          "id": "c",
+          "text": "書いたコードの行数",
+          "correct": false,
+          "whyNot": "品質の目標にならない。"
+        }
+      ],
+      "explanation": "利用者が感じる物を測る。"
+    }
+  ],
+  "practice": {
+    "mode": "sql",
+    "purpose": "予約サイトの SLO は「月の 99.9% の依頼が成功する」。表 `requests` に 10 月の日ごとの依頼の数（`total`）と失敗の数（`failed`）がある。{{term:sql}} で今月の値を計算し、新機能を出すかを判断する。",
+    "environment": "sql-sqlite",
+    "setup": {
+      "sql": "CREATE TABLE requests (day INTEGER PRIMARY KEY, total INTEGER NOT NULL, failed INTEGER NOT NULL) STRICT;\nINSERT INTO requests VALUES (1, 100000, 20), (2, 100000, 30), (3, 100000, 25), (4, 100000, 15), (5, 100000, 60), (6, 100000, 900), (7, 100000, 40), (8, 100000, 30), (9, 100000, 50), (10, 100000, 70);"
+    },
+    "steps": [
+      {
+        "id": "budget",
+        "purpose": "今月の依頼の数の合計に、許される失敗の割合（`1 - 0.999`）を掛けて、許される失敗の数を出す。",
+        "check": {
+          "kind": "ran",
+          "uses": [
+            "SUM"
+          ],
+          "result": "1000"
+        },
+        "afterward": "100 万回の依頼のうち、1000 回まで失敗してよい。",
+        "hints": [
+          "合計は `SUM(total)`。99.9% の残りは 0.1%。",
+          "`SELECT SUM(total) * 0.001 FROM requests`。小数が出ないように `ROUND` を付ける。",
+          "`SELECT CAST(ROUND(SUM(total) * 0.001) AS INTEGER) FROM requests` を実行する。1000 と出れば達成。"
+        ],
+        "expectedErrors": [
+          "mon-budget-miss",
+          "db-no-column",
+          "db-syntax"
+        ]
+      },
+      {
+        "id": "left",
+        "purpose": "残りの許される量を出す。許される数（1000）から、失敗の数の合計を引く。",
+        "check": {
+          "kind": "ran",
+          "uses": [
+            "SUM"
+          ],
+          "result": "-240"
+        },
+        "afterward": "失敗は 1240 回で、許される量を 240 回超えた。6 日の障害の 900 回が大きい。",
+        "hints": [
+          "失敗の合計は `SUM(failed)`。",
+          "`SELECT 1000 - SUM(failed) FROM requests`。",
+          "`SELECT 1000 - SUM(failed) FROM requests` を実行する。-240 と出れば達成。"
+        ],
+        "expectedErrors": [
+          "mon-budget-miss",
+          "db-no-column",
+          "db-syntax"
+        ]
+      },
+      {
+        "id": "judge",
+        "purpose": "残りが負になった。新機能を「出す」か「止める」か、判断を答えの欄に入れる。",
+        "check": {
+          "kind": "answer",
+          "equals": "止める"
+        },
+        "afterward": "使い切ったので、新機能を止めて安定を優先する。数字で決めたので、意見が割れても話が早い。残りが戻れば、また攻められる。",
+        "hints": [
+          "残りが負なら、目標を破っている。",
+          "変更は壊す機会になる。",
+          "`止める` と答える。"
+        ],
+        "expectedErrors": [
+          "mon-budget-miss"
+        ]
+      }
+    ]
+  },
+  "result": {
+    "success": "許される失敗の量を計算し、数字で判断できた。",
+    "partial": "ヒントを使って判断できた。次は 99.99% の時の量も計算してみよう。",
+    "retry": "計算が合わない。合計の期間と、`1 - 0.999` を確かめよう。"
+  },
+  "summary": {
+    "points": [
+      "利用者から見た目標を決める",
+      "許される失敗の量で判断する",
+      "完璧を目指さない"
+    ],
+    "next": [
+      "mon.a.01"
+    ],
+    "terms": [
+      "slo",
+      "error-budget",
+      "error-rate"
+    ]
+  }
+}
