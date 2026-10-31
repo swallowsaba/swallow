@@ -1,0 +1,26 @@
+{
+  "lesson": "found.i.01",
+  "variants": [
+    {
+      "name": "読みやすい単位で見る・top で探して合図の名前で止める",
+      "steps": {
+        "look": ["free -h"],
+        "stop": ["top -b -n 1", "kill -TERM 101"],
+        "after": ["free"]
+      }
+    },
+    {
+      "name": "常駐の量（rss）の多い順に並べる・名前で止める",
+      "steps": {
+        "look": ["free"],
+        "stop": ["ps aux --sort -rss", "pkill report-builder"],
+        "after": ["free -h"]
+      }
+    }
+  ],
+  "wrong": {
+    "step": "stop",
+    "why": "メモリを 2 番目に使う root のデータベースを止めようとする",
+    "input": ["kill 100"]
+  }
+}

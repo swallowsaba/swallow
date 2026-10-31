@@ -1,0 +1,146 @@
+{
+  "id": "found.i.01",
+  "domain": "found",
+  "level": "intermediate",
+  "theme": "メモリ",
+  "title": "メモリ不足とスワップ",
+  "goal": "メモリが足りないと何が起きるかを予測できる",
+  "minutes": 15,
+  "prerequisites": ["found.b.02", "found.b.05"],
+  "related": ["linux.a.02", "k8s.i.07"],
+  "next": ["found.i.02"],
+  "terms": ["memory", "storage", "swap", "process", "server", "kernel", "oom-killer", "app", "terminal", "free", "ps", "kill", "pid", "database", "top", "cpu", "network", "command"],
+  "explain": {
+    "what": "{{term:memory}}が足りなくなると、使っていない中身を{{term:storage}}の領域へ移して空きを作る。これを{{term:swap}}と言う。スワップは、メモリの代わりにはなるが、とても遅い。",
+    "why": "ストレージはメモリより何千倍も遅い。スワップへの出し入れが続くと、全ての{{term:process}}が待たされ、{{term:server}}が急に極端に遅くなる。スワップも尽きると、{{term:kernel}}の{{term:oom-killer}}がプロセスを選んで止める。",
+    "use": "サーバにどれだけメモリを積むかを決める時（容量の計画）と、遅い・止まった原因を調べる時に使う。メモリとスワップの使われ方を見れば、原因がメモリ不足かどうかが分かる。",
+    "when": "利用者が増えた日に、サーバの応答が急に何十倍も遅くなった。{{term:app}}の誤りではなく、メモリを使い続けて増える処理が、メモリを使い切っていた。",
+    "figures": ["found-i01-swap"]
+  },
+  "understand": [
+    {
+      "kind": "relation",
+      "prompt": "2 つの関係を選ぶ。",
+      "a": "スワップへの出し入れが増える",
+      "b": "サーバの応答が遅くなる",
+      "answer": "cause",
+      "why": "スワップはストレージの中にある。メモリより何千倍も遅い所へ出し入れするたびに、処理が待たされる。",
+      "see": "why"
+    },
+    {
+      "kind": "situation",
+      "prompt": "メモリもスワップも尽きた。OOM Killer が止めるのは、ふつうどのプロセス？",
+      "choices": [
+        { "id": "a", "text": "メモリを最も多く使っているプロセス", "correct": true },
+        { "id": "b", "text": "一番新しく起動したプロセス", "correct": false, "whyNot": "起動した順では選ばない。止めて最も多くのメモリが空くプロセスを選ぶ。" },
+        { "id": "c", "text": "{{term:cpu}}を最も使っているプロセス", "correct": false, "whyNot": "足りないのはメモリ。CPU を使っていても、メモリを空けなければ足りないままになる。" }
+      ],
+      "see": "why"
+    }
+  ],
+  "quiz": [
+    {
+      "id": "q1",
+      "kind": "cause",
+      "prompt": "サーバの応答が急に極端に遅くなった。CPU には余裕がある。メモリの使用率は 100%、スワップの使用量が増え続けている。最も考えられる原因は？",
+      "choices": [
+        { "id": "a", "text": "メモリが足りず、スワップへの出し入れが多発している", "correct": true },
+        { "id": "b", "text": "CPU が遅すぎる", "correct": false, "whyNot": "CPU には余裕がある。待たされているのは、遅いストレージとの出し入れ。" },
+        { "id": "c", "text": "{{term:network}}が切れている", "correct": false, "whyNot": "切れていれば応答そのものが届かない。遅くても届くなら、機械の中で待たされている。" }
+      ],
+      "explanation": "メモリが満杯でスワップの使用量が増えている時は、スワップへの出し入れで全体が待たされている。遅さの原因はメモリ不足。"
+    },
+    {
+      "id": "q2",
+      "kind": "predict",
+      "prompt": "メモリを使い続けて増える処理を放っておいた。メモリもスワップも尽きると、何が起きる？",
+      "choices": [
+        { "id": "a", "text": "カーネルが、メモリを多く使うプロセスを選んで止める", "correct": true },
+        { "id": "b", "text": "自動でメモリが増える", "correct": false, "whyNot": "積んでいるメモリは増えない。空きを作るには、使う量を減らすしかない。" },
+        { "id": "c", "text": "何も起きず、遅いまま動き続ける", "correct": false, "whyNot": "スワップも尽きると、置き場がもう無い。機械全体が止まらないよう、カーネルがプロセスを止める。" }
+      ],
+      "explanation": "スワップも尽きると、OOM Killer が働く。大事な{{term:database}}が突然止められることもある。"
+    },
+    {
+      "id": "q3",
+      "kind": "situation",
+      "prompt": "メモリ不足が毎日起きる。根本の対策として正しいのは？",
+      "choices": [
+        { "id": "a", "text": "メモリを増やすか、使う量を減らす（増え続ける処理を直す）", "correct": true },
+        { "id": "b", "text": "スワップを大きくする", "correct": false, "whyNot": "止められにくくはなるが、遅いストレージに頼るので遅いまま。足りない事は変わらない。" },
+        { "id": "c", "text": "遅くなるたびに、手で再起動する", "correct": false, "whyNot": "その場は戻るが、また増えて同じことが起きる。原因が残っている。" }
+      ],
+      "explanation": "足りない時は、積む量を増やすか、使う量を減らす。スワップは急な不足を和らげる物で、足りない状態を直す物ではない。"
+    }
+  ],
+  "practice": {
+    "mode": "terminal",
+    "purpose": "遅くなった{{term:server}}で、{{term:free}}でメモリとスワップの使われ方を見る。{{term:ps}}でメモリを最も使う{{term:process}}を見つけて{{term:kill}}で止め、スワップが空いたことを確かめる。",
+    "environment": "linux-basic",
+    "setup": {
+      "memory": { "total": 4096, "swap": 2048 },
+      "processes": [
+        { "command": "postgres: main", "user": "root", "cpu": 2.0, "memory": 900 },
+        { "command": "node report-builder.js", "cpu": 35.0, "memory": 4100 },
+        { "command": "nginx: worker process", "user": "www-data", "cpu": 0.4, "memory": 60 }
+      ]
+    },
+    "steps": [
+      {
+        "id": "look",
+        "purpose": "メモリとスワップの使われ方を見る。`Swap` の行の used（使っている量）が 0 でなければ、メモリが足りずに溢れている。",
+        "check": { "kind": "ran", "uses": ["free"], "shows": ["Swap: 2048 984 1064"] },
+        "afterward": "メモリ（`Mem`）は 4096 を全て使い、溢れた 984 がスワップ（`Swap`）に置かれていた。この出し入れで、全体が遅くなっている。",
+        "hints": [
+          "メモリとスワップの量を表で見る{{term:command}}がある。",
+          "{{term:free}} を打つ。`-m` を付けると単位が `MiB` になる。`Mem` の行がメモリ、`Swap` の行がスワップ。",
+          "`free -m` を打つ。スワップの行の used が 984 と出れば達成。"
+        ]
+      },
+      {
+        "id": "stop",
+        "purpose": "メモリを最も多く使っているプロセスを見つけて、止める。自分（learner）のプロセスだけが止められる。",
+        "check": { "kind": "fs", "path": "/proc/101", "exists": false },
+        "afterward": "PID 101 の report-builder が止まった。メモリを使い続けて増えていた処理で、これがメモリを使い切っていた。",
+        "hints": [
+          "プロセスの一覧を、メモリの多い順に並べて見る。一番上が、メモリを最も使っている物。",
+          "{{term:ps}} の `aux` に `--sort=-%mem` を付けると、`%MEM` の多い順に並ぶ。止めるのは {{term:kill}} と、その行の {{term:pid}}。",
+          "`ps aux --sort=-%mem` を打ち、一番上の node report-builder.js の PID を読む。`kill 101` を打つ。"
+        ],
+        "expectedErrors": ["kill-not-permitted", "no-such-process"]
+      },
+      {
+        "id": "after",
+        "purpose": "止めた後に、もう一度メモリとスワップの使われ方を見る。スワップの used が 0 に戻っていれば、溢れは解けた。",
+        "check": { "kind": "ran", "uses": ["free"], "shows": ["Swap: 2048 0 2048"] },
+        "afterward": "スワップの used が 0 に戻り、メモリにも 3116 の空きができた。出し入れが止まり、応答も戻る。根本の対策は、report-builder の使い方を直すか、メモリを増やすこと。",
+        "hints": [
+          "止める前と同じコマンドで、もう一度確かめる。",
+          "`free` を打ち、`Swap` の行の used を見る。",
+          "`free -m` を打つ。スワップの行の used が 0 と出れば達成。"
+        ]
+      }
+    ],
+    "dangerous": [
+      {
+        "id": "kill-9-first",
+        "pattern": "kill\\s+(-9|-KILL|-SIGKILL)\\b",
+        "why": "-9 は後片付けをさせずに止める。普通の kill で止まる相手には使わない。"
+      }
+    ]
+  },
+  "result": {
+    "success": "メモリ不足でスワップに溢れていることを free で見抜き、原因のプロセスを ps で特定して止め、空きが戻ったことを確かめた。",
+    "partial": "ヒントを使って、メモリ不足の原因を止められた。次は、`Swap` の行と `%MEM` の列を自分で読んでみよう。",
+    "retry": "まだ溢れが解けていない。free の `Swap` の行を読み、`ps aux --sort=-%mem` の一番上の行が自分のプロセスかを確かめよう。"
+  },
+  "summary": {
+    "points": [
+      "メモリが足りないと、スワップへの出し入れで遅くなる",
+      "スワップも尽きると、カーネルがプロセスを止める",
+      "free で溢れを見て、メモリを多く使う物を探す"
+    ],
+    "next": ["linux.a.02", "k8s.i.07"],
+    "terms": ["swap", "free", "oom-killer"]
+  }
+}

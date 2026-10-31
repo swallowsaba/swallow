@@ -1,0 +1,101 @@
+{
+  "lesson": "found.i.02",
+  "variants": [
+    {
+      "name": "1 人ずつ順に並べる",
+      "steps": {
+        "lock-a": [
+          {
+            "op": "arrange",
+            "stages": [
+              [
+                "a-take",
+                "b-take"
+              ],
+              [
+                "a-read"
+              ],
+              [
+                "a-write"
+              ]
+            ]
+          }
+        ],
+        "lock-b": [
+          {
+            "op": "arrange",
+            "stages": [
+              [
+                "a-take",
+                "b-take"
+              ],
+              [
+                "a-read"
+              ],
+              [
+                "a-write"
+              ],
+              [
+                "b-read"
+              ],
+              [
+                "b-write"
+              ]
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "初めから 2 人とも鍵を使う並びにする",
+      "steps": {
+        "lock-a": [
+          {
+            "op": "arrange",
+            "stages": [
+              [
+                "a-take",
+                "b-take"
+              ],
+              [
+                "a-read"
+              ],
+              [
+                "a-write"
+              ],
+              [
+                "b-read"
+              ],
+              [
+                "b-write"
+              ]
+            ]
+          }
+        ]
+      }
+    }
+  ],
+  "wrong": {
+    "step": "lock-b",
+    "why": "店員 2 も店員 1 と同じ段で、鍵を取って読もうとする",
+    "input": [
+      {
+        "op": "arrange",
+        "stages": [
+          [
+            "a-take",
+            "b-take"
+          ],
+          [
+            "a-read",
+            "b-read"
+          ],
+          [
+            "a-write",
+            "b-write"
+          ]
+        ]
+      }
+    ]
+  }
+}

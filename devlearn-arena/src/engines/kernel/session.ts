@@ -45,6 +45,8 @@ export interface SessionOptions {
   processes?: readonly ProcSeed[];
   /** 積んでいるメモリ（MiB） */
   totalMemory?: number;
+  /** スワップの大きさ（MiB） */
+  totalSwap?: number;
 }
 
 export interface Session {
@@ -84,7 +86,7 @@ export function createShellState(options: SessionOptions = {}): ShellState {
   );
   return {
     vfs,
-    procs: createProcessTable(options.processes ?? [], options.totalMemory ?? 8192),
+    procs: createProcessTable(options.processes ?? [], options.totalMemory ?? 8192, options.totalSwap ?? 0),
     git: null,
     cluster: options.cluster ?? null,
     net: options.net ?? null,
@@ -106,7 +108,7 @@ export interface ShellSnapshotData {
   vars: Record<string, string>;
   files: Record<string, { kind: 'dir' | 'file'; content?: string; meta?: FileMeta }>;
   history: string[];
-  procs: { processes: Process[]; nextPid: number; totalMemory: number };
+  procs: { processes: Process[]; nextPid: number; totalMemory: number; totalSwap?: number };
   git: GitSnapshot | null;
   cluster: ClusterSnapshot | null;
   net: TopologySnapshot | null;
@@ -141,6 +143,7 @@ export function snapshotShell(state: ShellState): ShellSnapshotData {
       processes: [...state.procs.processes.values()],
       nextPid: state.procs.nextPid,
       totalMemory: state.procs.totalMemory,
+      ...(state.procs.totalSwap !== undefined ? { totalSwap: state.procs.totalSwap } : {}),
     },
     git: state.git === null ? null : snapshotGit(state.git),
     cluster: state.cluster === null ? null : snapshotCluster(state.cluster),
@@ -160,6 +163,7 @@ function restoreProcs(saved: ShellSnapshotData['procs'] | undefined): ProcessTab
     processes: new Map(saved.processes.map((p) => [p.pid, p])),
     nextPid: saved.nextPid,
     totalMemory: saved.totalMemory,
+    ...(saved.totalSwap !== undefined ? { totalSwap: saved.totalSwap } : {}),
   };
 }
 

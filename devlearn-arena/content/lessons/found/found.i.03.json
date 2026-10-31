@@ -1,0 +1,396 @@
+{
+  "id": "found.i.03",
+  "domain": "found",
+  "level": "intermediate",
+  "theme": "仮想化",
+  "title": "仮想化の考え方",
+  "goal": "1 台を複数に見せる仕組みを説明できる",
+  "minutes": 15,
+  "prerequisites": [
+    "found.b.03"
+  ],
+  "related": [
+    "cloud.b.01",
+    "ctr.b.02"
+  ],
+  "next": [
+    "ctr.b.02",
+    "cloud.b.01"
+  ],
+  "terms": [
+    "virtualization",
+    "vm",
+    "os",
+    "app",
+    "hypervisor",
+    "cpu",
+    "memory",
+    "gb",
+    "cloud",
+    "server",
+    "linux",
+    "windows",
+    "availability"
+  ],
+  "explain": {
+    "what": "1 台の機械を、何台もの機械があるように見せる仕組みを{{term:virtualization}}と言う。作った機械を{{term:vm}}と呼び、それぞれが自分の{{term:os}}と{{term:app}}を持つ。",
+    "why": "1 台に 1 つの用途だと、ほとんどの時間、機械が遊んでしまう。分けて使えば無駄が減る。用途ごとに分けておけば、1 つが壊れても、ほかの仮想マシンに影響しにくい。",
+    "use": "{{term:hypervisor}}という仮想化の層が、機械の{{term:cpu}}と{{term:memory}}を切り分けて、仮想マシンに配る。{{term:cloud}}で借りる{{term:server}}の多くも、この仕組みの上で動いている。",
+    "when": "1 台のサーバ（8 コア・32{{term:gb}}）で、{{term:linux}}の受付サイトと顧客台帳と、{{term:windows}}の試験環境を、別々の機械のように動かしたい。",
+    "figures": [
+      "found-i03-virtualization"
+    ]
+  },
+  "understand": [
+    {
+      "kind": "figure-pick",
+      "figure": "found-i03-virtualization",
+      "prompt": "図の中で、仮想マシンごとに 1 つずつ持つ物を全て押す。",
+      "answer": [
+        "guest-os",
+        "guest-app"
+      ],
+      "see": "what"
+    },
+    {
+      "kind": "situation",
+      "prompt": "物理の機械と仮想マシンの数の関係として正しいのは？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "1 台の物理の機械の上に、何台もの仮想マシンが乗る",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "1 台の仮想マシンを作るのに、物理の機械が何台も要る",
+          "correct": false,
+          "whyNot": "逆。仮想化は 1 台を切り分けて、何台もあるように見せる仕組み。"
+        },
+        {
+          "id": "c",
+          "text": "物理の機械と仮想マシンは、必ず 1 対 1",
+          "correct": false,
+          "whyNot": "1 対 1 なら分ける意味が無い。1 台を何台分にも使えるのが仮想化の利点。"
+        }
+      ],
+      "see": "what"
+    }
+  ],
+  "quiz": [
+    {
+      "id": "q1",
+      "kind": "term",
+      "prompt": "仮想マシンとは何？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "仮想化で作った、自分の OS を持つ機械",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "画面の中だけで動く、OS の無いアプリ",
+          "correct": false,
+          "whyNot": "仮想マシンは自分の OS を持ち、1 台の機械として振る舞う。"
+        },
+        {
+          "id": "c",
+          "text": "物理の機械の部品の 1 つ",
+          "correct": false,
+          "whyNot": "部品ではない。物理の機械の資源を切り分けて作った、見かけ上の機械。"
+        }
+      ],
+      "explanation": "仮想マシンは、仮想化の層が切り分けた資源の上で、自分の OS とアプリを動かす機械。外から見ると、1 台の機械と同じに扱える。"
+    },
+    {
+      "id": "q2",
+      "kind": "situation",
+      "prompt": "用途の違う 3 つの環境（Linux 2 つ・Windows 1 つ）を、少ない費用で用意したい。どうする？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "1 台の機械を仮想化して、3 つの仮想マシンを作る",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "物理の機械を 3 台買う",
+          "correct": false,
+          "whyNot": "動くが、3 台分の費用と置き場所がかかり、どれもほとんど遊んでしまう。"
+        },
+        {
+          "id": "c",
+          "text": "1 つの OS に、3 つの用途を全て入れる",
+          "correct": false,
+          "whyNot": "Linux と Windows は 1 つにできない。用途も分けられず、1 つの不具合が全てに及ぶ。"
+        }
+      ],
+      "explanation": "仮想化なら、1 台の機械で、OS の違う環境を別々に動かせる。費用を抑えつつ、用途ごとに分けられる。"
+    },
+    {
+      "id": "q3",
+      "kind": "predict",
+      "prompt": "3 つの仮想マシンが乗った物理の機械が壊れた。何が起きる？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "上の 3 つの仮想マシンが全て止まる",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "仮想マシンは見かけ上の機械なので、止まらない",
+          "correct": false,
+          "whyNot": "仮想マシンは物理の機械の資源で動いている。土台が止まれば全て止まる。"
+        },
+        {
+          "id": "c",
+          "text": "1 つだけ止まり、残りの 2 つは動く",
+          "correct": false,
+          "whyNot": "3 つとも同じ機械の上にある。1 台の故障が全てに及ぶ。"
+        }
+      ],
+      "explanation": "仮想化は 1 台を分けて使うので、土台の故障は上の全てに及ぶ。止めたくない物は、別の物理の機械にも置いておく（クラウドの{{term:availability}}につながる）。"
+    }
+  ],
+  "practice": {
+    "mode": "simulation",
+    "purpose": "物理の機械（8 コア・32GB）の CPU とメモリを、3 つの仮想マシン（受付サイト・顧客台帳・試験環境）に割り振る。今は顧客台帳に配りすぎて、試験環境が起動しない。3 つとも起動するようにする。",
+    "environment": "sim-assign",
+    "setup": {
+      "slots": [
+        {
+          "id": "cpu",
+          "label": "物理の機械の CPU",
+          "capacity": 8,
+          "unit": "コア",
+          "full": "物理の機械の CPU は 8 コアしか無い。合計が 8 コアを超える割り振りは、入りきらない"
+        },
+        {
+          "id": "mem",
+          "label": "物理の機械のメモリ",
+          "capacity": 32,
+          "unit": "GB",
+          "full": "物理の機械のメモリは 32GB しか無い。合計が 32GB を超える割り振りは、入りきらない"
+        }
+      ],
+      "items": [
+        {
+          "id": "web-c2",
+          "label": "受付サイトに 2 コア",
+          "size": 2,
+          "refuse": {
+            "mem": "CPU の割り振りは、メモリの枠には入らない"
+          }
+        },
+        {
+          "id": "db-c6",
+          "label": "顧客台帳に 6 コア",
+          "size": 6,
+          "extra": true,
+          "refuse": {
+            "mem": "CPU の割り振りは、メモリの枠には入らない"
+          },
+          "note": "必要な 4 コアより多い"
+        },
+        {
+          "id": "db-c4",
+          "label": "顧客台帳に 4 コア",
+          "size": 4,
+          "refuse": {
+            "mem": "CPU の割り振りは、メモリの枠には入らない"
+          }
+        },
+        {
+          "id": "test-c2",
+          "label": "試験環境に 2 コア",
+          "size": 2,
+          "refuse": {
+            "mem": "CPU の割り振りは、メモリの枠には入らない"
+          }
+        },
+        {
+          "id": "web-m8",
+          "label": "受付サイトに 8GB",
+          "size": 8,
+          "refuse": {
+            "cpu": "メモリの割り振りは、CPU の枠には入らない"
+          }
+        },
+        {
+          "id": "db-m24",
+          "label": "顧客台帳に 24GB",
+          "size": 24,
+          "extra": true,
+          "refuse": {
+            "cpu": "メモリの割り振りは、CPU の枠には入らない"
+          },
+          "note": "必要な 16GB より多い"
+        },
+        {
+          "id": "db-m16",
+          "label": "顧客台帳に 16GB",
+          "size": 16,
+          "refuse": {
+            "cpu": "メモリの割り振りは、CPU の枠には入らない"
+          }
+        },
+        {
+          "id": "test-m8",
+          "label": "試験環境に 8GB",
+          "size": 8,
+          "refuse": {
+            "cpu": "メモリの割り振りは、CPU の枠には入らない"
+          }
+        }
+      ],
+      "initial": {
+        "web-c2": "cpu",
+        "db-c6": "cpu",
+        "web-m8": "mem",
+        "db-m24": "mem"
+      },
+      "panels": [
+        {
+          "kind": "table",
+          "title": "3 つの仮想マシンが要る量",
+          "columns": [
+            "仮想マシン",
+            "CPU",
+            "メモリ"
+          ],
+          "rows": [
+            [
+              "受付サイト（Web・Linux）",
+              "2 コア",
+              "8GB"
+            ],
+            [
+              "顧客台帳（データベース・Linux。一番重い）",
+              "4 コア",
+              "16GB"
+            ],
+            [
+              "試験環境（検査用・Windows）",
+              "2 コア",
+              "8GB"
+            ]
+          ]
+        },
+        {
+          "kind": "log",
+          "title": "起動の結果",
+          "when": "!in test-c2=cpu test-m8=mem",
+          "lines": [
+            "受付サイト: 起動した",
+            "顧客台帳: 起動した",
+            "試験環境: 起動できない（CPU かメモリの割り振りが無い）"
+          ]
+        },
+        {
+          "kind": "log",
+          "title": "起動の結果",
+          "when": "in web-c2=cpu db-c4=cpu test-c2=cpu web-m8=mem db-m16=mem test-m8=mem",
+          "lines": [
+            "受付サイト: 起動した（2 コア・8GB）",
+            "顧客台帳: 起動した（4 コア・16GB）",
+            "試験環境: 起動した（2 コア・8GB）",
+            "物理の機械の CPU 8/8 コア・メモリ 32/32GB を、無駄なく使っている"
+          ]
+        }
+      ]
+    },
+    "steps": [
+      {
+        "id": "cpu",
+        "purpose": "物理の機械の CPU を割り振り直す。顧客台帳には要る分（4 コア）だけ配り、空いた分を試験環境に配る。合計は 8 コアまで。",
+        "check": {
+          "kind": "sim",
+          "expr": "in web-c2=cpu db-c4=cpu test-c2=cpu && fits"
+        },
+        "afterward": "CPU の 8 コアが、受付サイト 2・顧客台帳 4・試験環境 2 に配られた。配りすぎていた 2 コアが、試験環境に回った。",
+        "hints": [
+          "CPU の合計は 8 コアまで。顧客台帳の 6 コアは、要る量（4 コア）より多い。",
+          "顧客台帳の 6 コアの札を置き場へ戻し、4 コアの札と、試験環境の 2 コアの札を CPU の枠に入れる。",
+          "「顧客台帳に 6 コア」を置き場へドラッグして戻し、「顧客台帳に 4 コア」と「試験環境に 2 コア」を「物理の機械の CPU」へドラッグして入れる。"
+        ],
+        "expectedErrors": [
+          "sim-overflow",
+          "found-vm-overcommit"
+        ],
+        "actions": [
+          {
+            "op": "take",
+            "item": "db-c6"
+          },
+          {
+            "op": "put",
+            "item": "db-c4",
+            "slot": "cpu"
+          },
+          {
+            "op": "put",
+            "item": "test-c2",
+            "slot": "cpu"
+          }
+        ]
+      },
+      {
+        "id": "mem",
+        "purpose": "メモリも同じように割り振り直し、3 つの仮想マシンを全て起動させる。合計は 32GB まで。",
+        "check": {
+          "kind": "sim",
+          "expr": "in web-m8=mem db-m16=mem test-m8=mem && fits && placed"
+        },
+        "afterward": "メモリの 32GB も要る量どおりに配られ、3 つの仮想マシンが全て起動した。1 台の機械が、3 台の機械として働いている。",
+        "hints": [
+          "メモリの合計は 32GB まで。顧客台帳の 24GB は、要る量（16GB）より多い。",
+          "顧客台帳の 24GB の札を置き場へ戻し、16GB の札と、試験環境の 8GB の札をメモリの枠に入れる。",
+          "「顧客台帳に 24GB」を置き場へドラッグして戻し、「顧客台帳に 16GB」と「試験環境に 8GB」を「物理の機械のメモリ」へドラッグして入れる。"
+        ],
+        "expectedErrors": [
+          "sim-overflow",
+          "found-vm-overcommit"
+        ],
+        "actions": [
+          {
+            "op": "take",
+            "item": "db-m24"
+          },
+          {
+            "op": "put",
+            "item": "db-m16",
+            "slot": "mem"
+          },
+          {
+            "op": "put",
+            "item": "test-m8",
+            "slot": "mem"
+          }
+        ]
+      }
+    ]
+  },
+  "result": {
+    "success": "1 台の機械の CPU とメモリを、3 つの仮想マシンに要る量どおりに切り分け、全てを起動できた。",
+    "partial": "ヒントを使って、割り振りを直せた。次は、要る量の表から、どれを減らせばよいかを自分で見つけてみよう。",
+    "retry": "まだ起動しない仮想マシンがある。CPU とメモリの枠の合計と、要る量の表を見比べよう。"
+  },
+  "summary": {
+    "points": [
+      "仮想化は 1 台の機械を何台にも見せる",
+      "仮想マシンはそれぞれ自分の OS を持つ",
+      "配れる資源の合計は、物理の機械の量まで"
+    ],
+    "next": [
+      "cloud.b.01",
+      "ctr.b.02"
+    ],
+    "terms": [
+      "virtualization",
+      "vm",
+      "hypervisor"
+    ]
+  }
+}

@@ -29,6 +29,8 @@ export interface ProcessTable {
   readonly nextPid: number;
   /** 積んでいるメモリの総量（MiB） */
   readonly totalMemory: number;
+  /** スワップ（メモリが足りない分を置くストレージの領域）の大きさ（MiB）。0 か無ければ、スワップは無い */
+  readonly totalSwap?: number;
 }
 
 export interface ProcSeed {
@@ -42,7 +44,7 @@ export interface ProcSeed {
   ppid?: number;
 }
 
-export function createProcessTable(seeds: readonly ProcSeed[] = [], totalMemory = 8192): ProcessTable {
+export function createProcessTable(seeds: readonly ProcSeed[] = [], totalMemory = 8192, totalSwap = 0): ProcessTable {
   const processes = new Map<number, Process>();
   processes.set(1, {
     pid: 1, ppid: 0, user: 'root', command: '/sbin/init', cpu: 0, memory: 8,
@@ -68,7 +70,7 @@ export function createProcessTable(seeds: readonly ProcSeed[] = [], totalMemory 
     });
     pid += 1;
   }
-  return { processes, nextPid: pid, totalMemory };
+  return { processes, nextPid: pid, totalMemory, ...(totalSwap > 0 ? { totalSwap } : {}) };
 }
 
 export function usedMemory(table: ProcessTable): number {

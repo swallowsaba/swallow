@@ -386,7 +386,7 @@
       "title": "メモリ不足とスワップ",
       "goal": "メモリが足りないと何が起きるかを予測できる",
       "practice": [
-        "simulation"
+        "terminal"
       ],
       "prerequisites": [
         "found.b.02",

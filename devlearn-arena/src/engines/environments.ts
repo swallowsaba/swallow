@@ -175,6 +175,8 @@ export const setupSchema = z.object({
     /** 入れてある入口の係（ingress-nginx。種類 nginx を受け持つ）と、外から届く住所 */
     ingress: z.object({ address: z.string().regex(/^\d+\.\d+\.\d+\.\d+$/) }).strict().optional(),
   }).strict().optional(),
+  /** 積んでいるメモリとスワップ（MiB。free・top。プロセスの使用量の合計がメモリを超えた分はスワップに置く） */
+  memory: z.object({ total: z.number().int().positive(), swap: z.number().int().min(0).optional() }).strict().optional(),
   /** 動いているプロセス（ps・top・kill。PID は 100 から順に振る） */
   processes: z.array(z.object({
     command: z.string().min(1),
@@ -412,6 +414,10 @@ export function shellOptions(environment: string, setup: unknown): SessionOption
     })), s.hostname);
   }
   if (s.processes) options.processes = s.processes;
+  if (s.memory) {
+    options.totalMemory = s.memory.total;
+    if (s.memory.swap !== undefined) options.totalSwap = s.memory.swap;
+  }
   if (s.cluster) options.cluster = clusterOf(s.cluster);
   if (s.network) options.net = buildNetwork(s.network);
   if (s.images) {

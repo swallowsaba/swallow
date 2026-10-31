@@ -1,0 +1,40 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 360" font-family="&quot;Noto Sans JP&quot;, sans-serif">
+  <title>メモリが満杯になると、溢れた中身をストレージのスワップへ移して遅くなる。スワップも尽きると、カーネルがプロセスを止める</title>
+  <defs>
+    <marker id="arrow-gold" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="#f2b632" />
+    </marker>
+    <marker id="arrow-bad" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="#e04a3a" />
+    </marker>
+  </defs>
+  <g class="el" data-part="memory">
+    <rect x="30" y="40" width="200" height="200" rx="12" fill="#9aa9b5" />
+    <rect x="44" y="84" width="172" height="40" rx="6" fill="#3ae08a" />
+    <rect x="44" y="132" width="172" height="40" rx="6" fill="#3ae08a" />
+    <rect x="44" y="180" width="172" height="48" rx="6" fill="#e04a3a" />
+    <text x="130" y="70" text-anchor="middle" font-size="18" font-weight="700" fill="#0a1424">メモリ（満杯）</text>
+    <text x="130" y="110" text-anchor="middle" font-size="13" fill="#0a1424">データベース</text>
+    <text x="130" y="158" text-anchor="middle" font-size="13" fill="#0a1424">Web サーバ</text>
+    <text x="130" y="210" text-anchor="middle" font-size="14" font-weight="700" fill="#eef2f6">使い続けて増える処理</text>
+  </g>
+  <g class="el" data-part="swap">
+    <rect x="410" y="40" width="200" height="200" rx="12" fill="#5cc1ff" />
+    <rect x="424" y="180" width="172" height="48" rx="6" fill="#e8b923" />
+    <text x="510" y="70" text-anchor="middle" font-size="18" font-weight="700" fill="#0a1424">スワップ</text>
+    <text x="510" y="94" text-anchor="middle" font-size="13" fill="#0a1424">ストレージの中の領域</text>
+    <text x="510" y="210" text-anchor="middle" font-size="14" font-weight="700" fill="#0a1424">溢れた中身</text>
+  </g>
+  <g class="el" data-part="move">
+    <path d="M232 196 H404" fill="none" stroke="#f2b632" stroke-width="3" marker-end="url(#arrow-gold)" />
+    <path d="M404 220 H236" fill="none" stroke="#f2b632" stroke-width="3" marker-end="url(#arrow-gold)" />
+    <text x="320" y="180" text-anchor="middle" font-size="14" font-weight="700" fill="#f2b632">出し入れ</text>
+    <text x="320" y="250" text-anchor="middle" font-size="13" fill="#eef2f6">1 回ごとに遅い</text>
+  </g>
+  <g class="el" data-part="oom">
+    <rect x="200" y="280" width="240" height="64" rx="12" fill="#e04a3a" />
+    <path d="M510 240 Q510 312 446 312" fill="none" stroke="#e04a3a" stroke-width="3" marker-end="url(#arrow-bad)" />
+    <text x="320" y="308" text-anchor="middle" font-size="16" font-weight="700" fill="#eef2f6">スワップも尽きると</text>
+    <text x="320" y="330" text-anchor="middle" font-size="13" fill="#eef2f6">カーネルがプロセスを止める</text>
+  </g>
+</svg>

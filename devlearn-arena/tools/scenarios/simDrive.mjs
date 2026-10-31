@@ -31,11 +31,13 @@ export async function dragTo(page, from, to, midShot) {
   if (!(await inView(page, to))) await page.locator(to).first().scrollIntoViewIfNeeded();
   if (!(await inView(page, from)) || !(await inView(page, to))) throw new Error(`${from} と ${to} を同時に見られない（ドラッグで運べない）`);
   const a = await centerOf(page, from);
-  const b = await centerOf(page, to);
   await page.mouse.move(a.x, a.y);
   await page.mouse.down();
   // 少し動かしてから運ぶ（押しただけでは始まらない）
   await page.mouse.move(a.x + 8, a.y + 8, { steps: 2 });
+  // 受け口の場所は、持ち上げた後に測る（並行に並べる板では、持ち上げると段の間に「ここに新しい段」の受け口が開き、置き場が下へずれる。人はずれた先を見て運ぶ）
+  await wait(page, 60);
+  const b = await centerOf(page, to);
   await page.mouse.move(b.x, b.y, { steps: 12 });
   await wait(page, 120);
   if (midShot) await midShot();

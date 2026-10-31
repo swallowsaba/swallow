@@ -1,0 +1,40 @@
+{
+  "lesson": "found.i.03",
+  "variants": [
+    {
+      "name": "空けてから、試験環境を先に入れる",
+      "steps": {
+        "cpu": [
+          { "op": "take", "item": "db-c6" },
+          { "op": "put", "item": "test-c2", "slot": "cpu" },
+          { "op": "put", "item": "db-c4", "slot": "cpu" }
+        ],
+        "mem": [
+          { "op": "take", "item": "db-m24" },
+          { "op": "put", "item": "test-m8", "slot": "mem" },
+          { "op": "put", "item": "db-m16", "slot": "mem" }
+        ]
+      }
+    },
+    {
+      "name": "メモリから先に直し、続けて CPU も直す",
+      "steps": {
+        "cpu": [
+          { "op": "take", "item": "db-m24" },
+          { "op": "put", "item": "db-m16", "slot": "mem" },
+          { "op": "put", "item": "test-m8", "slot": "mem" },
+          { "op": "take", "item": "db-c6" },
+          { "op": "put", "item": "db-c4", "slot": "cpu" },
+          { "op": "put", "item": "test-c2", "slot": "cpu" }
+        ]
+      }
+    }
+  ],
+  "wrong": {
+    "step": "cpu",
+    "why": "顧客台帳の 6 コアを残したまま、試験環境の 2 コアを入れる",
+    "input": [
+      { "op": "put", "item": "test-c2", "slot": "cpu" }
+    ]
+  }
+}

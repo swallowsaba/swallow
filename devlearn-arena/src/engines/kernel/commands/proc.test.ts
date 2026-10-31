@@ -112,3 +112,53 @@ describe('容量', () => {
     expect(run('lsof /var/log/app.log').code).toBe(1);
   });
 });
+
+describe('メモリが足りない時（スワップ）', () => {
+  const swapped = () =>
+    createSession({
+      totalMemory: 4096,
+      totalSwap: 2048,
+      processes: [
+        { command: 'postgres: main', user: 'root', cpu: 2.0, memory: 900 },
+        { command: 'node report-builder.js', cpu: 35.0, memory: 4100 },
+        { command: 'nginx: worker process', cpu: 0.4, memory: 60 },
+      ],
+    });
+
+  it('使用量がメモリを超えた分はスワップに置かれ、free の Swap の行に出る', () => {
+    session = swapped();
+    const lines = run('free -m').out.split('\n');
+    // 4096 を全て使い、超えた分（8 + 12 + 900 + 4100 + 60 − 4096 = 984）がスワップにある
+    expect(lines.find((l) => l.startsWith('Mem:'))?.split(/\s+/)).toEqual(['Mem:', '4096', '4096', '0']);
+    expect(lines.find((l) => l.startsWith('Swap:'))?.split(/\s+/)).toEqual(['Swap:', '2048', '984', '1064']);
+  });
+
+  it('使っているプロセスを止めると、スワップが空き、メモリにも空きが戻る', () => {
+    session = swapped();
+    const pid = run('pgrep report-builder').out.trim();
+    run(`kill ${pid}`);
+    const lines = run('free').out.split('\n');
+    expect(lines.find((l) => l.startsWith('Swap:'))?.split(/\s+/)).toEqual(['Swap:', '2048', '0', '2048']);
+    expect(lines.find((l) => l.startsWith('Mem:'))?.split(/\s+/)).toEqual(['Mem:', '4096', '980', '3116']);
+  });
+
+  it('スワップの無い機械の free には Swap の行が出ない（前と同じ）', () => {
+    expect(run('free').out).not.toContain('Swap:');
+  });
+
+  it('top の頭にスワップの量も出る', () => {
+    session = swapped();
+    expect(run('top -b -n 1').out).toContain('MiB Swap:   2048 total,   1064 free,    984 used');
+  });
+
+  it('ps aux --sort=-%mem はメモリの多い順、--sort=-%cpu は CPU の多い順に並ぶ', () => {
+    session = swapped();
+    const rows = (line: string) => run(line).out.split('\n').slice(1).filter((l) => l !== '').map((l) => l.split(/\s+/).slice(6).join(' '));
+    expect(rows('ps aux --sort=-%mem')[0]).toBe('node report-builder.js');
+    expect(rows('ps aux --sort=-%mem')[1]).toBe('postgres: main');
+    expect(rows('ps aux --sort -rss')[0]).toBe('node report-builder.js');
+    expect(rows('ps aux --sort=-%cpu')[0]).toBe('node report-builder.js');
+    expect(rows('ps aux --sort=-%cpu')[1]).toBe('postgres: main');
+    expect(rows('ps aux --sort=%mem')[0]).toBe('/sbin/init');
+  });
+});

@@ -1,0 +1,34 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 360" font-family="&quot;Noto Sans JP&quot;, sans-serif">
+  <title>物理の機械の上に仮想化の層があり、その上に 3 つの仮想マシンが乗る。仮想マシンはそれぞれ自分の OS とアプリを持つ</title>
+  <g class="el" data-part="hardware">
+    <rect x="20" y="290" width="600" height="56" rx="10" fill="#9aa9b5" />
+    <text x="320" y="316" text-anchor="middle" font-size="18" font-weight="700" fill="#0a1424">物理の機械（1 台）</text>
+    <text x="320" y="336" text-anchor="middle" font-size="13" fill="#0a1424">CPU 8 コア・メモリ 32GB</text>
+  </g>
+  <g class="el" data-part="hypervisor">
+    <rect x="20" y="230" width="600" height="48" rx="10" fill="#f2b632" />
+    <text x="320" y="260" text-anchor="middle" font-size="16" font-weight="700" fill="#0a1424">仮想化の層（資源を切り分けて配る）</text>
+  </g>
+  <g class="el" data-part="guest-os">
+    <rect x="30" y="160" width="180" height="56" rx="8" fill="#5cc1ff" />
+    <rect x="230" y="160" width="180" height="56" rx="8" fill="#5cc1ff" />
+    <rect x="430" y="160" width="180" height="56" rx="8" fill="#5cc1ff" />
+    <text x="120" y="194" text-anchor="middle" font-size="16" font-weight="700" fill="#0a1424">OS（Linux）</text>
+    <text x="320" y="194" text-anchor="middle" font-size="16" font-weight="700" fill="#0a1424">OS（Linux）</text>
+    <text x="520" y="194" text-anchor="middle" font-size="16" font-weight="700" fill="#0a1424">OS（Windows）</text>
+  </g>
+  <g class="el" data-part="guest-app">
+    <rect x="30" y="90" width="180" height="56" rx="8" fill="#3ae08a" />
+    <rect x="230" y="90" width="180" height="56" rx="8" fill="#3ae08a" />
+    <rect x="430" y="90" width="180" height="56" rx="8" fill="#3ae08a" />
+    <text x="120" y="124" text-anchor="middle" font-size="16" font-weight="700" fill="#0a1424">受付サイト</text>
+    <text x="320" y="124" text-anchor="middle" font-size="16" font-weight="700" fill="#0a1424">顧客台帳</text>
+    <text x="520" y="124" text-anchor="middle" font-size="16" font-weight="700" fill="#0a1424">試験環境</text>
+  </g>
+  <g class="el" data-part="vm-names">
+    <text x="120" y="70" text-anchor="middle" font-size="14" fill="#eef2f6">仮想マシン 1</text>
+    <text x="320" y="70" text-anchor="middle" font-size="14" fill="#eef2f6">仮想マシン 2</text>
+    <text x="520" y="70" text-anchor="middle" font-size="14" fill="#eef2f6">仮想マシン 3</text>
+    <text x="320" y="34" text-anchor="middle" font-size="16" font-weight="700" fill="#ffd66b">1 台の機械が、3 台あるように見える</text>
+  </g>
+</svg>

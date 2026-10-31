@@ -20,7 +20,23 @@ function sorted(shell: ShellState): Process[] {
   return [...shell.procs.processes.values()].sort((a, b) => a.pid - b.pid);
 }
 
-function psRows(shell: ShellState, wide: boolean): string {
+/** ps の --sort の鍵（本物の procps と同じ名前）。先頭の - は多い順 */
+const SORT_KEYS: Record<string, 'memory' | 'cpu' | 'pid'> = {
+  '%mem': 'memory', pmem: 'memory', rss: 'memory', vsz: 'memory', '%cpu': 'cpu', pcpu: 'cpu', pid: 'pid',
+};
+
+function sortSpec(argv: readonly string[]): { key: 'memory' | 'cpu' | 'pid'; desc: boolean }[] {
+  const i = argv.findIndex((a) => a === '--sort' || a.startsWith('--sort='));
+  if (i < 0) return [];
+  const raw = argv[i]?.startsWith('--sort=') ? argv[i].slice('--sort='.length) : (argv[i + 1] ?? '');
+  return raw.split(',').flatMap((k) => {
+    const desc = k.startsWith('-');
+    const key = SORT_KEYS[k.replace(/^[-+]/, '').toLowerCase()];
+    return key === undefined ? [] : [{ key, desc }];
+  });
+}
+
+function psRows(shell: ShellState, wide: boolean, sort: readonly { key: 'memory' | 'cpu' | 'pid'; desc: boolean }[] = []): string {
   const head = wide
     ? ['USER', 'PID', 'PPID', '%CPU', '%MEM', 'STAT', 'COMMAND']
     : ['PID', 'STAT', 'COMMAND'];
@@ -29,7 +45,13 @@ function psRows(shell: ShellState, wide: boolean): string {
   const all = [
     ...sorted(shell).map((p) => ({ pid: p.pid, ppid: p.ppid, user: p.user, cpu: p.cpu, memory: p.memory, state: p.state, command: p.command })),
     ...hostProcesses(shell.containers, shell.vars.get('USER')).map((p) => ({ ...p, cpu: 0, state: 'S' })),
-  ].sort((a, b) => a.pid - b.pid);
+  ].sort((a, b) => {
+    for (const s of sort) {
+      const d = a[s.key] - b[s.key];
+      if (d !== 0) return s.desc ? -d : d;
+    }
+    return a.pid - b.pid;
+  });
   for (const p of all) {
     const memPercent = ((p.memory / shell.procs.totalMemory) * 100).toFixed(1);
     rows.push(
@@ -39,6 +61,22 @@ function psRows(shell: ShellState, wide: boolean): string {
     );
   }
   return table(rows);
+}
+
+/** スワップの量。プロセスの使用量の合計がメモリを超えた分を置く（スワップの無い機械は null） */
+function swapOf(shell: ShellState): { total: number; used: number; free: number } | null {
+  const total = shell.procs.totalSwap ?? 0;
+  if (total <= 0) return null;
+  const used = Math.min(total, Math.max(0, usedMemory(shell.procs) - shell.procs.totalMemory));
+  return { total, used, free: total - used };
+}
+
+/** top の頭のスワップの行（スワップの無い機械は出さない） */
+function swapLine(shell: ShellState): string {
+  const swap = swapOf(shell);
+  if (swap === null) return '';
+  const n = (v: number) => String(v).padStart(6);
+  return `MiB Swap: ${n(swap.total)} total, ${n(swap.free)} free, ${n(swap.used)} used\n`;
 }
 
 /** そのパス以下の合計バイト数 */
@@ -69,8 +107,9 @@ export const procCommands: CommandSpec[] = [
     name: 'ps',
     summary: '動いているプロセスを見る（aux / -ef）',
     handler: ({ argv, shell }) => {
-      const wide = argv.slice(1).some((a) => a.includes('a') || a.includes('e'));
-      return { stdout: psRows(shell, wide) };
+      const args = argv.slice(1);
+      const wide = args.some((a) => !a.startsWith('--') && (a.includes('a') || a.includes('e')));
+      return { stdout: psRows(shell, wide, sortSpec(args)) };
     },
   },
 
@@ -86,7 +125,9 @@ export const procCommands: CommandSpec[] = [
       return {
         stdout:
           `%Cpu(s): ${totalCpu(shell.procs).toFixed(1)} us\n` +
-          `MiB Mem : ${String(shell.procs.totalMemory)} total, ${String(shell.procs.totalMemory - used)} free, ${String(used)} used\n\n` +
+          `MiB Mem : ${String(shell.procs.totalMemory)} total, ${String(shell.procs.totalMemory - Math.min(used, shell.procs.totalMemory))} free, ${String(Math.min(used, shell.procs.totalMemory))} used\n` +
+          swapLine(shell) +
+          '\n' +
           table(rows),
       };
     },
@@ -96,11 +137,13 @@ export const procCommands: CommandSpec[] = [
     name: 'free',
     summary: 'メモリの空きを見る',
     handler: ({ shell }) => {
-      const used = usedMemory(shell.procs);
+      const used = Math.min(usedMemory(shell.procs), shell.procs.totalMemory);
+      const swap = swapOf(shell);
       return {
         stdout: table([
           ['', 'total', 'used', 'free'],
           ['Mem:', String(shell.procs.totalMemory), String(used), String(shell.procs.totalMemory - used)],
+          ...(swap === null ? [] : [['Swap:', String(swap.total), String(swap.used), String(swap.free)]]),
         ]),
       };
     },
