@@ -65,6 +65,8 @@ export interface Interface {
   vlans?: number[];
   /** そのリンクに載せられる最大サイズ */
   mtu: number;
+  /** 足した IPv6 の住所（2001:db8::1/64 の形。リンクローカルは MAC から決まるので持たない） */
+  ip6?: string[];
 }
 
 export type DeviceKind = 'host' | 'router' | 'switch';
@@ -110,6 +112,8 @@ export interface Device {
   silent?: boolean;
   /** Web のページ（curl で取りに来た時に返す中身） */
   body?: string;
+  /** 道ごとのページ。bytes は中身の大きさ（返事の荷物の大きさを決める。net.a.02） */
+  pages?: Record<string, { body: string; bytes?: number }>;
 }
 
 export interface Link {

@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 360" font-family="&quot;Noto Sans JP&quot;, sans-serif">
+  <title>上限の小さい区間が 1 つあると、大きな荷物はそこで落ちる</title>
+  <defs>
+    <marker id="arrow-gold" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="#f2b632" />
+    </marker>
+  </defs>
+  <g class="el" data-part="pc">
+    <rect x="20" y="120" width="130" height="110" rx="10" fill="#1a6fd6" />
+    <text x="85" y="169" text-anchor="middle" font-size="16" font-weight="700" fill="#eef2f6">手元</text>
+    <text x="85" y="191" text-anchor="middle" font-size="14" fill="#eef2f6">MTU 1500</text>
+  </g>
+  <g class="el" data-part="tunnel">
+    <rect x="190" y="120" width="260" height="110" rx="10" fill="#c0392b" />
+    <text x="320" y="158" text-anchor="middle" font-size="16" font-weight="700" fill="#eef2f6">トンネルの区間</text>
+    <text x="320" y="180" text-anchor="middle" font-size="14" fill="#eef2f6">MTU 1400</text>
+    <text x="320" y="202" text-anchor="middle" font-size="14" fill="#eef2f6">1500 の荷物はここで落ちる</text>
+  </g>
+  <g class="el" data-part="server">
+    <rect x="490" y="120" width="130" height="110" rx="10" fill="#1f7a4d" />
+    <text x="555" y="169" text-anchor="middle" font-size="16" font-weight="700" fill="#eef2f6">サーバ</text>
+    <text x="555" y="191" text-anchor="middle" font-size="14" fill="#eef2f6">MTU 1500</text>
+  </g>
+  <g class="el" data-part="flow">
+    <path d="M150 175 L187 175" fill="none" stroke="#f2b632" stroke-width="2" marker-end="url(#arrow-gold)" />
+    <path d="M450 175 L487 175" fill="none" stroke="#f2b632" stroke-width="2" marker-end="url(#arrow-gold)" />
+  </g>
+  <g class="el" data-part="note">
+    <text x="320" y="340" text-anchor="middle" font-size="14" fill="#eef2f6">道の全体の上限は、一番小さい区間で決まる</text>
+  </g>
+</svg>

@@ -585,6 +585,132 @@
         "net.a.04",
         "net.i.05"
       ]
+    },
+    {
+      "id": "mtu",
+      "word": "MTU",
+      "reading": "えむてぃーゆー",
+      "plain": "1 回で送れる荷物の大きさの上限。多くの網では 1500 バイト。",
+      "why": "道の途中に上限の小さい区間があると、大きな荷物だけ通らず、小さな通信は通るという分かりにくい障害になる。",
+      "related": [
+        "packet",
+        "fragmentation",
+        "ping"
+      ],
+      "lessons": [
+        "net.a.02"
+      ]
+    },
+    {
+      "id": "fragmentation",
+      "word": "断片化",
+      "reading": "だんぺんか",
+      "plain": "上限を超える荷物を、途中で小さく分けて送ること。",
+      "why": "分けることを禁じた荷物は、上限を超えると落ちる。TCP の荷物の多くは禁じている。",
+      "related": [
+        "mtu",
+        "packet"
+      ],
+      "lessons": [
+        "net.a.02"
+      ]
+    },
+    {
+      "id": "tracepath",
+      "word": "tracepath",
+      "plain": "相手までの道すじと、区間ごとの MTU を調べる道具。",
+      "why": "どの機器の先で上限が小さくなるかを、1 回で絞れる。",
+      "related": [
+        "mtu",
+        "traceroute"
+      ],
+      "lessons": [
+        "net.a.02"
+      ]
+    },
+    {
+      "id": "load-balancer",
+      "word": "ロードバランサ",
+      "reading": "ろーどばらんさ",
+      "plain": "来た頼みを、後ろの複数のサーバに振り分ける入口。",
+      "why": "1 台で足りない時に台数で支え、1 台が壊れてもサービスを止めずに済む。",
+      "related": [
+        "health-check",
+        "reverse-proxy",
+        "upstream"
+      ],
+      "lessons": [
+        "net.a.03"
+      ]
+    },
+    {
+      "id": "upstream",
+      "word": "upstream",
+      "reading": "あっぷすとりーむ",
+      "plain": "nginx で、振り分け先のサーバの組を書く設定。",
+      "why": "`proxy_pass` にこの名前を書くと、組の中の台へ順に送る。",
+      "related": [
+        "load-balancer",
+        "reverse-proxy"
+      ],
+      "lessons": [
+        "net.a.03"
+      ]
+    },
+    {
+      "id": "sticky-session",
+      "word": "セッションの固定",
+      "reading": "せっしょんのこてい",
+      "plain": "同じ利用者を、いつも同じ台へ送ること。`ip_hash` など。",
+      "why": "ログインの状態を台の中に持つアプリは、別の台へ行くと途切れる。",
+      "related": [
+        "session",
+        "load-balancer"
+      ],
+      "lessons": [
+        "net.a.03"
+      ]
+    },
+    {
+      "id": "link-local",
+      "word": "リンクローカルアドレス",
+      "reading": "りんくろーかるあどれす",
+      "plain": "`fe80::` で始まる IPv6 の住所。同じ線の上だけで使え、口ごとに自動で付く。",
+      "why": "`ip -6 addr` に必ず出る。これだけでは他の網と話せない。",
+      "related": [
+        "ipv6"
+      ],
+      "lessons": [
+        "net.a.04"
+      ]
+    },
+    {
+      "id": "dual-stack",
+      "word": "デュアルスタック",
+      "reading": "でゅあるすたっく",
+      "plain": "同じ機械で IPv4 と IPv6 の両方を動かすこと。",
+      "why": "両方の利用者に届くので、移行の間の普通の形。",
+      "related": [
+        "ipv4",
+        "ipv6"
+      ],
+      "lessons": [
+        "net.a.04"
+      ]
+    },
+    {
+      "id": "vpn",
+      "word": "VPN",
+      "reading": "ぶいぴーえぬ",
+      "plain": "離れた網どうしを、暗号で包んだ通路（トンネル）でつなぐ仕組み。",
+      "why": "包みの分だけ 1 回に送れる大きさが減るので、MTU の障害の原因になりやすい。",
+      "related": [
+        "mtu",
+        "tracepath"
+      ],
+      "lessons": [
+        "net.a.02"
+      ]
     }
   ]
 }

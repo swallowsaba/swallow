@@ -1,0 +1,52 @@
+{
+  "lesson": "net.a.02",
+  "variants": [
+    {
+      "name": "tracepath から",
+      "steps": {
+        "symptom": [
+          "curl -I http://files.example/report.html || true",
+          " /report.html "
+        ],
+        "size": [
+          "tracepath files.example",
+          "1400"
+        ],
+        "fix": [
+          "ip link set dev eth0 mtu 1400",
+          "ip link",
+          "curl -s http://files.example/report.html"
+        ]
+      }
+    },
+    {
+      "name": "大きさを 2 通り試す・サーバ側を合わせる",
+      "steps": {
+        "symptom": [
+          "curl http://files.example/report.html",
+          "/REPORT.HTML"
+        ],
+        "size": [
+          "ping -c 1 -M do -s 1372 files.example",
+          "ping -c 1 -M do -s 1400 files.example",
+          "1400 バイト"
+        ],
+        "fix": [
+          "ip netns exec files ip link set eth0 mtu 1400",
+          "curl http://files.example/report.html"
+        ]
+      }
+    }
+  ],
+  "wrong": {
+    "step": "size",
+    "why": "ping の大きさの数を答える",
+    "commands": false,
+    "input": [
+      "1472"
+    ],
+    "retry": [
+      "1400"
+    ]
+  }
+}

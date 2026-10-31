@@ -1,6 +1,7 @@
+import { curl6, ip6Command, ping6 } from './net6';
 import { localNetstat } from './sockets';
 import { localCurl } from './httpLocal';
-import { addressOf, deviceAt, resolveName, roundTrip, rttOf, traceHops } from '@/engines/net/probe';
+import { addressOf, deviceAt, mtuOf, replyPasses, resolveName, roundTrip, rttOf, sizedProbe, traceHops } from '@/engines/net/probe';
 import { parseCidr } from '@/engines/net/subnet';
 import { emptyIptables, runIptables } from '@/engines/net/firewall';
 import { checkZone } from '@/engines/net/zone';
@@ -123,18 +124,33 @@ export const netCommands: CommandSpec[] = [
     handler: ({ argv, shell }) => {
       const net = shell.net;
       if (net === null) return { stderr: NO_NET, code: 1 };
-      const { values, operands } = parseArgs(argv, { withValue: ['c'] });
+      const { values, operands, flags } = parseArgs(argv, { withValue: ['c', 's', 'M', 'W', 'i'] });
       const target = operands[0];
       if (target === undefined) return { stderr: 'ping: usage error: Destination address required\n', code: 1 };
+      if (flags.has('6') || target.includes(':')) return ping6(net, selfName(shell), target, Number(values.get('c') ?? 4) || 4);
+      const payload = values.has('s') ? Number(values.get('s')) : 56;
       const count = Math.max(1, Math.min(10, Number(values.get('c') ?? 4) || 4));
       const ip = resolveName(net, target);
       if (ip === null) return { stderr: `ping: ${target}: Name or service not known\n`, code: 2 };
       const me = selfName(shell);
       const r = roundTrip(net, me, ip);
       if (r.kind === 'no-route') return { stderr: 'ping: connect: Network is unreachable\n', code: 2 };
-      const head = `PING ${target} (${ip}) 56(84) bytes of data.`;
+      const head = `PING ${target} (${ip}) ${String(payload)}(${String(payload + 28)}) bytes of data.`;
       const stats = (got: number) => [`--- ${target} ping statistics ---`, `${String(count)} packets transmitted, ${String(got)} received, ${got === count ? '0' : '100'}% packet loss`];
       const patch = { net: afterDelivery(net, r.result) };
+      // 分割を禁じた荷物（-M do）: 自分の口の上限を超えれば送る前に断られ、途中の区間を超えれば、その機器が上限を知らせてくる
+      if (values.get('M') === 'do' && r.kind === 'ok') {
+        const mine = mtuOf(net, me);
+        const stat = (extra: string) => [`--- ${target} ping statistics ---`, `${String(count)} packets transmitted, 0 received, ${extra}100% packet loss`];
+        if (payload + 28 > mine) {
+          return { stdout: fromLines([head, '', ...stat(`+${String(count)} errors, `)]), stderr: `ping: local error: message too long, mtu=${String(mine)}\n`, code: 1, patch };
+        }
+        const sized = sizedProbe(net, me, ip, payload + 28);
+        if (sized.kind === 'too-big') {
+          const lines = Array.from({ length: count }, (_, i) => `From ${sized.from} icmp_seq=${String(i + 1)} Frag needed and DF set (mtu = ${String(sized.mtu)})`);
+          return { stdout: fromLines([head, ...lines, '', ...stat(`+${String(count)} errors, `)]), code: 1, patch };
+        }
+      }
       // 自分の網の相手が ARP に答えない: 本物と同じく、自分の住所から「届かない」と知らせる
       const arpFailed = r.kind === 'timeout' && r.result.hops.length === 1 && (r.result.error ?? '').includes('ARP');
       if (r.kind === 'net-unreachable') {
@@ -147,7 +163,7 @@ export const netCommands: CommandSpec[] = [
         return { stdout: fromLines([head, ...lines, '', `--- ${target} ping statistics ---`, `${String(count)} packets transmitted, 0 received, +${String(count)} errors, 100% packet loss`]), code: 1, patch };
       }
       if (r.kind !== 'ok') return { stdout: fromLines([head, '', ...stats(0)]), code: 1, patch };
-      const replies = Array.from({ length: count }, (_, i) => `64 bytes from ${ip}: icmp_seq=${String(i + 1)} ttl=${String(64 - r.routers)} time=${rttOf(r.routers, i + 1)} ms`);
+      const replies = Array.from({ length: count }, (_, i) => `${String(payload + 8)} bytes from ${ip}: icmp_seq=${String(i + 1)} ttl=${String(64 - r.routers)} time=${rttOf(r.routers, i + 1)} ms`);
       return { stdout: fromLines([head, ...replies, '', ...stats(count)]), patch };
     },
   },
@@ -169,6 +185,53 @@ export const netCommands: CommandSpec[] = [
     },
   },
   {
+    name: 'tracepath',
+    summary: '相手までの道すじと、区間ごとの大きさの上限（MTU）を調べる',
+    handler: ({ argv, shell }) => {
+      const net = shell.net;
+      if (net === null) return { stderr: NO_NET, code: 1 };
+      const target = argv.slice(1).find((a) => !a.startsWith('-'));
+      if (target === undefined) return { stderr: 'Usage: tracepath [-4] [-6] [-n] [-b] [-l <len>] [-p port] <destination>\n', code: 2 };
+      const ip = resolveName(net, target);
+      if (ip === null) return { stderr: `tracepath: ${target}: Name or service not known\n`, code: 2 };
+      const me = selfName(shell);
+      const t = traceHops(net, me, ip, 8);
+      // 上限を下げながら送り、どの機器の先で小さくなるかを見る
+      let pmtu = mtuOf(net, me);
+      const shrink = new Map<number, number>();
+      for (let n = 0; n < 8; n += 1) {
+        const p = sizedProbe(net, me, ip, pmtu);
+        if (p.kind !== 'too-big') break;
+        const at = t.hops.indexOf(p.from);
+        shrink.set(at === -1 ? 0 : at, p.mtu);
+        pmtu = p.mtu;
+      }
+      const lines = [` 1?: [LOCALHOST]                      pmtu ${String(mtuOf(net, me))}`];
+      const hops = t.hops.slice(0, t.reached ? t.hops.length : Math.max(1, t.hops.map((h) => h !== null).lastIndexOf(true) + 1));
+      hops.forEach((h, i) => {
+        const name = (h ?? 'no reply').padEnd(52);
+        const small = shrink.get(i);
+        const mark = t.reached && i === hops.length - 1 ? ' reached' : '';
+        lines.push(`${String(i + 1).padStart(2)}:  ${name}${h === null ? '' : `${rttOf(i, 1)}ms${mark}`}`);
+        if (small !== undefined) lines.push(`${String(i + 2).padStart(2)}:  ${name}${rttOf(i, 1)}ms pmtu ${String(small)}`);
+      });
+      lines.push(`     ${t.reached ? 'Resume' : 'Too many hops'}: pmtu ${String(pmtu)}${t.reached ? ` hops ${String(hops.length)} back ${String(hops.length)}` : ''}`);
+      return { stdout: fromLines(lines), code: t.reached ? 0 : 1 };
+    },
+  },
+  {
+    name: 'ping6',
+    summary: 'IPv6 で相手に届くかを確かめる（ping -6 と同じ）',
+    handler: ({ argv, shell }) => {
+      const net = shell.net;
+      if (net === null) return { stderr: NO_NET, code: 1 };
+      const { values, operands } = parseArgs(argv, { withValue: ['c'] });
+      const target = operands[0];
+      if (target === undefined) return { stderr: 'ping: usage error: Destination address required\n', code: 1 };
+      return ping6(net, selfName(shell), target, Number(values.get('c') ?? 4) || 4);
+    },
+  },
+  {
     name: 'curl',
     summary: 'HTTP でページを取りに行く',
     handler: ({ argv: raw, shell }) => {
@@ -177,9 +240,10 @@ export const netCommands: CommandSpec[] = [
       const net = shell.net;
       // ネットワークの構成が無い実戦では、手元のサービス・コンテナと、名前で引けるサイトに取りに行く
       if (net === null) return localCurl(argv, shell);
-      const { flags, operands } = parseArgs(argv);
+      const { flags, operands, values } = parseArgs(argv, { withValue: ['o', 'w', 'H', 'X', 'd', 'output', 'write-out'] });
       const url = operands[0];
       if (url === undefined) return { stderr: 'curl: try \'curl --help\' for more information\n', code: 2 };
+      if (flags.has('6') || url.includes('[')) return curl6(net, selfName(shell), url);
 
       const match = /^(?:https?:\/\/)?([^/:]+)(?::(\d+))?(\/.*)?$/.exec(url);
       const hostName = match?.[1] ?? url;
@@ -207,8 +271,15 @@ export const netCommands: CommandSpec[] = [
       }
       // 返すのは、荷物が実際に届いた機器（ポート転送の先など）
       const reached = net.devices.get(r.result.hops[r.result.hops.length - 1]?.device ?? '') ?? deviceAt(net, ip);
-      const body = reached?.body ?? `<html><body>It works: ${hostName}</body></html>`;
-      return { stdout: `${fromLines(verbose)}${body}\n`, patch };
+      const page = reached?.pages?.[path];
+      // 大きな頁は、返事の荷物が戻れなければ、接続はできたのに待ち続ける（net.a.02）
+      if (page && reached && !replyPasses(net, selfName(shell), reached.name, ip, page.bytes ?? page.body.length)) {
+        return { stdout: fromLines(verbose), stderr: 'curl: (28) Operation timed out after 30001 milliseconds with 0 bytes received\n', code: 28, patch };
+      }
+      const body = page?.body ?? reached?.body ?? `<html><body>It works: ${hostName}</body></html>`;
+      const write = (values.get('w') ?? values.get('write-out') ?? '').replace(/%\{(http_code|response_code)\}/g, '200').replace(/\\n/g, '\n');
+      const silent = (values.get('o') ?? values.get('output')) !== undefined;
+      return { stdout: `${fromLines(verbose)}${silent ? '' : `${body}\n`}${write}`, patch };
     },
   },
   {
@@ -341,7 +412,10 @@ export const netCommands: CommandSpec[] = [
       if ((raw[1] === '-n' || raw[1] === '-netns') && netns === undefined) {
         return { stderr: 'Usage: ip -n <netns> OBJECT COMMAND\n', code: 255 };
       }
-      const argv = netns === undefined ? raw : [raw[0] ?? 'ip', ...raw.slice(3)];
+      const named = netns === undefined ? raw : [raw[0] ?? 'ip', ...raw.slice(3)];
+      // 家族の旗（-4・-6）は、オブジェクトの前に書く。住所に : があれば書かなくても IPv6
+      const family = named.includes('-6') ? '6' : named.includes('-4') ? '4' : '';
+      const argv = named.filter((a, i) => i === 0 || (a !== '-4' && a !== '-6'));
       const me = net.devices.get(netns ?? selfName(shell));
       if (!me) {
         return netns === undefined
@@ -350,6 +424,9 @@ export const netCommands: CommandSpec[] = [
       }
       const what = argv[1] ?? 'addr';
       const verb = argv[2] ?? '';
+      if (family === '6' || (verb === 'add' && argv[3]?.includes(':') === true) || (verb === 'del' && argv[3]?.includes(':') === true)) {
+        return ip6Command(net, me, argv);
+      }
 
       // 表示以外（add / del / set / replace / flush）は設定として扱う
       if (verb !== '' && verb !== 'show' && verb !== 'list') {
@@ -389,6 +466,7 @@ export const netCommands: CommandSpec[] = [
         lines.push(`${String(index + 1)}: ${i.name}: <${i.up ? 'UP,LOWER_UP' : 'DOWN'}>`);
         lines.push(`    link/ether ${i.mac}`);
         lines.push(`    inet ${i.ip}/${String(i.prefix)} scope global ${i.name}`);
+        if (family === '') for (const a of i.ip6 ?? []) lines.push(`    inet6 ${a} scope global`);
       });
       return { stdout: fromLines(lines) };
     },

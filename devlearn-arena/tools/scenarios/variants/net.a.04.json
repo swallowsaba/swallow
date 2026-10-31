@@ -1,0 +1,55 @@
+{
+  "lesson": "net.a.04",
+  "variants": [
+    {
+      "name": "-6 を書かない・省略しない住所",
+      "steps": {
+        "addr": [
+          "ip addr add 2001:db8:10::20/64 dev eth0",
+          "ip addr",
+          "ip netns exec visitor ping6 -c 1 2001:0db8:0010:0000:0000:0000:0000:0020"
+        ],
+        "record": [
+          "sed -i '$a @ IN AAAA 2001:db8:10::20' /etc/bind/db.shop.example",
+          "rndc reload",
+          "dig +short AAAA shop.example"
+        ],
+        "reach": [
+          "ip netns exec visitor curl -6 -s http://shop.example/"
+        ]
+      }
+    },
+    {
+      "name": "名前の行で書く・住所で先に確かめる",
+      "steps": {
+        "addr": [
+          "ip -6 addr add 2001:db8:10::20/64 dev eth0",
+          "ip -6 route",
+          "ip netns exec visitor ping -6 -c 2 2001:db8:10::20"
+        ],
+        "record": [
+          "echo 'shop.example. 300 IN AAAA 2001:db8:10::20' >> /etc/bind/db.shop.example",
+          "named-checkzone shop.example /etc/bind/db.shop.example",
+          "systemctl reload named"
+        ],
+        "reach": [
+          "ip netns exec visitor curl -6 http://[2001:db8:10::20]/",
+          "ip netns exec visitor curl -6 http://shop.example/"
+        ]
+      }
+    }
+  ],
+  "wrong": {
+    "step": "record",
+    "why": "AAAA に 4 の住所を書く",
+    "input": [
+      "echo '@ IN AAAA 203.0.113.20' >> /etc/bind/db.shop.example",
+      "named-checkzone shop.example /etc/bind/db.shop.example"
+    ],
+    "retry": [
+      "sed -i '/AAAA/d' /etc/bind/db.shop.example",
+      "echo '@ IN AAAA 2001:db8:10::20' >> /etc/bind/db.shop.example",
+      "systemctl reload named"
+    ]
+  }
+}

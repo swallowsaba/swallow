@@ -11,7 +11,7 @@ import type { CommandResult, ShellState } from '../registry';
 import type { Service } from '../services';
 import { groupsOfUser } from '../users';
 import { exists, isDir, metaOf, readFile, writeFile } from '../vfs';
-import { pickServer, type Location, type ServerBlock } from '../webConfig';
+import { pickServer, type Location, type ServerBlock, type Upstream } from '../webConfig';
 import { diskUse } from './proc';
 
 /** /etc/hosts で手元（127.0.0.1・::1）を指す名前 */
@@ -46,6 +46,9 @@ function clusterRemote(shell: ShellState, host: string, port: number): LocalList
   return { server: 'nginx', respond: (req) => ingressAnswer(cluster, req.host, req.method, req.path) };
 }
 
+/** 振り分けの番（curl を打つたびに 1 つ進む。判定の http の turns が替えて確かめる） */
+export const LB_TURN = '__LB_TURN';
+
 /** Web サーバの働き手（nginx の worker）の利用者。公開するファイルは、この利用者が読めなければ 403 */
 export const WEB_USER = 'www-data';
 
@@ -76,6 +79,21 @@ function fromRoot(shell: ShellState, root: string, index: readonly string[], pat
 const expand = (text: string, req: LocalRequest): string =>
   text.replace(/\$host/g, req.host).replace(/\$request_uri/g, req.path).replace(/\$scheme/g, req.scheme).replace(/\$server_port/g, String(req.port));
 
+/** 振り分け: 今の番の台へ送る。答えなければ次の台へ送り直す（本物の proxy_next_upstream の既定。off なら 502）。予備（backup）は他の全てが駄目な時だけ */
+function balanced(loc: Location, u: Upstream, shell: ShellState, env: () => HttpEnv, req: LocalRequest): Route {
+  const usable = u.servers.filter((x) => !x.down);
+  const ring = usable.filter((x) => !x.backup).flatMap((x) => Array.from({ length: x.weight }, () => x.port));
+  const reserve = usable.filter((x) => x.backup).map((x) => x.port);
+  const turn = u.method === 'ip-hash' ? 0 : Number(shell.vars.get(LB_TURN) ?? 0);
+  const start = ring.length === 0 ? 0 : turn % ring.length;
+  const order = [...ring.slice(start), ...ring.slice(0, start), ...reserve];
+  for (const port of loc.noRetry ? order.slice(0, 1) : order) {
+    const back = env().local(port);
+    if (back && !('reset' in back)) return back.respond({ ...req, scheme: 'http', port });
+  }
+  return { status: 502, body: pageOf(502) };
+}
+
 /** 設定を持つ Web サーバの答え（転送・中継・公開用のディレクトリ） */
 function serveConfigured(shell: ShellState, env: () => HttpEnv, s: Service, servers: readonly ServerBlock[], req: LocalRequest): Route {
   const server = pickServer(servers, req.host, req.port);
@@ -90,6 +108,7 @@ function serveConfigured(shell: ShellState, env: () => HttpEnv, s: Service, serv
     if (ret.status >= 300 && ret.status < 400) return withHeaders({ status: ret.status, body: pageOf(ret.status), headers: { Location: target } });
     return withHeaders({ status: ret.status, body: target === '' ? pageOf(ret.status) : target });
   }
+  if (loc?.upstream) return withHeaders(balanced(loc, loc.upstream, shell, env, req));
   if (loc?.proxy !== undefined) {
     const up = parseUrl(loc.proxy);
     const back = up ? env().local(up.port) : null;
@@ -373,7 +392,8 @@ export function localCurl(argv: readonly string[], shell: ShellState): CommandRe
     else vfs = writeFile(vfs, fileOf(shell, a.jar), jarText(jar));
   }
   const failed = a.flags.has('f') && r.status >= 400;
-  const patch = { ...(sites !== env.sites && shell.web ? { web: { ...shell.web, sites } } : {}), ...(vfs !== shell.vfs ? { vfs } : {}) };
+  const balancing = [...(shell.services?.services.values() ?? [])].some((s) => s.active === 'active' && s.servers?.some((b) => b.locations.some((l) => l.upstream)));
+  const patch = { ...(sites !== env.sites && shell.web ? { web: { ...shell.web, sites } } : {}), ...(vfs !== shell.vfs ? { vfs } : {}), ...(balancing ? { vars: new Map([...shell.vars, [LB_TURN, String(Number(shell.vars.get(LB_TURN) ?? 0) + 1)]]) } : {}) };
   return {
     stdout: failed ? '' : stdout,
     ...(failed ? { stderr: `curl: (22) The requested URL returned error: ${String(r.status)}\n`, code: 22 } : {}),

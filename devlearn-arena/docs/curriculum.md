@@ -192,10 +192,10 @@ lab は複数分野の組み合わせ
 | net.i.04 | 中級 | TCP | 接続の確立と状態 | 3 ウェイハンドシェイクと ss の状態を読める | 端 | net.b.05 | trouble.i.02, web.b.02 | net.a.02 |
 | net.i.05 | 中級 | DNS | DNS レコード | A/AAAA/CNAME/MX/TXT を使い分けられる | 編 | net.b.06 | web.b.01, sec.b.07 | net.i.06 |
 | net.i.06 | 中級 | 設計 | ネットワークを分ける | セグメント分割と VLAN の考え方を説明できる | 端 | net.i.01 | cloud.i.01, k8s.b.07 | net.a.01 |
-| net.a.01 | 上級 | 切り分け | 繋がらない原因を層ごとに探す | 物理〜アプリの順に切り分けられる | 模 | net.i.03, trouble.b.01 | trouble.i.02, mon.i.03 | net.a.02 |
-| net.a.02 | 上級 | 経路 | MTU と断片化 | 大きな通信だけ失敗する理由を説明できる | 模 | net.i.04 | trouble.a.02, web.a.01 | net.a.03 |
-| net.a.03 | 上級 | 負荷分散 | ロードバランサ | 振り分け方式と健全性確認を設計できる | 模 | net.i.03 | k8s.b.06, cloud.i.02 | net.a.04 |
-| net.a.04 | 上級 | IPv6 | IPv6 の基本 | アドレスの読み方と IPv4 との違いを説明できる | 模 | net.b.03 | net.b.03, cloud.b.03 | — |
+| net.a.01 | 上級 | 切り分け | 繋がらない原因を層ごとに探す | 物理〜アプリの順に切り分けられる | 端 | net.i.03, trouble.b.01 | trouble.i.02, mon.i.03 | net.a.02 |
+| net.a.02 | 上級 | 経路 | MTU と断片化 | 大きな通信だけ失敗する理由を説明できる | 端 | net.i.04 | trouble.a.02, web.a.01 | net.a.03 |
+| net.a.03 | 上級 | 負荷分散 | ロードバランサ | 振り分け方式と健全性確認を設計できる | 端 | net.i.03 | k8s.b.06, cloud.i.02 | net.a.04 |
+| net.a.04 | 上級 | IPv6 | IPv6 の基本 | アドレスの読み方と IPv4 との違いを説明できる | 端 | net.b.03 | net.b.03, cloud.b.03 | — |
 
 ### 4.4 Web / HTTP（web）— Web 施設
 

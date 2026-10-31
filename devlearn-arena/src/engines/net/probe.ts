@@ -67,6 +67,39 @@ export function roundTrip(net: Topology, from: string, dstIp: string, port?: num
   return back.delivered ? { kind: 'ok', result: go, routers: routersOn(net, go) } : { kind: 'timeout', result: go };
 }
 
+/** 機械の最初の口の MTU */
+export function mtuOf(net: Topology, device: string): number {
+  return net.devices.get(device)?.interfaces.find((i) => i.up && i.ip !== '')?.mtu ?? 1500;
+}
+
+export type SizedProbe =
+  | { kind: 'ok' }
+  /** 途中の機器が、分割禁止の荷物を上限の小さい区間へ送れなかった。from はその機器の入ってきた口のアドレス */
+  | { kind: 'too-big'; from: string; mtu: number; device: string }
+  | { kind: 'lost' };
+
+/** 分割を禁じた大きさ size の荷物を片道送る（ping -M do・tracepath）。届いた機器は問わない */
+export function sizedProbe(net: Topology, from: string, dstIp: string, size: number): SizedProbe {
+  const src = addressOf(net, from);
+  const go = deliver(net, from, packet(src, dstIp, { protocol: 'icmp', size, dontFragment: true }));
+  if (go.delivered) return { kind: 'ok' };
+  const m = /^Frag needed and DF set \(mtu = (\d+)\): ([^:]+):/.exec(go.error ?? '');
+  if (!m) return { kind: 'lost' };
+  const last = go.hops[go.hops.length - 1];
+  const device = net.devices.get(m[2] ?? '');
+  const ip = device?.interfaces.find((i) => i.mac === last?.packet.ethernet.dstMac)?.ip ?? addressOf(net, m[2] ?? '');
+  return { kind: 'too-big', from: ip, mtu: Number(m[1]), device: m[2] ?? '' };
+}
+
+/**
+ * 大きな返事が戻るか。TCP の 1 つの荷物は、両端の口の小さいほうの上限まで（接続の時に伝える MSS）。
+ * 本物の TCP の荷物は分割を禁じているので、途中に上限の小さい区間があり、知らせ（ICMP）が送り手に届かなければ、ここで消え続ける
+ */
+export function replyPasses(net: Topology, from: string, server: string, dstIp: string, bytes: number): boolean {
+  const size = Math.min(bytes + 40, mtuOf(net, from), mtuOf(net, server));
+  return deliver(net, server, packet(dstIp, addressOf(net, from), { protocol: 'icmp', size, dontFragment: true, established: true })).delivered;
+}
+
 /** 往復の時間（ms）。通るルータの数で決める（同じ網からは同じ値） */
 export const rttOf = (routers: number, seq = 1): string => (0.4 + routers * 0.6 + (seq - 1) * 0.1).toFixed(1);
 

@@ -57,7 +57,7 @@
 | 中級 | trouble | 終わり（3 本。下の「中級 trouble」） |
 | 中級 | lab | 終わり（2 本。下の「中級 lab」） |
 | 上級 | linux | 終わり（4 本。下の「上級 linux」） |
-| 上級 | net | 未着手 |
+| 上級 | net | 終わり（4 本。下の「上級 net」） |
 | 上級 | web | 未着手 |
 | 上級 | sec | 未着手 |
 | 上級 | git | 未着手 |
@@ -271,3 +271,26 @@
 - 記憶装置とマウント: setup の `blockDevices`。`lsblk`・`mkfs.ext4`・`mkfs -t`・`blkid`・`mount`（`-a` で /etc/fstab）・`umount`・`findmnt`。再起動すると fstab の物だけが取り付き、誤りがあれば緊急モードの文で止まる。判定の `mount`
 - 資源の計器: setup の `meters`。`uptime`・`top` の負荷平均と `wa`、`vmstat`、`iostat -x`、`iotop`（プロセスの `ioMBs`）
 - `sshd -t`（`/etc/ssh/sshd_config` の検査。本物の文で断る）
+
+### 上級 net（4 本）
+
+| ID | 実戦 | verify-all | verify-free（別解） | verify-wrong |
+|---|---|---|---|---|
+| net.a.01 繋がらない原因を層ごとに探す | 端 | 合格 | 合格（2 通り） | 合格 |
+| net.a.02 MTU と断片化 | 端 | 合格 | 合格（2 通り） | 合格 |
+| net.a.03 ロードバランサ | 端 | 合格 | 合格（2 通り） | 1 回目 不合格 → 合格 |
+| net.a.04 IPv6 の基本 | 端 | 合格 | 合格（2 通り） | 合格 |
+
+| 不合格 | 原因 | 直したこと |
+|---|---|---|
+| net.a.03 の「読み直さずに確かめる」にエラーの案内が出ない | 台本の誤り: 読み直す前の `curl` はうまくいった命令なので、案内は出ない（正しい） | 間違える操作を、`upstream` の名前を変えて `nginx -t` に断られる形にした |
+| net.a.03 の手順 stop が最後のヒントで達成にならない | 書き起こしの誤り: 判定を `ran` にしたが、振り分けの番で最後の 1 行の結果が 200 になる | 1 行の `for` で 3 回打ち、読み取った番号を答える形にした（結果の全体と答えは違う） |
+| 既にあるテスト `loadLesson('net.a.01')` が null でなくなった | テストが「書き起こしていないレッスン」の例に net.a.01 を使っていた | どの範囲にも無い ID（`found.z.99`）にした |
+
+設計を直した物: 4 本とも「模」から「端」にした（`REWORK-PRACTICE.txt` 原則 1。ネットワークには ping・ip・dig・curl・iptables、ロードバランサには nginx の本物の設定がある）。`docs/lessons/net.md` と `docs/curriculum.md` の表を先に直した。
+
+模擬環境に足した物（テストを先に書いた。`netAdvanced.test.ts`）:
+- MTU: setup の網の `mtus`（口ごとの上限。線は両端の小さいほう）と `pages`（道ごとの頁と大きさ）。`ping -M do -s`（手元で `message too long`、途中で `Frag needed and DF set`）・`tracepath`・大きな頁の返事が上限を超えると `curl: (28)`（接続の時に伝える大きさの分だけ小さくなるので、どちらかの口を下げれば届く）
+- 振り分け: nginx の `upstream`（`weight`・`down`・`backup`・`ip_hash`・`least_conn`）と `proxy_next_upstream off`。本物と同じ文で断る（`no servers are inside upstream`・`host not found in upstream`）。番は `curl` を打つたびに進む。判定の `http` の `turns`・`seen`
+- IPv6: 口の `ip6`（setup の `addrs6`）。`ip -6 addr`・`ip -6 route`・`ping -6`・`ping6`・`curl -6`・`http://[住所]/`・AAAA の検査（`bad IPv6 address`）。判定の `reach6`・`addr6`。線と経路は 4 の計算を使う（デュアルスタックの網）
+- 網の `curl` の `-o`・`-w`（`%{http_code}`）

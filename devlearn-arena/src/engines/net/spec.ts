@@ -41,6 +41,12 @@ export const networkSetupSchema = z.object({
     silent: z.boolean().optional(),
     /** Web のページ（curl で取りに来た時に返す中身） */
     body: z.string().optional(),
+    /** 道ごとのページ。bytes は中身の大きさ（返事の荷物の大きさを決める） */
+    pages: z.record(z.string().startsWith('/'), z.object({ body: z.string(), bytes: z.number().int().positive().optional() }).strict()).optional(),
+    /** 口ごとの MTU（口の名前 → 値。書かなければ 1500。線の MTU は両端の小さいほう） */
+    mtus: z.record(z.string().regex(/^eth\d+$/), z.number().int().min(68)).optional(),
+    /** 初めから付いている IPv6 の住所（最初の口に付く。2001:db8::1/64 の形） */
+    addrs6: z.array(z.string().regex(/^[0-9a-fA-F:]+\/\d+$/)).optional(),
     /** iptables の規則（引数の行。`-P INPUT DROP`・`-A INPUT -p tcp --dport 22 -j ACCEPT`・`-t nat -A PREROUTING …`）。上から順に当てる */
     firewall: z.array(z.string().min(1)).optional(),
   }).strict()).min(1),
@@ -81,13 +87,18 @@ export function buildNetwork(raw: NetworkSetup): Topology {
         const v = vlanOf(name);
         return d.vlans === undefined ? port(name) : { ...port(name, { vlan: v ?? null }), vlans: v === undefined ? [] : [v] };
       })
-      : d.addrs.map((a, i) => ifaceOf(d.name, i, a));
+      : d.addrs.map((a, i) => {
+        const iface = ifaceOf(d.name, i, a);
+        const mtu = d.mtus?.[iface.name];
+        return { ...iface, ...(mtu !== undefined ? { mtu } : {}), ...(i === 0 && d.addrs6 ? { ip6: d.addrs6 } : {}) };
+      });
     for (const p of Object.keys(d.vlans ?? {})) if (!interfaces.some((i) => i.name === p)) throw new Error(`機器 ${d.name}: vlans の口 ${p} が無い`);
     const device: Device = {
       name: d.name, kind: d.kind, interfaces, routes: [], listening: d.listen ?? [], blockedPorts: d.blocked ?? [],
       arp: {}, macTable: {}, nat: null,
       ...(d.silent ? { silent: true } : {}),
       ...(d.body !== undefined ? { body: d.body } : {}),
+      ...(d.pages ? { pages: d.pages } : {}),
     };
     const routes: Route[] = (d.routes ?? []).map((r) => ({ destination: r.to, via: r.via, dev: devFor(device, r.via, '経路の次の機器') }));
     if (d.gateway !== undefined) routes.push({ destination: '0.0.0.0/0', via: d.gateway, dev: devFor(device, d.gateway, '出口') });
@@ -111,14 +122,14 @@ export function buildNetwork(raw: NetworkSetup): Topology {
       if (!ia || !ib) throw new Error(`線 ${a}-${b}: 空いた口が両方に無い`);
       used.add(`${a}:${ia.name}`);
       used.add(`${b}:${ib.name}`);
-      return { a: `${a}:${ia.name}`, b: `${b}:${ib.name}`, up: state !== 'down', mtu: DEFAULT_MTU };
+      return { a: `${a}:${ia.name}`, b: `${b}:${ib.name}`, up: state !== 'down', mtu: Math.min(ia.mtu, ib.mtu) };
     }
     for (const ia of da.interfaces) {
       const ib = db.interfaces.find((i) => networkOf(i) === networkOf(ia));
       if (!ib || used.has(`${a}:${ia.name}`) || used.has(`${b}:${ib.name}`)) continue;
       used.add(`${a}:${ia.name}`);
       used.add(`${b}:${ib.name}`);
-      return { a: `${a}:${ia.name}`, b: `${b}:${ib.name}`, up: state !== 'down', mtu: DEFAULT_MTU };
+      return { a: `${a}:${ia.name}`, b: `${b}:${ib.name}`, up: state !== 'down', mtu: Math.min(ia.mtu, ib.mtu) };
     }
     throw new Error(`線 ${a}-${b}: 同じ網のアドレスを持つ、空いた口が両方に無い`);
   });

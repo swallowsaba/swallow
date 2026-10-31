@@ -1,0 +1,65 @@
+{
+  "lesson": "net.a.03",
+  "variants": [
+    {
+      "name": "行を分けて足す",
+      "steps": {
+        "three": [
+          "sed -i '/8081;/a \\  server 127.0.0.1:8083;' /etc/nginx/conf.d/lb.conf",
+          "sed -i '/8081;/a \\  server 127.0.0.1:8082;' /etc/nginx/conf.d/lb.conf",
+          "cat /etc/nginx/conf.d/lb.conf",
+          "nginx -t",
+          "systemctl restart nginx",
+          "for i in 1 2 3; do curl -s http://shop.example/; done"
+        ],
+        "stop": [
+          "systemctl stop web-2",
+          "for i in 1 2 3; do curl -s -o /dev/null -w \"%{http_code}\\n\" http://shop.example/; done",
+          "502"
+        ],
+        "retry": [
+          "sed -i '10d' /etc/nginx/conf.d/lb.conf",
+          "cat /etc/nginx/conf.d/lb.conf",
+          "nginx -t",
+          "systemctl restart nginx"
+        ]
+      }
+    },
+    {
+      "name": "weight を付ける・on に書き換える",
+      "steps": {
+        "three": [
+          "sed -i 's/server 127.0.0.1:8081;/server 127.0.0.1:8081 weight=1;\\n  server 127.0.0.1:8082 weight=1;\\n  server 127.0.0.1:8083 weight=1;/' /etc/nginx/conf.d/lb.conf",
+          "nginx -t",
+          "systemctl reload nginx"
+        ],
+        "stop": [
+          "systemctl stop web-2",
+          "curl -i http://shop.example/",
+          "curl -i http://shop.example/",
+          " 502 "
+        ],
+        "retry": [
+          "sed -i 's/proxy_next_upstream off;/proxy_next_upstream error timeout;/' /etc/nginx/conf.d/lb.conf",
+          "nginx -t",
+          "systemctl reload nginx",
+          "curl -I http://shop.example/"
+        ]
+      }
+    }
+  ],
+  "wrong": {
+    "step": "three",
+    "why": "upstream の名前を変えてしまい、proxy_pass と合わない",
+    "input": [
+      "sed -i 's/upstream shop/upstream shops/' /etc/nginx/conf.d/lb.conf",
+      "nginx -t"
+    ],
+    "retry": [
+      "sed -i 's/upstream shops/upstream shop/' /etc/nginx/conf.d/lb.conf",
+      "sed -i 's/server 127.0.0.1:8081;/server 127.0.0.1:8081;\\n  server 127.0.0.1:8082;\\n  server 127.0.0.1:8083;/' /etc/nginx/conf.d/lb.conf",
+      "nginx -t",
+      "systemctl reload nginx"
+    ]
+  }
+}

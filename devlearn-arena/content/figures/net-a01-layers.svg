@@ -1,0 +1,44 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 360" font-family="&quot;Noto Sans JP&quot;, sans-serif">
+  <title>下の層から順に確かめ、原因の層を絞る</title>
+  <defs>
+    <marker id="arrow-gold" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="#f2b632" />
+    </marker>
+  </defs>
+  <g class="el" data-part="link">
+    <rect x="20" y="110" width="100" height="120" rx="10" fill="#1a6fd6" />
+    <text x="70" y="164" text-anchor="middle" font-size="16" font-weight="700" fill="#eef2f6">線と住所</text>
+    <text x="70" y="186" text-anchor="middle" font-size="14" fill="#eef2f6">ip addr</text>
+  </g>
+  <g class="el" data-part="route">
+    <rect x="144" y="110" width="100" height="120" rx="10" fill="#7a3fd0" />
+    <text x="194" y="153" text-anchor="middle" font-size="16" font-weight="700" fill="#eef2f6">経路</text>
+    <text x="194" y="175" text-anchor="middle" font-size="14" fill="#eef2f6">ping</text>
+    <text x="194" y="197" text-anchor="middle" font-size="14" fill="#eef2f6">ip route</text>
+  </g>
+  <g class="el" data-part="name">
+    <rect x="268" y="110" width="100" height="120" rx="10" fill="#f2b632" />
+    <text x="318" y="164" text-anchor="middle" font-size="16" font-weight="700" fill="#0a1424">名前</text>
+    <text x="318" y="186" text-anchor="middle" font-size="14" fill="#0a1424">dig</text>
+  </g>
+  <g class="el" data-part="port">
+    <rect x="392" y="110" width="100" height="120" rx="10" fill="#c0392b" />
+    <text x="442" y="153" text-anchor="middle" font-size="16" font-weight="700" fill="#eef2f6">ポート</text>
+    <text x="442" y="175" text-anchor="middle" font-size="14" fill="#eef2f6">curl</text>
+    <text x="442" y="197" text-anchor="middle" font-size="14" fill="#eef2f6">netstat</text>
+  </g>
+  <g class="el" data-part="http">
+    <rect x="516" y="110" width="100" height="120" rx="10" fill="#1f7a4d" />
+    <text x="566" y="164" text-anchor="middle" font-size="16" font-weight="700" fill="#eef2f6">HTTP</text>
+    <text x="566" y="186" text-anchor="middle" font-size="14" fill="#eef2f6">頁が返る</text>
+  </g>
+  <g class="el" data-part="flow">
+    <path d="M120 170 L141 170" fill="none" stroke="#f2b632" stroke-width="2" marker-end="url(#arrow-gold)" />
+    <path d="M244 170 L265 170" fill="none" stroke="#f2b632" stroke-width="2" marker-end="url(#arrow-gold)" />
+    <path d="M368 170 L389 170" fill="none" stroke="#f2b632" stroke-width="2" marker-end="url(#arrow-gold)" />
+    <path d="M492 170 L513 170" fill="none" stroke="#f2b632" stroke-width="2" marker-end="url(#arrow-gold)" />
+  </g>
+  <g class="el" data-part="note">
+    <text x="320" y="340" text-anchor="middle" font-size="14" fill="#eef2f6">原因は重なることがある。1 つ直したら、もう一度確かめる</text>
+  </g>
+</svg>

@@ -75,6 +75,7 @@ export function checkZone(text: string, zone: string, file: string): ZoneCheck {
     const rest = words.slice(i + 1);
     if (!KNOWN_TYPES.has(type)) return fail(`dns_master_load: ${file}:${String(lineNo)}: unknown RR type '${words[i] ?? ''}'`, 'unknown class/type');
     if (type === 'A' && !/^\d+\.\d+\.\d+\.\d+$/.test(rest[0] ?? '')) return fail(`dns_rdata_fromtext: ${file}:${String(lineNo)}: near '${rest[0] ?? ''}': bad dotted quad`, 'bad dotted quad');
+    if (type === 'AAAA' && !/^[0-9a-fA-F:]*:[0-9a-fA-F:]*$/.test(rest[0] ?? '')) return fail(`dns_rdata_fromtext: ${file}:${String(lineNo)}: near '${rest[0] ?? ''}': bad IPv6 address`, 'bad IPv6 address');
     if (type === 'MX' && !/^\d+$/.test(rest[0] ?? '')) return fail(`dns_rdata_fromtext: ${file}:${String(lineNo)}: near '${rest[0] ?? ''}': not a valid number`, 'not a valid number');
     if (type === 'MX' && rest.length < 2) return fail(`dns_rdata_fromtext: ${file}:${String(lineNo)}: near eol: unexpected end of input`, 'unexpected end of input');
   }

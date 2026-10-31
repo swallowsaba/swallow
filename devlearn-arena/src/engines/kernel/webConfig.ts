@@ -35,7 +35,19 @@ export interface Location {
   ret?: Return;
   /** 中継先（http://127.0.0.1:3000 など） */
   proxy?: string;
+  /** 中継先が upstream の名前なら、その中身（proxy は使わない） */
+  upstream?: Upstream;
+  /** proxy_next_upstream off: 振り分けた台が答えなくても、次の台へ送り直さない */
+  noRetry?: boolean;
   headers: readonly (readonly [string, string])[];
+}
+
+/** 振り分け先の組（upstream { … }。net.a.03） */
+export interface Upstream {
+  name: string;
+  /** 方式: 順番（既定）・接続の少ない台（least_conn。模擬は同時の接続を持たないので順番と同じになる）・送り元で決める（ip_hash） */
+  method: 'round-robin' | 'least-conn' | 'ip-hash';
+  servers: readonly { port: number; weight: number; down: boolean; backup: boolean }[];
 }
 
 export interface ServerBlock {
@@ -161,7 +173,31 @@ const KNOWN = new Set([
   'http', 'events', 'server', 'location', 'listen', 'server_name', 'root', 'index', 'return', 'proxy_pass', 'proxy_set_header',
   'add_header', 'ssl_certificate', 'ssl_certificate_key', 'ssl_protocols', 'include', 'error_page', 'try_files', 'access_log', 'error_log',
   'worker_processes', 'worker_connections', 'user', 'gzip', 'expires', 'charset', 'sendfile', 'keepalive_timeout', 'default_type', 'http2',
+  'upstream', 'proxy_next_upstream', 'proxy_connect_timeout', 'proxy_read_timeout', 'ip_hash', 'least_conn', 'keepalive',
 ]);
+
+/** upstream { … } を読む。誤りは本物と同じ言い方で返す */
+function readUpstream(d: Directive, path: string): Upstream | string {
+  const name = d.args[0] ?? '';
+  const servers: { port: number; weight: number; down: boolean; backup: boolean }[] = [];
+  let method: Upstream['method'] = 'round-robin';
+  for (const x of d.block ?? []) {
+    if (x.name === 'ip_hash') method = 'ip-hash';
+    else if (x.name === 'least_conn') method = 'least-conn';
+    else if (x.name === 'server') {
+      const port = Number((x.args[0] ?? '').split(':').pop());
+      if (!Number.isInteger(port) || port <= 0 || port > 65535) return emerg(`invalid port in upstream "${x.args[0] ?? ''}" in ${path}:${String(x.line)}`);
+      const param = (key: string): string | undefined => x.args.slice(1).find((a) => a.startsWith(`${key}=`))?.slice(key.length + 1);
+      const odd = x.args.slice(1).find((a) => !/^(weight|max_fails|fail_timeout|max_conns)=|^(down|backup)$/.test(a));
+      if (odd !== undefined) return emerg(`invalid parameter "${odd}" in ${path}:${String(x.line)}`);
+      const weight = Number(param('weight') ?? 1);
+      if (!Number.isInteger(weight) || weight <= 0) return emerg(`invalid parameter "weight=${param('weight') ?? ''}" in ${path}:${String(x.line)}`);
+      servers.push({ port, weight, down: x.args.includes('down'), backup: x.args.includes('backup') });
+    }
+  }
+  if (servers.length === 0) return emerg(`no servers are inside upstream in ${path}:${String(d.line)}`);
+  return { name, method, servers };
+}
 
 /** 語の並びを文の木にする。誤りは本物と同じ言い方で返す */
 function parse(tokens: Token[], path: string): Directive[] | string {
@@ -235,7 +271,13 @@ export function readWebConfig(path: string, read: (p: string) => string | null):
   // http { … } の中も同じに読む。server の外に書いた文は、1 つの server として扱う
   const flat = tree.flatMap((d) => (d.name === 'http' ? d.block ?? [] : [d]));
   const serverDirs = flat.filter((d) => d.name === 'server');
-  const loose = flat.filter((d) => d.name !== 'server' && d.name !== 'events');
+  const loose = flat.filter((d) => d.name !== 'server' && d.name !== 'events' && d.name !== 'upstream');
+  const upstreams = new Map<string, Upstream>();
+  for (const d of flat.filter((x) => x.name === 'upstream')) {
+    const u = readUpstream(d, path);
+    if (typeof u === 'string') return { ok: false, error: u };
+    upstreams.set(u.name, u);
+  }
   const groups = serverDirs.length > 0 ? serverDirs.map((d) => d.block ?? []) : [loose];
   const servers: ServerBlock[] = [];
   for (const body of groups) {
@@ -268,10 +310,11 @@ export function readWebConfig(path: string, read: (p: string) => string | null):
         s.ret = r;
       } else if (d.name === 'location') {
         const prefix = d.args[d.args.length - 1] ?? '/';
-        const loc: { prefix: string; root?: string; ret?: Return; proxy?: string; headers: [string, string][] } = { prefix, headers: [] };
+        const loc: { prefix: string; root?: string; ret?: Return; proxy?: string; upstream?: Upstream; noRetry?: boolean; headers: [string, string][] } = { prefix, headers: [] };
         for (const x of d.block ?? []) {
           if (x.name === 'root') loc.root = x.args[0];
           else if (x.name === 'proxy_pass') loc.proxy = x.args[0];
+          else if (x.name === 'proxy_next_upstream' && x.args[0] === 'off') loc.noRetry = true;
           else if (x.name === 'add_header') loc.headers.push([x.args[0] ?? '', x.args[1] ?? '']);
           else if (x.name === 'expires') {
             const h = readExpires(x, path);
@@ -285,6 +328,13 @@ export function readWebConfig(path: string, read: (p: string) => string | null):
           }
         }
         if (loc.proxy !== undefined && !/^https?:\/\/[^/]+/.test(loc.proxy)) return { ok: false, error: emerg(`invalid URL prefix in "${loc.proxy}" in ${path}:${String(d.line)}`) };
+        // ポートの無い名前は upstream の名前。無ければ本物と同じく、名前を引けずに起動しない
+        const bare = /^https?:\/\/([^/:.]+)\/?$/.exec(loc.proxy ?? '')?.[1];
+        if (bare !== undefined && bare !== 'localhost') {
+          const u = upstreams.get(bare);
+          if (!u) return { ok: false, error: emerg(`host not found in upstream "${bare}" in ${path}:${String(d.line)}`) };
+          loc.upstream = u;
+        }
         s.locations.push(loc);
       }
     }

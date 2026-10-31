@@ -123,6 +123,8 @@ export const checkSchema = z.discriminatedUnion('kind', [
    */
   z.object({
     kind: z.literal('http'), url: z.string(), status: z.number().int(), contains: z.string().optional(), auth: z.string().optional(),
+    /** 振り分けの番を替えて、この回数ぶん続けて確かめる（全てが status）。seen は、その答えの本文に全て出たこと */
+    turns: z.number().int().min(1).optional(), seen: z.array(z.string()).optional(),
     header: z.string().regex(/^[A-Za-z0-9-]+: .+$/).optional(),
     method: z.enum(['GET', 'HEAD', 'POST', 'PUT', 'PATCH', 'DELETE']).optional(),
     data: z.string().optional(),

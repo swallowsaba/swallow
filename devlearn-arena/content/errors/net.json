@@ -404,6 +404,153 @@
         "vlan",
         "switch"
       ]
+    },
+    {
+      "id": "net-a-refused",
+      "match": "Connection refused",
+      "meaning": "相手の機械までは届いたが、そのポートで誰も待っていないと断られた。経路の問題ではない。",
+      "causes": [
+        "サービスが別のポートで待っている。",
+        "ポート転送の先のポートが違う。",
+        "サービスが止まっている。"
+      ],
+      "hint": "`netstat -tln` で待っているポートを読み、転送の規則（`iptables -t nat -L`）と比べよう。",
+      "terms": [
+        "port",
+        "port-forwarding"
+      ]
+    },
+    {
+      "id": "net-a-misread",
+      "match": "答えが合っていない",
+      "meaning": "答えが、調べた結果と違う。",
+      "causes": [
+        "別の区間の値を読んだ。",
+        "ping の大きさの数（1472）を読んだ。上限は 28 バイト足した数。"
+      ],
+      "hint": "`Frag needed` の行の `mtu =` か、`tracepath` の `pmtu` を読もう。",
+      "terms": [
+        "mtu"
+      ]
+    },
+    {
+      "id": "net-mtu-timeout",
+      "match": "Operation timed out after",
+      "meaning": "つながったのに、中身が届かないまま時間切れになった。返事の大きな荷物が途中で消えている。",
+      "causes": [
+        "道の途中に MTU の小さい区間がある。",
+        "上限を知らせる ICMP が途中で止められている。"
+      ],
+      "hint": "`ping -M do -s 1472 相手` で、分割を禁じて大きさを試そう。",
+      "terms": [
+        "mtu"
+      ]
+    },
+    {
+      "id": "net-mtu-frag",
+      "match": "Frag needed and DF set",
+      "meaning": "途中の機器が、分割を禁じた荷物を次の区間へ送れないと知らせてきた。`mtu =` がその区間の上限。",
+      "causes": [
+        "道の途中に MTU の小さい区間がある。",
+        "トンネルの包みの分だけ小さくなっている。"
+      ],
+      "hint": "`mtu =` の値を読み、その値に合わせよう。",
+      "terms": [
+        "mtu",
+        "fragmentation"
+      ]
+    },
+    {
+      "id": "net-mtu-local",
+      "match": "message too long",
+      "meaning": "手元の口の上限を超えた荷物なので、送る前に断られた。",
+      "causes": [
+        "`-s` の値が大きすぎる。上限から 28 を引いた数まで。",
+        "手元の口の MTU をもう下げた後。"
+      ],
+      "hint": "`ip link` で手元の `mtu` を読み、`-s` を小さくしよう。",
+      "terms": [
+        "mtu"
+      ]
+    },
+    {
+      "id": "net-lb-502",
+      "match": "502 Bad Gateway|^502$",
+      "meaning": "入口は動いているが、後ろの台から答えが無かった。",
+      "causes": [
+        "止まった台に振り分け、次の台へ送り直さない設定になっている。",
+        "全ての台が止まっている。"
+      ],
+      "hint": "`proxy_next_upstream off` の行が無いかを、設定ファイルで確かめよう。",
+      "terms": [
+        "upstream"
+      ],
+      "output": true
+    },
+    {
+      "id": "net-lb-upstream",
+      "match": "no servers are inside upstream|host not found in upstream",
+      "meaning": "`upstream` の書き方か、`proxy_pass` の名前が違う。",
+      "causes": [
+        "`upstream` の中に `server` の行が無い。",
+        "`proxy_pass` の名前と `upstream` の名前が合っていない。"
+      ],
+      "hint": "`nginx -t` の行の番号を読み、その行を直そう。",
+      "terms": [
+        "upstream"
+      ]
+    },
+    {
+      "id": "net-v6-noname",
+      "match": "Could not resolve host",
+      "meaning": "この名前の IPv6 の住所が引けなかった。`-6` は AAAA のレコードだけを見る。",
+      "causes": [
+        "AAAA のレコードをまだ足していない。",
+        "ゾーンを読み直していない。"
+      ],
+      "hint": "`dig AAAA 名前` で確かめ、ゾーンを直して `systemctl reload named` を打とう。",
+      "terms": [
+        "aaaa-record"
+      ]
+    },
+    {
+      "id": "net-v6-bad",
+      "match": "bad IPv6 address",
+      "meaning": "AAAA のレコードの値が IPv6 の住所の形でない。",
+      "causes": [
+        "AAAA に 4 の住所を書いた。",
+        "`:` の綴りを間違えた。"
+      ],
+      "hint": "`2001:db8:10::20` の形で書き直そう。",
+      "terms": [
+        "aaaa-record"
+      ]
+    },
+    {
+      "id": "net-v6-prefix",
+      "match": "inet6 prefix is expected",
+      "meaning": "`ip -6 addr add` の住所の形が違う。",
+      "causes": [
+        "`/64` を書き忘れた。",
+        "4 の住所を書いた。"
+      ],
+      "hint": "`2001:db8:10::20/64` の形で打とう。",
+      "terms": [
+        "ipv6"
+      ]
+    },
+    {
+      "id": "net-v6-noroute",
+      "match": "connect: Network is unreachable",
+      "meaning": "この機械には、まだ IPv6 の住所が無いので送れない。",
+      "causes": [
+        "`ip -6 addr add` をまだ打っていない。",
+        "別の機械で打った。"
+      ],
+      "hint": "`ip -6 addr show` で住所を確かめよう。",
+      "terms": [
+        "ipv6"
+      ]
     }
   ]
 }

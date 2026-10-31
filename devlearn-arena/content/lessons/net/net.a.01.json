@@ -1,0 +1,365 @@
+{
+  "id": "net.a.01",
+  "domain": "net",
+  "level": "advanced",
+  "theme": "切り分け",
+  "title": "繋がらない原因を層ごとに探す",
+  "goal": "物理〜アプリの順に切り分けられる",
+  "minutes": 20,
+  "prerequisites": [
+    "net.i.03",
+    "trouble.b.01"
+  ],
+  "related": [
+    "trouble.i.02",
+    "mon.i.03"
+  ],
+  "next": [
+    "net.a.02"
+  ],
+  "terms": [
+    "http",
+    "port",
+    "network",
+    "service",
+    "ping",
+    "dig",
+    "app",
+    "log",
+    "lan",
+    "dns",
+    "firewall",
+    "server"
+  ],
+  "explain": {
+    "what": "繋がらない時は、下の層から順に確かめ、原因の層を絞る。線と住所 → 経路 → 名前 → {{term:port}} → {{term:http}} の順。",
+    "why": "思いつきで触ると時間を失う。上の層の確かめは、下の層が動いている時しか意味が無い。",
+    "use": "{{term:network}}の障害対応で使う。層ごとに道具が決まっているので、結果から次の一手が決まる。",
+    "when": "「{{term:service}}につながらない」と報告が来た。原因は 1 つとは限らない。",
+    "figures": [
+      "net-a01-layers"
+    ]
+  },
+  "understand": [
+    {
+      "kind": "order",
+      "prompt": "確かめる順に並べる。",
+      "items": [
+        "線と住所",
+        "経路",
+        "名前",
+        "ポート",
+        "HTTP"
+      ],
+      "see": "what"
+    },
+    {
+      "kind": "situation",
+      "prompt": "住所への {{term:ping}} は届くが、名前では届かない。次に調べるのは？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "名前の答え（{{term:dig}}）",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "線と経路",
+          "correct": false,
+          "whyNot": "ping が届くので、そこは動いている。"
+        },
+        {
+          "id": "c",
+          "text": "{{term:app}}の{{term:log}}",
+          "correct": false,
+          "whyNot": "まだアプリに届いていない。"
+        }
+      ],
+      "see": "use"
+    }
+  ],
+  "quiz": [
+    {
+      "id": "q1",
+      "kind": "situation",
+      "prompt": "ping は届く。次に確かめるのは？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "ポートか名前",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "{{term:lan}} の線",
+          "correct": false,
+          "whyNot": "ping が届けば線は通っている。"
+        },
+        {
+          "id": "c",
+          "text": "機械の再起動",
+          "correct": false,
+          "whyNot": "まだ原因を絞っていない。"
+        }
+      ],
+      "explanation": "通った層より上を調べる。"
+    },
+    {
+      "id": "q2",
+      "kind": "cause",
+      "prompt": "名前では届かず、住所では届く。原因は？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "{{term:dns}}",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "経路",
+          "correct": false,
+          "whyNot": "住所で届くので経路は動いている。"
+        },
+        {
+          "id": "c",
+          "text": "サービスの停止",
+          "correct": false,
+          "whyNot": "住所で頁が返るなら動いている。"
+        }
+      ],
+      "explanation": "名前の層だけが違う。`dig` で答えを見る。"
+    },
+    {
+      "id": "q3",
+      "kind": "cause",
+      "prompt": "`Connection refused` と言われた。原因は？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "そのポートでサービスが待っていない",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "途中の経路が無い",
+          "correct": false,
+          "whyNot": "経路が無ければ断られない。相手に届いて断られた。"
+        },
+        {
+          "id": "c",
+          "text": "{{term:firewall}}が黙って落としている",
+          "correct": false,
+          "whyNot": "黙って落とすなら時間切れになる。"
+        }
+      ],
+      "explanation": "`refused` は相手から返ってきた答え。"
+    },
+    {
+      "id": "q4",
+      "kind": "predict",
+      "prompt": "経路を直した後、もう一度 ping を打つと？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "届き、次の層の確認に進める",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "全ての問題が解ける",
+          "correct": false,
+          "whyNot": "上の層の原因は残っているかもしれない。"
+        },
+        {
+          "id": "c",
+          "text": "名前も直る",
+          "correct": false,
+          "whyNot": "名前は別の層。"
+        }
+      ],
+      "explanation": "1 つ直したら確かめ、残りを探す。"
+    }
+  ],
+  "practice": {
+    "mode": "terminal",
+    "purpose": "社内の機械 `office` から `shop.example` に届かない。あなたは DNS の{{term:server}} `ns1` にいる。`office` の様子は `ip netns exec office 命令` で見る。原因は 3 つ重なっている。下の層から順に解く。",
+    "environment": "net-client",
+    "setup": {
+      "user": "root",
+      "cwd": "/root",
+      "dirs": [
+        "/root",
+        "/etc/bind"
+      ],
+      "files": {
+        "/etc/bind/db.shop.example": "$TTL 300\n$ORIGIN shop.example.\n@     IN  SOA    ns1.shop.example. admin.shop.example. ( 2026103101 3600 900 604800 300 )\n@     IN  NS     ns1.shop.example.\nns1   IN  A      203.0.113.53\n@     IN  A      203.0.113.99   ; 店の入口\n"
+      },
+      "services": {
+        "named": {
+          "description": "BIND DNS server",
+          "active": true,
+          "enabled": true,
+          "port": 53,
+          "zone": "/etc/bind/db.shop.example"
+        }
+      },
+      "network": {
+        "self": "ns1",
+        "devices": [
+          {
+            "name": "office",
+            "addrs": [
+              "192.168.10.20/24"
+            ]
+          },
+          {
+            "name": "rtr",
+            "kind": "router",
+            "addrs": [
+              "192.168.10.1/24",
+              "203.0.113.1/24"
+            ]
+          },
+          {
+            "name": "sw",
+            "kind": "switch",
+            "ports": 4
+          },
+          {
+            "name": "ns1",
+            "addrs": [
+              "203.0.113.53/24"
+            ],
+            "gateway": "203.0.113.1"
+          },
+          {
+            "name": "lb",
+            "kind": "router",
+            "addrs": [
+              "203.0.113.20/24",
+              "10.0.2.1/24"
+            ],
+            "gateway": "203.0.113.1",
+            "firewall": [
+              "-t nat -A PREROUTING -p tcp --dport 80 -j DNAT --to-destination 10.0.2.10:8081"
+            ]
+          },
+          {
+            "name": "app",
+            "addrs": [
+              "10.0.2.10/24"
+            ],
+            "gateway": "10.0.2.1",
+            "listen": [
+              8080
+            ],
+            "body": "<h1>港の店</h1>"
+          }
+        ],
+        "links": [
+          [
+            "office",
+            "rtr"
+          ],
+          [
+            "rtr",
+            "sw"
+          ],
+          [
+            "ns1",
+            "sw"
+          ],
+          [
+            "lb",
+            "sw"
+          ],
+          [
+            "lb",
+            "app"
+          ]
+        ]
+      }
+    },
+    "steps": [
+      {
+        "id": "route",
+        "purpose": "`office` から店の入口の住所 `203.0.113.20` へ `ping -c 1` を打つ。`Network is unreachable` と断られる。`ip route` で読み、出口 `192.168.10.1` への経路を足して届かせる。",
+        "check": {
+          "kind": "net",
+          "expr": "route office default via 192.168.10.1 && reach 203.0.113.20 from office"
+        },
+        "afterward": "届いた。`office` には出口の経路が無かった。下の層が 1 つ解けた。",
+        "hints": [
+          "自分の網の外へ出る道を見る。",
+          "`ip route add default via 出口の住所`。",
+          "`ip netns exec office ping -c 1 203.0.113.20` `ip netns exec office ip route` `ip netns exec office ip route add default via 192.168.10.1` `ip netns exec office ping -c 1 203.0.113.20` を打つ。1 つ目の命令は失敗する。"
+        ],
+        "expectedErrors": [
+          "net-unreachable",
+          "net-route-nexthop"
+        ],
+        "designedErrors": [
+          "net-unreachable"
+        ]
+      },
+      {
+        "id": "name",
+        "purpose": "`office` から `dig +short shop.example` を打つ。答えが古い住所 `203.0.113.99` のはず。`/etc/bind/db.shop.example` を `203.0.113.20` に直し、`named-checkzone` で確かめて `systemctl reload named` で読み直す。",
+        "check": {
+          "kind": "net",
+          "expr": "resolve shop.example=203.0.113.20"
+        },
+        "afterward": "名前が今の住所を指した。古いレコードが残っていた。これで 2 つ解けた。",
+        "hints": [
+          "名前の答えはゾーンファイルにある。",
+          "`sed -i` で住所を置き換えて読み直す。",
+          "`ip netns exec office dig +short shop.example` `sed -i 's/203.0.113.99/203.0.113.20/' /etc/bind/db.shop.example` `named-checkzone shop.example /etc/bind/db.shop.example` `systemctl reload named` `ip netns exec office dig +short shop.example` を打つ。"
+        ],
+        "expectedErrors": [
+          "net-zone-error"
+        ]
+      },
+      {
+        "id": "port",
+        "purpose": "`office` から `curl http://shop.example/` を打つ。`Connection refused` と断られる。`app` が待つポートを `netstat -tln` で読み、入口 `lb` の転送の規則（`iptables -t nat -L PREROUTING -n --line-numbers`）を直して頁を出す。",
+        "check": {
+          "kind": "net",
+          "expr": "reach shop.example:80 from office"
+        },
+        "afterward": "頁が返った。入口は 8081 番へ転送していたが、`app` は 8080 番で待っていた。3 つの原因を下の層から順に解いた。",
+        "hints": [
+          "`refused` は、届いたが待っていないという答え。",
+          "規則を消して、正しいポートで足し直す。",
+          "`ip netns exec office curl http://shop.example/` `ip netns exec app netstat -tln` `ip netns exec lb iptables -t nat -L PREROUTING -n --line-numbers` `ip netns exec lb iptables -t nat -D PREROUTING 1` `ip netns exec lb iptables -t nat -A PREROUTING -p tcp --dport 80 -j DNAT --to-destination 10.0.2.10:8080` `ip netns exec office curl http://shop.example/` を打つ。1 つ目の命令は失敗する。"
+        ],
+        "expectedErrors": [
+          "net-a-refused",
+          "net-fw-syntax"
+        ],
+        "designedErrors": [
+          "net-a-refused"
+        ]
+      }
+    ]
+  },
+  "result": {
+    "success": "下の層から順に 3 つの原因を解けた。",
+    "partial": "ヒントを使って解けた。次は、結果からどの層を疑うかを先に言ってから打とう。",
+    "retry": "まだ届かない。`ping`・`dig`・`curl` の順に、どの層が残っているかを確かめよう。"
+  },
+  "summary": {
+    "points": [
+      "下の層から確かめる",
+      "1 つ直したら確かめる",
+      "原因は重なることがある"
+    ],
+    "next": [
+      "net.a.02"
+    ],
+    "terms": [
+      "routing-table",
+      "dig",
+      "port-forwarding"
+    ]
+  }
+}

@@ -1,0 +1,279 @@
+{
+  "id": "net.a.04",
+  "domain": "net",
+  "level": "advanced",
+  "theme": "IPv6",
+  "title": "IPv6 の基本",
+  "goal": "アドレスの読み方と IPv4 との違いを説明できる",
+  "minutes": 20,
+  "prerequisites": [
+    "net.b.03"
+  ],
+  "related": [
+    "net.b.03",
+    "cloud.b.03"
+  ],
+  "next": [],
+  "terms": [
+    "ipv6",
+    "bit",
+    "ip",
+    "ipv4",
+    "dual-stack",
+    "cloud",
+    "web-server",
+    "server",
+    "dns"
+  ],
+  "explain": {
+    "what": "{{term:ipv6}} は、住所を 128 {{term:bit}}に広げた新しい {{term:ip}}。16 進数をコロンで区切って書き、0 の続きは 2 つのコロンで省く。",
+    "why": "{{term:ipv4}} の住所は足りない。IPv6 なら機器ごとに住所を持てて、変換の仕組みに頼らずに済む。",
+    "use": "これからの網と{{term:cloud}}で使う。今は IPv4 と両方を動かす形（{{term:dual-stack}}）が普通。",
+    "when": "アドレスの欄に 2001:db8::1 のような表記がある。IPv6 だけの利用者にも届けたい。",
+    "figures": [
+      "net-a04-ipv6"
+    ]
+  },
+  "understand": [
+    {
+      "kind": "match",
+      "prompt": "書き方と意味を結ぶ。",
+      "pairs": [
+        [
+          "`::`",
+          "0 の続きの省略（1 回だけ）"
+        ],
+        [
+          "`/64`",
+          "前の 64 ビットが網の部分"
+        ],
+        [
+          "`fe80::`",
+          "同じ線の上だけで使う住所"
+        ]
+      ],
+      "see": "what"
+    },
+    {
+      "kind": "yesno",
+      "prompt": "IPv4 の住所しか持たない機械は、IPv6 の住所の相手とそのまま話せる？",
+      "answer": false,
+      "why": "別の住所の体系。片方の住所だけでは、もう片方では話せない。",
+      "see": "what"
+    }
+  ],
+  "quiz": [
+    {
+      "id": "q1",
+      "kind": "predict",
+      "prompt": "`2001:0db8:0000:0000:0000:0000:0000:0001` を省略すると？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "`2001:db8::1`",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "`2001:db8:1`",
+          "correct": false,
+          "whyNot": "`::` が無いと、0 の続きがどこか分からない。"
+        },
+        {
+          "id": "c",
+          "text": "`21:db8::1`",
+          "correct": false,
+          "whyNot": "省けるのは組の頭の 0 だけ。"
+        }
+      ],
+      "explanation": "頭の 0 を省き、0 の続きを `::` にする。"
+    },
+    {
+      "id": "q2",
+      "kind": "choice",
+      "prompt": "IPv6 の住所を名前に結ぶレコードは？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "`AAAA`",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "`A`",
+          "correct": false,
+          "whyNot": "`A` は IPv4。"
+        },
+        {
+          "id": "c",
+          "text": "`MX`",
+          "correct": false,
+          "whyNot": "`MX` はメールの受け取り先。"
+        }
+      ],
+      "explanation": "4 倍の大きさの住所なので `A` が 4 つ。"
+    },
+    {
+      "id": "q3",
+      "kind": "situation",
+      "prompt": "IPv4 と IPv6 の両方で公開する。名前には？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "`A` と `AAAA` の両方を書く",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "`AAAA` だけにする",
+          "correct": false,
+          "whyNot": "IPv4 の利用者に届かなくなる。"
+        },
+        {
+          "id": "c",
+          "text": "`A` だけで自動で変換される",
+          "correct": false,
+          "whyNot": "自動では変わらない。"
+        }
+      ],
+      "explanation": "利用者の網に合わせて、どちらかで届く。"
+    }
+  ],
+  "practice": {
+    "mode": "terminal",
+    "purpose": "{{term:web-server}} `web` は IPv4 でしか届かない。あなたは `web` にいる（{{term:dns}} の{{term:server}}もここで動く）。IPv6 の住所 `2001:db8:10::20/64` を付け、利用者の機械 `visitor` から `shop.example` に IPv6 で届くようにする。",
+    "environment": "net-client",
+    "setup": {
+      "user": "root",
+      "cwd": "/root",
+      "dirs": [
+        "/root",
+        "/etc/bind"
+      ],
+      "files": {
+        "/etc/bind/db.shop.example": "$TTL 300\n$ORIGIN shop.example.\n@     IN  SOA    ns1.shop.example. admin.shop.example. ( 2026103101 3600 900 604800 300 )\n@     IN  NS     ns1.shop.example.\nns1   IN  A      203.0.113.53\n@     IN  A      203.0.113.20   ; 店\n"
+      },
+      "services": {
+        "named": {
+          "description": "BIND DNS server",
+          "active": true,
+          "enabled": true,
+          "port": 53,
+          "zone": "/etc/bind/db.shop.example"
+        }
+      },
+      "network": {
+        "self": "web",
+        "devices": [
+          {
+            "name": "sw",
+            "kind": "switch",
+            "ports": 4
+          },
+          {
+            "name": "web",
+            "addrs": [
+              "203.0.113.20/24"
+            ],
+            "listen": [
+              80
+            ],
+            "body": "<h1>港の店</h1>"
+          },
+          {
+            "name": "visitor",
+            "addrs": [
+              "203.0.113.77/24"
+            ],
+            "addrs6": [
+              "2001:db8:10::77/64"
+            ]
+          }
+        ],
+        "links": [
+          [
+            "web",
+            "sw"
+          ],
+          [
+            "visitor",
+            "sw"
+          ]
+        ]
+      }
+    },
+    "steps": [
+      {
+        "id": "addr",
+        "purpose": "`ip -6 addr show` で今の住所を読む（`fe80::` は同じ線の上だけの住所）。`ip -6 addr add 2001:db8:10::20/64 dev eth0` で住所を足し、`visitor` から `ping -6 -c 1 2001:db8:10::20` で確かめる。",
+        "check": {
+          "kind": "net",
+          "expr": "addr6 web 2001:db8:10::20 && reach6 2001:db8:10::20 from visitor"
+        },
+        "afterward": "届いた。口には 4 の住所と 6 の住所の両方が付いている（デュアルスタック）。",
+        "hints": [
+          "`ip -6` は IPv6 だけを扱う。",
+          "`/64` を付けて `dev eth0` に足す。",
+          "`ip -6 addr show` `ip -6 addr add 2001:db8:10::20/64 dev eth0` `ip netns exec visitor ping -6 -c 1 2001:db8:10::20` を打つ。"
+        ],
+        "expectedErrors": [
+          "net-v6-prefix",
+          "net-v6-noroute"
+        ]
+      },
+      {
+        "id": "record",
+        "purpose": "`/etc/bind/db.shop.example` に `@ IN AAAA 2001:db8:10::20` の行を足す。`named-checkzone` で確かめて `systemctl reload named` で読み直し、`dig AAAA shop.example` で確かめる。",
+        "check": {
+          "kind": "net",
+          "expr": "record shop.example AAAA 2001:db8:10::20"
+        },
+        "afterward": "名前に 6 の住所が結ばれた。`A` のレコードは残っているので、IPv4 の利用者も今までどおり届く。",
+        "hints": [
+          "住所は `AAAA` のレコードに書く。",
+          "`echo` と `>>` で行を足す。",
+          "`echo '@ IN AAAA 2001:db8:10::20' >> /etc/bind/db.shop.example` `named-checkzone shop.example /etc/bind/db.shop.example` `systemctl reload named` `dig AAAA shop.example` を打つ。"
+        ],
+        "expectedErrors": [
+          "net-v6-bad",
+          "net-zone-error"
+        ]
+      },
+      {
+        "id": "reach",
+        "purpose": "`visitor` から `curl -6 http://shop.example/` を打つ。IPv6 で頁が出れば達成。",
+        "check": {
+          "kind": "net",
+          "expr": "reach6 shop.example:80 from visitor"
+        },
+        "afterward": "名前から 6 の住所を引いて、頁が届いた。4 と 6 の両方で同じ頁を出せた。",
+        "hints": [
+          "`-6` は IPv6 で頼む。",
+          "`ip netns exec visitor` を前に付ける。",
+          "`ip netns exec visitor curl -6 http://shop.example/` を打つ。"
+        ],
+        "expectedErrors": [
+          "net-v6-noname"
+        ]
+      }
+    ]
+  },
+  "result": {
+    "success": "新しい住所でも届けられた。",
+    "partial": "ヒントを使って届けられた。次は `::` の省略を自分で書いてみよう。",
+    "retry": "まだ届かない。`ip -6 addr` の住所と、`dig AAAA` の答えを比べよう。"
+  },
+  "summary": {
+    "points": [
+      "IPv6 は広い住所",
+      "`::` で 0 の続きを省略",
+      "名前は `AAAA`"
+    ],
+    "next": [],
+    "terms": [
+      "ipv6",
+      "aaaa-record",
+      "dual-stack"
+    ]
+  }
+}

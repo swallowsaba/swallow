@@ -1228,7 +1228,7 @@
       "title": "繋がらない原因を層ごとに探す",
       "goal": "物理〜アプリの順に切り分けられる",
       "practice": [
-        "simulation"
+        "terminal"
       ],
       "prerequisites": [
         "net.i.03",
@@ -1250,7 +1250,7 @@
       "title": "MTU と断片化",
       "goal": "大きな通信だけ失敗する理由を説明できる",
       "practice": [
-        "simulation"
+        "terminal"
       ],
       "prerequisites": [
         "net.i.04"
@@ -1271,7 +1271,7 @@
       "title": "ロードバランサ",
       "goal": "振り分け方式と健全性確認を設計できる",
       "practice": [
-        "simulation"
+        "terminal"
       ],
       "prerequisites": [
         "net.i.03"
@@ -1292,7 +1292,7 @@
       "title": "IPv6 の基本",
       "goal": "アドレスの読み方と IPv4 との違いを説明できる",
       "practice": [
-        "simulation"
+        "terminal"
       ],
       "prerequisites": [
         "net.b.03"

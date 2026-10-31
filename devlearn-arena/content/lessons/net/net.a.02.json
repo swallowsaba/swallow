@@ -1,0 +1,321 @@
+{
+  "id": "net.a.02",
+  "domain": "net",
+  "level": "advanced",
+  "theme": "経路",
+  "title": "MTU と断片化",
+  "goal": "大きな通信だけ失敗する理由を説明できる",
+  "minutes": 20,
+  "prerequisites": [
+    "net.i.04"
+  ],
+  "related": [
+    "trouble.a.02",
+    "web.a.01"
+  ],
+  "next": [
+    "net.a.03"
+  ],
+  "terms": [
+    "mtu",
+    "fragmentation",
+    "app",
+    "vpn",
+    "file",
+    "dns",
+    "firewall",
+    "port",
+    "server",
+    "cpu",
+    "ping",
+    "tcp",
+    "byte"
+  ],
+  "explain": {
+    "what": "{{term:mtu}} は 1 回で送れる荷物の大きさの上限。超えると荷物は分けて送る（{{term:fragmentation}}）か、分けることを禁じていれば落ちる。",
+    "why": "小さな通信は通るのに、大きな通信だけ失敗する。原因が分からないと、{{term:app}}の不具合に見える。",
+    "use": "{{term:vpn}} やトンネルを使う網の障害で使う。トンネルは包みの分だけ上限が小さくなる。",
+    "when": "ページの一部だけ読み込めない。接続はできるが、大きな{{term:file}}の途中で止まる。",
+    "figures": [
+      "net-a02-mtu"
+    ]
+  },
+  "understand": [
+    {
+      "kind": "relation",
+      "prompt": "関係を選ぶ。",
+      "a": "上限の小さい区間が 1 つある",
+      "b": "道の全体の上限",
+      "answer": "cause",
+      "why": "一番小さい区間が、道の全体の上限を決める。",
+      "see": "what"
+    },
+    {
+      "kind": "situation",
+      "prompt": "大きな荷物だけ落ちるのは、なぜ？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "分けることを禁じた荷物が、上限の小さい区間を通れないから",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "大きな荷物は遅いから",
+          "correct": false,
+          "whyNot": "遅さではなく、大きさで落ちる。"
+        },
+        {
+          "id": "c",
+          "text": "相手が大きな荷物を断るから",
+          "correct": false,
+          "whyNot": "相手まで届いていない。"
+        }
+      ],
+      "see": "what"
+    }
+  ],
+  "quiz": [
+    {
+      "id": "q1",
+      "kind": "cause",
+      "prompt": "小さな頁は開くが、大きなファイルが止まる。疑うのは？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "MTU",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "{{term:dns}}",
+          "correct": false,
+          "whyNot": "名前が引けなければ、小さな頁も開かない。"
+        },
+        {
+          "id": "c",
+          "text": "{{term:firewall}}の{{term:port}}",
+          "correct": false,
+          "whyNot": "ポートが閉じていれば、小さな頁も開かない。"
+        }
+      ],
+      "explanation": "大きさで振る舞いが変わる時は MTU を疑う。"
+    },
+    {
+      "id": "q2",
+      "kind": "predict",
+      "prompt": "分割を禁じて、上限を超える荷物を送ると？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "落ちて、途中の機器が上限を知らせてくる",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "自動で分けて届く",
+          "correct": false,
+          "whyNot": "分けることを禁じている。"
+        },
+        {
+          "id": "c",
+          "text": "遅れて届く",
+          "correct": false,
+          "whyNot": "落ちる。"
+        }
+      ],
+      "explanation": "`Frag needed and DF set (mtu = 1400)` と返る。"
+    },
+    {
+      "id": "q3",
+      "kind": "situation",
+      "prompt": "上限 1400 の区間が見つかった。対策は？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "送る大きさを 1400 に合わせる",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "{{term:server}}の {{term:cpu}} を増やす",
+          "correct": false,
+          "whyNot": "大きさの問題。"
+        },
+        {
+          "id": "c",
+          "text": "{{term:ping}} を止める",
+          "correct": false,
+          "whyNot": "ping は調べる道具。"
+        }
+      ],
+      "explanation": "口の MTU を下げると、{{term:tcp}} の 1 つの荷物が小さくなる。"
+    }
+  ],
+  "practice": {
+    "mode": "terminal",
+    "purpose": "支店の `pc` から本社の `files.example` を読むと、`/` は開くが `/report.html` が止まる。間に VPN の `vpn-a` と `vpn-b` がある。大きさを変えて試し、区間の上限を見つけて `pc` の口を合わせる。",
+    "environment": "net-client",
+    "setup": {
+      "user": "root",
+      "cwd": "/root",
+      "network": {
+        "self": "pc",
+        "devices": [
+          {
+            "name": "pc",
+            "addrs": [
+              "10.0.1.10/24"
+            ],
+            "gateway": "10.0.1.1"
+          },
+          {
+            "name": "vpn-a",
+            "kind": "router",
+            "addrs": [
+              "10.0.1.1/24",
+              "172.16.0.1/30"
+            ],
+            "mtus": {
+              "eth1": 1400
+            },
+            "gateway": "172.16.0.2"
+          },
+          {
+            "name": "vpn-b",
+            "kind": "router",
+            "addrs": [
+              "172.16.0.2/30",
+              "192.0.2.1/24"
+            ],
+            "mtus": {
+              "eth0": 1400
+            },
+            "gateway": "172.16.0.1"
+          },
+          {
+            "name": "files",
+            "addrs": [
+              "192.0.2.10/24"
+            ],
+            "gateway": "192.0.2.1",
+            "listen": [
+              80
+            ],
+            "body": "<h1>本社の入口</h1>",
+            "pages": {
+              "/report.html": {
+                "body": "<h1>月次の報告書</h1>",
+                "bytes": 6000
+              }
+            }
+          }
+        ],
+        "links": [
+          [
+            "pc",
+            "vpn-a"
+          ],
+          [
+            "vpn-a",
+            "vpn-b"
+          ],
+          [
+            "vpn-b",
+            "files"
+          ]
+        ],
+        "dns": {
+          "files.example": "192.0.2.10"
+        }
+      }
+    },
+    "steps": [
+      {
+        "id": "symptom",
+        "purpose": "`curl http://files.example/` と `curl http://files.example/report.html` を打つ。止まる方の道（`/report.html` か `/`）を答えの欄に入れる。",
+        "check": {
+          "kind": "answer",
+          "equals": "/report.html"
+        },
+        "afterward": "接続はできるのに、大きな頁の中身だけが届かない。ポートや名前の問題ではない。",
+        "hints": [
+          "2 つの道を順に打つ。",
+          "`(28)` が出る方。",
+          "`curl http://files.example/` `curl http://files.example/report.html` を打ち、`/report.html` と答える。2 つ目の命令は失敗する。"
+        ],
+        "expectedErrors": [
+          "net-mtu-timeout",
+          "net-a-misread"
+        ],
+        "designedErrors": [
+          "net-mtu-timeout"
+        ]
+      },
+      {
+        "id": "size",
+        "purpose": "`ping -c 1 -M do -s 1472 files.example` で、分割を禁じて 1500 {{term:byte}}の荷物を送る。`tracepath files.example` でも確かめ、区間の上限の数を答えの欄に入れる。",
+        "check": {
+          "kind": "answer",
+          "equals": "1400"
+        },
+        "afterward": "`vpn-a` の先の区間の上限は 1400。1500 の荷物はそこを通れない。`tracepath` の `pmtu` も同じ数を言う。",
+        "hints": [
+          "`-M do` は分割を禁じる。`-s` は中身の大きさで、頭の 28 バイトが足される。",
+          "`mtu =` か `pmtu` の値を読む。",
+          "`ping -c 1 -M do -s 1472 files.example` `tracepath files.example` を打ち、`1400` と答える。1 つ目の命令は失敗する。"
+        ],
+        "expectedErrors": [
+          "net-mtu-frag",
+          "net-mtu-local",
+          "net-a-misread"
+        ],
+        "designedErrors": [
+          "net-mtu-frag"
+        ]
+      },
+      {
+        "id": "fix",
+        "purpose": "`ip link set eth0 mtu 1400` で `pc` の口を区間に合わせ、`curl http://files.example/report.html` で報告書が出れば達成。",
+        "check": {
+          "kind": "ran",
+          "uses": [
+            "curl"
+          ],
+          "shows": [
+            "<h1>月次の報告書</h1>"
+          ]
+        },
+        "afterward": "届いた。TCP は接続の時に受け取れる大きさを伝えるので、手元の上限を下げると、相手も小さな荷物で送ってくる。",
+        "hints": [
+          "上限は、見つけた数に合わせる。",
+          "`ip link set 口 mtu 数`。",
+          "`ip link set eth0 mtu 1400` `curl http://files.example/report.html` を打つ。"
+        ],
+        "expectedErrors": [
+          "net-mtu-timeout"
+        ]
+      }
+    ]
+  },
+  "result": {
+    "success": "大きさの問題を見抜き、区間に合わせて直せた。",
+    "partial": "ヒントを使って直せた。次は、大きさを 2 通り試して境目を探そう。",
+    "retry": "まだ止まる。`tracepath` の `pmtu` の数と、`ip link` の `mtu` を比べよう。"
+  },
+  "summary": {
+    "points": [
+      "MTU は 1 回の上限",
+      "最も小さい区間で決まる",
+      "大きな物だけ失敗する時に疑う"
+    ],
+    "next": [
+      "net.a.03"
+    ],
+    "terms": [
+      "mtu",
+      "fragmentation",
+      "tracepath"
+    ]
+  }
+}

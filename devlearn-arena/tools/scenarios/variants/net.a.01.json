@@ -1,0 +1,55 @@
+{
+  "lesson": "net.a.01",
+  "variants": [
+    {
+      "name": "ip route と nmap で確かめる",
+      "steps": {
+        "route": [
+          "ip netns exec office ip route",
+          "ip netns exec office ip route add default via 192.168.10.1 dev eth0",
+          "ip netns exec office traceroute 203.0.113.20"
+        ],
+        "name": [
+          "sed -i 's/^@     IN  A      203.0.113.99/@     IN  A      203.0.113.20/' /etc/bind/db.shop.example",
+          "rndc reload",
+          "ip netns exec office dig shop.example"
+        ],
+        "port": [
+          "ip netns exec office nmap -p 80 shop.example",
+          "ip netns exec lb iptables -t nat -F PREROUTING",
+          "ip netns exec lb iptables -t nat -A PREROUTING -p tcp --dport 80 -j DNAT --to-destination 10.0.2.10:8080",
+          "ip netns exec office nmap -p 80 shop.example"
+        ]
+      }
+    },
+    {
+      "name": "ip -n で打つ",
+      "steps": {
+        "route": [
+          "ip -n office route add default via 192.168.10.1"
+        ],
+        "name": [
+          "dig +short shop.example",
+          "sed -i '/203.0.113.99/s/99/20/' /etc/bind/db.shop.example",
+          "named-checkzone shop.example /etc/bind/db.shop.example",
+          "systemctl reload named"
+        ],
+        "port": [
+          "ip netns exec lb iptables -t nat -S PREROUTING",
+          "ip netns exec lb iptables -t nat -D PREROUTING -p tcp --dport 80 -j DNAT --to-destination 10.0.2.10:8081",
+          "ip netns exec lb iptables -t nat -I PREROUTING 1 -p tcp --dport 80 -j DNAT --to-destination 10.0.2.10:8080"
+        ]
+      }
+    }
+  ],
+  "wrong": {
+    "step": "route",
+    "why": "経路を足さずに名前を調べる。住所へ届かない",
+    "input": [
+      "ip netns exec office curl http://203.0.113.20/"
+    ],
+    "retry": [
+      "ip netns exec office ip route add default via 192.168.10.1"
+    ]
+  }
+}

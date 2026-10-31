@@ -15,6 +15,8 @@ import type { CommandRegistry, ShellState } from '@/engines/kernel/registry';
 import { portsOf, serviceOf } from '@/engines/kernel/services';
 import { execute, lineCommands, type CommandPart } from '@/engines/kernel/shell';
 import { devicesOf } from '@/engines/kernel/commands/block';
+import { LB_TURN } from '@/engines/kernel/commands/httpLocal';
+import { has6, reach6 } from '@/engines/kernel/commands/net6';
 import { diskUse } from '@/engines/kernel/commands/proc';
 import { sshHolds } from '@/engines/kernel/commands/ssh';
 import { exists, isDir, metaOf, readFile, writeFile } from '@/engines/kernel/vfs';
@@ -179,6 +181,17 @@ export function checkState(check: CheckSpec, input: CheckInput): boolean {
       return true;
     }
     case 'http': {
+      if (check.turns !== undefined) {
+        const { turns, seen, ...one } = check;
+        const answers: string[] = [];
+        for (let i = 0; i < turns; i += 1) {
+          const turned: ShellState = { ...shell, vars: new Map([...shell.vars, [LB_TURN, String(i)]]) };
+          const r = request(httpEnvOf(turned), one.url, {});
+          if (!r.ok || r.response.status !== one.status) return false;
+          answers.push(r.response.body);
+        }
+        return (seen ?? []).every((w) => answers.some((a) => a.includes(w)));
+      }
       const r = request(httpEnvOf(shell), check.url, { ...(check.auth !== undefined ? { authorization: check.auth } : {}), ...(check.method ? { method: check.method } : {}), ...(check.data !== undefined ? { data: check.data } : {}) });
       return r.ok && r.response.status === check.status && (check.contains === undefined || r.response.body.includes(check.contains)) && (check.header === undefined || hasHeader(r.response.headers, check.header));
     }
@@ -226,7 +239,7 @@ export function netHolds(shell: ShellState, expr: string): boolean {
     const c = raw.trim();
     const negate = c.startsWith('!');
     const [head = '', arg = '', ...rest] = (negate ? c.slice(1) : c).trim().split(/\s+/);
-    const shape = head === 'route' ? rest.length === 3 && rest[1] === 'via' : head === 'record' || head === 'dnat' ? rest.length === 2 : head === 'reach' ? rest.length === 0 || (rest.length === 2 && rest[0] === 'from') : rest.length === 0;
+    const shape = head === 'route' ? rest.length === 3 && rest[1] === 'via' : head === 'record' || head === 'dnat' ? rest.length === 2 : head === 'addr6' ? rest.length === 1 : head === 'reach' || head === 'reach6' ? rest.length === 0 || (rest.length === 2 && rest[0] === 'from') : rest.length === 0;
     if (!shape || arg === '') throw new Error(`判定の net の式「${c}」: reach 名前[:ポート] [from 機器] か route 機器 宛先 via 次 か resolve 名前=アドレス か ssh 利用者@名前`);
     if (head === 'ssh') {
       if (!shell.sshHosts) throw new Error('判定の net: この実戦の機械に SSH のサーバ（setup の sshHosts）が無い');
@@ -241,6 +254,12 @@ export function netHolds(shell: ShellState, expr: string): boolean {
       const from = rest[1] ?? self;
       if (!net.devices.has(from)) throw new Error(`判定の net の式「${c}」: 機器 ${from} が網に無い`);
       value = ip !== null && roundTrip(net, from, ip, port === undefined ? undefined : Number(port)).kind === 'ok';
+    } else if (head === 'reach6') {
+      // 住所そのものは [ ] で囲むとポートを書ける。コロンが 1 つなら 名前:ポート、2 つ以上なら住所
+      const [host = arg, port] = /^(\[.*\]|[^:]+):(\d+)$/.exec(arg)?.slice(1) ?? [];
+      value = reach6(net, rest[1] ?? self, host.replace(/[[\]]/g, ''), port === undefined ? undefined : Number(port));
+    } else if (head === 'addr6') {
+      value = has6(net, arg, rest[0] ?? '');
     } else if (head === 'dnat') {
       const device = net.devices.get(arg);
       if (!device) throw new Error(`判定の net の式「${c}」: 機器 ${arg} が網に無い`);

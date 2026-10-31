@@ -1,0 +1,280 @@
+{
+  "id": "net.a.03",
+  "domain": "net",
+  "level": "advanced",
+  "theme": "負荷分散",
+  "title": "ロードバランサ",
+  "goal": "振り分け方式と健全性確認を設計できる",
+  "minutes": 20,
+  "prerequisites": [
+    "net.i.03"
+  ],
+  "related": [
+    "k8s.b.06",
+    "cloud.i.02"
+  ],
+  "next": [
+    "net.a.04"
+  ],
+  "terms": [
+    "load-balancer",
+    "server",
+    "service",
+    "upstream",
+    "web-server",
+    "redundancy",
+    "web",
+    "ip-command",
+    "dns",
+    "session"
+  ],
+  "explain": {
+    "what": "{{term:load-balancer}}は、来た頼みを後ろの複数の{{term:server}}に振り分ける入口。答えられない台には送らない。",
+    "why": "1 台では足りない時に台数で支える。1 台が壊れても、{{term:service}}を止めずに済む。",
+    "use": "{{term:web}} サービスの拡張と{{term:redundancy}}に使う。{{term:web-server}}の振り分けの設定（{{term:upstream}}）もその 1 つ。",
+    "when": "アクセスが増えて 1 台では間に合わない。夜中に 1 台が壊れても止めたくない。",
+    "figures": [
+      "net-a03-lb"
+    ]
+  },
+  "understand": [
+    {
+      "kind": "relation",
+      "prompt": "関係を選ぶ。",
+      "a": "健全性の確認",
+      "b": "壊れた台に送らない",
+      "answer": "cause",
+      "why": "答えられない台を見つけて、振り分けから外す。",
+      "see": "what"
+    },
+    {
+      "kind": "match",
+      "prompt": "振り分けの方式と特徴を結ぶ。",
+      "pairs": [
+        [
+          "順番（ラウンドロビン）",
+          "順に送る。ほぼ均等になる"
+        ],
+        [
+          "接続の少ない台（least_conn）",
+          "処理の長さが揃わない時に向く"
+        ],
+        [
+          "送り元で決める（{{term:ip-command}}_hash）",
+          "同じ利用者を同じ台へ送る"
+        ]
+      ],
+      "see": "use"
+    }
+  ],
+  "quiz": [
+    {
+      "id": "q1",
+      "kind": "situation",
+      "prompt": "1 台が壊れた。何が起きればよい？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "健全性の確認で外れ、他の台へ送る",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "全ての台を止める",
+          "correct": false,
+          "whyNot": "残りの台で続けられる。"
+        },
+        {
+          "id": "c",
+          "text": "利用者に再試行を頼む",
+          "correct": false,
+          "whyNot": "入口で避けられる。"
+        }
+      ],
+      "explanation": "壊れた台は振り分けから外す。"
+    },
+    {
+      "id": "q2",
+      "kind": "predict",
+      "prompt": "3 台に順番に振ると？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "ほぼ均等になる",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "1 台に集まる",
+          "correct": false,
+          "whyNot": "順に替える。"
+        },
+        {
+          "id": "c",
+          "text": "速い台に多く行く",
+          "correct": false,
+          "whyNot": "順番は速さを見ない。"
+        }
+      ],
+      "explanation": "処理の重さが揃わない時は、接続の少ない台へ送る方式を選ぶ。"
+    },
+    {
+      "id": "q3",
+      "kind": "cause",
+      "prompt": "ログインが時々途切れる。原因は？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "同じ利用者が別の台へ行き、状態が無い",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "台の数が多すぎる",
+          "correct": false,
+          "whyNot": "数ではなく、状態の置き場の問題。"
+        },
+        {
+          "id": "c",
+          "text": "{{term:dns}} の誤り",
+          "correct": false,
+          "whyNot": "名前は引けている。"
+        }
+      ],
+      "explanation": "{{term:session}}を共有の置き場に持つか、同じ台へ送る。"
+    }
+  ],
+  "practice": {
+    "mode": "terminal",
+    "purpose": "店の入口の `nginx` は `web-1` だけに送っている。設定は `/etc/nginx/conf.d/lb.conf`。`web-1`・`web-2`・`web-3` に振り分け、1 台を止めても応答が続くようにする。",
+    "environment": "linux-basic",
+    "setup": {
+      "user": "root",
+      "cwd": "/root",
+      "dirs": [
+        "/root"
+      ],
+      "hostname": "lb",
+      "sites": [],
+      "files": {
+        "/etc/hosts": "127.0.0.1\tlocalhost shop.example\n",
+        "/etc/nginx/conf.d/lb.conf": "upstream shop {\n  server 127.0.0.1:8081;\n}\nserver {\n  listen 80;\n  server_name shop.example;\n  location / {\n    proxy_pass http://shop;\n    proxy_next_upstream off;\n  }\n}\n"
+      },
+      "services": {
+        "nginx": {
+          "description": "nginx web server",
+          "enabled": true,
+          "config": "/etc/nginx/conf.d/lb.conf"
+        },
+        "web-1": {
+          "description": "shop web-1",
+          "active": true,
+          "enabled": true,
+          "port": 8081,
+          "body": "web-1"
+        },
+        "web-2": {
+          "description": "shop web-2",
+          "active": true,
+          "enabled": true,
+          "port": 8082,
+          "body": "web-2"
+        },
+        "web-3": {
+          "description": "shop web-3",
+          "active": true,
+          "enabled": true,
+          "port": 8083,
+          "body": "web-3"
+        }
+      },
+      "run": [
+        "systemctl start nginx"
+      ]
+    },
+    "steps": [
+      {
+        "id": "three",
+        "purpose": "`sed -i` で `upstream` に `server 127.0.0.1:8082;` と `server 127.0.0.1:8083;` を足す。`nginx -t` で確かめて `systemctl reload nginx` で読み直し、`curl http://shop.example/` を 3 回打つ。3 台の名前が順に出れば達成。",
+        "check": {
+          "kind": "http",
+          "url": "http://shop.example/",
+          "status": 200,
+          "turns": 3,
+          "seen": [
+            "web-1",
+            "web-2",
+            "web-3"
+          ]
+        },
+        "afterward": "入口は 1 つのまま、頼みが 3 台へ順に分かれた。",
+        "hints": [
+          "`server` の行を足す。",
+          "置き換える文の `\\n` は改行になる。",
+          "`sed -i 's/server 127.0.0.1:8081;/server 127.0.0.1:8081;\\n  server 127.0.0.1:8082;\\n  server 127.0.0.1:8083;/' /etc/nginx/conf.d/lb.conf` `nginx -t` `systemctl reload nginx` `curl http://shop.example/` `curl http://shop.example/` `curl http://shop.example/` を打つ。"
+        ],
+        "expectedErrors": [
+          "net-lb-upstream",
+          "linux-nginx-emerg"
+        ]
+      },
+      {
+        "id": "stop",
+        "purpose": "`systemctl stop web-2` で 1 台を止め、`curl -s -o /dev/null -w \"%{http_code}\\n\" http://shop.example/` を繰り返す。止めた台に当たった回に何番が返るかを、答えの欄に入れる。",
+        "check": {
+          "kind": "answer",
+          "equals": "502"
+        },
+        "afterward": "3 回に 1 回、502 が返る。`proxy_next_upstream off;` の行で、止まった台に当たっても次の台へ送り直さない設定になっている。",
+        "hints": [
+          "`-w` は返事の番号を出す。",
+          "200 でない番号を読む。",
+          "`systemctl stop web-2` `for i in 1 2 3; do curl -s -o /dev/null -w \"%{http_code}\\n\" http://shop.example/; done` を打ち、`502` と答える。"
+        ],
+        "expectedErrors": [
+          "net-a-misread"
+        ]
+      },
+      {
+        "id": "retry",
+        "purpose": "`sed -i` で `proxy_next_upstream off;` の行を消し、確かめて読み直す。`web-2` を止めたまま、`curl` が何回でも 200 を返せば達成。",
+        "check": {
+          "kind": "http",
+          "url": "http://shop.example/",
+          "status": 200,
+          "turns": 3
+        },
+        "afterward": "止まった台に当たっても次の台へ送り直すので、利用者には 200 が返り続ける。nginx の無料版の確かめは、実際の頼みの失敗を見る受け身の形。頼みを送らずに定期的に確かめる形は別の製品にある。",
+        "hints": [
+          "その行を消すと、既定の働き（次の台へ送り直す）に戻る。",
+          "`sed -i '/proxy_next_upstream/d' ファイル`。",
+          "`sed -i '/proxy_next_upstream/d' /etc/nginx/conf.d/lb.conf` `nginx -t` `systemctl reload nginx` `curl -s -o /dev/null -w \"%{http_code}\\n\" http://shop.example/` を打つ。"
+        ],
+        "expectedErrors": [
+          "net-lb-upstream",
+          "linux-nginx-emerg"
+        ]
+      }
+    ]
+  },
+  "result": {
+    "success": "1 台が止まっても応答が続く入口を作れた。",
+    "partial": "ヒントを使って作れた。次は `weight` で振り分けの割合も変えてみよう。",
+    "retry": "まだ 502 が返る。設定の行と、`reload` を打ったかを確かめよう。"
+  },
+  "summary": {
+    "points": [
+      "入口 1 つで複数へ",
+      "答えられる台だけに送る",
+      "状態の扱いに注意"
+    ],
+    "next": [
+      "net.a.04"
+    ],
+    "terms": [
+      "load-balancer",
+      "upstream",
+      "health-check"
+    ]
+  }
+}
