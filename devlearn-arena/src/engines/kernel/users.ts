@@ -6,6 +6,36 @@ import { exists, readFile, writeFile, type VfsState } from './vfs';
  */
 
 export const GROUP_FILE = '/etc/group';
+export const PASSWD_FILE = '/etc/passwd';
+
+export interface PasswdEntry {
+  name: string;
+  uid: number;
+  gid: number;
+  home: string;
+  shell: string;
+}
+
+/** /etc/passwd（名前:x:番号:グループの番号:説明:家:シェル）。無ければ空 */
+export function readPasswd(vfs: VfsState): PasswdEntry[] {
+  if (!exists(vfs, PASSWD_FILE)) return [];
+  return readFile(vfs, PASSWD_FILE)
+    .split('\n')
+    .filter((line) => line.trim() !== '')
+    .map((line) => {
+      const [name = '', , uid = '0', gid = '0', , home = '', shell = ''] = line.split(':');
+      return { name, uid: Number(uid), gid: Number(gid), home, shell };
+    });
+}
+
+/**
+ * その利用者が居るか。root と端末の利用者は初めから居る。/etc/passwd の利用者と、/etc/group に書いた利用者も居る
+ * （練習の setup の groups で書いた利用者は、/etc/passwd を持たずに居ることにする）
+ */
+export function userExists(vfs: VfsState, user: string, self: string): boolean {
+  if (user === 'root' || user === self) return true;
+  return readPasswd(vfs).some((p) => p.name === user) || readGroups(vfs).some((g) => g.members.includes(user));
+}
 
 export interface GroupEntry {
   name: string;

@@ -1,0 +1,59 @@
+{
+  "lesson": "sec.i.02",
+  "variants": [
+    {
+      "name": "pkey で比べる・install で権限を付けて置く・nano の代わりに sed を 1 回で",
+      "steps": {
+        "pair": [
+          "openssl x509 -noout -modulus -in /home/learner/inbox/shop.example.crt",
+          "openssl pkey -noout -modulus -in /home/learner/inbox/shop.example.key",
+          "shop.example.key"
+        ],
+        "place": [
+          "cp /home/learner/inbox/shop.example.crt /etc/nginx/certs/shop.example.crt",
+          "cp /home/learner/inbox/shop.example.key /etc/nginx/certs/shop.example.key",
+          "chmod go-rwx /etc/nginx/certs/shop.example.key"
+        ],
+        "https": [
+          "sed -i 's|listen 80;|listen 443 ssl;|; /server_name/a ssl_certificate /etc/nginx/certs/shop.example.crt;' /etc/nginx/conf.d/shop.conf",
+          "sed -i '/ssl_certificate /a ssl_certificate_key /etc/nginx/certs/shop.example.key;' /etc/nginx/conf.d/shop.conf",
+          "nginx -t && nginx -s reload",
+          "curl -s https://shop.example/"
+        ]
+      }
+    },
+    {
+      "name": "去年の鍵も比べてから答える・cd してから置く・動かし直す",
+      "steps": {
+        "pair": [
+          "cd /home/learner/inbox",
+          "openssl rsa -noout -modulus -in shop.example-2025.key | openssl md5",
+          "openssl x509 -noout -modulus -in shop.example.crt | openssl md5",
+          "openssl rsa -noout -modulus -in shop.example.key | openssl md5",
+          "SHOP.EXAMPLE.KEY"
+        ],
+        "place": [
+          "cd /etc/nginx/certs",
+          "cp /home/learner/inbox/shop.example.crt .",
+          "cp /home/learner/inbox/shop.example.key .",
+          "chmod 600 shop.example.key"
+        ],
+        "https": [
+          "sed -i 's|listen 80;|listen 443 ssl;|' /etc/nginx/conf.d/shop.conf",
+          "sed -i '/root /i ssl_certificate /etc/nginx/certs/shop.example.crt;' /etc/nginx/conf.d/shop.conf",
+          "sed -i '/root /i ssl_certificate_key /etc/nginx/certs/shop.example.key;' /etc/nginx/conf.d/shop.conf",
+          "nginx -t",
+          "systemctl restart nginx",
+          "curl https://shop.example/"
+        ]
+      }
+    }
+  ],
+  "wrong": {
+    "step": "place",
+    "why": "写す前に、置き場所の秘密鍵の権限を変えようとする",
+    "input": [
+      "chmod 600 /etc/nginx/certs/shop.example.key"
+    ]
+  }
+}

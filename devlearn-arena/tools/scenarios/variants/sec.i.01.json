@@ -1,0 +1,62 @@
+{
+  "lesson": "sec.i.01",
+  "variants": [
+    {
+      "name": "s_client で見る・中身を書き写す・動かし直す・中間を後ろに足す",
+      "steps": {
+        "expired": [
+          "openssl s_client -connect shop.example:443 -servername shop.example",
+          "openssl x509 -in /home/learner/inbox/shop.example-2026.crt -noout -enddate",
+          "cat /home/learner/inbox/shop.example-2026.crt > /etc/nginx/certs/shop.crt",
+          "systemctl restart nginx"
+        ],
+        "name": [
+          "cd /home/learner/inbox",
+          "openssl x509 -in lib.example-www.crt -noout -text",
+          "cp lib.example-www.crt /etc/nginx/certs/lib-www.crt",
+          "sed -i 's|/etc/nginx/certs/lib.crt|/etc/nginx/certs/lib-www.crt|' /etc/nginx/conf.d/sites.conf",
+          "nginx -t && nginx -s reload"
+        ],
+        "chain": [
+          "openssl s_client -connect clinic.example:443 -showcerts",
+          "cat /etc/nginx/certs/minato-issuing-ca.crt >> /etc/nginx/certs/clinic.crt",
+          "systemctl reload nginx",
+          "curl -s https://clinic.example/"
+        ]
+      }
+    },
+    {
+      "name": "curl で順に確かめながら直す",
+      "steps": {
+        "expired": [
+          "curl https://shop.example/",
+          "openssl x509 -in /etc/nginx/certs/shop.crt -noout -dates",
+          "cp /home/learner/inbox/shop.example-2026.crt /etc/nginx/certs/shop.crt && systemctl reload nginx",
+          "curl -s https://shop.example/"
+        ],
+        "name": [
+          "curl https://www.lib.example/",
+          "openssl x509 -in /etc/nginx/certs/lib.crt -noout -ext subjectAltName",
+          "cp /home/learner/inbox/lib.example-www.crt /etc/nginx/certs/lib.crt && systemctl reload nginx",
+          "curl -s https://www.lib.example/"
+        ],
+        "chain": [
+          "curl https://clinic.example/",
+          "cd /etc/nginx/certs",
+          "cat clinic.crt minato-issuing-ca.crt > clinic-fullchain.crt",
+          "sed -i 's|clinic.crt;|clinic-fullchain.crt;|' /etc/nginx/conf.d/sites.conf",
+          "nginx -t",
+          "systemctl reload nginx"
+        ]
+      }
+    }
+  ],
+  "wrong": {
+    "step": "expired",
+    "why": "新しい証明書を置いたが、nginx に読み直させずに確かめる",
+    "input": [
+      "cp /home/learner/inbox/shop.example-2026.crt /etc/nginx/certs/shop.crt",
+      "curl https://shop.example/"
+    ]
+  }
+}

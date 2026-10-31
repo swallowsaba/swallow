@@ -861,6 +861,20 @@
       "lessons": [
         "linux.i.08"
       ]
+    },
+    {
+      "id": "useradd",
+      "word": "useradd",
+      "plain": "新しい利用者を作るコマンド。`-r` でサービス用の利用者、`-s` でログインのシェルを決める。",
+      "why": "アプリごとに専用の利用者を作ると、乗っ取られても、その利用者の権限の範囲で被害が止まる。",
+      "related": [
+        "root-user",
+        "permission",
+        "service"
+      ],
+      "lessons": [
+        "sec.i.04"
+      ]
     }
   ]
 }

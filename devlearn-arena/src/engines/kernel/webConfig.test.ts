@@ -237,3 +237,26 @@ describe('転送が繰り返す', () => {
     expect(r.out).toContain('curl: (47) Maximum (50) redirects followed');
   });
 });
+
+describe('秘密鍵（ssl_certificate_key）と、証明書との対', () => {
+  const CERT = '-----BEGIN CERTIFICATE-----\nsubject: shop.example\nissuer: Minato Issuing CA\nnames: shop.example\nvalid: 2026-01-01 2027-01-01\nkey: shop-2026\n-----END CERTIFICATE-----\n';
+  const KEY = '-----BEGIN PRIVATE KEY-----\npair: shop-2026\n-----END PRIVATE KEY-----\n';
+  const OLD = '-----BEGIN PRIVATE KEY-----\npair: shop-2025\n-----END PRIVATE KEY-----\n';
+  const conf = (key?: string) => `server {\n  listen 443 ssl;\n  server_name shop.example;\n  ssl_certificate /c.crt;\n${key ? `  ssl_certificate_key ${key};\n` : ''}  root /srv;\n}\n`;
+
+  it('公開鍵の印を持つ証明書には、秘密鍵の行が要る（本物と同じ言い方で失敗する）', () => {
+    const r = readWebConfig('/n', files({ '/n': conf(), '/c.crt': CERT }));
+    expect(r).toEqual({ ok: false, error: 'nginx: [emerg] no "ssl_certificate_key" is defined for certificate "/c.crt"' });
+  });
+
+  it('秘密鍵のファイルが無ければ読めない。対でない秘密鍵は key values mismatch で断る', () => {
+    expect(readWebConfig('/n', files({ '/n': conf('/k.key'), '/c.crt': CERT }))).toEqual({ ok: false, error: 'nginx: [emerg] cannot load certificate key "/k.key": BIO_new_file() failed (SSL: error:80000002:system library::No such file or directory)' });
+    expect(readWebConfig('/n', files({ '/n': conf('/k.key'), '/c.crt': CERT, '/k.key': OLD }))).toEqual({ ok: false, error: 'nginx: [emerg] SSL_CTX_use_PrivateKey("/k.key") failed (SSL: error:05800074:x509 certificate routines::key values mismatch)' });
+    expect(readWebConfig('/n', files({ '/n': conf('/k.key'), '/c.crt': CERT, '/k.key': CERT }))).toEqual({ ok: false, error: 'nginx: [emerg] cannot load certificate key "/k.key": PEM_read_bio_PrivateKey() failed (SSL: error:1E08010C:DECODER routines::unsupported)' });
+  });
+
+  it('対の秘密鍵なら起動する。印の無い証明書（前からの練習）は、秘密鍵の行が無くても起動する', () => {
+    expect(readWebConfig('/n', files({ '/n': conf('/k.key'), '/c.crt': CERT, '/k.key': KEY })).ok).toBe(true);
+    expect(readWebConfig('/n', files({ '/n': conf(), '/c.crt': CERT.replace('key: shop-2026\n', '') })).ok).toBe(true);
+  });
+});

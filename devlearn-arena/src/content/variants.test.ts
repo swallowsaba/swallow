@@ -16,7 +16,9 @@ const root = join(__dirname, '../..');
 /** 手順の目的そのものが、失敗を見て読むことのレッスン（docs/progress/verify-all.md の C2「想定した失敗」。tools/scenarios/verify-free.mjs と同じ） */
 const DESIGNED_FAILURES = new Set(['git.b.06', 'git.i.05', 'git.i.02', 'trouble.b.02', 'docker.b.01', 'k8s.b.01', 'net.b.03', 'net.b.04', 'net.i.01', 'net.i.02',
   // 目的の文が「送って、どこで止まるかを見る」「入れ替えが進むかを見る」「curl の誤りを読む」「200 が返らなければ返事の数から原因を探す」と、失敗を見ることを書いている手順（最後のヒントは先に直すので通らないが、目的の文のとおりに打つと通る。docs/progress/verify-free.md）
-  'found.b.07', 'net.b.01', 'k8s.i.08', 'sec.b.07', 'web.b.07']);
+  'found.b.07', 'net.b.01', 'k8s.i.08', 'sec.b.07', 'web.b.07',
+  // 範囲を広げた 80 本（docs/progress/expand-scope.md）: 目的の文が「curl の警告の文を読み」と、失敗を見ることを書いている手順
+  'sec.i.01']);
 
 interface Variant {
   name: string;

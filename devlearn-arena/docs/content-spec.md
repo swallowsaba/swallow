@@ -113,14 +113,14 @@ interface PracticeStep {
 type CheckSpec =
   | { kind: 'fs'; path: string; exists?: boolean; contains?: string; lacks?: string[]; mode?: string } // lacks: どれも含まない（秘密の値が残っていない）。mode: 権限。'600' ならその値、'u+x'・'go-rwx' ならその権限が有る・無い
   | { kind: 'cwd'; equals: string }
-  | { kind: 'service'; name: string; active?: boolean; enabled?: boolean }
+  | { kind: 'service'; name: string; active?: boolean; enabled?: boolean; listen?: number; user?: string } // user: 動かしている利用者（ユニットファイルの User=。daemon-reload して動かし直すまで変わらない）
   | { kind: 'git'; expr: string }               // 例: 'branch:feature merged-into:main'
   | { kind: 'k8s'; expr: string }               // 例: 'deployment/web readyReplicas>=3'
   | { kind: 'net'; expr: string }               // 例: 'reach shop.example:443'
   | { kind: 'container'; expr: string }         // 例: 'image:nginx:1.27 running:web'
   | { kind: 'ci'; expr: string }                // 例: 'head run=success needs:deploy=unit,lint,e2e'
   | { kind: 'alert'; expr: string }             // 例: 'rules:rules/reserve.yml test:tests/yesterday.test.yml'
-  | { kind: 'http'; url: string; status: number; contains?: string; header?: string; method?: string; data?: string } // contains: 返事の本文にその文字列がある。header: '名前: 値' の見出しがある（名前の大文字・小文字は問わず、値は同じ）。method・data: 頼み方（POST と送る中身）
+  | { kind: 'http'; url: string; status: number; contains?: string; header?: string; method?: string; data?: string; auth?: string } // contains: 返事の本文にその文字列がある。header: '名前: 値' の見出しがある（名前の大文字・小文字は問わず、値は同じ）。method・data: 頼み方（POST と送る中身）。auth: 送る Authorization の見出しの値
   | { kind: 'tls'; host: string; trusted: boolean }
   | { kind: 'sql'; query: string; equals: unknown }
   | { kind: 'ran'; uses: string[]; result?: string; shows?: string[] } // 端末で打った行が uses のコマンドを全て使い（パイプでつないでよい）、その結果（標準出力の全体）が result と同じ。shows: 出力にその行が全てある（result か shows のどちらかを書く）

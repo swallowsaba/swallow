@@ -2,7 +2,10 @@ import { peerChain } from '@/engines/http/http';
 import { verify, type Cert, type TlsVerdict } from '@/engines/tls/tls';
 import { resolve } from '../path';
 import type { CommandResult, CommandSpec, ShellState } from '../registry';
-import { parseCerts } from '../webConfig';
+import { md5 } from '@noble/hashes/legacy';
+import { sha256 } from '@noble/hashes/sha256';
+import { bytesToHex } from '@noble/hashes/utils';
+import { parseCerts, parsePrivateKey } from '../webConfig';
 import { readFile, stat } from '../vfs';
 import { denied } from './perm';
 import { httpEnvOf } from './httpLocal';
@@ -24,6 +27,34 @@ export function opensslDate(day: string): string {
 
 const dn = (name: string): string => `CN = ${name}`;
 
+/** 鍵の対の印から、公開鍵の Modulus（16 進の大文字）を決める。同じ印からは同じ値（証明書と秘密鍵で一致する） */
+export const modulusOf = (pair: string): string =>
+  bytesToHex(sha256(new TextEncoder().encode(`modulus:${pair}`))).toUpperCase() + bytesToHex(sha256(new TextEncoder().encode(`modulus2:${pair}`))).toUpperCase();
+
+/** openssl rsa・pkey -in 鍵 -noout -modulus（秘密鍵から公開鍵の Modulus を出す） */
+function keyModulus(shell: ShellState, stdin: string, tool: string, args: readonly string[]): CommandResult {
+  let file: string | undefined;
+  let modulus = false;
+  for (let i = 0; i < args.length; i += 1) {
+    const a = args[i] ?? '';
+    if (a === '-in') file = args[(i += 1)];
+    else if (a === '-modulus') modulus = true;
+    else if (a === '-noout' || a === '-check') continue;
+    else return { stderr: `${tool}: Unknown option or message digest: ${a.replace(/^-/, '')}\n${tool}: Use -help for summary.\n`, code: 1 };
+  }
+  let text = stdin;
+  if (file !== undefined) {
+    const node = stat(shell.vfs, resolve(shell.cwd, file));
+    if (node === undefined) return { stderr: `Could not open file or uri for loading private key from ${file}\n`, code: 1 };
+    const blocked = denied(shell, file, 'read', 'openssl');
+    if (blocked) return blocked;
+    text = readFile(shell.vfs, resolve(shell.cwd, file));
+  }
+  const pair = parsePrivateKey(text);
+  if (pair === null) return { stderr: `Could not read private key from ${file ?? '<stdin>'}\n`, code: 1 };
+  return { stdout: modulus ? `Modulus=${modulusOf(pair)}\n` : '' };
+}
+
 function x509(shell: ShellState, stdin: string, args: readonly string[]): CommandResult {
   let file: string | undefined;
   const want: string[] = [];
@@ -32,7 +63,7 @@ function x509(shell: ShellState, stdin: string, args: readonly string[]): Comman
     const a = args[i] ?? '';
     if (a === '-in') file = args[(i += 1)];
     else if (a === '-noout') noout = true;
-    else if (['-subject', '-issuer', '-dates', '-startdate', '-enddate'].includes(a)) want.push(a);
+    else if (['-subject', '-issuer', '-dates', '-startdate', '-enddate', '-modulus'].includes(a)) want.push(a);
     else if (a === '-ext') want.push(`-ext ${args[(i += 1)] ?? ''}`);
     else if (a === '-text') want.push(a);
     else return { stderr: `x509: Unknown option or message digest: ${a.replace(/^-/, '')}\nx509: Use -help for summary.\n`, code: 1 };
@@ -50,6 +81,7 @@ function x509(shell: ShellState, stdin: string, args: readonly string[]): Comman
   if (!cert) return { stderr: `Could not read certificate from ${file ?? '<stdin>'}\nUnable to load certificate\n`, code: 1 };
   const out: string[] = [];
   for (const w of want) {
+    if (w === '-modulus') out.push(`Modulus=${modulusOf(cert.key ?? `${cert.subject}#${cert.notAfter}`)}`);
     if (w === '-subject') out.push(`subject=${dn(cert.subject)}`);
     else if (w === '-issuer') out.push(`issuer=${dn(cert.issuer)}`);
     else if (w === '-dates' || w === '-startdate') out.push(`notBefore=${opensslDate(cert.notBefore)}`);
@@ -81,11 +113,12 @@ function verifyError(v: Extract<TlsVerdict, { trusted: false }>): { num: number;
 
 function sClient(shell: ShellState, args: readonly string[]): CommandResult {
   let connect: string | undefined;
+  let servername: string | undefined;
   let show = false;
   for (let i = 0; i < args.length; i += 1) {
     const a = args[i] ?? '';
     if (a === '-connect') connect = args[(i += 1)];
-    else if (a === '-servername') i += 1;
+    else if (a === '-servername') servername = args[(i += 1)];
     else if (a === '-showcerts') show = true;
     else if (a === '-brief' || a === '-quiet') continue;
     else return { stderr: `s_client: Unknown option: ${a}\ns_client: Use -help for summary.\n`, code: 1 };
@@ -95,14 +128,15 @@ function sClient(shell: ShellState, args: readonly string[]): CommandResult {
   const host = m[1] ?? '';
   const port = Number(m[2]);
   const env = httpEnvOf(shell);
-  const peer = peerChain(env, host, port);
+  // OpenSSL 3 は、-servername が無ければ -connect の名前を SNI に送る
+  const peer = peerChain(env, host, port, servername);
   if ('error' in peer) {
     if (peer.error === 'resolve') return { stderr: `BIO_lookup_ex:system lib:getaddrinfo() failure\ns_client: connect:errno=2\n`, code: 1 };
     if (peer.error === 'refused') return { stderr: `connect:errno=111\n`, code: 1 };
     return { stdout: 'CONNECTED(00000003)\n---\nno peer certificate available\n---\nNo client certificate CA names sent\n---\n', stderr: 'error:0A00010B:SSL routines::wrong version number\n', code: 1 };
   }
   const chain = peer.chain;
-  const v = verify(host, chain, env.roots, env.today);
+  const v = verify(servername ?? host, chain, env.roots, env.today);
   const out = ['CONNECTED(00000003)'];
   // 深い方（ルート）から順に、たどれた所を言う。たどれなければ、そこで誤りを言う
   if (v.trusted || v.reason === 'name-mismatch') {
@@ -129,11 +163,14 @@ function sClient(shell: ShellState, args: readonly string[]): CommandResult {
 export const opensslCommands: CommandSpec[] = [
   {
     name: 'openssl',
-    summary: '証明書を読む（x509）・TLS の相手が送る証明書を見る（s_client）',
+    summary: '証明書を読む（x509）・TLS の相手が送る証明書を見る（s_client）・秘密鍵との対を確かめる（rsa・pkey の -modulus と md5）',
     handler: ({ argv, shell, stdin }) => {
       const [, sub, ...rest] = argv;
       if (sub === 'x509') return x509(shell, stdin, rest);
       if (sub === 's_client') return sClient(shell, rest);
+      if (sub === 'rsa' || sub === 'pkey') return keyModulus(shell, stdin, sub, rest);
+      // openssl md5 は標準入力の MD5（openssl dgst -md5 と同じ）。ファイルを並べればファイルごと
+      if (sub === 'md5') return { stdout: `MD5(stdin)= ${bytesToHex(md5(new TextEncoder().encode(stdin)))}\n` };
       if (sub === 'version') return { stdout: 'OpenSSL 3.0.13 30 Jan 2024 (Library: OpenSSL 3.0.13 30 Jan 2024)\n' };
       if (sub === undefined) return { stderr: 'この練習の端末では、openssl の対話の画面は開けない。openssl x509 … や openssl s_client … の形で打つ\n', code: 1 };
       return { stderr: `Invalid command '${sub}'; type "help" for a list.\n`, code: 1 };

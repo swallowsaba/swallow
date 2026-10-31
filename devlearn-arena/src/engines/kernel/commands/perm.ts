@@ -4,8 +4,8 @@ import {
   withUmask, type AccessKind,
 } from '../perm';
 import { changedState, type CommandResult, type CommandSpec, type ShellState } from '../registry';
-import { fileSize, list, metaOf, setMeta, stat } from '../vfs';
-import { gidOf, groupsOfUser, readGroups, writeGroups } from '../users';
+import { exists, fileSize, list, metaOf, mkdir, readFile, setMeta, stat, writeFile } from '../vfs';
+import { gidOf, groupsOfUser, PASSWD_FILE, readGroups, readPasswd, userExists, writeGroups } from '../users';
 import { fromLines, parseArgs } from './args';
 
 export function currentUser(shell: ShellState): string {
@@ -182,9 +182,11 @@ export const permCommands: CommandSpec[] = [
     name: 'id',
     summary: 'いまの利用者と、入っているグループを見る',
     handler: ({ argv, shell }) => {
-      const asked = argv[1];
+      const asked = argv.slice(1).find((a) => !a.startsWith('-'));
       const user = asked ?? currentUser(shell);
-      const uid = user === 'root' ? 0 : 1000;
+      if (asked !== undefined && !userExists(shell.vfs, asked, currentUser(shell))) return { stderr: `id: '${asked}': no such user\n`, code: 1 };
+      const entry = readPasswd(shell.vfs).find((p) => p.name === user);
+      const uid = entry?.uid ?? (user === 'root' ? 0 : 1000);
       const gid = gidOf(shell.vfs, user);
       // 名前を書けば /etc/group の今の値、書かなければ今のシェルが入っているグループ
       const groups = asked === undefined ? currentGroups(shell) : groupsOfUser(shell.vfs, user);
@@ -201,6 +203,46 @@ export const permCommands: CommandSpec[] = [
       const asked = argv[1];
       if (asked === undefined) return { stdout: `${currentGroups(shell).join(' ')}\n` };
       return { stdout: `${asked} : ${groupsOfUser(shell.vfs, asked).join(' ')}\n` };
+    },
+  },
+  {
+    name: 'useradd',
+    summary: '利用者を作る（-r でサービス用の利用者。-s でログインのシェル。root だけ）',
+    handler: ({ argv, shell }) => {
+      if (currentUser(shell) !== 'root') return { stderr: 'useradd: Permission denied.\nuseradd: cannot lock /etc/passwd; try again later.\n', code: 1 };
+      let system = false;
+      let createHome = false;
+      let login = '/bin/sh';
+      let home: string | undefined;
+      const names: string[] = [];
+      const args = argv.slice(1);
+      for (let i = 0; i < args.length; i += 1) {
+        const a = args[i] ?? '';
+        if (a === '-r' || a === '--system') system = true;
+        else if (a === '-m' || a === '--create-home') createHome = true;
+        else if (a === '-M' || a === '--no-create-home' || a === '-U' || a === '--user-group') continue;
+        else if (a === '-s' || a === '--shell') { i += 1; login = args[i] ?? login; }
+        else if (a === '-d' || a === '--home-dir') { i += 1; home = args[i]; }
+        else if (a.startsWith('--shell=')) login = a.slice('--shell='.length);
+        else if (a.startsWith('--home-dir=')) home = a.slice('--home-dir='.length);
+        else if (a.startsWith('-')) return { stderr: `useradd: invalid option -- '${a.replace(/^-+/, '')}'\n`, code: 2 };
+        else names.push(a);
+      }
+      const name = names[0];
+      if (name === undefined || names.length > 1) return { stderr: 'Usage: useradd [options] LOGIN\n', code: 2 };
+      if (userExists(shell.vfs, name, currentUser(shell))) return { stderr: `useradd: user '${name}' already exists\n`, code: 9 };
+      // 本物と同じく、サービス用は 999 から下へ、ふつうの利用者は 1001 から上へ番号を振る
+      const taken = readPasswd(shell.vfs).map((p) => p.uid);
+      const uid = system ? Math.min(1000, ...taken.filter((n) => n < 1000 && n > 0)) - 1 : Math.max(1000, ...taken) + 1;
+      const dir = home ?? `/home/${name}`;
+      const base = taken.length > 0 ? readFile(shell.vfs, PASSWD_FILE) : 'root:x:0:0:root:/root:/bin/bash\nlearner:x:1000:1000::/home/learner:/bin/bash\n';
+      let vfs = writeFile(shell.vfs, PASSWD_FILE, `${base}${name}:x:${String(uid)}:${String(uid)}::${dir}:${login}\n`);
+      vfs = writeGroups(vfs, [...readGroups(vfs), { name, gid: uid, members: [] }]);
+      if (createHome && !exists(vfs, dir)) {
+        vfs = mkdir(vfs, dir, true);
+        vfs = setMeta(vfs, dir, { ...metaOf(vfs, dir), owner: name, group: name });
+      }
+      return { patch: { vfs } };
     },
   },
   {
@@ -293,12 +335,14 @@ export const permCommands: CommandSpec[] = [
   {
     name: 'sudo',
     summary: 'root として1行だけ実行する',
-    handler: ({ argv, shell, runLine }) => {
+    handler: ({ argv, shell, stdin, runLine }) => {
       const rest = argv.slice(1);
       if (rest.length === 0) return { stderr: 'usage: sudo <command>\n', code: 1 };
+      // 分けた引数のまま渡す（空白や記号を含む引数を、もう一度分けない）
+      const quoted = rest.map((a) => (/^[A-Za-z0-9_@%+=:,./-]+$/.test(a) ? a : `'${a.replace(/'/g, `'\\''`)}'`));
       // USER を root にした状態で1行だけ実行し、終わったら元の利用者に戻す
       const asRoot: ShellState = { ...shell, vars: new Map([...shell.vars, ['USER', 'root']]) };
-      const outcome = runLine(rest.join(' '), asRoot);
+      const outcome = runLine(quoted.join(' '), asRoot, stdin);
       return {
         stdout: outcome.stdout,
         stderr: outcome.stderr,

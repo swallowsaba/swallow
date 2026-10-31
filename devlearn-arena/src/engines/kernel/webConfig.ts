@@ -79,6 +79,7 @@ export function parseCerts(text: string): Cert[] {
           notBefore,
           notAfter,
           ca: cur['ca'] === 'yes',
+          ...(cur['key'] ? { key: cur['key'] } : {}),
         });
       }
       cur = null;
@@ -99,12 +100,28 @@ export function certText(c: Cert): string {
     ...(c.sans.length ? [`names: ${c.sans.join(' ')}`] : []),
     `valid: ${c.notBefore} ${c.notAfter}`,
     ...(c.ca ? ['ca: yes'] : []),
+    ...(c.key ? [`key: ${c.key}`] : []),
     END,
     '',
   ].join('\n');
 }
 
 const emerg = (text: string): string => `nginx: [emerg] ${text}`;
+
+const KEY_BEGIN = '-----BEGIN PRIVATE KEY-----';
+const KEY_END = '-----END PRIVATE KEY-----';
+
+/**
+ * 秘密鍵のファイル（PEM 風）を読み、対になる証明書の印（pair）を返す。秘密鍵でなければ null。
+ *   -----BEGIN PRIVATE KEY----- / pair: shop-2026 / -----END PRIVATE KEY-----
+ */
+export function parsePrivateKey(text: string): string | null {
+  const lines = text.split('\n').map((l) => l.trim());
+  const at = lines.indexOf(KEY_BEGIN);
+  if (at < 0 || !lines.slice(at).includes(KEY_END)) return null;
+  const m = lines.slice(at).map((l) => /^pair:\s*(\S+)$/.exec(l)).find(Boolean);
+  return m?.[1] ?? null;
+}
 
 /** listen のポートの後に書ける引数 */
 const LISTEN_PARAMS: ReadonlySet<string> = new Set(['ssl', 'default_server', 'http2', 'reuseport']);
@@ -223,8 +240,8 @@ export function readWebConfig(path: string, read: (p: string) => string | null):
   const servers: ServerBlock[] = [];
   for (const body of groups) {
     const listens: { port: number; ssl: boolean; line: number; def: boolean }[] = [];
-    const s: { names: string[]; root?: string; index: string[]; ret?: Return; headers: [string, string][]; locations: Location[]; cert: string | null } = {
-      names: [], index: ['index.html'], headers: [], locations: [], cert: null,
+    const s: { names: string[]; root?: string; index: string[]; ret?: Return; headers: [string, string][]; locations: Location[]; cert: string | null; key: string | null } = {
+      names: [], index: ['index.html'], headers: [], locations: [], cert: null, key: null,
     };
     for (const d of body) {
       if (d.name === 'listen') {
@@ -244,6 +261,7 @@ export function readWebConfig(path: string, read: (p: string) => string | null):
         s.headers.push(...h);
       }
       else if (d.name === 'ssl_certificate') s.cert = d.args[0] ?? null;
+      else if (d.name === 'ssl_certificate_key') s.key = d.args[0] ?? null;
       else if (d.name === 'return') {
         const r = readReturn(d, path);
         if (typeof r === 'string') return { ok: false, error: r };
@@ -279,6 +297,16 @@ export function readWebConfig(path: string, read: (p: string) => string | null):
       if (pem === null) return { ok: false, error: emerg(`cannot load certificate "${s.cert}": BIO_new_file() failed (SSL: error:80000002:system library::No such file or directory)`) };
       chain = parseCerts(pem);
       if (chain.length === 0) return { ok: false, error: emerg(`cannot load certificate "${s.cert}": PEM_read_bio_X509_AUX() failed (SSL: error:0480006C:PEM routines::no start line)`) };
+      // 公開鍵の印を持つ証明書は、対になる秘密鍵が要る（本物の nginx と同じ順に確かめる）
+      const want = chain[0]?.key;
+      if (want !== undefined) {
+        if (s.key === null) return { ok: false, error: emerg(`no "ssl_certificate_key" is defined for certificate "${s.cert}"`) };
+        const keyText = read(s.key);
+        if (keyText === null) return { ok: false, error: emerg(`cannot load certificate key "${s.key}": BIO_new_file() failed (SSL: error:80000002:system library::No such file or directory)`) };
+        const pair = parsePrivateKey(keyText);
+        if (pair === null) return { ok: false, error: emerg(`cannot load certificate key "${s.key}": PEM_read_bio_PrivateKey() failed (SSL: error:1E08010C:DECODER routines::unsupported)`) };
+        if (pair !== want) return { ok: false, error: emerg(`SSL_CTX_use_PrivateKey("${s.key}") failed (SSL: error:05800074:x509 certificate routines::key values mismatch)`) };
+      }
     }
     servers.push({
       listens: listens.map((l) => (l.ssl && chain ? { port: l.port, ssl: true, chain } : { port: l.port, ssl: false })),

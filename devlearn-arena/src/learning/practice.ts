@@ -17,7 +17,7 @@ import { execute, lineCommands, type CommandPart } from '@/engines/kernel/shell'
 import { sshHolds } from '@/engines/kernel/commands/ssh';
 import { exists, isDir, metaOf, readFile, writeFile } from '@/engines/kernel/vfs';
 import { initialShell, resolveSetup } from '@/engines/environments';
-import { request } from '@/engines/http/http';
+import { chainOf, request } from '@/engines/http/http';
 import { resolveName, roundTrip } from '@/engines/net/probe';
 import { applyAction, createSim, describeAction, holds, settledAfter } from '@/engines/sim/sim';
 import type { SimAction, SimState } from '@/engines/sim/types';
@@ -167,10 +167,11 @@ export function checkState(check: CheckSpec, input: CheckInput): boolean {
       if (check.active !== undefined && (s.active === 'active') !== check.active) return false;
       if (check.enabled !== undefined && s.enabled !== check.enabled) return false;
       if (check.listen !== undefined && (s.active !== 'active' || ![...portsOf(s), ...(s.udp ?? [])].includes(check.listen))) return false;
+      if (check.user !== undefined && (s.active !== 'active' || (s.user ?? 'root') !== check.user)) return false;
       return true;
     }
     case 'http': {
-      const r = request(httpEnvOf(shell), check.url, { ...(check.method ? { method: check.method } : {}), ...(check.data !== undefined ? { data: check.data } : {}) });
+      const r = request(httpEnvOf(shell), check.url, { ...(check.auth !== undefined ? { authorization: check.auth } : {}), ...(check.method ? { method: check.method } : {}), ...(check.data !== undefined ? { data: check.data } : {}) });
       return r.ok && r.response.status === check.status && (check.contains === undefined || r.response.body.includes(check.contains)) && (check.header === undefined || hasHeader(r.response.headers, check.header));
     }
     case 'tls': {
@@ -178,8 +179,9 @@ export function checkState(check: CheckSpec, input: CheckInput): boolean {
       const env = httpEnvOf(shell);
       if (env.localNames.includes(check.host.toLowerCase())) {
         const l = env.local(443);
-        if (!l || 'reset' in l || !l.chain?.length) return false;
-        return verify(check.host, l.chain, env.roots, env.today).trusted === check.trusted;
+        const chain = l && !('reset' in l) ? chainOf(l, check.host.toLowerCase()) : undefined;
+        if (!chain?.length) return false;
+        return verify(check.host, chain, env.roots, env.today).trusted === check.trusted;
       }
       const web = shell.web;
       const site = web?.sites.find((x) => x.host === check.host && x.chain && x.chain.length > 0);

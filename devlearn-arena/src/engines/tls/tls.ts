@@ -19,6 +19,8 @@ export interface Cert {
   notAfter: string;
   /** 証明書を発行できるか（ルート・中間） */
   ca: boolean;
+  /** 公開鍵の印（対になる秘密鍵のファイルの pair と同じ）。無い練習では、秘密鍵との対を確かめない */
+  key?: string;
 }
 
 export type TlsFailure = 'expired' | 'not-yet-valid' | 'name-mismatch' | 'unknown-issuer' | 'incomplete-chain' | 'self-signed';

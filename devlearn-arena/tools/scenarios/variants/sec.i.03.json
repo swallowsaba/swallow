@@ -1,0 +1,41 @@
+{
+  "lesson": "sec.i.03",
+  "variants": [
+    {
+      "name": "小文字で書く・文の終わりに ; を付ける",
+      "steps": {
+        "normal": [
+          "select name, price from items where public = 1 and name = '船の鈴';"
+        ],
+        "attack": [
+          "select name, price from items where public = 1 and name = 'x' or '1'='1';"
+        ],
+        "safe": [
+          "select count(*) from items where public = 1 and name = 'x'' or ''1''=''1';"
+        ]
+      }
+    },
+    {
+      "name": "全ての列を出す前に表を見る・数に名前を付ける",
+      "steps": {
+        "normal": [
+          "SELECT name, price FROM items WHERE public = 1 AND name = '船の鈴'"
+        ],
+        "attack": [
+          "SELECT name, price FROM items WHERE public = 1 AND name = 'x' OR '1'='1'"
+        ],
+        "safe": [
+          "SELECT name, price FROM items WHERE public = 1 AND name = 'x'' OR ''1''=''1'",
+          "SELECT COUNT(*) AS hits FROM items WHERE public = 1 AND name = 'x'' OR ''1''=''1'"
+        ]
+      }
+    }
+  ],
+  "wrong": {
+    "step": "safe",
+    "why": "引用符を 1 つだけ二重にして数える",
+    "input": [
+      "SELECT COUNT(*) FROM items WHERE public = 1 AND name = 'x'' OR '1'='1'"
+    ]
+  }
+}

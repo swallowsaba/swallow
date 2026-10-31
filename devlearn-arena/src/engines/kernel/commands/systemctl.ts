@@ -1,8 +1,10 @@
 import { changedState, type CommandResult, type CommandSpec, type ShellState } from '../registry';
 import {
-  reloadService, restartService, serviceOf, setEnabled, startService, stopService, unitName, type ConfigLoader, type ServiceResult, type TextReader, type ServiceTable,
+  reloadService, restartService, serviceOf, setEnabled, startService, stopService, unitName, type ConfigLoader, type ServiceAccess, type ServiceResult, type TextReader, type ServiceTable,
 } from '../services';
-import { exists, isDir, readFile, writeFile } from '../vfs';
+import { allows } from '../perm';
+import { groupsOfUser, userExists } from '../users';
+import { exists, isDir, metaOf, readFile, writeFile } from '../vfs';
 import { withZones } from '../dnsZones';
 import { readWebConfig } from '../webConfig';
 import { fromLines } from './args';
@@ -109,6 +111,26 @@ function readerOf(shell: ShellState): TextReader {
   return (path) => (exists(shell.vfs, path) && !isDir(shell.vfs, path) ? readFile(shell.vfs, path) : null);
 }
 
+/** サービスを動かす利用者が居るか・書く場所に書けるか（/etc/passwd と、場所の持ち主と権限） */
+function accessOf(shell: ShellState): ServiceAccess {
+  return {
+    userExists: (user) => userExists(shell.vfs, user, shell.vars.get('USER') ?? 'learner'),
+    canWrite: (user, path) => !exists(shell.vfs, path) || allows(metaOf(shell.vfs, path), user, 'write', groupsOfUser(shell.vfs, user)),
+  };
+}
+
+/** ユニットファイルを書き換えたのに daemon-reload していないサービス（本物の systemctl は知らせを出す） */
+function staleUnits(shell: ShellState, units: readonly string[]): string {
+  return units
+    .map((u) => serviceOf(shell.services, u))
+    .filter((s): s is NonNullable<typeof s> => s?.unit !== undefined && s.unitLoaded !== undefined && readerOf(shell)(s.unit) !== s.unitLoaded)
+    .map((s) => `Warning: The unit file, source configuration file or drop-ins of ${s.name}.service changed on disk. Run 'systemctl daemon-reload' to reload units.\n`)
+    .join('');
+}
+
+/** 知らせを前に足す */
+const warned = (warn: string, r: CommandResult): CommandResult => (warn === '' ? r : { ...r, stderr: `${warn}${r.stderr ?? ''}` });
+
 export const systemctlCommands: CommandSpec[] = [
   {
     name: 'systemctl',
@@ -122,7 +144,11 @@ export const systemctlCommands: CommandSpec[] = [
       const now = args.includes('--now');
       const [verb = onlyFailed ? 'list-units' : undefined, ...units] = args.filter((a) => a !== '--now');
       if (verb === undefined) return { stderr: 'usage: systemctl <status|start|stop|restart|reload|enable|disable|is-active|is-enabled> <サービス>\n', code: 1 };
-      if (verb === 'daemon-reload') return {};
+      if (verb === 'daemon-reload') {
+        // ユニットファイルを読み直す（動いているサービスは、次に動かした時から新しい中身で動く）
+        const services = new Map([...shell.services.services].map(([k, s]) => [k, s.unit !== undefined ? { ...s, unitLoaded: readerOf(shell)(s.unit) ?? '' } : s]));
+        return { patch: { services: { ...shell.services, services } } };
+      }
       if (verb === 'list-units') {
         const listed = [...shell.services.services.values()].filter((s) => !onlyFailed || s.active === 'failed');
         const rows = listed.map((s) => `${s.active === 'failed' ? '●' : ' '} ${`${s.name}.service`.padEnd(20)} loaded ${s.active.padEnd(8)} ${s.description}`);
@@ -139,11 +165,11 @@ export const systemctlCommands: CommandSpec[] = [
           };
         }
         case 'start':
-          return run(shell, 'start', units, (t, u) => startService(t, u, loaderOf(shell), readerOf(shell)));
+          return warned(staleUnits(shell, units), run(shell, 'start', units, (t, u) => startService(t, u, loaderOf(shell), readerOf(shell), accessOf(shell))));
         case 'stop':
           return run(shell, 'stop', units, stopService);
         case 'restart':
-          return run(shell, 'restart', units, (t, u) => restartService(t, u, loaderOf(shell), readerOf(shell)));
+          return warned(staleUnits(shell, units), run(shell, 'restart', units, (t, u) => restartService(t, u, loaderOf(shell), readerOf(shell), accessOf(shell))));
         case 'reload': {
           // 設定を読み直す。動いていなければ読み直せない（本物と同じ）
           const idle = units.find((u) => serviceOf(shell.services, u)?.active !== 'active');

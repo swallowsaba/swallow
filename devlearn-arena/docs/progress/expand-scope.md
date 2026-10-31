@@ -48,7 +48,7 @@
 |---|---|---|
 | 【1】決着 | — | 終わり（`docs/decisions.md` の「Q-04 の決着」・Q-04 の行・`docs/development-plan.md` の Phase 10） |
 | 中級 | found | 終わり（3 本。下の「中級 found」） |
-| 中級 | sec | 未着手 |
+| 中級 | sec | 終わり（5 本。下の「中級 sec」） |
 | 中級 | cicd | 未着手 |
 | 中級 | db | 未着手 |
 | 中級 | mon | 未着手 |
@@ -95,3 +95,29 @@
 模擬環境に足した物（テストを先に書いた。`src/engines/kernel/commands/proc.test.ts`）:
 - 積んでいるメモリとスワップ（setup の `memory: { total, swap }`）。プロセスの使用量の合計がメモリを超えた分をスワップに置き、`free` の `Swap:` の行と `top` の頭の `MiB Swap:` の行に出す（スワップの無い機械は前と同じ出力）
 - `ps` の `--sort`（`-%mem`・`-rss`・`-%cpu`・`pid` など本物の鍵の名前。先頭の `-` は多い順）
+
+### 中級 sec（5 本）
+
+| ID | 実戦 | verify-all | verify-free（別解） | verify-wrong | verify-drag |
+|---|---|---|---|---|---|
+| sec.i.01 証明書の検証と連鎖 | 端（curl・openssl・nginx） | 合格 | 合格（2 通り） | 合格 | — |
+| sec.i.02 Web サーバに TLS を設定する | 端（openssl・chmod・nginx） | 合格 | 合格（2 通り） | 合格 | — |
+| sec.i.03 脆弱性とは（代表例） | S（SQL） | 合格 | 合格（2 通り） | 合格 | — |
+| sec.i.04 最小権限 | 端（ps・useradd・sed・systemctl・chown） | 合格 | 合格（2 通り） | 合格 | — |
+| sec.i.05 秘密情報の保管と受け渡し | 端（cat・sed・systemctl・curl） | 合格 | 合格（2 通り） | 合格 | — |
+
+| 不合格 | 原因 | 直したこと |
+|---|---|---|
+| 別解 `cat 鍵 \| sudo tee -a ファイル` が通らない（sec.i.05） | 模擬の不具合: `sudo` が前のコマンドの出力を渡していなかった | `sudo` が標準入力を渡す（テストを先に書いた。`serviceUser.test.ts`） |
+| 別解 `sudo sed -i '/^User=/c User=report' …` が enoent で失敗（sec.i.04） | 模擬の不具合: `sudo` が空白を含む引数を分け直していた | `sudo` が分けた引数のまま渡す（同） |
+| `sudo sh -c '…'` が `sh: -c: No such file` で失敗 | 模擬に無かった: `sh -c` | `sh`・`bash` の `-c` を足した（同） |
+| `id -Gn` の終了の状態が 1 になった（既存のテストで発見） | 足した誤り: `id` の居ない利用者の判定で、オプションを利用者の名前と見た | 名前は `-` で始まらない物だけにした |
+| 秘密情報の検査が 6 件（形だけの鍵の頭の行） | 模擬の nginx が読む鍵のファイルの形を、ソースとテストに書いたため。本物の鍵ではない | `tools/secret-scan.mjs` の `ALLOW` に、場所と理由を書いて外した |
+
+設計を直した物: sec.i.01 を「模」から「端」、sec.i.02 と sec.i.05 を「編」から「端」、sec.i.03 を「模」から「S」にした（`REWORK-PRACTICE.txt` 原則 1。sec.i.02 は鍵の権限も変える。sec.i.05 は 2 つのファイルと 2 つのサービスを順に扱うので、1 つのファイルの編集では作れない）。`docs/lessons/sec.md` と `docs/curriculum.md` の表を先に直した。
+
+模擬環境に足した物（テストを先に書いた。`serviceUser.test.ts`・`keyRotation.test.ts`・`openssl.test.ts`・`webConfig.test.ts`）:
+- サービスを動かす利用者: setup の `services` の `unit`（ユニットファイル。`User=`・`ExecStart=` を読み、`daemon-reload` で読み直す）と `writes`（書く場所。書けなければ起動に失敗）。居ない利用者は本物と同じく `217/USER`。`ps aux` の 1 列目に出る。判定は `service` の `user`
+- `useradd`（`-r`・`-s`・`-d`・`-m`・`-M`。`/etc/passwd` と `/etc/group` に書く）。`id` は居ない利用者を断る
+- API の鍵を読むサービス: setup の `services` の `keyGuard`（受ける側。鍵の一覧のファイル。無い鍵は 401）と `keyClient`（頼む側。環境のファイルの鍵を動かす時に読む。断られると 502）。`curl -H 'Authorization: …'` を渡す。判定は `http` の `auth`
+- 名前ごとの証明書（SNI）・`openssl` の `-modulus`・`md5`・鍵の対の確かめ（`key values mismatch`）

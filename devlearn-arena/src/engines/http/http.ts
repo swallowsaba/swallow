@@ -56,10 +56,18 @@ export interface LocalRequest {
   cookie?: string;
   /** 送られた中身（-d） */
   data?: string;
+  /** Authorization の見出しの値 */
+  authorization?: string;
 }
 
-/** 手元のポートで待ち受けている物（chain があれば https で待ち受ける）。respond が頼みに答える */
-export type LocalListener = { server: string; chain?: readonly Cert[]; respond: (req: LocalRequest) => Route } | { reset: true };
+/**
+ * 手元のポートで待ち受けている物（chain があれば https で待ち受ける）。respond が頼みに答える。
+ * chainFor は、握手で頼まれた名前（SNI）に合わせて送る証明書を選ぶ（1 台で名前ごとに証明書を持つ。無ければ chain）
+ */
+export type LocalListener = { server: string; chain?: readonly Cert[]; chainFor?: (host: string) => readonly Cert[] | undefined; respond: (req: LocalRequest) => Route } | { reset: true };
+
+/** 握手で頼まれた名前（SNI）に送る証明書 */
+export const chainOf = (l: Extract<LocalListener, { server: string }>, host: string): readonly Cert[] | undefined => l.chainFor?.(host) ?? l.chain;
 
 export interface HttpEnv {
   sites: readonly Site[];
@@ -125,6 +133,8 @@ export interface RequestOptions {
   host?: string;
   /** 送る札（Cookie の見出しの値。-b・-H 'Cookie: …'） */
   cookie?: string;
+  /** Authorization の見出しの値（-H 'Authorization: …'） */
+  authorization?: string;
 }
 
 const REASONS: Record<number, string> = {
@@ -244,11 +254,12 @@ function versionOf(site: Pick<Site, 'versions'>, scheme: Url['scheme'], want: Ht
  * 名前とポートで届く相手が、TLS の握手で送る証明書（葉 → 中間）。openssl s_client が使う。
  * 名前が引けない・待ち受けていない・TLS で待ち受けていない時は、その訳
  */
-export function peerChain(env: HttpEnv, host: string, port: number): { chain: readonly Cert[] } | { error: 'resolve' | 'refused' | 'plain' } {
+export function peerChain(env: HttpEnv, host: string, port: number, sni?: string): { chain: readonly Cert[] } | { error: 'resolve' | 'refused' | 'plain' } {
   if (env.localNames.includes(host)) {
     const l = env.local(port);
     if (!l || 'reset' in l) return { error: 'refused' };
-    return l.chain && l.chain.length > 0 ? { chain: l.chain } : { error: 'plain' };
+    const chain = chainOf(l, sni ?? host);
+    return chain && chain.length > 0 ? { chain } : { error: 'plain' };
   }
   const remote = env.remote?.(host, port);
   if (remote !== undefined) return remote === null ? { error: 'refused' } : { error: 'plain' };
@@ -264,15 +275,16 @@ export function request(env: HttpEnv, raw: string, opts: RequestOptions = {}): H
   if (!url) return { ok: false, url: null, error: { kind: 'bad-url', message: raw } };
   const method = (opts.method ?? (opts.data !== undefined ? 'POST' : 'GET')).toUpperCase();
   // 手元と、名前で届く物（後ろのアプリ）には、付けた札と送った中身も渡す
-  const extra = { ...(opts.cookie ? { cookie: opts.cookie } : {}), ...(opts.data !== undefined ? { data: opts.data } : {}) };
+  const extra = { ...(opts.cookie ? { cookie: opts.cookie } : {}), ...(opts.data !== undefined ? { data: opts.data } : {}), ...(opts.authorization !== undefined ? { authorization: opts.authorization } : {}) };
   if (env.localNames.includes(url.host)) {
     const l = env.local(url.port);
     if (!l) return { ok: false, url, error: { kind: 'refused', host: url.host, port: url.port } };
     if ('reset' in l) return { ok: false, url, error: { kind: 'empty-reply' } };
     let tls: TlsVerdict | undefined;
     if (url.scheme === 'https') {
-      if (!l.chain || l.chain.length === 0) return { ok: false, url, error: { kind: 'empty-reply' } };
-      tls = verify(url.host, l.chain, env.roots, env.today);
+      const chain = chainOf(l, url.host);
+      if (!chain || chain.length === 0) return { ok: false, url, error: { kind: 'empty-reply' } };
+      tls = verify(url.host, chain, env.roots, env.today);
       if (!tls.trusted && !opts.insecure) return { ok: false, url, error: { kind: 'tls', verdict: tls } };
     } else if (l.chain) {
       // https で待ち受けるポートに、暗号化せずに頼んだ

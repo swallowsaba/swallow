@@ -85,3 +85,105 @@ describe('openssl s_client', () => {
     expect(t.run('openssl s_client -connect shop.example:8443').err).toBe('connect:errno=111\n');
   });
 });
+
+describe('1 台で名前ごとに証明書を送り分ける（SNI）', () => {
+  const cert = (name: string, names: string, valid: string) =>
+    `-----BEGIN CERTIFICATE-----\nsubject: ${name}\nissuer: Minato Issuing CA\nnames: ${names}\nvalid: ${valid}\n-----END CERTIFICATE-----\n`;
+  function three(): { run: (line: string) => { out: string; err: string; code: number } } {
+    let state: ShellState = initialShell('linux-basic', {
+      hostname: 'minato-web',
+      dirs: ['/var/www/shop', '/var/www/lib'],
+      files: {
+        '/etc/hosts': '127.0.0.1\tlocalhost shop.example lib.example www.lib.example\n',
+        '/etc/nginx/conf.d/sites.conf':
+          'server {\n  listen 443 ssl;\n  server_name shop.example;\n  ssl_certificate /etc/nginx/certs/shop.crt;\n  root /var/www/shop;\n}\n' +
+          'server {\n  listen 443 ssl;\n  server_name lib.example www.lib.example;\n  ssl_certificate /etc/nginx/certs/lib.crt;\n  root /var/www/lib;\n}\n',
+        '/etc/nginx/certs/shop.crt': cert('shop.example', 'shop.example', '2025-09-01 2026-09-30') + INTER,
+        '/etc/nginx/certs/lib.crt': cert('lib.example', 'lib.example', '2026-01-01 2027-01-01') + INTER,
+        '/var/www/shop/index.html': '<h1>港の店</h1>\n',
+        '/var/www/lib/index.html': '<h1>図書館</h1>\n',
+        '/etc/nginx/certs/new.crt': cert('shop.example', 'shop.example', '2026-09-01 2027-09-30'),
+      },
+      services: { nginx: { description: 'nginx web server', enabled: true, config: '/etc/nginx/conf.d/sites.conf' } },
+      sites: [],
+      run: ['systemctl start nginx'],
+    });
+    const registry = createDefaultRegistry();
+    const clock = createClock();
+    return {
+      run: (line) => {
+        const o = execute(state, line, registry, clock);
+        state = o.state;
+        const pick = (k: 'stdout' | 'stderr'): string => o.chunks.filter((c) => c.stream === k).map((c) => c.text).join('');
+        return { out: pick('stdout'), err: pick('stderr'), code: o.exitCode };
+      },
+    };
+  }
+
+  it('頼んだ名前の server の証明書を送る。期限切れの店と、名前の足りない図書館は、それぞれの理由で断られる', () => {
+    const t = three();
+    expect(t.run('curl -s https://lib.example/').out).toContain('図書館');
+    expect(t.run('curl https://shop.example/').err).toContain('SSL certificate problem: certificate has expired');
+    expect(t.run('curl https://www.lib.example/').err).toContain("SSL: no alternative certificate subject name matches target host name 'www.lib.example'");
+    expect(t.run('openssl s_client -connect shop.example:443 -servername shop.example').out).toContain('Verify return code: 10 (certificate has expired)');
+    expect(t.run('openssl s_client -connect lib.example:443').out).toContain(' 0 s:CN = lib.example\n');
+  });
+
+  it('-servername を付けると、つなぐ先と違う名前で証明書を頼める', () => {
+    const t = three();
+    expect(t.run('openssl s_client -connect localhost:443 -servername lib.example').out).toContain(' 0 s:CN = lib.example\n');
+    expect(t.run('openssl s_client -connect localhost:443 -servername shop.example').out).toContain(' 0 s:CN = shop.example\n');
+  });
+
+  it('期限内の証明書に替えて読み直すと、その名前だけ通る', () => {
+    const t = three();
+    t.run("sed -i 's|shop.crt|new.crt|' /etc/nginx/conf.d/sites.conf");
+    expect(t.run('curl https://shop.example/').code).toBe(60);
+    t.run('systemctl reload nginx');
+    // 中間が無いので、今度は連鎖の欠け
+    expect(t.run('curl https://shop.example/').err).toContain('unable to get local issuer certificate');
+    expect(t.run('curl -s https://lib.example/').out).toContain('図書館');
+  });
+});
+
+describe('openssl で証明書と秘密鍵の対を確かめる（-modulus と md5）', () => {
+  const CERT = '-----BEGIN CERTIFICATE-----\nsubject: shop.example\nissuer: Minato Issuing CA\nnames: shop.example\nvalid: 2026-01-01 2027-01-01\nkey: shop-2026\n-----END CERTIFICATE-----\n';
+  const KEY = '-----BEGIN PRIVATE KEY-----\npair: shop-2026\n-----END PRIVATE KEY-----\n';
+  const OLD = '-----BEGIN PRIVATE KEY-----\npair: shop-2025\n-----END PRIVATE KEY-----\n';
+  function keys(): { run: (line: string) => { out: string; err: string; code: number } } {
+    let state: ShellState = initialShell('linux-basic', { files: { '/home/learner/shop.crt': CERT, '/home/learner/shop.key': KEY, '/home/learner/old.key': OLD } });
+    const registry = createDefaultRegistry();
+    const clock = createClock();
+    return {
+      run: (line) => {
+        const o = execute(state, line, registry, clock);
+        state = o.state;
+        const pick = (k: 'stdout' | 'stderr'): string => o.chunks.filter((c) => c.stream === k).map((c) => c.text).join('');
+        return { out: pick('stdout'), err: pick('stderr'), code: o.exitCode };
+      },
+    };
+  }
+
+  it('対の証明書と秘密鍵は同じ Modulus を出し、違う秘密鍵は違う値を出す', () => {
+    const t = keys();
+    const cert = t.run('openssl x509 -noout -modulus -in shop.crt').out;
+    expect(cert).toMatch(/^Modulus=[0-9A-F]{64,}\n$/);
+    expect(t.run('openssl rsa -noout -modulus -in shop.key').out).toBe(cert);
+    expect(t.run('openssl pkey -noout -modulus -in shop.key').out).toBe(cert);
+    expect(t.run('openssl rsa -noout -modulus -in old.key').out).not.toBe(cert);
+  });
+
+  it('openssl md5 は標準入力の MD5 を本物の形で出す（短く比べるため）', () => {
+    const t = keys();
+    expect(t.run('echo -n abc | openssl md5').out).toBe('MD5(stdin)= 900150983cd24fb0d6963f7d28e17f72\n');
+    const a = t.run('openssl x509 -noout -modulus -in shop.crt | openssl md5').out;
+    expect(a).toBe(t.run('openssl rsa -noout -modulus -in shop.key | openssl md5').out);
+  });
+
+  it('秘密鍵でないファイルは読めない', () => {
+    const t = keys();
+    const r = t.run('openssl rsa -noout -modulus -in shop.crt');
+    expect(r.code).toBe(1);
+    expect(r.err).toContain('Could not read private key from shop.crt');
+  });
+});

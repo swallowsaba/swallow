@@ -103,8 +103,27 @@ function serveConfigured(shell: ShellState, env: () => HttpEnv, s: Service, serv
   return withHeaders(plainAnswer(s, req));
 }
 
+/** API の鍵を受ける側の答え: 読み込んだ一覧にある鍵だけを受ける（無い鍵は 401） */
+function keyGuardAnswer(s: Service, req: LocalRequest): Route {
+  const key = /^Bearer\s+(\S+)$/i.exec(req.authorization ?? '')?.[1];
+  if (key !== undefined && (s.validKeys ?? []).includes(key)) return { status: 200, body: '{"status":"paid"}', headers: { 'Content-Type': 'application/json' } };
+  return { status: 401, body: '{"error":"invalid api key"}', headers: { 'Content-Type': 'application/json', 'WWW-Authenticate': 'Bearer' } };
+}
+
+/** API の鍵で頼む側の答え: 読み込んだ鍵で、頼む先の API に頼む。断られると 502 */
+function keyClientAnswer(s: Service, env: () => HttpEnv, req: LocalRequest): Route {
+  const up = s.keyClient ? env().local(s.keyClient.upstream) : null;
+  const json = { 'Content-Type': 'application/json' };
+  if (!up || 'reset' in up) return { status: 502, body: '{"error":"payment unreachable"}', headers: json };
+  const paid = up.respond({ ...req, scheme: 'http', port: s.keyClient?.upstream ?? 0, authorization: `Bearer ${s.heldKey ?? ''}` });
+  if (paid.status !== 200) return { status: 502, body: `{"error":"payment refused: ${String(paid.status)}"}`, headers: json };
+  return { status: 200, body: `{"order":"ok","key_tail":"${(s.heldKey ?? '').slice(-4)}"}`, headers: json };
+}
+
 /** 設定を持たないサービスの答え（ログインを覚えるアプリならセッション、routes があれば道ごと、無ければ / で中身） */
-function plainAnswer(s: Service, req: LocalRequest): Route {
+function plainAnswer(s: Service, req: LocalRequest, env?: () => HttpEnv): Route {
+  if (s.keyGuard) return keyGuardAnswer(s, req);
+  if (s.keyClient && env) return keyClientAnswer(s, env, req);
   if (s.session && s.cookie) return sessionAnswer(s.session, s.cookie, req);
   if (s.routes) return routeFor(s.routes, req.method, req.path);
   const p = req.path.split('?')[0] ?? '/';
@@ -145,10 +164,12 @@ export function httpEnvOf(shell: ShellState): HttpEnv {
           return {
             server: s.name,
             ...(listen.ssl && listen.chain ? { chain: listen.chain } : {}),
+            // 名前ごとに証明書を持つ server があれば、頼まれた名前（SNI）の server の物を送る（本物の nginx と同じく、合わなければ既定の server）
+            ...(listen.ssl ? { chainFor: (host: string) => pickServer(servers, host, port)?.listens.find((x) => x.port === port && x.ssl)?.chain ?? listen.chain } : {}),
             respond: (req) => (servers.length > 0 ? serveConfigured(shell, () => env, s, servers, req) : plainAnswer(s, req)),
           };
         }
-        if (!s.config && s.port === port) return { server: s.name, respond: (req) => plainAnswer(s, req) };
+        if (!s.config && s.port === port) return { server: s.name, respond: (req) => plainAnswer(s, req, () => env) };
       }
       const served = servedAt(shell.containers, port, (p) => (exists(shell.vfs, p) && !isDir(shell.vfs, p) ? readFile(shell.vfs, p) : null));
       if (served) {
@@ -290,13 +311,14 @@ export function localCurl(argv: readonly string[], shell: ShellState): CommandRe
   const jarFile = a.cookie !== undefined && !a.cookie.includes('=') ? fileOf(shell, a.cookie) : null;
   let jar: Cookie[] = jarFile && exists(shell.vfs, jarFile) && !isDir(shell.vfs, jarFile) ? parseJar(readFile(shell.vfs, jarFile)) : [];
   let dumped = '';
+  const authorization = a.headers.map((h) => /^authorization:\s*(.*)$/i.exec(h)?.[1]).find((h) => h !== undefined);
   for (let hop = 0; ; hop += 1) {
     // -H 'Host: 名前' は、届け先（URL の名前か住所）を変えずに、名乗る名前だけを変える
     const hostHeader = a.headers.map((h) => /^host:\s*(\S+)/i.exec(h)?.[1]).find((h) => h !== undefined)?.toLowerCase();
     const target = parseUrl(url);
     const fromJar = target ? cookieHeader(jar, target.scheme, target.host, target.path) : '';
     const cookie = [typed, fromJar].filter((c) => c !== '').join('; ');
-    const out = request({ ...env, sites }, url, { insecure: a.flags.has('k'), ...(method !== undefined ? { method } : {}), ...(a.data !== undefined ? { data: a.data } : {}), ...(a.version ? { version: a.version } : {}), ...(hostHeader !== undefined && hop === 0 ? { host: hostHeader } : {}), ...(cookie !== '' ? { cookie } : {}) });
+    const out = request({ ...env, sites }, url, { insecure: a.flags.has('k'), ...(method !== undefined ? { method } : {}), ...(a.data !== undefined ? { data: a.data } : {}), ...(a.version ? { version: a.version } : {}), ...(hostHeader !== undefined && hop === 0 ? { host: hostHeader } : {}), ...(cookie !== '' ? { cookie } : {}), ...(authorization !== undefined ? { authorization } : {}) });
     if (out.url && a.flags.has('v')) verbose.push(`* Trying ${out.url.host}:${String(out.url.port)}...`);
     if (!out.ok) {
       const e = curlError(out.error, out.url?.host ?? '');

@@ -6,6 +6,7 @@ import {
 import type { CommandSpec, ShellState } from '../registry';
 import { fileSize, list, stat } from '../vfs';
 import { fromLines, humanSize, parseArgs } from './args';
+import { unitValue } from '../services';
 import { currentUser } from './perm';
 
 function table(rows: string[][]): string {
@@ -36,6 +37,15 @@ function sortSpec(argv: readonly string[]): { key: 'memory' | 'cpu' | 'pid'; des
   });
 }
 
+/** ユニットファイルで動くサービスの本体（ユニットの User= の利用者で動く。親は systemd） */
+function serviceProcesses(shell: ShellState): { pid: number; ppid: number; user: string; cpu: number; memory: number; state: string; command: string }[] {
+  return [...(shell.services?.services.values() ?? [])].flatMap((s, i) => {
+    if (s.unit === undefined || s.active !== 'active') return [];
+    const command = unitValue(s.unitLoaded ?? '', 'ExecStart') ?? `/usr/bin/${s.name}`;
+    return [{ pid: 700 + i, ppid: 1, user: s.user ?? 'root', cpu: 0, memory: 24, state: 'S', command }];
+  });
+}
+
 function psRows(shell: ShellState, wide: boolean, sort: readonly { key: 'memory' | 'cpu' | 'pid'; desc: boolean }[] = []): string {
   const head = wide
     ? ['USER', 'PID', 'PPID', '%CPU', '%MEM', 'STAT', 'COMMAND']
@@ -45,6 +55,7 @@ function psRows(shell: ShellState, wide: boolean, sort: readonly { key: 'memory'
   const all = [
     ...sorted(shell).map((p) => ({ pid: p.pid, ppid: p.ppid, user: p.user, cpu: p.cpu, memory: p.memory, state: p.state, command: p.command })),
     ...hostProcesses(shell.containers, shell.vars.get('USER')).map((p) => ({ ...p, cpu: 0, state: 'S' })),
+    ...serviceProcesses(shell),
   ].sort((a, b) => {
     for (const s of sort) {
       const d = a[s.key] - b[s.key];

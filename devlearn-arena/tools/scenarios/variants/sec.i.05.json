@@ -1,0 +1,58 @@
+{
+  "lesson": "sec.i.05",
+  "variants": [
+    {
+      "name": "tee で足す・鍵をファイルから読んで替える",
+      "steps": {
+        "add": [
+          "cat /home/learner/inbox/new-key | sudo tee -a /etc/pay-api/keys",
+          "sudo systemctl reload pay-api"
+        ],
+        "switch": [
+          "sudo sed -i \"s/^PAY_API_KEY=.*/PAY_API_KEY=k-new-c91d/\" /etc/shop/shop.env",
+          "sudo systemctl restart shop",
+          "curl -s http://localhost:8080/checkout"
+        ],
+        "retire": [
+          "sudo sed -i \"/^k-old-7f3a$/d\" /etc/pay-api/keys",
+          "sudo systemctl reload pay-api"
+        ],
+        "check": [
+          "curl http://localhost:8080/checkout"
+        ]
+      }
+    },
+    {
+      "name": "止めてから動かす・一覧を作り直す",
+      "steps": {
+        "add": [
+          "echo k-new-c91d >> /etc/pay-api/keys",
+          "cat /etc/pay-api/keys",
+          "sudo systemctl restart pay-api"
+        ],
+        "switch": [
+          "echo PAY_API_KEY=k-new-c91d > /etc/shop/shop.env",
+          "sudo systemctl stop shop",
+          "sudo systemctl start shop"
+        ],
+        "retire": [
+          "echo k-new-c91d > /etc/pay-api/keys",
+          "sudo systemctl restart pay-api",
+          "curl -s -o /dev/null -w '%{http_code}' -H 'Authorization: Bearer k-old-7f3a' http://localhost:9000/charge"
+        ],
+        "check": [
+          "curl -s http://localhost:8080/checkout"
+        ]
+      }
+    }
+  ],
+  "wrong": {
+    "step": "switch",
+    "why": "受ける側に足す前に、アプリを新しい鍵へ切り替えてしまう",
+    "input": [
+      "sed -i 's/^PAY_API_KEY=.*/PAY_API_KEY=k-bad-0000/' /etc/shop/shop.env",
+      "sudo systemctl restart shop",
+      "curl -s http://localhost:8080/checkout"
+    ]
+  }
+}

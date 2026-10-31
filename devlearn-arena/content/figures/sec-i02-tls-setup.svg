@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 360" font-family="&quot;Noto Sans JP&quot;, sans-serif">
+  <title>HTTPS を有効にする 3 点。連鎖付きの証明書の束、対になる秘密鍵（所有者だけが読める）、その 2 つを指す設定の 2 行</title>
+  <defs>
+    <marker id="arrow-gold" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="#f2b632" />
+    </marker>
+  </defs>
+  <g class="el" data-part="chain">
+    <rect x="30" y="30" width="250" height="130" rx="12" fill="#5cc1ff" />
+    <text x="155" y="62" text-anchor="middle" font-size="18" font-weight="700" fill="#0a1424">証明書の束</text>
+    <text x="155" y="90" text-anchor="middle" font-size="14" fill="#0a1424">サーバの証明書 → 中間証明書</text>
+    <text x="155" y="116" text-anchor="middle" font-size="14" fill="#0a1424">誰に見せてもよい</text>
+    <text x="155" y="142" text-anchor="middle" font-size="13" fill="#0a1424">権限 644（rw-r--r--）</text>
+  </g>
+  <g class="el" data-part="key">
+    <rect x="30" y="200" width="250" height="130" rx="12" fill="#c0392b" />
+    <text x="155" y="232" text-anchor="middle" font-size="18" font-weight="700" fill="#eef2f6">秘密鍵</text>
+    <text x="155" y="260" text-anchor="middle" font-size="14" fill="#eef2f6">証明書と対になる 1 つだけ</text>
+    <text x="155" y="286" text-anchor="middle" font-size="14" fill="#eef2f6">所有者だけが読める</text>
+    <text x="155" y="312" text-anchor="middle" font-size="13" fill="#eef2f6">権限 600（rw-------）</text>
+  </g>
+  <g class="el" data-part="pair">
+    <path d="M155 164 V196" fill="none" stroke="#f2b632" stroke-width="3" stroke-dasharray="6 4" />
+    <text x="170" y="186" font-size="13" font-weight="700" fill="#ffd66b">対</text>
+  </g>
+  <g class="el" data-part="config">
+    <rect x="360" y="110" width="260" height="140" rx="12" fill="#0a1424" stroke="#9fb0c6" stroke-width="2" />
+    <text x="490" y="140" text-anchor="middle" font-size="16" font-weight="700" fill="#ffd66b">設定の 2 行</text>
+    <text x="376" y="176" font-size="13" fill="#eef2f6">ssl_certificate</text>
+    <text x="376" y="196" font-size="13" fill="#9fb0c6">　→ 証明書の束の場所</text>
+    <text x="376" y="222" font-size="13" fill="#eef2f6">ssl_certificate_key</text>
+    <text x="376" y="242" font-size="13" fill="#9fb0c6">　→ 秘密鍵の場所</text>
+  </g>
+  <g class="el" data-part="points">
+    <path d="M284 96 Q330 120 356 160" fill="none" stroke="#f2b632" stroke-width="2" marker-end="url(#arrow-gold)" />
+    <path d="M284 264 Q330 240 356 220" fill="none" stroke="#f2b632" stroke-width="2" marker-end="url(#arrow-gold)" />
+  </g>
+</svg>

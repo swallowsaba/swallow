@@ -1,0 +1,274 @@
+{
+  "id": "sec.i.04",
+  "domain": "sec",
+  "level": "intermediate",
+  "theme": "権限",
+  "title": "最小権限",
+  "goal": "必要最小限の権限を設計し、過剰な権限を見つけられる",
+  "minutes": 20,
+  "prerequisites": [
+    "linux.b.07"
+  ],
+  "related": [
+    "linux.b.07",
+    "ctr.a.02"
+  ],
+  "next": [
+    "ctr.a.02"
+  ],
+  "terms": [
+    "cloud",
+    "least-privilege",
+    "app",
+    "ci",
+    "permission",
+    "root-user",
+    "service",
+    "shell",
+    "web",
+    "file",
+    "server",
+    "job",
+    "test",
+    "process",
+    "systemd"
+  ],
+  "explain": {
+    "what": "{{term:least-privilege}}は、仕事に必要な分だけの{{term:permission}}を与える原則。{{term:app}}なら、書く場所だけに書ける専用の利用者で動かす。人にも {{term:ci}} にも{{term:cloud}}にも同じ考えを当てはめる。",
+    "why": "乗っ取られた時や操作を誤った時に、壊せる範囲は権限の広さで決まる。{{term:root-user}}で動くアプリが乗っ取られると、機械の全てが相手の物になる。",
+    "use": "利用者・{{term:service}}・CI・クラウドの権限の設計と見直しに使う。何をするのに何が要るかを書き出し、それ以外を外す。",
+    "when": "日次の報告を作るアプリが、作った時のまま管理者で動いている。書くのは 1 つの場所だけなのに、機械の全てを読み書きできる。",
+    "figures": [
+      "sec-i04-least-privilege"
+    ]
+  },
+  "understand": [
+    {
+      "kind": "situation",
+      "prompt": "報告のアプリは `/var/lib/report` に書くだけ。次のうち、過剰な権限はどれ？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "アプリを管理者で動かしている",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "`/var/lib/report` の持ち主を、アプリの利用者にしている",
+          "correct": false,
+          "whyNot": "書く場所に書けるのは、仕事に必要な権限。過剰ではない。"
+        },
+        {
+          "id": "c",
+          "text": "アプリの利用者にログインの{{term:shell}}を与えていない",
+          "correct": false,
+          "whyNot": "むしろ狭くする工夫。サービスの利用者は人がログインしないので、シェルは要らない。"
+        }
+      ],
+      "see": "what"
+    },
+    {
+      "kind": "relation",
+      "prompt": "2 つの関係を選ぶ。",
+      "a": "アプリに与える権限を広くする",
+      "b": "乗っ取られた時の被害が広がる",
+      "answer": "cause",
+      "why": "乗っ取った相手は、そのアプリの権限で動ける。権限の広さが、そのまま被害の広さになる。",
+      "see": "why"
+    }
+  ],
+  "quiz": [
+    {
+      "id": "q1",
+      "kind": "situation",
+      "prompt": "新しく作る {{term:web}} アプリを、どの利用者で動かす？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "そのアプリ専用の一般の利用者",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "管理者（root）",
+          "correct": false,
+          "whyNot": "動くが、乗っ取られると機械の全てを失う。"
+        },
+        {
+          "id": "c",
+          "text": "開発者本人の利用者",
+          "correct": false,
+          "whyNot": "本人の{{term:file}}や鍵まで読まれる。辞めた時に動かなくなることもある。"
+        }
+      ],
+      "explanation": "専用の利用者なら、書ける場所と読める場所をアプリの分だけに絞れる。"
+    },
+    {
+      "id": "q2",
+      "kind": "cause",
+      "prompt": "検証用に発行した 1 つの鍵が漏れ、本番のデータまで全て消された。一番の原因は？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "1 つの鍵に与えた権限が広すぎた",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "鍵の文字数が短かった",
+          "correct": false,
+          "whyNot": "漏れた後では長さは関係ない。問題は、その鍵で何ができたか。"
+        },
+        {
+          "id": "c",
+          "text": "本番の{{term:server}}の性能が低かった",
+          "correct": false,
+          "whyNot": "性能と権限は関係が無い。"
+        }
+      ],
+      "explanation": "検証用の鍵は検証の環境だけを、読むだけの仕事には読むだけを許す。分けておけば、漏れても被害が限られる。"
+    },
+    {
+      "id": "q3",
+      "kind": "choice",
+      "prompt": "CI の仕組みに与える権限として正しいのは？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "その{{term:job}}がする作業に必要な分だけ",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "困らないよう、管理者の権限を全て",
+          "correct": false,
+          "whyNot": "CI は外の部品も動かす。乗っ取られると全てを失う。"
+        },
+        {
+          "id": "c",
+          "text": "誰でも使える共有の鍵",
+          "correct": false,
+          "whyNot": "誰が使ったか分からず、取り換えも難しい。"
+        }
+      ],
+      "explanation": "配る仕事なら配る先だけ、{{term:test}}なら読むだけ。CI も最小権限で考える。"
+    }
+  ],
+  "practice": {
+    "mode": "terminal",
+    "purpose": "日次の報告のサービス `report` が管理者（`root`）で動いている。専用の利用者 `report` を作り、書く場所 `/var/lib/report` の持ち主をその利用者にし、ユニットファイルの `User=` を替えて、`root` でなく動かす。",
+    "environment": "linux-basic",
+    "setup": {
+      "hostname": "report-srv",
+      "dirs": [
+        "/var/lib/report",
+        "/opt/report"
+      ],
+      "files": {
+        "/etc/systemd/system/report.service": "[Unit]\nDescription=Daily report\n\n[Service]\nExecStart=/opt/report/report-app\nUser=root\n\n[Install]\nWantedBy=multi-user.target\n",
+        "/opt/report/report-app": "#!/bin/sh\n"
+      },
+      "services": {
+        "report": {
+          "description": "Daily report",
+          "enabled": true,
+          "active": true,
+          "unit": "/etc/systemd/system/report.service",
+          "writes": [
+            "/var/lib/report"
+          ]
+        }
+      }
+    },
+    "steps": [
+      {
+        "id": "who",
+        "purpose": "`ps aux` で `report-app` がどの利用者で動いているかを読み、その利用者の名前を答えの欄に入れる。",
+        "check": {
+          "kind": "answer",
+          "equals": "root"
+        },
+        "afterward": "1 列目（`USER`）が `root`。書くのは 1 つの場所だけなのに、機械の全てを読み書きできる。これが過剰な権限。",
+        "hints": [
+          "{{term:process}}の一覧は `ps aux`。1 列目が動かしている利用者。",
+          "`ps aux | grep report-app` で行を絞り、1 列目を読む。",
+          "`ps aux | grep report-app` を打ち、`root` と答える。"
+        ],
+        "expectedErrors": [
+          "sec-who-answer"
+        ]
+      },
+      {
+        "id": "user",
+        "purpose": "サービス専用の利用者 `report` を作る。人はログインしないので、`-r` でサービス用にし、`-s /usr/sbin/nologin` でログインのシェルを持たせない。",
+        "check": {
+          "kind": "fs",
+          "path": "/etc/passwd",
+          "contains": "report:x:"
+        },
+        "afterward": "`/etc/passwd` に `report` が増えた。番号が 1000 より小さいサービス用の利用者で、シェルは `nologin`。この利用者では誰もログインできない。",
+        "hints": [
+          "利用者を作るのは `useradd`。管理者の権限が要る。",
+          "`sudo useradd -r -s /usr/sbin/nologin report` の形で作り、`id report` で確かめる。",
+          "`sudo useradd -r -s /usr/sbin/nologin report` `id report` を打つ。"
+        ]
+      },
+      {
+        "id": "unit",
+        "purpose": "ユニットファイル `/etc/systemd/system/report.service` の `User=root` を `User=report` に替え、{{term:systemd}} に読み直させる（`daemon-reload`）。",
+        "check": {
+          "kind": "fs",
+          "path": "/etc/systemd/system/report.service",
+          "contains": "User=report"
+        },
+        "afterward": "ファイルは替わった。systemd は読み直したが、動いているアプリはまだ前の利用者のまま。次の再起動から `report` で動く。",
+        "hints": [
+          "ファイルの 1 行を替えるのは `sed -i`。替えた後は `systemctl daemon-reload` で読み直す。",
+          "`sudo sed -i 's/^User=root/User=report/' ファイル` の形で替える。",
+          "`sudo sed -i 's/^User=root/User=report/' /etc/systemd/system/report.service` `sudo systemctl daemon-reload` を打つ。"
+        ]
+      },
+      {
+        "id": "run",
+        "purpose": "書く場所の持ち主を `report` にし、サービスを動かし直す。`ps aux` で、1 列目が `report` になったことを確かめる。書けないと言われたら `journalctl -u report` を読む。",
+        "check": {
+          "kind": "service",
+          "name": "report",
+          "active": true,
+          "user": "report"
+        },
+        "afterward": "`report` の利用者で動いた。書けるのは `/var/lib/report` だけ。このアプリが乗っ取られても、機械の秘密は読めず、被害はここで止まる。",
+        "hints": [
+          "新しい利用者は、今の `/var/lib/report` に書けない。持ち主を替えるのは `chown`。",
+          "`sudo chown report:report /var/lib/report` の後に `sudo systemctl restart report` を打つ。",
+          "`sudo chown report:report /var/lib/report` `sudo systemctl restart report` `ps aux` を打つ。"
+        ],
+        "expectedErrors": [
+          "sec-svc-cannot-write",
+          "sec-unit-stale"
+        ]
+      }
+    ]
+  },
+  "result": {
+    "success": "専用の利用者で動かし、書ける場所を 1 つに絞れた。乗っ取られた時の被害の範囲を狭められた。",
+    "partial": "ヒントを使って権限を狭められた。次は、ほかのサービスでも `ps aux` で利用者を見直してみよう。",
+    "retry": "まだ過剰な権限が残っている。`ps aux` の 1 列目と、書く場所の持ち主を確かめよう。"
+  },
+  "summary": {
+    "points": [
+      "権限は仕事に必要な分だけ",
+      "アプリは専用の利用者で動かす",
+      "権限は定期的に見直す"
+    ],
+    "next": [
+      "ctr.a.02",
+      "cloud.i.03"
+    ],
+    "terms": [
+      "least-privilege",
+      "useradd",
+      "owner"
+    ]
+  }
+}

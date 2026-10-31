@@ -362,6 +362,163 @@
         "commit",
         "secret-info"
       ]
+    },
+    {
+      "id": "sec-cert-expired",
+      "match": "certificate has expired",
+      "output": true,
+      "outputOf": "\\bcurl\\b",
+      "meaning": "サーバが送った証明書の期限（`notAfter`）が、もう過ぎている。期限の関門で止まった。",
+      "causes": [
+        "新しい証明書を置いていない（届いた物を `/etc/nginx/certs` に置いていない）。",
+        "置いたが、nginx に読み直させていない（`systemctl reload nginx` を打っていない）。",
+        "古い方の証明書を置いた。2 つの `notAfter` を読み比べていない。"
+      ],
+      "hint": "`openssl x509 -in ファイル -noout -dates` で、置いた証明書の `notAfter` が今日より後かを確かめ、読み直そう。",
+      "terms": [
+        "certificate"
+      ]
+    },
+    {
+      "id": "sec-cert-name-missing",
+      "match": "no alternative certificate subject name matches",
+      "output": true,
+      "meaning": "サーバが送った証明書に、開いた名前（`www.lib.example`）が書いていない。名前の関門で止まった。",
+      "causes": [
+        "名前が `lib.example` だけの証明書を、まだ送っている（入れ替えていないか、読み直していない）。",
+        "www の名前を持つ証明書を、別の名前で置いた（`ssl_certificate` の場所と違う）。"
+      ],
+      "hint": "`openssl x509 -in /etc/nginx/certs/lib.crt -noout -ext subjectAltName` の `DNS:` に `www.lib.example` があるかを見よう。",
+      "terms": [
+        "certificate"
+      ]
+    },
+    {
+      "id": "sec-key-pair-answer",
+      "match": "答えが合っていない",
+      "meaning": "答えたファイルは、証明書 `shop.example.crt` と対になる秘密鍵ではない。",
+      "causes": [
+        "去年の秘密鍵 `shop.example-2025.key` を答えた。値（`Modulus`）が証明書と違う。",
+        "証明書のファイルの名前を答えた。聞いているのは秘密鍵の方。"
+      ],
+      "hint": "`openssl x509 -noout -modulus -in shop.example.crt | openssl md5` と同じ値が出る秘密鍵を探そう。"
+    },
+    {
+      "id": "sec-key-mismatch",
+      "match": "key values mismatch",
+      "meaning": "nginx が、証明書と秘密鍵が対でないと言って、設定を断った。",
+      "causes": [
+        "去年の秘密鍵 `shop.example-2025.key` を置いたか、`ssl_certificate_key` に書いた。",
+        "`ssl_certificate` と `ssl_certificate_key` に、別のサイトの組を書いた。"
+      ],
+      "hint": "`openssl x509 -noout -modulus -in 証明書 | openssl md5` と `openssl rsa -noout -modulus -in 秘密鍵 | openssl md5` が同じ値になるかを確かめよう。",
+      "terms": [
+        "key-pair"
+      ]
+    },
+    {
+      "id": "sec-key-missing",
+      "match": "no \"ssl_certificate_key\" is defined",
+      "meaning": "nginx が、証明書に対になる秘密鍵の行（`ssl_certificate_key`）が無いと言って、設定を断った。",
+      "causes": [
+        "`ssl_certificate` の行だけを足し、`ssl_certificate_key` の行を足していない。",
+        "`ssl_certificate_key` の綴りを誤った（`ssl_certificate_keys` など）。"
+      ],
+      "hint": "`cat /etc/nginx/conf.d/shop.conf` で、2 行が両方あるかを見よう。",
+      "terms": [
+        "secret-key"
+      ]
+    },
+    {
+      "id": "sec-key-path",
+      "match": "cannot load certificate key",
+      "meaning": "nginx が、`ssl_certificate_key` に書いた秘密鍵のファイルを読めなかった。",
+      "causes": [
+        "書いた場所に、秘密鍵をまだ写していない。",
+        "ファイルの名前か場所を打ち間違えた。",
+        "秘密鍵でないファイル（証明書）を書いた。"
+      ],
+      "hint": "`ls -l /etc/nginx/certs` の名前と、設定の `ssl_certificate_key` の行を見比べよう。",
+      "terms": [
+        "secret-key"
+      ]
+    },
+    {
+      "id": "sec-injection-answer",
+      "match": "答えが合っていない",
+      "meaning": "OR を使って実行したが、5 行全てが出る形になっていない。",
+      "causes": [
+        "入力の前後に、自分で引用符を足した（`'x'' OR …` など）。入力はそのまま書き写す。",
+        "`public = 1 AND` を消した。アプリの文はそのまま使う。"
+      ],
+      "hint": "アプリの文 `SELECT name, price FROM items WHERE public = 1 AND name = '入力'` の `入力` の所だけを、`x' OR '1'='1` に置き換えよう。"
+    },
+    {
+      "id": "sec-injection-safe",
+      "match": "答えが合っていない",
+      "meaning": "数が 0 でない。入力が、まだ 1 つの値になっていない。",
+      "causes": [
+        "入力の中の `'` を、全ては二重にしていない。1 つでも残ると、そこで値が閉じる。",
+        "入力を値にせず、前の手順と同じ文を実行した。"
+      ],
+      "hint": "`x' OR '1'='1` の中の `'` は 3 つ。全てを `''` にして、外側を `'…'` で囲もう。"
+    },
+    {
+      "id": "sec-svc-cannot-write",
+      "match": "Job for report.service failed",
+      "meaning": "`report` のサービスの起動に失敗した。`journalctl -u report` を読むと、理由が書いてある。",
+      "causes": [
+        "書く場所 `/var/lib/report` の持ち主が、動かす利用者になっていない（`cannot write to … Permission denied`）。",
+        "`User=` に書いた利用者を、まだ作っていない（`status=217/USER`）。"
+      ],
+      "hint": "`sudo journalctl -u report --no-pager` で理由を読み、`ls -ld /var/lib/report` で持ち主を確かめよう。`chown` で持ち主を替えられる。",
+      "terms": [
+        "journalctl",
+        "chown"
+      ]
+    },
+    {
+      "id": "sec-unit-stale",
+      "match": "changed on disk",
+      "output": true,
+      "meaning": "ユニットファイルを書き換えたのに、systemd は前の中身を覚えたまま。今の再起動も、前の `User=` で動いた。",
+      "causes": [
+        "`systemctl daemon-reload` を打っていない。",
+        "ユニットファイルを、読み直した後でまた書き換えた。"
+      ],
+      "hint": "`sudo systemctl daemon-reload` で読み直してから、もう一度 `sudo systemctl restart report` を打とう。",
+      "terms": [
+        "systemctl",
+        "systemd"
+      ]
+    },
+    {
+      "id": "sec-who-answer",
+      "match": "答えが合っていない",
+      "meaning": "`ps aux` の 1 列目（`USER`）と違う。",
+      "causes": [
+        "別のプロセスの行を読んだ。`report-app` の行の 1 列目を読む。",
+        "2 列目の番号（PID）や、最後の列のコマンドを読んだ。"
+      ],
+      "hint": "`ps aux | grep report-app` で行を絞ろう。",
+      "terms": [
+        "ps"
+      ]
+    },
+    {
+      "id": "sec-rotate-early",
+      "match": "payment refused: 401",
+      "output": true,
+      "outputOf": "\\bcurl\\b",
+      "meaning": "アプリが持つ鍵を、決済の API が断った。今、注文が止まっている。",
+      "causes": [
+        "古い鍵を、アプリを切り替える前に一覧から消した。",
+        "アプリの鍵を換えたが、API の一覧に新しい鍵を足していない・読み直していない。"
+      ],
+      "hint": "`/etc/pay-api/keys` にアプリの鍵があるかを確かめ、`sudo systemctl reload pay-api` で読み直そう。順は「足す → 切り替える → 消す」。",
+      "terms": [
+        "api"
+      ]
     }
   ]
 }

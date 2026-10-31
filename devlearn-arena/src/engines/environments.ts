@@ -11,7 +11,7 @@ import { createDefaultRegistry } from './kernel/commands';
 import { BUILTIN_NAMESPACES } from './kernel/commands/kubectlNamespace';
 import { applyManifestText } from './kernel/commands/kubectlOps';
 import type { GitServer, ShellState, WebWorld } from './kernel/registry';
-import { createServiceTable, portFromConfig } from './kernel/services';
+import { createServiceTable, portFromConfig, readEnvValue, readKeys, unitValue } from './kernel/services';
 import { readSessionIni } from './http/session';
 import { createShellState, type SessionOptions } from './kernel/session';
 import { execute } from './kernel/shell';
@@ -40,6 +40,14 @@ const serviceSetup = z.object({
   enabled: z.boolean().default(false),
   /** 動かそうとすると失敗する理由（ログに出る） */
   broken: z.string().optional(),
+  /** ユニットファイルの場所（User=・ExecStart= を読む。daemon-reload で読み直す）。sec.i.04 */
+  unit: z.string().startsWith('/').optional(),
+  /** プログラムが書き込む場所。動かす利用者がそこに書けなければ、起動に失敗する */
+  writes: z.array(z.string().startsWith('/')).optional(),
+  /** API の鍵を受ける側: 受け付ける鍵の一覧のファイル（sec.i.05） */
+  keyGuard: z.object({ file: z.string().startsWith('/') }).strict().optional(),
+  /** API の鍵で頼む側: 環境のファイル・鍵の変数の名前・頼む先のポート */
+  keyClient: z.object({ envFile: z.string().startsWith('/'), name: z.string(), upstream: z.number().int() }).strict().optional(),
   /** 落ちた後（状態が failed）から始める */
   failed: z.boolean().optional(),
   /** 落ちた理由（systemctl status の Result。メモリが足りずにカーネルに止められたなら oom-kill。無ければ exit-code） */
@@ -410,6 +418,11 @@ export function shellOptions(environment: string, setup: unknown): SessionOption
       // 初めから動いているアプリは、置いたファイルの php.ini を読んだ状態で始める
       ...(v.session !== undefined ? { session: v.session, ...(v.active ? { cookie: readSessionIni(s.files?.[v.session.ini] ?? '') } : {}) } : {}),
       ...(v.result !== undefined ? { result: v.result } : {}),
+      // 初めから動いているサービスは、置いたファイルのユニットを読み込んだ状態で、その User= で動いている
+      ...(v.unit !== undefined ? { unit: v.unit, unitLoaded: s.files?.[v.unit] ?? '', ...(v.active ? { user: unitValue(s.files?.[v.unit] ?? '', 'User') ?? 'root' } : {}) } : {}),
+      ...(v.writes !== undefined ? { writes: v.writes } : {}),
+      ...(v.keyGuard !== undefined ? { keyGuard: v.keyGuard, ...(v.active ? { validKeys: readKeys(s.files?.[v.keyGuard.file] ?? '') } : {}) } : {}),
+      ...(v.keyClient !== undefined ? { keyClient: v.keyClient, ...(v.active ? { heldKey: readEnvValue(s.files?.[v.keyClient.envFile] ?? '', v.keyClient.name) } : {}) } : {}),
       ...(v.log !== undefined ? { log: v.log } : {}),
     })), s.hostname);
   }

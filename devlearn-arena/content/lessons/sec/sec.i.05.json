@@ -1,0 +1,268 @@
+{
+  "id": "sec.i.05",
+  "domain": "sec",
+  "level": "intermediate",
+  "theme": "秘密情報",
+  "title": "秘密情報の保管と受け渡し",
+  "goal": "環境変数・Secrets・鍵の更新（ローテーション）ができる",
+  "minutes": 20,
+  "prerequisites": [
+    "sec.b.05",
+    "cicd.i.03"
+  ],
+  "related": [
+    "k8s.i.02",
+    "linux.i.06"
+  ],
+  "next": [
+    "sec.a.01"
+  ],
+  "terms": [
+    "secret-store",
+    "key-rotation",
+    "file",
+    "env-var",
+    "secret-info",
+    "app",
+    "cluster",
+    "ci",
+    "log",
+    "api",
+    "repository"
+  ],
+  "explain": {
+    "what": "{{term:secret-info}}は、保管場所に置き、動かす時にだけ{{term:app}}へ渡し、定期的に取り換える。{{term:env-var}}の{{term:file}}・{{term:secret-store}}・{{term:key-rotation}}の 3 つで守る。",
+    "why": "秘密は使うほど、知る人が増えるほど、漏れる機会が増える。漏れたと気付かないこともある。定期的に換えれば、古い鍵は使えなくなる。",
+    "use": "アプリ・{{term:ci}}・{{term:cluster}}の鍵の管理に使う。取り換えは止めずに行う。新しい鍵を足し、使う側を切り替え、最後に古い鍵を消す。",
+    "when": "辞めた担当者が知っている決済の鍵が、そのまま動いている。今すぐ換えたいが、注文は止められない。",
+    "figures": [
+      "sec-i05-rotation"
+    ]
+  },
+  "understand": [
+    {
+      "kind": "order",
+      "prompt": "止めずに鍵を取り換える順に並べる。",
+      "items": [
+        "新しい鍵を受ける側に足す",
+        "使う側を新しい鍵に切り替える",
+        "古い鍵を無効にする"
+      ],
+      "see": "use"
+    },
+    {
+      "kind": "yesno",
+      "prompt": "秘密の値を、調べやすいように{{term:log}}へ書き出してよい。",
+      "answer": false,
+      "why": "ログは多くの人と仕組みが読み、長く残る。秘密がそこから漏れる。書くなら末尾の数文字だけにする。",
+      "see": "why"
+    }
+  ],
+  "quiz": [
+    {
+      "id": "q1",
+      "kind": "situation",
+      "prompt": "鍵を知っている担当者が辞めた。まずすることは？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "鍵を取り換える",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "本人に、鍵を忘れるよう頼む",
+          "correct": false,
+          "whyNot": "確かめる方法が無い。控えが残っているかもしれない。"
+        },
+        {
+          "id": "c",
+          "text": "何もしない。悪用しないはず",
+          "correct": false,
+          "whyNot": "本人に悪意が無くても、本人の機械から漏れることがある。"
+        }
+      ],
+      "explanation": "人に頼るのではなく、古い鍵を使えなくする。"
+    },
+    {
+      "id": "q2",
+      "kind": "cause",
+      "prompt": "新しい鍵に切り替えて 1 か月経つのに、古い鍵でもまだ {{term:api}} を呼べる。原因は？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "受ける側で古い鍵を無効にしていない",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "アプリの設定が新しい鍵になっていない",
+          "correct": false,
+          "whyNot": "アプリがどちらを使うかと、古い鍵が通るかは別の話。"
+        },
+        {
+          "id": "c",
+          "text": "新しい鍵が短すぎる",
+          "correct": false,
+          "whyNot": "新しい鍵の長さと、古い鍵が通ることは関係が無い。"
+        }
+      ],
+      "explanation": "切り替えただけでは終わらない。受ける側から古い鍵を消して、初めて取り換えが終わる。"
+    },
+    {
+      "id": "q3",
+      "kind": "choice",
+      "prompt": "鍵を置く場所として最もよいのは？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "秘密の保管場所か、読める人を絞った環境のファイル",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "コードの中",
+          "correct": false,
+          "whyNot": "{{term:repository}}を読める人が全員知ることになり、履歴にも残る。"
+        },
+        {
+          "id": "c",
+          "text": "全員が読める共有の文書",
+          "correct": false,
+          "whyNot": "知る人が増えるほど漏れやすく、誰が使ったかも分からない。"
+        }
+      ],
+      "explanation": "保管場所なら、読める人を絞れ、誰が読んだかも残せる。"
+    }
+  ],
+  "practice": {
+    "mode": "terminal",
+    "purpose": "辞めた担当者が知っている決済の鍵を、止めずに取り換える。新しい鍵は `/home/learner/inbox/new-key` に届いている。決済の API `pay-api` が受ける鍵の一覧は `/etc/pay-api/keys`、店のアプリ `shop` が使う鍵は `/etc/shop/shop.env`。",
+    "environment": "linux-basic",
+    "setup": {
+      "hostname": "shop-srv",
+      "files": {
+        "/etc/pay-api/keys": "k-old-7f3a\n",
+        "/etc/shop/shop.env": "PAY_API_KEY=k-old-7f3a\n",
+        "/home/learner/inbox/new-key": "k-new-c91d\n"
+      },
+      "services": {
+        "pay-api": {
+          "description": "Payment API",
+          "active": true,
+          "enabled": true,
+          "port": 9000,
+          "keyGuard": {
+            "file": "/etc/pay-api/keys"
+          }
+        },
+        "shop": {
+          "description": "Shop app",
+          "active": true,
+          "enabled": true,
+          "port": 8080,
+          "keyClient": {
+            "envFile": "/etc/shop/shop.env",
+            "name": "PAY_API_KEY",
+            "upstream": 9000
+          }
+        }
+      }
+    },
+    "steps": [
+      {
+        "id": "add",
+        "purpose": "受ける側に新しい鍵を足す。`/etc/pay-api/keys` の後ろに新しい鍵の行を足し、`pay-api` を読み直す（`systemctl reload`）。この間も古い鍵は通り、注文は止まらない。",
+        "check": {
+          "kind": "http",
+          "url": "http://localhost:9000/charge",
+          "status": 200,
+          "auth": "Bearer k-new-c91d"
+        },
+        "afterward": "新しい鍵も古い鍵も通る状態になった。これで、店のアプリをどの時点で切り替えても注文は止まらない。",
+        "hints": [
+          "一覧のファイルに足して読み直す。消すのは最後。",
+          "`cat 新しい鍵のファイル >> 一覧のファイル` で足し、`sudo systemctl reload pay-api` で読み直す。",
+          "`cat /home/learner/inbox/new-key >> /etc/pay-api/keys` `sudo systemctl reload pay-api` `curl -s -H 'Authorization: Bearer k-new-c91d' http://localhost:9000/charge` を打つ。"
+        ]
+      },
+      {
+        "id": "switch",
+        "purpose": "使う側を切り替える。`/etc/shop/shop.env` の `PAY_API_KEY` を新しい鍵に替え、`shop` を動かし直す。`curl http://localhost:8080/checkout` の `key_tail`（鍵の末尾）が `c91d` になることを確かめる。",
+        "check": {
+          "kind": "http",
+          "url": "http://localhost:8080/checkout",
+          "status": 200,
+          "contains": "c91d"
+        },
+        "afterward": "店のアプリが新しい鍵で注文を通した。環境のファイルは動かす時に読むので、動かし直して初めて切り替わる。",
+        "hints": [
+          "環境のファイルを書き換えても、動いているアプリは前の値のまま。",
+          "`sed -i 's/^PAY_API_KEY=.*/PAY_API_KEY=新しい鍵/' ファイル` で替え、`sudo systemctl restart shop` で動かし直す。",
+          "`sed -i 's/^PAY_API_KEY=.*/PAY_API_KEY=k-new-c91d/' /etc/shop/shop.env` `sudo systemctl restart shop` `curl -s http://localhost:8080/checkout` を打つ。"
+        ],
+        "expectedErrors": [
+          "sec-rotate-early"
+        ]
+      },
+      {
+        "id": "retire",
+        "purpose": "古い鍵を無効にする。`/etc/pay-api/keys` から古い鍵 `k-old-7f3a` の行を消して読み直し、古い鍵が 401 で断られることを確かめる。",
+        "check": {
+          "kind": "http",
+          "url": "http://localhost:9000/charge",
+          "status": 401,
+          "auth": "Bearer k-old-7f3a"
+        },
+        "afterward": "古い鍵は 401 で断られ、辞めた担当者の知る鍵は使えなくなった。注文は一度も止まっていない。",
+        "hints": [
+          "行を消すのは `sed -i`。消した後も読み直しが要る。",
+          "`sed -i '/k-old-7f3a/d' 一覧のファイル` の後に `sudo systemctl reload pay-api`。",
+          "`sed -i '/k-old-7f3a/d' /etc/pay-api/keys` `sudo systemctl reload pay-api` `curl -s -i -H 'Authorization: Bearer k-old-7f3a' http://localhost:9000/charge` を打つ。"
+        ]
+      },
+      {
+        "id": "check",
+        "purpose": "最後に、店のアプリの注文が新しい鍵で通っていることを、もう一度 `curl` で確かめる（`status` 200 と `key_tail` の `c91d`）。",
+        "check": {
+          "kind": "ran",
+          "uses": [
+            "curl"
+          ],
+          "shows": [
+            "{\"order\":\"ok\",\"key_tail\":\"c91d\"}"
+          ]
+        },
+        "afterward": "注文は通り、古い鍵は断られる。新しい鍵で動き、古い鍵は無効。これで取り換えが終わった。",
+        "hints": [
+          "店のアプリの `/checkout` に頼む。",
+          "`curl -s http://localhost:8080/checkout` を打つ。",
+          "`curl -s http://localhost:8080/checkout` を打つ。鍵の末尾が c91d と出れば達成。"
+        ],
+        "expectedErrors": [
+          "sec-rotate-early"
+        ]
+      }
+    ]
+  },
+  "result": {
+    "success": "注文を止めずに鍵を取り換えられた。順は「足す → 切り替える → 消す」。",
+    "partial": "ヒントを使って取り換えられた。次は、順の理由を説明できるか確かめよう。",
+    "retry": "注文が止まっている。古い鍵を先に消していないか、`/etc/pay-api/keys` を確かめよう。"
+  },
+  "summary": {
+    "points": [
+      "秘密は保管場所に置く",
+      "動かす時にだけ渡す",
+      "定期的に取り換える（足す → 切り替える → 消す）"
+    ],
+    "next": [
+      "k8s.i.02"
+    ],
+    "terms": [
+      "key-rotation",
+      "secret-store",
+      "env-var"
+    ]
+  }
+}

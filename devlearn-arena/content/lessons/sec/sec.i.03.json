@@ -1,0 +1,275 @@
+{
+  "id": "sec.i.03",
+  "domain": "sec",
+  "level": "intermediate",
+  "theme": "脆弱性",
+  "title": "脆弱性とは（代表例）",
+  "goal": "SQL インジェクション・XSS などの仕組みと対策を説明できる",
+  "minutes": 20,
+  "prerequisites": [
+    "web.i.01",
+    "db.b.03"
+  ],
+  "related": [
+    "db.b.03",
+    "web.i.01"
+  ],
+  "next": [
+    "sec.a.01"
+  ],
+  "terms": [
+    "vulnerability",
+    "sql-injection",
+    "xss",
+    "sql",
+    "html",
+    "app",
+    "database",
+    "placeholder",
+    "escape",
+    "web",
+    "select",
+    "where",
+    "password-reuse",
+    "certificate"
+  ],
+  "explain": {
+    "what": "{{term:vulnerability}}は、悪用できる欠陥。代表は、入力が{{term:sql}}の命令として動く{{term:sql-injection}}と、入力が画面の{{term:html}}の中で命令として動く{{term:xss}}。",
+    "why": "{{term:app}}が入力を、そのまま命令の文につなぐと、相手は入力に命令を書き込める。{{term:database}}の中身を全て抜かれたり、他の利用者の画面で勝手な処理を動かされたりする。",
+    "use": "アプリを作る・確かめる時に使う。入力は命令と分けて扱う。SQL には{{term:placeholder}}で値として渡し、HTML に書く時は記号を{{term:escape}}して文字にする。",
+    "when": "店の{{term:web}}サイトの検索欄に、引用符と、条件をつなぐ語を混ぜた文字を入れたら、公開していない商品まで全て出た。",
+    "figures": [
+      "sec-i03-injection"
+    ]
+  },
+  "understand": [
+    {
+      "kind": "order",
+      "prompt": "SQL インジェクションで、入力が命令に化ける流れを順に並べる。",
+      "items": [
+        "攻撃する人が、検索欄に引用符と `OR` を混ぜた文字を入れる",
+        "アプリが、その文字をそのまま SQL の文につなぐ",
+        "引用符で値が閉じ、`OR` から後ろが命令として読まれる",
+        "条件が常に真になり、公開していない行まで返る"
+      ],
+      "see": "why"
+    },
+    {
+      "kind": "match",
+      "prompt": "脆弱性と、その対策を結ぶ。",
+      "pairs": [
+        [
+          "SQL インジェクション",
+          "プレースホルダで値として渡す"
+        ],
+        [
+          "XSS",
+          "画面に書く前に記号をエスケープする"
+        ]
+      ],
+      "see": "use"
+    }
+  ],
+  "quiz": [
+    {
+      "id": "q1",
+      "kind": "cause",
+      "prompt": "検索欄に `' OR '1'='1` と入れたら、全ての商品と非公開の情報まで表示された。何の脆弱性？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "SQL インジェクション",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "XSS",
+          "correct": false,
+          "whyNot": "XSS は画面の HTML の中で命令が動くこと。ここで動いたのは、データベースに送る SQL の命令。"
+        },
+        {
+          "id": "c",
+          "text": "{{term:password-reuse}}",
+          "correct": false,
+          "whyNot": "ログインとは関係が無い。入力が SQL の文に混ざったことが原因。"
+        }
+      ],
+      "explanation": "入力の引用符で値が閉じ、`OR` から後ろが SQL の命令として読まれた。SQL インジェクションの典型。"
+    },
+    {
+      "id": "q2",
+      "kind": "cause",
+      "prompt": "掲示板に `<script>` から始まる文字を書き込んだら、それを開いた人の画面で勝手に処理が動いた。何の脆弱性？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "XSS",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "SQL インジェクション",
+          "correct": false,
+          "whyNot": "データベースの命令ではなく、画面（HTML）の中で命令が動いた。"
+        },
+        {
+          "id": "c",
+          "text": "{{term:certificate}}の期限切れ",
+          "correct": false,
+          "whyNot": "証明書の警告とは関係が無い。書き込んだ文字が、そのまま画面に書かれたことが原因。"
+        }
+      ],
+      "explanation": "書き込みをそのまま HTML に書いたので、`<script>` が命令として動いた。画面に書く前にエスケープすれば、ただの文字として表示される。"
+    },
+    {
+      "id": "q3",
+      "kind": "situation",
+      "prompt": "SQL インジェクションを防ぐ一番確かな手は？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "入力を SQL の文につながず、プレースホルダで値として渡す",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "入力から `OR` という語を消す",
+          "correct": false,
+          "whyNot": "書き方はいくらでもある（`||`・大文字小文字・別の語）。消す語を並べる手は漏れる。"
+        },
+        {
+          "id": "c",
+          "text": "検索欄の長さを短くする",
+          "correct": false,
+          "whyNot": "短い攻撃もある。長さではなく、入力を命令と分けることが要る。"
+        }
+      ],
+      "explanation": "プレースホルダで渡した値は、どんな記号を含んでも命令として読まれない。入力を命令と分けて扱うことが、対策の芯。"
+    },
+    {
+      "id": "q4",
+      "kind": "predict",
+      "prompt": "プレースホルダで `x' OR '1'='1` を名前として渡した。結果はどうなる？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "その文字の名前の品は無いので、0 行",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "全ての行が返る",
+          "correct": false,
+          "whyNot": "値として渡したので、`OR` は命令にならない。引用符も `OR` も、名前の文字の一部。"
+        },
+        {
+          "id": "c",
+          "text": "SQL の文の誤りで止まる",
+          "correct": false,
+          "whyNot": "引用符は値の中の文字として扱われ、文は壊れない。"
+        }
+      ],
+      "explanation": "値として渡した入力は、文字としてだけ扱われる。攻撃の文字は、ただの変わった名前になる。"
+    }
+  ],
+  "practice": {
+    "mode": "sql",
+    "purpose": "店のアプリは、検索欄の入力を `SELECT name, price FROM items WHERE public = 1 AND name = '入力'` の `入力` の所に、そのままつないで{{term:database}}に送る。アプリが送る文を自分で組んで実行し、攻撃の入力で公開していない行まで出ることを確かめる。その後、入力を命令と分けて 1 つの値として渡した形で実行し、攻撃が効かないことを確かめる。",
+    "environment": "sql-sqlite",
+    "setup": {
+      "sql": "CREATE TABLE items (id INTEGER PRIMARY KEY, name TEXT NOT NULL, price INTEGER NOT NULL, public INTEGER NOT NULL) STRICT; INSERT INTO items VALUES (1, '灯台の模型', 1200, 1), (2, '港の絵はがき', 300, 1), (3, '船の鈴', 800, 1), (4, '仕入れ先と原価の一覧', 0, 0), (5, '来月の値下げ予定', 0, 0);"
+    },
+    "steps": [
+      {
+        "id": "normal",
+        "purpose": "まず、ふつうの入力 `船の鈴` で、アプリが送る文を組んで実行する。公開している 1 行だけが出る。",
+        "check": {
+          "kind": "ran",
+          "uses": [
+            "SELECT",
+            "WHERE"
+          ],
+          "result": "船の鈴 800"
+        },
+        "afterward": "ふつうの入力では、公開している品（`public = 1`）のうち、名前の合う 1 行だけが出た。アプリが作った文は、作り手の思った通りに動いている。",
+        "hints": [
+          "アプリの文の `入力` の所に、`船の鈴` をそのまま入れる。引用符は文の側にある。",
+          "`... AND name = '船の鈴'` の形になる。",
+          "`SELECT name, price FROM items WHERE public = 1 AND name = '船の鈴'` を実行する。船の鈴 800 と出れば達成。"
+        ],
+        "expectedErrors": [
+          "db-syntax",
+          "db-unrecognized",
+          "db-no-column"
+        ]
+      },
+      {
+        "id": "attack",
+        "purpose": "攻撃の入力 `x' OR '1'='1` を、同じく `入力` の所にそのままつないで実行する。公開していない行まで出ることを確かめる。",
+        "check": {
+          "kind": "ran",
+          "uses": [
+            "SELECT",
+            "OR"
+          ],
+          "result": "灯台の模型 1200\n港の絵はがき 300\n船の鈴 800\n仕入れ先と原価の一覧 0\n来月の値下げ予定 0"
+        },
+        "afterward": "入力の `'` で名前の値が閉じ、`OR '1'='1'` が命令として読まれた。条件が常に真になり、非公開の「仕入れ先と原価の一覧」まで 5 行全てが出た。これが SQL インジェクション。",
+        "hints": [
+          "入力をそのままつなぐと、入力の引用符が、文の引用符と組になる。",
+          "`name = '` の後ろに `x' OR '1'='1` を書き、最後に文の側の `'` が付く。",
+          "`SELECT name, price FROM items WHERE public = 1 AND name = 'x' OR '1'='1'` を実行する。5 行全てが出れば達成。"
+        ],
+        "expectedErrors": [
+          "db-syntax",
+          "db-unrecognized",
+          "sec-injection-answer"
+        ]
+      },
+      {
+        "id": "safe",
+        "purpose": "プレースホルダで渡すと、入力は全体が 1 つの値になる。SQL の文の上で同じ意味になるよう、入力の中の `'` を `''` に二重にして 1 つの文字の値にし、出る行を `COUNT(*)` で数える。0 行になることを確かめる。",
+        "check": {
+          "kind": "ran",
+          "uses": [
+            "COUNT",
+            "WHERE"
+          ],
+          "result": "0"
+        },
+        "afterward": "0 行。入力の引用符も `OR` も、名前の文字の一部として扱われ、その名前の品は無かった。アプリでは、手で二重にするのではなく、プレースホルダ（`name = ?`）で値を渡す。ドライバが、値を命令と分けて送る。",
+        "hints": [
+          "SQL の文字の値の中では、`'` は `''` と 2 つ重ねて書く。そうすると、値は閉じない。",
+          "入力 `x' OR '1'='1` の中の `'` を全て `''` にし、その全体を `'…'` で囲む。数えるのは `SELECT COUNT(*) FROM items WHERE …`。",
+          "`SELECT COUNT(*) FROM items WHERE public = 1 AND name = 'x'' OR ''1''=''1'` を実行する。0 と出れば達成。"
+        ],
+        "expectedErrors": [
+          "db-syntax",
+          "db-unrecognized",
+          "sec-injection-safe"
+        ]
+      }
+    ]
+  },
+  "result": {
+    "success": "入力をそのまま SQL につなぐと命令に化けることを、実際に非公開の行が出ることで確かめた。入力を 1 つの値として渡せば、攻撃が文字になることも確かめた。",
+    "partial": "ヒントを使って、SQL インジェクションの仕組みと防ぎ方を確かめられた。次は、入力がどこで文に混ざるかを自分で見つけてみよう。",
+    "retry": "まだ結果が合っていない。アプリの文の入力の所に、入力をそのまま書き写したかを確かめよう。"
+  },
+  "summary": {
+    "points": [
+      "入力を信じない",
+      "入力を命令と分けて、値として扱う（プレースホルダ・エスケープ）",
+      "代表例の SQL インジェクションと XSS を知っておく"
+    ],
+    "next": [
+      "sec.a.01"
+    ],
+    "terms": [
+      "vulnerability",
+      "sql-injection",
+      "xss",
+      "placeholder"
+    ]
+  }
+}

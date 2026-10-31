@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 360" font-family="&quot;Noto Sans JP&quot;, sans-serif">
+  <title>入力をそのまま SQL や HTML の文につなぐと、入力の一部が命令として動く。入力を命令と分けて値として渡せば、文字としてだけ扱われる</title>
+  <defs>
+    <marker id="arrow-gold" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="#f2b632" />
+    </marker>
+  </defs>
+  <g class="el" data-part="input">
+    <rect x="20" y="40" width="180" height="70" rx="10" fill="#9aa9b5" />
+    <text x="110" y="68" text-anchor="middle" font-size="16" font-weight="700" fill="#0a1424">検索欄の入力</text>
+    <text x="110" y="94" text-anchor="middle" font-size="14" fill="#0a1424">x' OR '1'='1</text>
+  </g>
+  <g class="el" data-part="concat">
+    <rect x="240" y="20" width="380" height="110" rx="10" fill="#c0392b" />
+    <text x="430" y="48" text-anchor="middle" font-size="16" font-weight="700" fill="#eef2f6">そのままつなぐ（危ない）</text>
+    <text x="430" y="78" text-anchor="middle" font-size="13" fill="#eef2f6">… AND name = 'x' OR '1'='1'</text>
+    <text x="430" y="108" text-anchor="middle" font-size="14" font-weight="700" fill="#ffd66b">OR が命令として動き、全件が出る</text>
+  </g>
+  <g class="el" data-part="safe">
+    <rect x="240" y="170" width="380" height="110" rx="10" fill="#1f7a4d" />
+    <text x="430" y="198" text-anchor="middle" font-size="16" font-weight="700" fill="#eef2f6">命令と分けて、値として渡す</text>
+    <text x="430" y="228" text-anchor="middle" font-size="13" fill="#eef2f6">… AND name = ?　値: x' OR '1'='1</text>
+    <text x="430" y="258" text-anchor="middle" font-size="14" font-weight="700" fill="#3ae08a">ただの文字。その名前の品は無い</text>
+  </g>
+  <g class="el" data-part="paths">
+    <path d="M200 70 H234" fill="none" stroke="#f2b632" stroke-width="2" marker-end="url(#arrow-gold)" />
+    <path d="M110 112 V225 H234" fill="none" stroke="#f2b632" stroke-width="2" marker-end="url(#arrow-gold)" />
+  </g>
+  <g class="el" data-part="xss">
+    <text x="320" y="320" text-anchor="middle" font-size="14" fill="#eef2f6">HTML でも同じ。入力の &lt;script&gt; をそのまま画面に書くと、命令として動く（XSS）</text>
+  </g>
+</svg>

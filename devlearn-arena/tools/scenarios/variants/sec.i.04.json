@@ -1,0 +1,58 @@
+{
+  "lesson": "sec.i.04",
+  "variants": [
+    {
+      "name": "awk で利用者の列を出す・長い名前のオプションで作る・nologin の場所を読む",
+      "steps": {
+        "who": [
+          "ps aux | awk '/report-app/ {print $1}'",
+          "ROOT"
+        ],
+        "user": [
+          "sudo useradd --system --no-create-home --shell /usr/sbin/nologin report",
+          "grep report /etc/passwd"
+        ],
+        "unit": [
+          "sudo sed -i 's/User=root/User=report/' /etc/systemd/system/report.service",
+          "sudo systemctl daemon-reload"
+        ],
+        "run": [
+          "sudo chown -R report:report /var/lib/report",
+          "sudo systemctl restart report",
+          "systemctl status report"
+        ]
+      }
+    },
+    {
+      "name": "先に確かめてから・止めてから動かす",
+      "steps": {
+        "who": [
+          "ps aux",
+          "root"
+        ],
+        "user": [
+          "id report || sudo useradd -r -s /usr/sbin/nologin report"
+        ],
+        "unit": [
+          "cat /etc/systemd/system/report.service",
+          "sudo sed -i '/^User=/c User=report' /etc/systemd/system/report.service",
+          "sudo systemctl daemon-reload"
+        ],
+        "run": [
+          "ls -ld /var/lib/report",
+          "sudo chown report /var/lib/report",
+          "sudo systemctl stop report",
+          "sudo systemctl start report",
+          "ps aux | grep report-app"
+        ]
+      }
+    }
+  ],
+  "wrong": {
+    "step": "run",
+    "why": "書く場所の持ち主を替えずに動かし直す",
+    "input": [
+      "sudo systemctl restart report"
+    ]
+  }
+}

@@ -106,7 +106,7 @@ export const checkSchema = z.discriminatedUnion('kind', [
   }).strict(),
   z.object({ kind: z.literal('cwd'), equals: z.string() }).strict(),
   /** listen を書けば、そのサービスが動いていて、その番号で待ち受けている（TCP か UDP） */
-  z.object({ kind: z.literal('service'), name: z.string(), active: z.boolean().optional(), enabled: z.boolean().optional(), listen: z.number().int().min(1).max(65535).optional() }).strict(),
+  z.object({ kind: z.literal('service'), name: z.string(), active: z.boolean().optional(), enabled: z.boolean().optional(), listen: z.number().int().min(1).max(65535).optional(), user: z.string().optional() }).strict(),
   z.object({ kind: z.literal('git'), expr: z.string() }).strict(),
   z.object({ kind: z.literal('k8s'), expr: z.string() }).strict(),
   z.object({ kind: z.literal('net'), expr: z.string() }).strict(),
@@ -122,7 +122,7 @@ export const checkSchema = z.discriminatedUnion('kind', [
    * method と data で、頼み方（POST と送る中身）を決められる
    */
   z.object({
-    kind: z.literal('http'), url: z.string(), status: z.number().int(), contains: z.string().optional(),
+    kind: z.literal('http'), url: z.string(), status: z.number().int(), contains: z.string().optional(), auth: z.string().optional(),
     header: z.string().regex(/^[A-Za-z0-9-]+: .+$/).optional(),
     method: z.enum(['GET', 'HEAD', 'POST', 'PUT', 'PATCH', 'DELETE']).optional(),
     data: z.string().optional(),

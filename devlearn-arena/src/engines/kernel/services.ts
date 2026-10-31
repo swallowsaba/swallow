@@ -60,8 +60,46 @@ export interface Service {
   dhcpLeases?: string;
   /** 落ちた理由（状態が failed の時。systemctl status の Result。無ければ exit-code） */
   result?: 'exit-code' | 'oom-kill' | 'signal' | 'core-dump' | 'timeout';
+  /** ユニットファイルの場所（User=・ExecStart= を読む）。読み込んだ中身は unitLoaded（daemon-reload で読み直す） */
+  unit?: string;
+  /** systemd が読み込んでいるユニットファイルの中身（ファイルを書き換えても、daemon-reload まで変わらない） */
+  unitLoaded?: string;
+  /** プログラムが書き込む場所。動かす利用者がそこに書けなければ、起動に失敗する */
+  writes?: readonly string[];
+  /** 動かしている利用者（ユニットの User=。無ければ root）。動いている間だけ意味がある */
+  user?: string;
+  /** API の鍵を受ける側: 受け付ける鍵の一覧のファイル（動かす時・読み直す時に読む）。sec.i.05 */
+  keyGuard?: { file: string };
+  /** 読み込んだ鍵の一覧 */
+  validKeys?: readonly string[];
+  /** API の鍵で頼む側: 環境のファイル・鍵の変数の名前・頼む先のポート（環境のファイルは動かす時に読む） */
+  keyClient?: { envFile: string; name: string; upstream: number };
+  /** 読み込んだ鍵 */
+  heldKey?: string;
   /** ログ（journalctl で読む） */
   log: readonly string[];
+}
+
+/** 鍵の一覧のファイル（1 行 1 つ。# はコメント） */
+export function readKeys(text: string): string[] {
+  return text.split('\n').map((l) => l.replace(/#.*$/, '').trim()).filter((l) => l !== '');
+}
+
+/** 環境のファイルの変数の値 */
+export function readEnvValue(text: string, name: string): string {
+  return new RegExp(`^\\s*(?:export\\s+)?${name}=(.*)$`, 'm').exec(text)?.[1]?.trim().replace(/^["']|["']$/g, '') ?? '';
+}
+
+/** 利用者が居るか・その利用者が場所に書けるか（systemctl が仮想のファイルと /etc/passwd から決めて渡す） */
+export interface ServiceAccess {
+  userExists: (user: string) => boolean;
+  canWrite: (user: string, path: string) => boolean;
+}
+
+/** ユニットファイルの [Service] の値（User=・ExecStart=） */
+export function unitValue(text: string, key: string): string | undefined {
+  const m = new RegExp(`^\\s*${key}=(\\S+)`, 'm').exec(text);
+  return m?.[1];
 }
 
 export interface ServiceTable {
@@ -137,23 +175,36 @@ export function portsOf(s: Service): number[] {
   return [...(s.listens ?? []).map((l) => l.port), ...(s.port !== undefined && !s.config ? [s.port] : [])];
 }
 
-function fail(table: ServiceTable, s: Service, why: LogLine | LogLine[]): ServiceResult {
+function fail(table: ServiceTable, s: Service, why: LogLine | LogLine[], status = '1/FAILURE'): ServiceResult {
   const t = update(table, { ...s, active: 'failed', result: 'exit-code' }, [
     `Starting ${s.name}.service - ${s.description}...`,
     ...(Array.isArray(why) ? why : [why]),
-    `${s.name}.service: Main process exited, code=exited, status=1/FAILURE`,
+    `${s.name}.service: Main process exited, code=exited, status=${status}`,
     `${s.name}.service: Failed with result 'exit-code'.`,
     `Failed to start ${s.name}.service - ${s.description}.`,
   ]);
   return { ok: false, table: t, error: { kind: 'failed', unit: `${s.name}.service` } };
 }
 
-export function startService(table: ServiceTable, raw: string, load?: ConfigLoader, read?: TextReader): ServiceResult {
+export function startService(table: ServiceTable, raw: string, load?: ConfigLoader, read?: TextReader, access?: ServiceAccess): ServiceResult {
   const s = find(table, raw);
   if (isError(s)) return { ok: false, table, error: s };
   if (s.active === 'active') return { ok: true, table };
   if (s.broken) return fail(table, s, `${s.name}.service: ${s.broken}`);
   let ready: Service = s;
+  if (s.unit !== undefined) {
+    // 読み込んであるユニットの User= の利用者で動かす（本物の systemd と同じく、居なければ 217/USER）
+    const text = s.unitLoaded ?? (read ? read(s.unit) : null) ?? '';
+    const user = unitValue(text, 'User') ?? 'root';
+    const exec = unitValue(text, 'ExecStart') ?? `/usr/bin/${s.name}`;
+    if (access && user !== 'root' && !access.userExists(user)) {
+      return fail(table, s, [`${s.name}.service: Failed to determine user credentials: No such process`, `${s.name}.service: Failed at step USER spawning ${exec}: No such process`], '217/USER');
+    }
+    const program = `${exec.split('/').pop() ?? s.name}[${String(800 + table.tick)}]`;
+    const blocked = access ? (s.writes ?? []).find((w) => !access.canWrite(user, w)) : undefined;
+    if (blocked !== undefined) return fail(table, s, { from: program, text: `cannot write to ${blocked}: Permission denied` });
+    ready = { ...ready, user };
+  }
   if (s.config && load) {
     const conf = load(s.config);
     if (!conf.ok) return fail(table, s, { from: `${s.name}[${String(800 + table.tick)}]`, text: conf.error });
@@ -173,6 +224,8 @@ export function startService(table: ServiceTable, raw: string, load?: ConfigLoad
     served = [{ from, text: `Listening on LPF/${s.dhcp.iface}/02:42:c0:a8:01:05/192.168.1.0/24` }, ...run.log.map((l) => ({ from, text: l }))];
   }
   // php.ini が無ければ、PHP と同じく既定の決まりで動く
+  if (s.keyGuard) ready = { ...ready, validKeys: readKeys((read ? read(s.keyGuard.file) : null) ?? '') };
+  if (s.keyClient) ready = { ...ready, heldKey: readEnvValue((read ? read(s.keyClient.envFile) : null) ?? '', s.keyClient.name) };
   if (s.session) ready = { ...ready, cookie: readSessionIni((read ? read(s.session.ini) : null) ?? '') };
   for (const port of portsOf(ready)) {
     const other = [...table.services.values()].find((o) => o.name !== s.name && o.active === 'active' && portsOf(o).includes(port));
@@ -188,9 +241,9 @@ export function stopService(table: ServiceTable, raw: string): ServiceResult {
   return { ok: true, table: update(table, { ...s, active: 'inactive' }, [`Stopping ${s.name}.service - ${s.description}...`, `Stopped ${s.name}.service - ${s.description}.`]) };
 }
 
-export function restartService(table: ServiceTable, raw: string, load?: ConfigLoader, read?: TextReader): ServiceResult {
+export function restartService(table: ServiceTable, raw: string, load?: ConfigLoader, read?: TextReader, access?: ServiceAccess): ServiceResult {
   const stopped = stopService(table, raw);
-  return stopped.ok ? startService(stopped.table, raw, load, read) : stopped;
+  return stopped.ok ? startService(stopped.table, raw, load, read, access) : stopped;
 }
 
 /**

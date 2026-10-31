@@ -1838,7 +1838,7 @@
       "title": "証明書の検証と連鎖",
       "goal": "期限・名前・連鎖の欠けによるエラーを直せる",
       "practice": [
-        "simulation"
+        "terminal"
       ],
       "prerequisites": [
         "sec.b.07"
@@ -1860,7 +1860,7 @@
       "title": "Web サーバに TLS を設定する",
       "goal": "証明書と秘密鍵を正しく配置し、HTTPS を有効にできる",
       "practice": [
-        "editor"
+        "terminal"
       ],
       "prerequisites": [
         "sec.i.01",
@@ -1882,7 +1882,7 @@
       "title": "脆弱性とは（代表例）",
       "goal": "SQL インジェクション・XSS などの仕組みと対策を説明できる",
       "practice": [
-        "simulation"
+        "sql"
       ],
       "prerequisites": [
         "web.i.01",
@@ -1925,7 +1925,7 @@
       "title": "秘密情報の保管と受け渡し",
       "goal": "環境変数・Secrets・鍵の更新（ローテーション）ができる",
       "practice": [
-        "editor"
+        "terminal"
       ],
       "prerequisites": [
         "sec.b.05",

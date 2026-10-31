@@ -9,8 +9,13 @@ import { denied } from './perm';
  * sh・bash は別のシェルで動かすので、中で変えた変数と現在地は戻る（ファイルへの変更は残る）。
  * source は今のシェルで動かすので、変数と現在地が残る（~/.bashrc を読み直す時に使う）
  */
-function runFile({ argv, shell, runLine }: CommandContext, keep: boolean): CommandResult {
+function runFile({ argv, shell, stdin, runLine }: CommandContext, keep: boolean): CommandResult {
   const [name = 'sh', file, ...args] = argv;
+  // sh -c '手順': 書いた手順を別のシェルで動かす
+  if (!keep && file === '-c') {
+    const r = runLine(args[0] ?? '', shell, stdin);
+    return { stdout: r.stdout, stderr: r.stderr, code: r.code, patch: { ...r.state, vars: shell.vars, cwd: shell.cwd } };
+  }
   if (file === undefined) return { stderr: `${name}: 動かすファイルを書く（例: ${name} script.sh）\n`, code: 2 };
   const full = resolve(shell.cwd, file);
   const node = stat(shell.vfs, full);

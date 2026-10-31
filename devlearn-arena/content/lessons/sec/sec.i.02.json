@@ -1,0 +1,146 @@
+{
+  "id": "sec.i.02",
+  "domain": "sec",
+  "level": "intermediate",
+  "theme": "設定",
+  "title": "Web サーバに TLS を設定する",
+  "goal": "証明書と秘密鍵を正しく配置し、HTTPS を有効にできる",
+  "minutes": 20,
+  "prerequisites": ["sec.i.01", "web.i.03"],
+  "related": ["web.i.03", "k8s.i.04"],
+  "next": ["lab.i.01"],
+  "terms": ["https", "web-server", "certificate", "secret-key", "config-file", "certificate-chain", "intermediate-certificate", "key-pair", "permission", "owner", "file", "public-key", "tls", "curl", "chmod", "terminal", "certificate-authority", "root-user", "app", "server", "root-certificate"],
+  "explain": {
+    "what": "{{term:https}}で公開するには、{{term:web-server}}に 3 つを揃える。連鎖付きの{{term:certificate}}の束・それと対になる{{term:secret-key}}・その 2 つの場所を書いた{{term:config-file}}の 2 行。",
+    "why": "証明書と秘密鍵が対でないと、Web サーバは起動しない。{{term:certificate-chain}}の{{term:intermediate-certificate}}を入れ忘れると、一部の{{term:terminal}}で警告が出る。秘密鍵を誰でも読める{{term:permission}}で置くと、盗まれて偽のサイトを作られる。",
+    "use": "{{term:certificate-authority}}から届いた証明書を、サイトに入れる時に使う。どの秘密鍵と{{term:key-pair}}になるかを確かめ、鍵は{{term:owner}}だけが読める権限で置き、設定を検査してから読み直す。",
+    "when": "店のサイトの証明書が届いた。受け取りの場所には、証明書と、今年と去年の 2 つの秘密鍵の{{term:file}}がある。どれを、どこに、どの権限で置けばよいか。",
+    "figures": ["sec-i02-tls-setup"]
+  },
+  "understand": [
+    {
+      "kind": "relation",
+      "prompt": "2 つの関係を選ぶ。",
+      "a": "証明書の中の{{term:public-key}}と、秘密鍵が対でない",
+      "b": "Web サーバが起動に失敗する",
+      "answer": "cause",
+      "why": "{{term:tls}}の握手では、秘密鍵で、証明書の公開鍵の持ち主であることを示す。対でなければ示せないので、Web サーバは初めから断る。",
+      "see": "why"
+    },
+    {
+      "kind": "yesno",
+      "prompt": "秘密鍵のファイルは、誰でも読める権限（644）で置いてよい。",
+      "answer": false,
+      "why": "秘密鍵を読まれると、偽のサイトが本物の証明書を名乗れる。所有者だけが読める 600 にする。誰に見せてもよいのは証明書の方。",
+      "see": "why"
+    }
+  ],
+  "quiz": [
+    {
+      "id": "q1",
+      "kind": "cause",
+      "prompt": "証明書を入れ替えたら、Web サーバの検査が `key values mismatch` で失敗した。原因は？",
+      "choices": [
+        { "id": "a", "text": "証明書と秘密鍵が対になっていない", "correct": true },
+        { "id": "b", "text": "証明書の期限が切れている", "correct": false, "whyNot": "期限切れは起動を止めない。起動はするが、開いた人に警告が出る。" },
+        { "id": "c", "text": "秘密鍵の権限が 600 になっている", "correct": false, "whyNot": "600 は正しい権限。Web サーバは{{term:root-user}}の権限で鍵を読むので、所有者だけでも読める。" }
+      ],
+      "explanation": "`key values mismatch` は「鍵の値が合わない」。去年の秘密鍵など、別の証明書の対を指していることが多い。"
+    },
+    {
+      "id": "q2",
+      "kind": "situation",
+      "prompt": "秘密鍵のファイルの権限として正しいのは？",
+      "choices": [
+        { "id": "a", "text": "600（所有者だけが読み書きできる）", "correct": true },
+        { "id": "b", "text": "644（誰でも読める）", "correct": false, "whyNot": "同じ機械の別の利用者や、乗っ取られた{{term:app}}が鍵を読める。" },
+        { "id": "c", "text": "777（誰でも読み書き・実行できる）", "correct": false, "whyNot": "読まれるだけでなく、書き換えられもする。最も危ない権限。" }
+      ],
+      "explanation": "秘密鍵は持ち主だけが読めればよい。証明書の方は、握手の時に誰にでも送る物なので 644 でよい。"
+    },
+    {
+      "id": "q3",
+      "kind": "predict",
+      "prompt": "中間証明書を含めず、{{term:server}}の証明書 1 枚だけを `ssl_certificate` に書いた。何が起きる？",
+      "choices": [
+        { "id": "a", "text": "一部の端末やツールで、発行者が分からないという警告が出る", "correct": true },
+        { "id": "b", "text": "Web サーバが起動しない", "correct": false, "whyNot": "起動はする。困るのは開く側で、連鎖をたどれない時に警告が出る。" },
+        { "id": "c", "text": "何も起きない（信頼の元は手元にあるので）", "correct": false, "whyNot": "手元の{{term:root-certificate}}までたどるには、間の中間証明書が要る。前に覚えた端末だけが通る。" }
+      ],
+      "explanation": "束はサーバの証明書を先頭に、中間証明書を後ろに置く。前に覚えた端末だけ通るので、気付きにくい。"
+    }
+  ],
+  "practice": {
+    "mode": "terminal",
+    "purpose": "港の店 `shop.example` を{{term:https}}で公開する。受け取りの場所 `/home/learner/inbox` の証明書と対になる秘密鍵を見分け、2 つを `/etc/nginx/certs` に置き、秘密鍵を所有者だけが読める 600 にする。設定 `/etc/nginx/conf.d/shop.conf` に 2 行を足し、検査してから読み直す。",
+    "environment": "linux-basic",
+    "setup": {
+      "hostname": "minato-shop",
+      "dirs": ["/var/www/shop", "/etc/nginx/certs"],
+      "files": {
+        "/etc/hosts": "127.0.0.1\tlocalhost shop.example\n",
+        "/etc/nginx/conf.d/shop.conf": "# 港の店（今は http だけ）\nserver {\n  listen 80;\n  server_name shop.example;\n  root /var/www/shop;\n}\n",
+        "/home/learner/inbox/shop.example.crt": "-----BEGIN CERTIFICATE-----\nsubject: shop.example\nissuer: Minato Issuing CA\nnames: shop.example\nvalid: 2026-09-20 2027-10-20\nkey: shop-2026\n-----END CERTIFICATE-----\n-----BEGIN CERTIFICATE-----\nsubject: Minato Issuing CA\nissuer: Minato Root CA\nvalid: 2024-01-01 2030-01-01\nca: yes\n-----END CERTIFICATE-----\n",
+        "/home/learner/inbox/shop.example.key": "-----BEGIN PRIVATE KEY-----\npair: shop-2026\n-----END PRIVATE KEY-----\n",
+        "/home/learner/inbox/shop.example-2025.key": "-----BEGIN PRIVATE KEY-----\npair: shop-2025\n-----END PRIVATE KEY-----\n",
+        "/var/www/shop/index.html": "<html><body><h1>港の店</h1><p>本日の入荷: 灯台の模型</p></body></html>\n"
+      },
+      "services": {
+        "nginx": { "description": "nginx web server", "enabled": true, "config": "/etc/nginx/conf.d/shop.conf" }
+      },
+      "sites": [],
+      "run": ["systemctl start nginx"]
+    },
+    "steps": [
+      {
+        "id": "pair",
+        "purpose": "証明書 `shop.example.crt` と対になる秘密鍵を見分ける。`openssl x509 -noout -modulus` と `openssl rsa -noout -modulus` の結果を `openssl md5` で短くして比べ、同じ値になる秘密鍵のファイルの名前を答えの欄に入れる。",
+        "check": { "kind": "answer", "equals": "shop.example.key" },
+        "afterward": "対になるのは `shop.example.key`。証明書の公開鍵と、秘密鍵から作った公開鍵の値（`Modulus`）が一致した。去年の `shop.example-2025.key` は値が違い、使うと Web サーバが起動しない。",
+        "hints": [
+          "対の証明書と秘密鍵は、公開鍵の値（`Modulus`）が同じになる。証明書からも秘密鍵からも、その値を出せる。",
+          "`openssl x509 -noout -modulus -in 証明書 | openssl md5` と `openssl rsa -noout -modulus -in 秘密鍵 | openssl md5` を打ち、出た値を見比べる。",
+          "`cd /home/learner/inbox` `openssl x509 -noout -modulus -in shop.example.crt | openssl md5` `openssl rsa -noout -modulus -in shop.example.key | openssl md5` `openssl rsa -noout -modulus -in shop.example-2025.key | openssl md5` を打ち、`shop.example.key` と答える。"
+        ],
+        "expectedErrors": ["sec-key-pair-answer"]
+      },
+      {
+        "id": "place",
+        "purpose": "証明書と、対になる秘密鍵を `/etc/nginx/certs` に置き、秘密鍵 `/etc/nginx/certs/shop.example.key` を所有者だけが読み書きできる 600 にする。",
+        "check": { "kind": "fs", "path": "/etc/nginx/certs/shop.example.key", "mode": "600" },
+        "afterward": "秘密鍵は `-rw-------`（600）になり、所有者のほかは読めない。証明書の方は握手で誰にでも送る物なので、読める権限のままでよい。",
+        "hints": [
+          "置くのは `cp`、権限を変えるのは {{term:chmod}}。秘密鍵だけを絞る。",
+          "`cp` で 2 つのファイルを `/etc/nginx/certs/` に写し、`chmod 600` で秘密鍵の権限を変える。`ls -l` で確かめる。",
+          "`cp /home/learner/inbox/shop.example.crt /home/learner/inbox/shop.example.key /etc/nginx/certs/` `chmod 600 /etc/nginx/certs/shop.example.key` `ls -l /etc/nginx/certs` を打つ。"
+        ]
+      },
+      {
+        "id": "https",
+        "purpose": "`shop.conf` の `listen 80;` を `listen 443 ssl;` に替え、`ssl_certificate` と `ssl_certificate_key` の 2 行を足す（`sed -i` か `nano`）。`nginx -t` で検査してから読み直し、`curl https://shop.example/` でページが出ることを確かめる。",
+        "check": { "kind": "http", "url": "https://shop.example/", "status": 200, "contains": "港の店" },
+        "afterward": "`curl` が警告なしでページを取れた。証明書の束・対の秘密鍵・設定の 2 行が揃い、HTTPS で公開できた。検査（`nginx -t`）を先にしたので、誤りがあっても動いているサイトは止まらない。",
+        "hints": [
+          "設定には、待ち受けの `listen 443 ssl;` と、証明書と秘密鍵の場所の 2 行が要る。",
+          "`sed -i 's|前|後|' ファイル` で行を替え、`sed -i '/server_name/a 足す行' ファイル` で server_name の次の行に足せる。検査は `nginx -t`、読み直しは `systemctl reload nginx`。",
+          "`sed -i 's|listen 80;|listen 443 ssl;|' /etc/nginx/conf.d/shop.conf` `sed -i '/server_name/a ssl_certificate_key /etc/nginx/certs/shop.example.key;' /etc/nginx/conf.d/shop.conf` `sed -i '/server_name/a ssl_certificate /etc/nginx/certs/shop.example.crt;' /etc/nginx/conf.d/shop.conf` `nginx -t` `systemctl reload nginx` `curl https://shop.example/` を打つ。"
+        ],
+        "expectedErrors": ["sec-key-mismatch", "sec-key-missing", "sec-key-path", "sec-cert-path", "sec-chain-incomplete"]
+      }
+    ]
+  },
+  "result": {
+    "success": "対になる秘密鍵を値で見分け、所有者だけが読める権限で置き、設定を検査してから HTTPS を有効にできた。",
+    "partial": "ヒントを使って HTTPS を有効にできた。次は、鍵の対を確かめる手順を自分で組み立ててみよう。",
+    "retry": "まだ HTTPS で開けない。nginx -t の文を読み、証明書と秘密鍵の場所と対を確かめよう。"
+  },
+  "summary": {
+    "points": [
+      "連鎖付きの証明書と、対になる秘密鍵を置く",
+      "秘密鍵は所有者だけが読める 600",
+      "設定は検査してから読み直す"
+    ],
+    "next": ["lab.i.01"],
+    "terms": ["secret-key", "key-pair", "certificate-chain"]
+  }
+}

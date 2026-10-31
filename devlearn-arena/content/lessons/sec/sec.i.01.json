@@ -1,0 +1,168 @@
+{
+  "id": "sec.i.01",
+  "domain": "sec",
+  "level": "intermediate",
+  "theme": "証明書",
+  "title": "証明書の検証と連鎖",
+  "goal": "期限・名前・連鎖の欠けによるエラーを直せる",
+  "minutes": 20,
+  "prerequisites": ["sec.b.07"],
+  "related": ["trouble.i.03", "web.a.02"],
+  "next": ["sec.i.02", "trouble.i.03"],
+  "terms": ["certificate", "https", "certificate-chain", "root-certificate", "intermediate-certificate", "revocation", "tls", "server", "web-server", "certificate-authority", "sni", "curl", "config-file", "file", "automation", "monitoring", "terminal"],
+  "explain": {
+    "what": "ブラウザは{{term:https}}のサイトを開くたびに、届いた{{term:certificate}}を確かめる。期限の内か・開いた名前が書いてあるか・{{term:certificate-chain}}を手元の{{term:root-certificate}}までたどれるか・取り消されていないか（{{term:revocation}}）の 4 つ。",
+    "why": "1 つでも通らないと、ブラウザは警告を出して止める。利用者は「危ないサイト」と思って離れる。期限が切れると、全ての利用者に同時に警告が出る。",
+    "use": "HTTPS の障害で、警告の文から、どの関門で止まったかを見分ける。証明書の中身（期限・名前・発行者）を読み、正しい証明書か{{term:intermediate-certificate}}を置いて直す。",
+    "when": "ある朝、店のサイトを開いた全員に警告が出た。同じ日、図書館のサイトは www を付けた時だけ警告が出て、診療所のサイトは一部のスマートフォンでだけ警告が出た。",
+    "figures": ["sec-i01-gates"]
+  },
+  "understand": [
+    {
+      "kind": "order",
+      "prompt": "ブラウザが証明書の連鎖をたどる順に並べる。",
+      "items": [
+        "{{term:server}}の証明書を受け取る",
+        "その発行者の中間証明書をたどる",
+        "手元にあるルート証明書に着く",
+        "信頼して、暗号の通信を始める"
+      ],
+      "see": "what"
+    },
+    {
+      "kind": "match",
+      "prompt": "警告の文と、止まった関門を結ぶ。",
+      "pairs": [
+        ["certificate has expired", "期限"],
+        ["no alternative certificate subject name matches", "名前"],
+        ["unable to get local issuer certificate", "連鎖"]
+      ],
+      "see": "use"
+    }
+  ],
+  "quiz": [
+    {
+      "id": "q1",
+      "kind": "cause",
+      "prompt": "昨日まで普通に開けた店のサイトで、今朝から全ての利用者に警告が出る。設定は誰も変えていない。最も考えられる原因は？",
+      "choices": [
+        { "id": "a", "text": "証明書の期限が切れた", "correct": true },
+        { "id": "b", "text": "中間証明書をつなぎ忘れた", "correct": false, "whyNot": "設定を変えていないなら、昨日も同じ証明書を送っていた。昨日は通っていたので、連鎖は欠けていない。" },
+        { "id": "c", "text": "サイトの名前が証明書に無い", "correct": false, "whyNot": "名前は昨日と同じ。名前の不足なら、昨日も警告が出ていたはず。" }
+      ],
+      "explanation": "何も変えていないのに、ある日を境に全員に出るのは、期限切れの典型。時間だけが変わったため。"
+    },
+    {
+      "id": "q2",
+      "kind": "cause",
+      "prompt": "`lib.example` は開けるが、`www.lib.example` で開いた時だけ警告が出る。原因は？",
+      "choices": [
+        { "id": "a", "text": "証明書の名前に www.lib.example が無い", "correct": true },
+        { "id": "b", "text": "証明書の期限が切れた", "correct": false, "whyNot": "期限切れなら、どちらの名前でも同じく警告が出る。" },
+        { "id": "c", "text": "www の方だけ通信が遅い", "correct": false, "whyNot": "遅さでは警告は出ない。警告は、証明書の関門で止まった時に出る。" }
+      ],
+      "explanation": "証明書は、書いてある名前でしか使えない。www の有る無しは、別の名前として扱われる。"
+    },
+    {
+      "id": "q3",
+      "kind": "situation",
+      "prompt": "期限切れを二度と起こさないために、最も効く手は？",
+      "choices": [
+        { "id": "a", "text": "期限が近づいたら自動で更新し、期限を{{term:monitoring}}して知らせる", "correct": true },
+        { "id": "b", "text": "期限の日を手帳に書いておく", "correct": false, "whyNot": "担当が変わる・忘れると防げない。人の記憶に頼る手は、いつか漏れる。" },
+        { "id": "c", "text": "期限の長い証明書を選ぶ", "correct": false, "whyNot": "切れる日が先に延びるだけ。いつかは切れ、その時には手順を誰も覚えていない。" }
+      ],
+      "explanation": "更新は{{term:automation}}にし、残りの日数を監視で見張る。人が覚えておく形にしない。"
+    },
+    {
+      "id": "q4",
+      "kind": "predict",
+      "prompt": "名前に lib.example と www.lib.example の両方を書いた証明書に入れ替え、{{term:web-server}}に読み直させた。www.lib.example を開くとどうなる？",
+      "choices": [
+        { "id": "a", "text": "警告が消え、開ける", "correct": true },
+        { "id": "b", "text": "lib.example の方に警告が出るようになる", "correct": false, "whyNot": "lib.example も書いてあるので、そちらも通る。" },
+        { "id": "c", "text": "読み直しても、明日まで変わらない", "correct": false, "whyNot": "読み直した時から、新しい証明書を送る。待つ必要は無い。" }
+      ],
+      "explanation": "名前の関門は、証明書に書いた名前で決まる。両方を書けば、どちらで開いても通る。"
+    }
+  ],
+  "practice": {
+    "mode": "terminal",
+    "purpose": "1 台の{{term:web-server}}（nginx）で動く 3 つのサイト、港の店 `shop.example`・図書館 `www.lib.example`・診療所 `clinic.example` に警告が出ている。`curl` と `openssl` で、どの関門で止まったかを見分け、それぞれを直す。{{term:certificate-authority}}から届いた新しい証明書は `/home/learner/inbox` にある。",
+    "environment": "linux-basic",
+    "setup": {
+      "hostname": "minato-web",
+      "dirs": ["/var/www/shop", "/var/www/lib", "/var/www/clinic"],
+      "files": {
+        "/etc/hosts": "127.0.0.1\tlocalhost shop.example lib.example www.lib.example clinic.example\n",
+        "/etc/nginx/conf.d/sites.conf": "# 1 台で 3 つのサイトを受け持つ（名前ごとに証明書を送り分ける）\nserver {\n  listen 443 ssl;\n  server_name shop.example;\n  ssl_certificate /etc/nginx/certs/shop.crt;\n  root /var/www/shop;\n}\nserver {\n  listen 443 ssl;\n  server_name lib.example www.lib.example;\n  ssl_certificate /etc/nginx/certs/lib.crt;\n  root /var/www/lib;\n}\nserver {\n  listen 443 ssl;\n  server_name clinic.example;\n  ssl_certificate /etc/nginx/certs/clinic.crt;\n  root /var/www/clinic;\n}\n",
+        "/etc/nginx/certs/shop.crt": "-----BEGIN CERTIFICATE-----\nsubject: shop.example\nissuer: Minato Issuing CA\nnames: shop.example\nvalid: 2025-09-01 2026-09-30\n-----END CERTIFICATE-----\n-----BEGIN CERTIFICATE-----\nsubject: Minato Issuing CA\nissuer: Minato Root CA\nvalid: 2024-01-01 2030-01-01\nca: yes\n-----END CERTIFICATE-----\n",
+        "/etc/nginx/certs/lib.crt": "-----BEGIN CERTIFICATE-----\nsubject: lib.example\nissuer: Minato Issuing CA\nnames: lib.example\nvalid: 2026-01-01 2027-01-01\n-----END CERTIFICATE-----\n-----BEGIN CERTIFICATE-----\nsubject: Minato Issuing CA\nissuer: Minato Root CA\nvalid: 2024-01-01 2030-01-01\nca: yes\n-----END CERTIFICATE-----\n",
+        "/etc/nginx/certs/clinic.crt": "-----BEGIN CERTIFICATE-----\nsubject: clinic.example\nissuer: Minato Issuing CA\nnames: clinic.example\nvalid: 2026-01-01 2027-01-01\n-----END CERTIFICATE-----\n",
+        "/etc/nginx/certs/minato-issuing-ca.crt": "-----BEGIN CERTIFICATE-----\nsubject: Minato Issuing CA\nissuer: Minato Root CA\nvalid: 2024-01-01 2030-01-01\nca: yes\n-----END CERTIFICATE-----\n",
+        "/home/learner/inbox/shop.example-2026.crt": "-----BEGIN CERTIFICATE-----\nsubject: shop.example\nissuer: Minato Issuing CA\nnames: shop.example\nvalid: 2026-09-20 2027-10-20\n-----END CERTIFICATE-----\n-----BEGIN CERTIFICATE-----\nsubject: Minato Issuing CA\nissuer: Minato Root CA\nvalid: 2024-01-01 2030-01-01\nca: yes\n-----END CERTIFICATE-----\n",
+        "/home/learner/inbox/lib.example-www.crt": "-----BEGIN CERTIFICATE-----\nsubject: lib.example\nissuer: Minato Issuing CA\nnames: lib.example www.lib.example\nvalid: 2026-10-01 2027-10-01\n-----END CERTIFICATE-----\n-----BEGIN CERTIFICATE-----\nsubject: Minato Issuing CA\nissuer: Minato Root CA\nvalid: 2024-01-01 2030-01-01\nca: yes\n-----END CERTIFICATE-----\n",
+        "/var/www/shop/index.html": "<html><body><h1>港の店</h1><p>本日の入荷: 灯台の模型</p></body></html>\n",
+        "/var/www/lib/index.html": "<html><body><h1>市立図書館</h1><p>今月の展示: 港の歴史</p></body></html>\n",
+        "/var/www/clinic/index.html": "<html><body><h1>港町診療所</h1><p>本日の受付: 9 時〜17 時</p></body></html>\n"
+      },
+      "services": {
+        "nginx": { "description": "nginx web server", "enabled": true, "config": "/etc/nginx/conf.d/sites.conf" }
+      },
+      "sites": [],
+      "run": ["systemctl start nginx"]
+    },
+    "steps": [
+      {
+        "id": "expired",
+        "purpose": "港の店の警告を直す。`curl https://shop.example/` の警告の文を読み、`openssl x509 -noout -dates` で、今の証明書と、届いた `shop.example-2026.crt` の期限（`notAfter`）を読み比べ、新しい方を `/etc/nginx/certs/shop.crt` に置いて nginx に読み直させる。",
+        "check": { "kind": "tls", "host": "shop.example", "trusted": true },
+        "afterward": "今の証明書の期限は 2026 年 9 月 30 日で、もう切れていた。届いた証明書は 2027 年 10 月 20 日まで有効。入れ替えて読み直すと、警告が消えた。",
+        "hints": [
+          "`curl https://shop.example/` の `certificate has expired` は「期限の関門」で止まったという意味。証明書の期限を読む。",
+          "`openssl x509 -in ファイル -noout -dates` で、有効になる日（`notBefore`）と切れる日（`notAfter`）が出る。新しい方を `cp` で置き、`systemctl reload nginx` で読み直す。",
+          "`openssl x509 -in /etc/nginx/certs/shop.crt -noout -dates` `openssl x509 -in /home/learner/inbox/shop.example-2026.crt -noout -dates` `cp /home/learner/inbox/shop.example-2026.crt /etc/nginx/certs/shop.crt` `nginx -t` `systemctl reload nginx` `curl https://shop.example/` を打つ。"
+        ],
+        "expectedErrors": ["sec-cert-expired", "sec-cert-file", "sec-cert-path"]
+      },
+      {
+        "id": "name",
+        "purpose": "図書館の警告を直す。`curl https://www.lib.example/` の警告の文を読み、`openssl x509 -noout -ext subjectAltName` で、今の証明書と届いた `lib.example-www.crt` に書いてある名前を読み比べ、www の名前を持つ方を `/etc/nginx/certs/lib.crt` に置いて読み直させる。",
+        "check": { "kind": "tls", "host": "www.lib.example", "trusted": true },
+        "afterward": "今の証明書の名前は `lib.example` だけで、`www.lib.example` が無かった。届いた証明書には両方が書いてあり、入れ替えるとどちらの名前でも開けた。",
+        "hints": [
+          "`no alternative certificate subject name matches` は「名前の関門」で止まったという意味。証明書に書いてある名前を読む。",
+          "`openssl x509 -in ファイル -noout -ext subjectAltName` で、証明書を使ってよい名前（`DNS:`）が並ぶ。www の名前がある方を置く。",
+          "`openssl x509 -in /etc/nginx/certs/lib.crt -noout -ext subjectAltName` `openssl x509 -in /home/learner/inbox/lib.example-www.crt -noout -ext subjectAltName` `cp /home/learner/inbox/lib.example-www.crt /etc/nginx/certs/lib.crt` `nginx -t` `systemctl reload nginx` `curl https://www.lib.example/` を打つ。"
+        ],
+        "expectedErrors": ["sec-cert-name-missing", "sec-cert-file", "sec-cert-path"]
+      },
+      {
+        "id": "chain",
+        "purpose": "診療所の警告を直す。`curl https://clinic.example/` の警告の文を読み、`openssl s_client` で送っている証明書の枚数を見て、欠けた中間証明書 `minato-issuing-ca.crt` をつないだ束 `clinic-fullchain.crt` を作り、`sites.conf` の診療所の `ssl_certificate` をその束に替えて読み直させる。",
+        "check": { "kind": "tls", "host": "clinic.example", "trusted": true },
+        "afterward": "診療所は、サーバの証明書 1 枚だけを送っていた。中間証明書をつないだ束に替えると、手元のルート証明書までたどれて警告が消えた。中間証明書を前に覚えた{{term:terminal}}だけ通っていたので、一部の端末だけに警告が出ていた。",
+        "hints": [
+          "`unable to get local issuer certificate` は「連鎖の関門」で止まったという意味。`openssl s_client -connect clinic.example:443` の `Certificate chain` の枚数を見る。",
+          "束は、サーバの証明書を先頭に、中間証明書を後ろに `cat` でつなぐ。設定の行は `sed -i` で書き換え、`nginx -t` で確かめてから読み直す。",
+          "`openssl s_client -connect clinic.example:443 -servername clinic.example` `cat /etc/nginx/certs/clinic.crt /etc/nginx/certs/minato-issuing-ca.crt > /etc/nginx/certs/clinic-fullchain.crt` `sed -i 's|/etc/nginx/certs/clinic.crt|/etc/nginx/certs/clinic-fullchain.crt|' /etc/nginx/conf.d/sites.conf` `nginx -t` `systemctl reload nginx` `curl https://clinic.example/` を打つ。"
+        ],
+        "expectedErrors": ["sec-chain-incomplete", "sec-chain-order", "sec-cert-path", "sec-cert-file"]
+      }
+    ]
+  },
+  "result": {
+    "success": "警告の文から、期限・名前・連鎖のどの関門で止まったかを見分け、3 つのサイトをそれぞれの直し方で直せた。",
+    "partial": "ヒントを使って 3 つとも直せた。次は、警告の文を読んで、どの関門かを自分で決めてみよう。",
+    "retry": "まだ警告の残るサイトがある。{{term:curl}} の誤りの文を読み、openssl x509 で期限と名前、openssl s_client で枚数を確かめよう。"
+  },
+  "summary": {
+    "points": [
+      "証明書は期限・名前・連鎖・失効の 4 つで確かめる",
+      "警告の文から、止まった関門が分かる",
+      "期限切れは自動の更新と監視で防ぐ"
+    ],
+    "next": ["sec.i.02", "trouble.i.03"],
+    "terms": ["certificate-chain", "intermediate-certificate", "revocation"]
+  }
+}

@@ -37,6 +37,9 @@ export const BANNED_FILES = [
 export const ALLOW = [
   { path: 'src/engines/kernel/commands/ssh', rule: 'private-key', reason: '端末の模擬の ssh-keygen が、seed の digest から作る形だけの鍵（sec.b.04）。本物の鍵ではない' },
   { path: 'content/lessons/sec/sec.b.04.json', rule: 'private-key', reason: 'sec.b.04 のエラーの例に出す、形だけの鍵の頭の行' },
+  { path: 'src/engines/kernel/webConfig', rule: 'private-key', reason: '端末の模擬の nginx が読む、形だけの鍵のファイルの頭の行（sec.i.01・sec.i.02）。本物の鍵ではない' },
+  { path: 'src/engines/kernel/commands/openssl.test.ts', rule: 'private-key', reason: '端末の模擬の openssl のテストに置く、形だけの鍵のファイル' },
+  { path: 'content/lessons/sec/sec.i.0', rule: 'private-key', reason: 'sec.i.01・sec.i.02 の実戦に置く、形だけの鍵のファイル（中身は対の印だけ）' },
   { path: 'dist/assets/', rule: 'private-key', reason: '上の 2 つを束ねた物。束ねる前の場所を調べている' },
 ];
 
