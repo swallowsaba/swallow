@@ -487,6 +487,34 @@
       "lessons": [
         "db.i.01"
       ]
+    },
+    {
+      "id": "backup",
+      "word": "控え（バックアップ）",
+      "reading": "ひかえ",
+      "plain": "壊れた時に戻すために取っておく、データの写し。",
+      "why": "誤った削除や故障は必ず起きる。戻せることを確かめて初めて役に立つ。",
+      "related": [
+        "db",
+        "transaction"
+      ],
+      "lessons": [
+        "db.a.01"
+      ]
+    },
+    {
+      "id": "replication",
+      "word": "レプリケーション",
+      "reading": "れぷりけーしょん",
+      "plain": "DB の更新を、別の機械の写しへ送り続ける仕組み。",
+      "why": "1 台が壊れても続けられ、読み出しを分けられる。ただ写しは少し遅れる。",
+      "related": [
+        "db",
+        "availability-zone"
+      ],
+      "lessons": [
+        "db.a.03"
+      ]
     }
   ]
 }

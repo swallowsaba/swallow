@@ -1,0 +1,69 @@
+{
+  "lesson": "db.a.03",
+  "variants": [
+    {
+      "name": "順に移す",
+      "steps": {
+        "confirm": [
+          {
+            "op": "put",
+            "item": "confirm",
+            "slot": "primary"
+          }
+        ],
+        "rest": [
+          {
+            "op": "put",
+            "item": "search",
+            "slot": "replica"
+          }
+        ]
+      }
+    },
+    {
+      "name": "戻してから置く",
+      "steps": {
+        "confirm": [
+          {
+            "op": "take",
+            "item": "confirm"
+          },
+          {
+            "op": "put",
+            "item": "confirm",
+            "slot": "primary"
+          }
+        ],
+        "rest": [
+          {
+            "op": "take",
+            "item": "search"
+          },
+          {
+            "op": "put",
+            "item": "search",
+            "slot": "replica"
+          }
+        ]
+      }
+    }
+  ],
+  "wrong": {
+    "step": "confirm",
+    "why": "書く場所を写しへ動かそうとする",
+    "input": [
+      {
+        "op": "put",
+        "item": "write",
+        "slot": "replica"
+      }
+    ],
+    "retry": [
+      {
+        "op": "put",
+        "item": "confirm",
+        "slot": "primary"
+      }
+    ]
+  }
+}

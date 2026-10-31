@@ -1,0 +1,285 @@
+{
+  "id": "db.a.03",
+  "domain": "db",
+  "level": "advanced",
+  "theme": "冗長",
+  "title": "レプリケーションの考え方",
+  "goal": "複製の目的と遅れの影響を説明できる",
+  "minutes": 20,
+  "prerequisites": [
+    "db.a.01"
+  ],
+  "related": [
+    "cloud.i.01",
+    "net.a.03"
+  ],
+  "next": [],
+  "terms": [
+    "db",
+    "file",
+    "replication",
+    "app"
+  ],
+  "explain": {
+    "what": "{{term:db}} の写しを別の機械に作り続ける仕組み。",
+    "why": "1 台が壊れても続け、読み出しを分けて負荷を減らすため。",
+    "use": "止まらない DB で使う。写しは少し遅れるので、読む先を選ぶ。",
+    "when": "予約した直後の確認画面に、予約が出ない。写しから読んでいた。",
+    "figures": [
+      "db-a03-replica"
+    ]
+  },
+  "understand": [
+    {
+      "kind": "relation",
+      "prompt": "2 つの関係は？",
+      "a": "写しの遅れ",
+      "b": "書いた直後に読むと古いことがある",
+      "answer": "cause",
+      "why": "更新は書く側で確定した後で写しへ届く。",
+      "see": "why"
+    },
+    {
+      "kind": "situation",
+      "prompt": "検索は速いのに、確認の画面だけ古いことがある。理由は？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "書いた直後に写しから読んでいる",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "検索の索引が壊れている",
+          "correct": false,
+          "whyNot": "索引は速さの問題で、古さとは関係しない。"
+        },
+        {
+          "id": "c",
+          "text": "画面の文字が古い",
+          "correct": false,
+          "whyNot": "データが届いていない。"
+        }
+      ],
+      "see": "when"
+    }
+  ],
+  "quiz": [
+    {
+      "id": "q1",
+      "kind": "predict",
+      "prompt": "書いた直後に写しを読むと？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "古いことがある",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "必ず新しい",
+          "correct": false,
+          "whyNot": "届くまで少しかかる。"
+        },
+        {
+          "id": "c",
+          "text": "エラーになる",
+          "correct": false,
+          "whyNot": "古い内容が普通に返る。"
+        }
+      ],
+      "explanation": "エラーにならないので、気づきにくい。"
+    },
+    {
+      "id": "q2",
+      "kind": "situation",
+      "prompt": "書いた直後の確認はどこから読む？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "書く側",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "一番遠い写し",
+          "correct": false,
+          "whyNot": "遅れが大きい。"
+        },
+        {
+          "id": "c",
+          "text": "控えの{{term:file}}",
+          "correct": false,
+          "whyNot": "控えは日常の読み出しに使わない。"
+        }
+      ],
+      "explanation": "多少古くてよい読みだけ、写しへ送る。"
+    },
+    {
+      "id": "q3",
+      "kind": "choice",
+      "prompt": "{{term:replication}}の目的は？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "故障への備えと読み出しの分散",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "誤った削除の取り消し",
+          "correct": false,
+          "whyNot": "誤りもすぐ写る。控えが別に要る。"
+        },
+        {
+          "id": "c",
+          "text": "書き込みの高速化",
+          "correct": false,
+          "whyNot": "書きは書く側で行う。"
+        }
+      ],
+      "explanation": "消した行も写る。控えの代わりにはならない。"
+    }
+  ],
+  "practice": {
+    "mode": "simulation",
+    "purpose": "予約の{{term:app}}の読み先の設定が逆になっている。写しは「書く側」より 2 秒遅れる。予約の直後の画面に予約が出ないと苦情が来て、書く側の負荷も高い。読む先を選び直して、食い違いをなくす。",
+    "environment": "sim-assign",
+    "setup": {
+      "slots": [
+        {
+          "id": "primary",
+          "label": "書く側から読む",
+          "note": "常に新しい。負荷が集まる"
+        },
+        {
+          "id": "replica",
+          "label": "写しから読む",
+          "note": "2 秒ほど古いことがある"
+        }
+      ],
+      "items": [
+        {
+          "id": "write",
+          "label": "予約を書く",
+          "keep": "書けるのは書く側だけ。動かせない"
+        },
+        {
+          "id": "confirm",
+          "label": "予約の直後の確認画面"
+        },
+        {
+          "id": "search",
+          "label": "空き施設の検索（毎分 3000 回）"
+        },
+        {
+          "id": "report",
+          "label": "月の集計（重い）"
+        }
+      ],
+      "initial": {
+        "write": "primary",
+        "confirm": "replica",
+        "search": "primary",
+        "report": "replica"
+      },
+      "panels": [
+        {
+          "kind": "kv",
+          "title": "今の遅れ",
+          "rows": [
+            [
+              "写しの遅れ",
+              "2 秒"
+            ],
+            [
+              "書く側の負荷",
+              "余裕は 1 割（検索が多い）"
+            ]
+          ]
+        },
+        {
+          "kind": "log",
+          "title": "苦情",
+          "lines": [
+            "14:02 「予約したのに、確認画面に出ない」",
+            "14:03 「もう一度押したら、2 件になった」"
+          ]
+        },
+        {
+          "kind": "text",
+          "title": "画面の様子",
+          "body": "予約の直後に、自分の予約が必ず出る。検索と集計は写しが受け持ち、書く側の負荷は増えない。",
+          "when": "in confirm=primary search=replica report=replica"
+        }
+      ]
+    },
+    "steps": [
+      {
+        "id": "confirm",
+        "purpose": "自分が書いた直後の読みを、遅れの無い方へ移す。「予約の直後の確認画面」を「書く側から読む」へ入れる。",
+        "check": {
+          "kind": "sim",
+          "expr": "in confirm=primary"
+        },
+        "afterward": "予約の直後でも、自分の予約が必ず出る。もう 2 回押されることもない。",
+        "hints": [
+          "遅れて困るのは、書いた直後の読み。",
+          "書く側なら遅れは無い。",
+          "「予約の直後の確認画面」を「書く側から読む」へドラッグして入れる。"
+        ],
+        "actions": [
+          {
+            "op": "put",
+            "item": "confirm",
+            "slot": "primary"
+          }
+        ],
+        "expectedErrors": [
+          "db-replica-miss"
+        ]
+      },
+      {
+        "id": "rest",
+        "purpose": "多少古くてよい読みは、写しへ分ける。「空き施設の検索（毎分 3000 回）」を「写しから読む」へ移し、書く側の負荷を下げる。全ての読みを書く側に置くと、負荷で固まる。",
+        "check": {
+          "kind": "sim",
+          "expr": "in confirm=primary search=replica report=replica"
+        },
+        "afterward": "読む物を選んだので、食い違わず、書く側の負荷も増えない。これが読み出しの分散。",
+        "hints": [
+          "2 秒古くても困らない読みを考える。",
+          "検索は回数が多く、少し古くても困らない。",
+          "「空き施設の検索（毎分 3000 回）」を「写しから読む」へドラッグして入れる。"
+        ],
+        "actions": [
+          {
+            "op": "put",
+            "item": "search",
+            "slot": "replica"
+          }
+        ],
+        "expectedErrors": [
+          "db-replica-miss"
+        ]
+      }
+    ]
+  },
+  "result": {
+    "success": "遅れを考えて、読む先を設計できた。",
+    "partial": "ヒントを使って選べた。次は、どの読みが古くてもよいかを先に考えよう。",
+    "retry": "まだ食い違う。書いた直後の読みがどちらにあるかを見よう。"
+  },
+  "summary": {
+    "points": [
+      "写しで備える",
+      "写しは少し遅れる",
+      "直後の読みは書く側"
+    ],
+    "next": [],
+    "terms": [
+      "replication",
+      "availability-zone"
+    ]
+  }
+}

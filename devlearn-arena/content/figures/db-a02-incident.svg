@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 360" font-family="&quot;Noto Sans JP&quot;, sans-serif">
+  <title>症状から、実行中の処理・遅い記録・容量を見て原因を探す</title>
+  <defs>
+    <marker id="arrow-gold" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="#f2b632" />
+    </marker>
+  </defs>
+  <g class="el" data-part="symptom">
+    <rect x="20" y="120" width="150" height="120" rx="10" fill="#c0392b" />
+    <text x="95" y="163" text-anchor="middle" font-size="16" font-weight="700" fill="#eef2f6">症状</text>
+    <text x="95" y="185" text-anchor="middle" font-size="14" fill="#eef2f6">注文の画面が</text>
+    <text x="95" y="207" text-anchor="middle" font-size="14" fill="#eef2f6">固まる</text>
+  </g>
+  <g class="el" data-part="act">
+    <rect x="240" y="30" width="380" height="80" rx="10" fill="#1a6fd6" />
+    <text x="430" y="64" text-anchor="middle" font-size="16" font-weight="700" fill="#eef2f6">実行中の処理</text>
+    <text x="430" y="86" text-anchor="middle" font-size="14" fill="#eef2f6">ロック待ちの連鎖</text>
+  </g>
+  <g class="el" data-part="slow">
+    <rect x="240" y="135" width="380" height="80" rx="10" fill="#7a3fd0" />
+    <text x="430" y="169" text-anchor="middle" font-size="16" font-weight="700" fill="#eef2f6">遅い記録</text>
+    <text x="430" y="191" text-anchor="middle" font-size="14" fill="#eef2f6">索引の無い検索</text>
+  </g>
+  <g class="el" data-part="disk">
+    <rect x="240" y="240" width="380" height="80" rx="10" fill="#f2b632" />
+    <text x="430" y="274" text-anchor="middle" font-size="16" font-weight="700" fill="#0a1424">容量</text>
+    <text x="430" y="296" text-anchor="middle" font-size="14" fill="#0a1424">古いデータの整理</text>
+  </g>
+  <g class="el" data-part="flow">
+    <path d="M170 180 L237 70" fill="none" stroke="#f2b632" stroke-width="2" marker-end="url(#arrow-gold)" />
+    <path d="M170 180 L237 175" fill="none" stroke="#f2b632" stroke-width="2" marker-end="url(#arrow-gold)" />
+    <path d="M170 180 L237 280" fill="none" stroke="#f2b632" stroke-width="2" marker-end="url(#arrow-gold)" />
+  </g>
+  <g class="el" data-part="note">
+    <text x="320" y="340" text-anchor="middle" font-size="14" fill="#eef2f6">DB が止まると、全てが止まる</text>
+  </g>
+</svg>

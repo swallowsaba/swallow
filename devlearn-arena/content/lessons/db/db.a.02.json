@@ -1,0 +1,287 @@
+{
+  "id": "db.a.02",
+  "domain": "db",
+  "level": "advanced",
+  "theme": "障害",
+  "title": "DB の障害対応",
+  "goal": "ロック待ち・遅いクエリ・容量不足を切り分けられる",
+  "minutes": 20,
+  "prerequisites": [
+    "db.i.03",
+    "trouble.i.01"
+  ],
+  "related": [
+    "trouble.i.01",
+    "mon.i.03"
+  ],
+  "next": [
+    "db.a.03"
+  ],
+  "terms": [
+    "lock",
+    "query",
+    "db",
+    "cpu",
+    "disk",
+    "transaction",
+    "query-plan",
+    "postgresql"
+  ],
+  "explain": {
+    "what": "{{term:lock}}待ち・遅い{{term:query}}・容量不足を切り分けて直すこと。",
+    "why": "{{term:db}} が止まると全てが止まる。止まり方で、見る所が違う。",
+    "use": "障害対応で使う。実行中の処理の一覧・遅い処理の記録・容量の順に見る。",
+    "when": "注文の画面が固まり、ほかの画面まで遅くなっている。",
+    "figures": [
+      "db-a02-incident"
+    ]
+  },
+  "understand": [
+    {
+      "kind": "order",
+      "prompt": "調べる順に並べる。",
+      "items": [
+        "実行中の処理を見る",
+        "待たせている元を探す",
+        "遅い処理の記録を見る",
+        "容量を確かめる"
+      ],
+      "see": "use"
+    },
+    {
+      "kind": "situation",
+      "prompt": "1 つの更新が終わらないと、なぜ全体が遅くなる？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "同じ行を更新する処理が順に待ち、待ちが連なって増える",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "{{term:cpu}} を使い切るから",
+          "correct": false,
+          "whyNot": "待っている処理は CPU をほとんど使わない。"
+        },
+        {
+          "id": "c",
+          "text": "{{term:disk}}が満杯になるから",
+          "correct": false,
+          "whyNot": "ロック待ちは容量と関係しない。"
+        }
+      ],
+      "see": "why"
+    }
+  ],
+  "quiz": [
+    {
+      "id": "q1",
+      "kind": "cause",
+      "prompt": "1 つの更新が終わらず、他が待っている。原因は？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "ロック",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "索引が多すぎる",
+          "correct": false,
+          "whyNot": "更新は少し遅くなるが、止まりはしない。"
+        },
+        {
+          "id": "c",
+          "text": "容量不足",
+          "correct": false,
+          "whyNot": "容量なら書けないと断られる。"
+        }
+      ],
+      "explanation": "確定も取り消しもしない{{term:transaction}}が、行を掴み続けている。"
+    },
+    {
+      "id": "q2",
+      "kind": "cause",
+      "prompt": "特定の画面だけが遅い。原因は？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "その画面の遅いクエリ",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "DB 全体の障害",
+          "correct": false,
+          "whyNot": "それなら全ての画面が遅い。"
+        },
+        {
+          "id": "c",
+          "text": "網の断線",
+          "correct": false,
+          "whyNot": "それならつながらない。"
+        }
+      ],
+      "explanation": "{{term:query-plan}}を見る。"
+    },
+    {
+      "id": "q3",
+      "kind": "situation",
+      "prompt": "容量が尽きそう。どうする？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "古いデータを整理する",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "索引を増やす",
+          "correct": false,
+          "whyNot": "索引は容量を使う。"
+        },
+        {
+          "id": "c",
+          "text": "そのまま待つ",
+          "correct": false,
+          "whyNot": "尽きると書けなくなり、全てが止まる。"
+        }
+      ],
+      "explanation": "消す前に控えを取る。"
+    },
+    {
+      "id": "q4",
+      "kind": "predict",
+      "prompt": "終わらない更新を止めると？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "待っていた処理が進む",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "全ての処理が止まる",
+          "correct": false,
+          "whyNot": "止まるのは、その処理だけ。"
+        },
+        {
+          "id": "c",
+          "text": "何も変わらない",
+          "correct": false,
+          "whyNot": "ロックが外れるので待ちが解ける。"
+        }
+      ],
+      "explanation": "止めた処理の更新は取り消される。"
+    }
+  ],
+  "practice": {
+    "mode": "sql",
+    "purpose": "注文の画面が固まる。この DB は、{{term:postgresql}} と同じ名前の表と関数で様子が見られる。実行中の処理は `pg_stat_activity`、待っている相手は `pg_blocking_pids(pid)`、遅い処理の記録は `pg_stat_statements`、止めるのは `pg_terminate_backend(pid)`。",
+    "environment": "sql-sqlite",
+    "setup": {
+      "sql": "CREATE TABLE orders (id INTEGER PRIMARY KEY, customer_id INTEGER NOT NULL, status INTEGER NOT NULL);\nINSERT INTO orders VALUES (1, 1, 0), (2, 2, 1), (3, 3, 0), (4, 4, 1), (5, 1, 0), (6, 2, 1), (7, 3, 0), (8, 4, 1), (9, 1, 0), (10, 2, 1), (11, 3, 0), (12, 4, 1);\nCREATE TABLE pg_stat_activity (pid INTEGER PRIMARY KEY, state TEXT, wait_event_type TEXT, query TEXT);\nCREATE TABLE _pg_locks (pid INTEGER, blocker INTEGER);\nINSERT INTO pg_stat_activity VALUES (412, 'idle in transaction', 'Client', 'UPDATE orders SET status = 1 WHERE id = 3'), (415, 'active', 'Lock', 'UPDATE orders SET status = 0 WHERE id = 3'), (418, 'active', 'Lock', 'UPDATE orders SET status = 2 WHERE id = 3'), (420, 'active', NULL, 'SELECT count(*) FROM orders');\nINSERT INTO _pg_locks VALUES (415, 412), (418, 412);\nCREATE TABLE pg_stat_statements (query TEXT, calls INTEGER, mean_exec_time REAL);\nINSERT INTO pg_stat_statements VALUES ('SELECT * FROM orders WHERE id = ?', 90210, 0.4), ('SELECT * FROM orders WHERE customer_id = ?', 1204, 2150.0), ('INSERT INTO orders VALUES (?, ?, ?)', 3021, 1.2);"
+    },
+    "steps": [
+      {
+        "id": "find",
+        "purpose": "実行中の処理を見て、ほかを待たせている元の処理の番号（`pid`）を答えの欄に入れる。",
+        "check": {
+          "kind": "answer",
+          "equals": "412"
+        },
+        "afterward": "412 が `idle in transaction`。更新の途中で確定も取り消しもせず、行を掴んだまま。415 と 418 が `Lock` で待っている。",
+        "hints": [
+          "`SELECT * FROM pg_stat_activity` で一覧を見る。",
+          "`Lock` の処理が待っている相手を `pg_blocking_pids(pid)` で見る。",
+          "`SELECT pid, state, wait_event_type, pg_blocking_pids(pid) FROM pg_stat_activity` を実行し、`412` と答える。"
+        ],
+        "expectedErrors": [
+          "db-a-who",
+          "db-a-function",
+          "db-no-column",
+          "db-syntax"
+        ]
+      },
+      {
+        "id": "stop",
+        "purpose": "`pg_terminate_backend` で元の処理を止める。`Lock` で待つ処理が 0 になれば達成。",
+        "check": {
+          "kind": "sql",
+          "query": "SELECT COUNT(*) FROM pg_stat_activity WHERE wait_event_type = 'Lock'",
+          "equals": 0
+        },
+        "afterward": "待ちが解けて、415 と 418 が進んだ。412 の更新は確定していなかったので取り消された。",
+        "hints": [
+          "関数は `SELECT` で呼ぶ。",
+          "番号は 412。",
+          "`SELECT pg_terminate_backend(412)` `SELECT pid, state, wait_event_type FROM pg_stat_activity` を実行する。"
+        ],
+        "expectedErrors": [
+          "db-a-function",
+          "db-syntax"
+        ]
+      },
+      {
+        "id": "slow",
+        "purpose": "`pg_stat_statements` を `mean_exec_time` の大きい順に見る。一番遅い問い合わせに `EXPLAIN QUERY PLAN` を付けて実行し、`detail` の最初の語を答えの欄に入れる。",
+        "check": {
+          "kind": "answer",
+          "equals": "SCAN"
+        },
+        "afterward": "`customer_id` の検索が 1 回 2 秒以上。全ての行を順に見ていた。",
+        "hints": [
+          "`ORDER BY mean_exec_time DESC`。",
+          "`?` の所には実際の値を入れる。",
+          "`SELECT query, calls, mean_exec_time FROM pg_stat_statements ORDER BY mean_exec_time DESC` `EXPLAIN QUERY PLAN SELECT * FROM orders WHERE customer_id = 2` を実行し、`SCAN` と答える。"
+        ],
+        "expectedErrors": [
+          "db-a-who",
+          "db-index-miss",
+          "db-no-column",
+          "db-syntax"
+        ]
+      },
+      {
+        "id": "index",
+        "purpose": "`orders` の `customer_id` に索引を付ける。",
+        "check": {
+          "kind": "sql",
+          "query": "SELECT COUNT(*) FROM sqlite_master m, pragma_index_info(m.name) i WHERE m.type = 'index' AND m.tbl_name = 'orders' AND i.name = 'customer_id'",
+          "equals": 1
+        },
+        "afterward": "同じ問い合わせが `SEARCH … USING INDEX` になる。画面が応答するようになった。",
+        "hints": [
+          "`CREATE INDEX 名前 ON 表 (列)`。",
+          "列は `customer_id`。",
+          "`CREATE INDEX idx_orders_customer ON orders (customer_id)` `EXPLAIN QUERY PLAN SELECT * FROM orders WHERE customer_id = 2` を実行する。"
+        ],
+        "expectedErrors": [
+          "db-no-column",
+          "db-no-table",
+          "db-syntax"
+        ]
+      }
+    ]
+  },
+  "result": {
+    "success": "DB の障害を切り分けて直せた。",
+    "partial": "ヒントを使って直せた。次は、症状から先に見る所を言ってみよう。",
+    "retry": "まだ固まっている。`pg_stat_activity` の `Lock` の行と、`pg_blocking_pids` の先を見よう。"
+  },
+  "summary": {
+    "points": [
+      "実行中の処理を見る",
+      "遅い記録を見る",
+      "容量も確かめる"
+    ],
+    "next": [
+      "db.a.03"
+    ],
+    "terms": [
+      "lock",
+      "index",
+      "query-plan"
+    ]
+  }
+}

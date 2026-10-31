@@ -1,0 +1,59 @@
+{
+  "lesson": "db.a.02",
+  "variants": [
+    {
+      "name": "待っている物だけを見る",
+      "steps": {
+        "find": [
+          "SELECT pid, query FROM pg_stat_activity WHERE wait_event_type = 'Lock'",
+          "SELECT pg_blocking_pids(415)",
+          " 412 "
+        ],
+        "stop": [
+          "select pg_terminate_backend(412)"
+        ],
+        "slow": [
+          "SELECT * FROM pg_stat_statements ORDER BY mean_exec_time DESC LIMIT 1",
+          "EXPLAIN QUERY PLAN SELECT * FROM orders WHERE customer_id = 4",
+          "scan"
+        ],
+        "index": [
+          "CREATE INDEX orders_customer_id ON orders (customer_id)"
+        ]
+      }
+    },
+    {
+      "name": "一覧を全部読む",
+      "steps": {
+        "find": [
+          "SELECT * FROM pg_stat_activity",
+          "SELECT pid, pg_blocking_pids(pid) AS blockers FROM pg_stat_activity",
+          "412"
+        ],
+        "stop": [
+          "SELECT pg_blocking_pids(418)",
+          "SELECT pg_terminate_backend(412)",
+          "SELECT COUNT(*) FROM pg_stat_activity WHERE wait_event_type = 'Lock'"
+        ],
+        "slow": [
+          "SELECT query FROM pg_stat_statements ORDER BY mean_exec_time DESC",
+          "EXPLAIN QUERY PLAN SELECT id FROM orders WHERE customer_id = 1",
+          "SCAN"
+        ],
+        "index": [
+          "CREATE INDEX IF NOT EXISTS idx_customer ON orders (customer_id, status)"
+        ]
+      }
+    }
+  ],
+  "wrong": {
+    "step": "stop",
+    "why": "関数の名前を間違える",
+    "input": [
+      "SELECT pg_terminate(412)"
+    ],
+    "retry": [
+      "SELECT pg_terminate_backend(412)"
+    ]
+  }
+}

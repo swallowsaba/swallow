@@ -21,6 +21,39 @@ describe('確定した状態の判定（committed）', () => {
   });
 });
 
+describe('実行中の処理を見て止める（PostgreSQL と同じ名前。db.a.02）', () => {
+  const ACTIVITY = `
+CREATE TABLE pg_stat_activity (pid INTEGER PRIMARY KEY, state TEXT, wait_event_type TEXT, query TEXT);
+CREATE TABLE _pg_locks (pid INTEGER, blocker INTEGER);
+INSERT INTO pg_stat_activity VALUES (412, 'idle in transaction', 'Client', 'UPDATE orders SET status = 1'), (415, 'active', 'Lock', 'UPDATE orders SET status = 2'), (418, 'active', 'Lock', 'UPDATE orders SET status = 3'), (420, 'active', NULL, 'SELECT 1');
+INSERT INTO _pg_locks VALUES (415, 412), (418, 415);
+`;
+
+  it('pg_blocking_pids は、待っている相手を返す', async () => {
+    const db = await openDb(ACTIVITY);
+    expect(db.rows('SELECT pg_blocking_pids(415) AS b')).toEqual([{ b: '{412}' }]);
+    expect(db.rows('SELECT pg_blocking_pids(420) AS b')).toEqual([{ b: '{}' }]);
+    db.close();
+  });
+
+  it('pg_terminate_backend は処理を止め、待っていた処理を進める。無い処理は false', async () => {
+    const db = await openDb(ACTIVITY);
+    expect(db.rows('SELECT pg_terminate_backend(999) AS r')).toEqual([{ r: 'false' }]);
+    expect(db.rows('SELECT pg_terminate_backend(412) AS r')).toEqual([{ r: 'true' }]);
+    expect(db.rows("SELECT pid FROM pg_stat_activity WHERE wait_event_type = 'Lock'")).toEqual([{ pid: 418 }]);
+    expect(db.rows('SELECT pg_blocking_pids(418) AS b')).toEqual([{ b: '{415}' }]);
+    db.exec('SELECT pg_terminate_backend(415)');
+    expect(matchesExpected(db, "SELECT COUNT(*) FROM pg_stat_activity WHERE wait_event_type = 'Lock'", 0)).toBe(true);
+    db.close();
+  });
+
+  it('表の無い実戦では、本物と同じく読めない', async () => {
+    const db = await openDb(SETUP);
+    expect(db.exec('SELECT pg_terminate_backend(1)').ok).toBe(false);
+    db.close();
+  });
+});
+
 describe('DB（sql.js の SQLite で本物の SQL を実行する）', () => {
   it('初期状態の SQL から開き、問い合わせの結果を列の名前の付いた行で返す', async () => {
     const db = await openDb(SETUP);

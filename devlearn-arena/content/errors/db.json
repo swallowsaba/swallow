@@ -284,6 +284,45 @@
         "nosql",
         "rdb"
       ]
+    },
+    {
+      "id": "db-a-who",
+      "match": "答えが合っていない",
+      "meaning": "答えが、調べた結果と違う。",
+      "causes": [
+        "待っている側の処理を答えた。待たせている元を探す。",
+        "別の表の数を読んだ。"
+      ],
+      "hint": "`pg_blocking_pids(pid)` が指す先をたどろう。",
+      "terms": [
+        "lock"
+      ]
+    },
+    {
+      "id": "db-a-function",
+      "match": "no such function",
+      "meaning": "その名前の関数が無い。",
+      "causes": [
+        "綴りが違う。",
+        "`pg_terminate_backend` のアンダースコアが抜けた。"
+      ],
+      "hint": "`pg_terminate_backend(番号)` の形で打とう。",
+      "terms": [
+        "lock"
+      ]
+    },
+    {
+      "id": "db-replica-miss",
+      "match": "動かせない|答えが合っていない",
+      "meaning": "置いた先が、遅れと負荷の考え方と合わない。",
+      "causes": [
+        "書くのは書く側だけ。動かせない。",
+        "全ての読みを写しにしたまま。書いた直後の確認は遅れて困る。"
+      ],
+      "hint": "書いた直後の読みだけを書く側へ。ほかは写しに残そう。",
+      "terms": [
+        "replication"
+      ]
     }
   ]
 }

@@ -1,0 +1,239 @@
+{
+  "id": "db.a.01",
+  "domain": "db",
+  "level": "advanced",
+  "theme": "保全",
+  "title": "バックアップと復元",
+  "goal": "取り方と戻し方、確かめ方を実行できる",
+  "minutes": 20,
+  "prerequisites": [
+    "db.i.04"
+  ],
+  "related": [
+    "k8s.i.03",
+    "cloud.i.01"
+  ],
+  "next": [
+    "db.a.03"
+  ],
+  "terms": [
+    "disk",
+    "db",
+    "file",
+    "transaction"
+  ],
+  "explain": {
+    "what": "データの控えを取り、壊れた時に戻すこと。",
+    "why": "誤った削除や機械の故障は必ず起きる。控えが無ければ、戻す方法が無い。",
+    "use": "運用で使う。控えは別の場所に置き、戻せることを定期的に確かめる。",
+    "when": "条件を書き忘れて全ての行を消した。",
+    "figures": [
+      "db-a01-backup"
+    ]
+  },
+  "understand": [
+    {
+      "kind": "order",
+      "prompt": "順に並べる。",
+      "items": [
+        "控えを取る",
+        "別の場所に保管する",
+        "試しに戻す"
+      ],
+      "see": "use"
+    },
+    {
+      "kind": "yesno",
+      "prompt": "控えを取っていれば安心？",
+      "answer": false,
+      "why": "戻せることを確かめて初めて役に立つ。壊れた控えや、手順の無い控えは使えない。",
+      "see": "use"
+    }
+  ],
+  "quiz": [
+    {
+      "id": "q1",
+      "kind": "situation",
+      "prompt": "控えはどこに置く？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "別の場所（別の機械や別の地域）",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "同じ{{term:disk}}",
+          "correct": false,
+          "whyNot": "ディスクが壊れると一緒に失う。"
+        },
+        {
+          "id": "c",
+          "text": "同じ表",
+          "correct": false,
+          "whyNot": "誤って消すと一緒に消える。"
+        }
+      ],
+      "explanation": "同時に壊れない場所に置く。"
+    },
+    {
+      "id": "q2",
+      "kind": "cause",
+      "prompt": "いざという時に戻せなかった。一番ありそうな原因は？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "戻す練習をしたことが無い",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "控えが多すぎた",
+          "correct": false,
+          "whyNot": "多いことは戻せない理由にならない。"
+        },
+        {
+          "id": "c",
+          "text": "{{term:db}} が新しすぎた",
+          "correct": false,
+          "whyNot": "新しさの問題ではない。"
+        }
+      ],
+      "explanation": "戻す手順と時間は、試さないと分からない。"
+    },
+    {
+      "id": "q3",
+      "kind": "predict",
+      "prompt": "1 日 1 回、深夜に控えを取る。昼に壊れたら？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "その日の深夜以降の分（最大 1 日分）を失う",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "何も失わない",
+          "correct": false,
+          "whyNot": "控えの後の更新は控えに無い。"
+        },
+        {
+          "id": "c",
+          "text": "全てを失う",
+          "correct": false,
+          "whyNot": "深夜の時点までは戻せる。"
+        }
+      ],
+      "explanation": "失ってよい量を先に決め、そこから頻度を決める。"
+    }
+  ],
+  "practice": {
+    "mode": "sql",
+    "purpose": "予約の表 `reservations` を守る。控えを取り、誤って消し、控えから戻す。古い控え `backup_old` も残っている。今の件数を `SELECT COUNT(*) FROM reservations` で見てから始める。",
+    "environment": "sql-sqlite",
+    "setup": {
+      "sql": "CREATE TABLE reservations (id INTEGER PRIMARY KEY, room TEXT NOT NULL, who TEXT NOT NULL);\nINSERT INTO reservations VALUES (1, '図書館の会議室', '青木'), (2, '体育館', '石田'), (3, '公民館の和室', '上野'), (4, '市民ホール', '遠藤'), (5, '体育館', '大野'), (6, '図書館の会議室', '加藤'), (7, '公民館の和室', '木村'), (8, '市民ホール', '工藤');\nCREATE TABLE backup_old (id INTEGER PRIMARY KEY, room TEXT NOT NULL, who TEXT NOT NULL);\nINSERT INTO backup_old VALUES (1, '図書館の会議室', '青木'), (2, '体育館', '石田'), (3, '公民館の和室', '上野'), (4, '市民ホール', '遠藤'), (5, '体育館', '大野');"
+    },
+    "steps": [
+      {
+        "id": "take",
+        "purpose": "`reservations` の全ての行を、新しい表 `backup_today` に写す。件数が同じなら達成。",
+        "check": {
+          "kind": "sql",
+          "query": "SELECT COUNT(*) FROM backup_today",
+          "equals": 8
+        },
+        "afterward": "8 行を写した。本番では別の機械や{{term:file}}に置く。この実戦は同じ DB の中の表で試す。",
+        "hints": [
+          "`CREATE TABLE 名前 AS SELECT …` で写せる。",
+          "全ての行は `SELECT * FROM reservations`。",
+          "`CREATE TABLE backup_today AS SELECT * FROM reservations` を実行する。"
+        ],
+        "expectedErrors": [
+          "db-table-exists",
+          "db-no-table",
+          "db-syntax"
+        ]
+      },
+      {
+        "id": "oops",
+        "purpose": "事故を起こす。条件を書き忘れた `DELETE FROM reservations` を打ち、全て消えたことを `SELECT COUNT(*) FROM reservations` で見る。",
+        "check": {
+          "kind": "sql",
+          "query": "SELECT COUNT(*) FROM reservations",
+          "equals": 0
+        },
+        "afterward": "確かめの問いも無く、全ての行が消えた。{{term:transaction}}の中でなければ、取り消せない。",
+        "hints": [
+          "`WHERE` を付けないと全ての行が対象。",
+          "消えたことを数えて確かめる。",
+          "`DELETE FROM reservations` `SELECT COUNT(*) FROM reservations` を実行する。"
+        ],
+        "expectedErrors": [
+          "db-no-table",
+          "db-syntax"
+        ]
+      },
+      {
+        "id": "restore",
+        "purpose": "`backup_today` から `reservations` に戻す。元の 8 行に戻れば達成（`backup_old` は 5 行しかない）。",
+        "check": {
+          "kind": "sql",
+          "query": "SELECT COUNT(*) FROM reservations r JOIN backup_today b ON r.id = b.id AND r.room = b.room AND r.who = b.who",
+          "equals": 8
+        },
+        "afterward": "8 行が戻った。古い控えを使うと、その後の 3 行を失っていた。",
+        "hints": [
+          "`INSERT INTO 表 SELECT …`。",
+          "新しい控えから戻す。",
+          "`INSERT INTO reservations SELECT * FROM backup_today` を実行する。"
+        ],
+        "expectedErrors": [
+          "db-no-table",
+          "db-unique",
+          "db-syntax"
+        ]
+      },
+      {
+        "id": "verify",
+        "purpose": "戻せたことを確かめる。`EXCEPT` で控えにあって表に無い行を数える。0 なら同じ。",
+        "check": {
+          "kind": "ran",
+          "uses": [
+            "EXCEPT"
+          ],
+          "result": "0"
+        },
+        "afterward": "差は 0 行。件数だけでなく中身も同じ。戻した後は、こうして確かめる。",
+        "hints": [
+          "`EXCEPT` は、前の結果にあって後ろの結果に無い行を返す。",
+          "数えるので `COUNT(*)` で包む。",
+          "`SELECT COUNT(*) FROM (SELECT * FROM backup_today EXCEPT SELECT * FROM reservations)` を実行する。0 と出れば達成。"
+        ],
+        "expectedErrors": [
+          "db-no-table",
+          "db-syntax"
+        ]
+      }
+    ]
+  },
+  "result": {
+    "success": "控えから戻し、確かめられた。",
+    "partial": "ヒントを使って戻せた。次は、失ってよい量から頻度を決めてみよう。",
+    "retry": "まだ元に戻っていない。どの控えを使ったかを見直そう。"
+  },
+  "summary": {
+    "points": [
+      "控えは別の場所",
+      "戻せることを確かめる",
+      "失う量を決めて頻度を決める"
+    ],
+    "next": [
+      "db.a.03"
+    ],
+    "terms": [
+      "backup",
+      "transaction"
+    ]
+  }
+}

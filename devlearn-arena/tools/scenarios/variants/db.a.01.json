@@ -1,0 +1,54 @@
+{
+  "lesson": "db.a.01",
+  "variants": [
+    {
+      "name": "中身を確かめながら",
+      "steps": {
+        "take": [
+          "SELECT COUNT(*) FROM reservations",
+          "CREATE TABLE backup_today AS SELECT * FROM reservations",
+          "SELECT COUNT(*) FROM backup_today"
+        ],
+        "oops": [
+          "DELETE FROM reservations WHERE 1 = 1"
+        ],
+        "restore": [
+          "SELECT COUNT(*) FROM backup_today",
+          "INSERT INTO reservations SELECT id, room, who FROM backup_today"
+        ],
+        "verify": [
+          "SELECT COUNT(*) FROM (SELECT * FROM backup_today EXCEPT SELECT * FROM reservations) AS d"
+        ]
+      }
+    },
+    {
+      "name": "列を書いて写す",
+      "steps": {
+        "take": [
+          "CREATE TABLE backup_today AS SELECT id, room, who FROM reservations"
+        ],
+        "oops": [
+          "SELECT * FROM backup_today",
+          "delete from reservations"
+        ],
+        "restore": [
+          "INSERT INTO reservations (id, room, who) SELECT id, room, who FROM backup_today",
+          "SELECT * FROM reservations"
+        ],
+        "verify": [
+          "select count(*) from (select id, room, who from backup_today except select id, room, who from reservations)"
+        ]
+      }
+    }
+  ],
+  "wrong": {
+    "step": "restore",
+    "why": "控えの表の名前を間違える",
+    "input": [
+      "INSERT INTO reservations SELECT * FROM backup_todays"
+    ],
+    "retry": [
+      "INSERT INTO reservations SELECT * FROM backup_today"
+    ]
+  }
+}
