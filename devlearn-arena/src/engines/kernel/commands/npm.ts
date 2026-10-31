@@ -1,6 +1,7 @@
 import { allMatch, bundleText, fill, lockText, readLock, readPackageJson, resolveVersion, satisfies, versionBelow, type Files, type PackageJson } from '@/engines/cicd/project';
 import type { ActionsSetup, ScriptModel } from '@/engines/cicd/setup';
 import type { SiteState } from '@/engines/cicd/types';
+import { NPM_CACHE_HIT } from '@/engines/cicd/runner';
 import type { Forge } from '@/engines/github/forge';
 import { resolve } from '../path';
 import type { CommandContext, CommandResult, CommandSpec, GitServer, ShellState } from '../registry';
@@ -205,10 +206,11 @@ function install({ shell, argv }: CommandContext, model: ActionsSetup, pkg: Pack
   }
   if (!ci) vfs = writeFile(vfs, lockPath, lockText(pkg, versions));
   const n = Object.keys(versions).length;
-  const secs = Math.max(1, model.installSeconds);
+  const seconds = shell.vars.get(NPM_CACHE_HIT) === '1' ? model.cachedInstallSeconds ?? model.installSeconds : model.installSeconds;
+  const secs = Math.max(1, seconds);
   return {
     stdout: `\nadded ${String(n)} package${n === 1 ? '' : 's'}, and audited ${String(n + 1)} packages in ${String(secs)}s\n\n${auditLine(auditOf(model, direct, versions))}\n`,
-    patch: { vfs, ...spent(shell, model.installSeconds) },
+    patch: { vfs, ...spent(shell, seconds) },
   };
 }
 

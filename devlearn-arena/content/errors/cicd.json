@@ -323,6 +323,60 @@
         "deploy",
         "workflow"
       ]
+    },
+    {
+      "id": "cicd-a-slow",
+      "match": "答えが合っていない",
+      "meaning": "保存したが、時間がまだ長いか、検査の結果が変わった。",
+      "causes": [
+        "`needs` が残っていて、順に動いている。",
+        "キャッシュの鍵に `github.sha` を入れて、毎回外れている。",
+        "job を消してしまった。"
+      ],
+      "hint": "`gh run view` の時間と、`Cache not found` の行を読もう。",
+      "terms": [
+        "ci-cache"
+      ]
+    },
+    {
+      "id": "cicd-a-gate",
+      "match": "答えが合っていない",
+      "meaning": "保存したが、まだ抜け道がある。",
+      "causes": [
+        "`contexts` に `test` が無い。",
+        "`enforce_admins` が `false` のまま。",
+        "`required_approving_review_count` が 0 か無い。"
+      ],
+      "hint": "`protect.json` の項目を 1 つずつ確かめよう。",
+      "terms": [
+        "quality-gate"
+      ]
+    },
+    {
+      "id": "cicd-a-422",
+      "match": "HTTP 422|HTTP 400",
+      "meaning": "保護の中身が足りない・読めない。API は 4 つの項目を全て求める。",
+      "causes": [
+        "項目を消してしまった（使わない項目は `null` と書く）。",
+        "JSON の形が崩れている。"
+      ],
+      "hint": "4 つの項目が全てあるか、括弧と `,` が合っているかを見よう。",
+      "terms": [
+        "quality-gate"
+      ]
+    },
+    {
+      "id": "cicd-a-selector",
+      "match": "kubectl set selector",
+      "meaning": "Service の札の書き方が違う。",
+      "causes": [
+        "`set selector` の後に `service` と名前を書いていない。",
+        "札を `名前=値` の形で書いていない。"
+      ],
+      "hint": "`kubectl set selector service shop app=shop,color=green` の形で打とう。",
+      "terms": [
+        "blue-green"
+      ]
     }
   ]
 }

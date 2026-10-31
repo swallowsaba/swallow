@@ -183,7 +183,7 @@ export const basicSubcommands: Record<string, GitHandler> = {
         ? { stdout: 'nothing added to commit but untracked files present (use "git add" to track)\n', code: 1 }
         : { stdout: 'nothing to commit (create/copy files and use "git add" to track)\n', code: 1 };
     }
-    const result = commit(git, message, nowSeconds);
+    const result = commit(git, message, nowSeconds, flags.has('allow-empty'));
     if (result.empty) {
       // 選んでいない変更が残っていれば、本物と同じく add を促す
       const report = statusOf(git, shell.vfs);

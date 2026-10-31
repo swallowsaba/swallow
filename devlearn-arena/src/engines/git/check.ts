@@ -32,6 +32,7 @@ import { checksOf, latestReviews, type Forge } from '@/engines/github/forge';
  *   protected:<枝>               origin のサーバで、その枝が保護されている（gh api で入れた保護は、直接の push を断る）
  *   protected-approvals:<枝>>=<数>  保護に要る承認の数がその数以上
  *   protected-checks:<枝>=<検査>  保護の必須の検査に、その名前がある
+ *   protected-admins:<枝>        管理者も例外にしない（enforce_admins）
  */
 
 const MARKERS = /^(<{7}|={7}|>{7})( |$)/m;
@@ -168,12 +169,13 @@ export function gitHolds(git: GitState | null, vfs: VfsState, expr: string, serv
       const latest = hit ? latestReviews(hit.pull) : [];
       return latest.some((r) => r.state === 'APPROVED') && !latest.some((r) => r.state === 'CHANGES_REQUESTED');
     }
-    if (key === 'protected' || key === 'protected-approvals' || key === 'protected-checks') {
+    if (key === 'protected' || key === 'protected-approvals' || key === 'protected-checks' || key === 'protected-admins') {
       const [branch = '', want = ''] = value.split(/>=|=/);
       const rule = originServer(git, servers)?.forge?.setup.protect;
       if (rule?.branch !== branch) return false;
       if (key === 'protected-approvals') return rule.approvals >= Number(want);
       if (key === 'protected-checks') return rule.checks.includes(want);
+      if (key === 'protected-admins') return rule.admins === true;
       return true;
     }
     if (key === 'remote-merged') {

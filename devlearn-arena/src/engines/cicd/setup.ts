@@ -81,6 +81,8 @@ export const actionsSetupSchema = z.object({
   firstRun: z.number().int().min(1).default(1),
   /** npm ci・npm install にかかる秒 */
   installSeconds: z.number().int().min(0).default(0),
+  /** キャッシュが当たった時の npm ci の秒（無ければ installSeconds のまま） */
+  cachedInstallSeconds: z.number().int().min(0).optional(),
   /** 部品の置き場（npm の registry）。名前 → 版（published はその時刻から入れられる。無ければ初めから） */
   packages: z.record(z.array(z.object({ version: z.string().regex(/^\d+\.\d+\.\d+$/), published: z.string().optional(), deps: z.record(z.string()).optional() }).strict()).min(1)).default({}),
   /** package.json の scripts の名前 → 振る舞い。書いていない script は、本物と同じくシェルで動かす */

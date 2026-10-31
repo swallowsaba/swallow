@@ -129,6 +129,7 @@ function fieldOf(cluster: ClusterState, kind: Kind, ns: string, name: string, fi
     // 宛先は、札（selector）の合う Ready の Pod（get endpoints と同じ数え方。次の時間を待たずに数える）
     if (field === 'endpoints') return [...cluster.pods.values()].filter((p) => p.metadata.namespace === ns && matches(p.metadata.labels, s.spec.selector) && isReady(p)).length;
     if (field === 'port') return s.spec.ports[0]?.port;
+    if (field.startsWith('selector.')) return s.spec.selector[field.slice('selector.'.length)];
   }
   throw new Error(`k8s の条件の欄「${kind}.${field}」は知らない形`);
 }

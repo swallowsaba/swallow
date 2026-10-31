@@ -3042,7 +3042,7 @@
       "title": "デプロイ戦略",
       "goal": "ローリング・ブルーグリーン・カナリアを比べて選べる",
       "practice": [
-        "simulation"
+        "terminal"
       ],
       "prerequisites": [
         "cicd.i.05",

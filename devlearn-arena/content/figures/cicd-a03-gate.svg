@@ -1,0 +1,34 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 360" font-family="&quot;Noto Sans JP&quot;, sans-serif">
+  <title>変更 → 必須の検査 → 承認 → 保護された枝</title>
+  <defs>
+    <marker id="arrow-gold" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="#f2b632" />
+    </marker>
+  </defs>
+  <g class="el" data-part="change">
+    <rect x="20" y="110" width="132" height="120" rx="10" fill="#1a6fd6" />
+    <text x="86" y="175" text-anchor="middle" font-size="16" font-weight="700" fill="#eef2f6">変更</text>
+  </g>
+  <g class="el" data-part="check">
+    <rect x="176" y="110" width="132" height="120" rx="10" fill="#7a3fd0" />
+    <text x="242" y="164" text-anchor="middle" font-size="16" font-weight="700" fill="#eef2f6">必須の</text>
+    <text x="242" y="186" text-anchor="middle" font-size="14" fill="#eef2f6">検査</text>
+  </g>
+  <g class="el" data-part="approve">
+    <rect x="332" y="110" width="132" height="120" rx="10" fill="#f2b632" />
+    <text x="398" y="175" text-anchor="middle" font-size="16" font-weight="700" fill="#0a1424">承認</text>
+  </g>
+  <g class="el" data-part="branch">
+    <rect x="488" y="110" width="132" height="120" rx="10" fill="#1f7a4d" />
+    <text x="554" y="164" text-anchor="middle" font-size="16" font-weight="700" fill="#eef2f6">保護された</text>
+    <text x="554" y="186" text-anchor="middle" font-size="14" fill="#eef2f6">枝</text>
+  </g>
+  <g class="el" data-part="flow">
+    <path d="M152 170 L173 170" fill="none" stroke="#f2b632" stroke-width="2" marker-end="url(#arrow-gold)" />
+    <path d="M308 170 L329 170" fill="none" stroke="#f2b632" stroke-width="2" marker-end="url(#arrow-gold)" />
+    <path d="M464 170 L485 170" fill="none" stroke="#f2b632" stroke-width="2" marker-end="url(#arrow-gold)" />
+  </g>
+  <g class="el" data-part="note">
+    <text x="320" y="340" text-anchor="middle" font-size="14" fill="#eef2f6">管理者も例外にしない</text>
+  </g>
+</svg>

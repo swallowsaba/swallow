@@ -256,6 +256,62 @@
       "lessons": [
         "cicd.i.05"
       ]
+    },
+    {
+      "id": "blue-green",
+      "word": "ブルーグリーン",
+      "reading": "ぶるーぐりーん",
+      "plain": "今の組と新しい組を両方動かし、入口を一度に切り替える届け方。",
+      "why": "切り替えも戻すのも一瞬。ただし資源が倍要る。",
+      "related": [
+        "rolling-update",
+        "canary-release"
+      ],
+      "lessons": [
+        "cicd.a.01"
+      ]
+    },
+    {
+      "id": "canary-release",
+      "word": "カナリアリリース",
+      "reading": "かなりありりーす",
+      "plain": "一部の利用者にだけ新しい版を出し、問題が無ければ広げる届け方。",
+      "why": "壊れていても、被害がその一部で済む。",
+      "related": [
+        "rolling-update",
+        "blue-green"
+      ],
+      "lessons": [
+        "cicd.a.01"
+      ]
+    },
+    {
+      "id": "ci-cache",
+      "word": "CI のキャッシュ",
+      "reading": "しーあいのきゃっしゅ",
+      "plain": "依存の取得などの結果を保存して、次の実行で使い回すこと。鍵が同じ時だけ当たる。",
+      "why": "毎回の取得の時間を縮める。鍵に依存のファイルの印を入れると、変わった時だけ取り直せる。",
+      "related": [
+        "pipeline",
+        "github-actions"
+      ],
+      "lessons": [
+        "cicd.a.02"
+      ]
+    },
+    {
+      "id": "quality-gate",
+      "word": "品質の門",
+      "reading": "ひんしつのもん",
+      "plain": "レビュー・必須の検査・枝の保護で、壊れた物を本番に入れない仕組み。",
+      "why": "人の注意だけでは防げない。例外の無い仕組みにする。",
+      "related": [
+        "branch-protection",
+        "pipeline"
+      ],
+      "lessons": [
+        "cicd.a.03"
+      ]
     }
   ]
 }

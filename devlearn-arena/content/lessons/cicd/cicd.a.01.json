@@ -1,0 +1,261 @@
+{
+  "id": "cicd.a.01",
+  "domain": "cicd",
+  "level": "advanced",
+  "theme": "戦略",
+  "title": "デプロイ戦略",
+  "goal": "ローリング・ブルーグリーン・カナリアを比べて選べる",
+  "minutes": 20,
+  "prerequisites": [
+    "cicd.i.05",
+    "k8s.i.08"
+  ],
+  "related": [
+    "devops.a.01",
+    "k8s.i.08"
+  ],
+  "next": [
+    "devops.a.01"
+  ],
+  "terms": [
+    "blue-green",
+    "cluster",
+    "service",
+    "deployment",
+    "k8s-service"
+  ],
+  "explain": {
+    "what": "ローリング・{{term:blue-green}}・カナリアの 3 つの届け方。どれも止めずに新しい版を届ける。",
+    "why": "止めずに、壊れても被害を小さく届けるため。場面ごとに戻しやすさと費用が違う。",
+    "use": "本番の更新で使う。条件（戻す速さ・資源・試したい範囲）で選ぶ。",
+    "when": "新しい版で一部の機能が壊れていた。全員に一度に出していたので、全員が困った。",
+    "figures": [
+      "cicd-a01-strategies"
+    ]
+  },
+  "understand": [
+    {
+      "kind": "relation",
+      "prompt": "関係を選ぶ。",
+      "a": "入口を一度に切り替える",
+      "b": "すぐ戻せる",
+      "answer": "cause",
+      "why": "古い組が動いたままなので、入口を戻すだけで済む。",
+      "see": "what"
+    },
+    {
+      "kind": "situation",
+      "prompt": "少しずつ試したいのは、どんな場面？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "影響の大きい変更で、一部の利用者で様子を見たい",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "文言の小さな修正",
+          "correct": false,
+          "whyNot": "普通のローリングで足りる。"
+        },
+        {
+          "id": "c",
+          "text": "資源が足りない",
+          "correct": false,
+          "whyNot": "資源の少なさならローリング。"
+        }
+      ],
+      "see": "when"
+    }
+  ],
+  "quiz": [
+    {
+      "id": "q1",
+      "kind": "choice",
+      "prompt": "すぐ戻したい。どれ？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "ブルーグリーン",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "ローリング",
+          "correct": false,
+          "whyNot": "戻すのにも順に入れ替える。"
+        },
+        {
+          "id": "c",
+          "text": "止めて入れ替える",
+          "correct": false,
+          "whyNot": "止まる。"
+        }
+      ],
+      "explanation": "入口を戻すだけ。"
+    },
+    {
+      "id": "q2",
+      "kind": "choice",
+      "prompt": "一部の利用者で試す。どれ？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "カナリア",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "ブルーグリーン",
+          "correct": false,
+          "whyNot": "全員が一度に移る。"
+        },
+        {
+          "id": "c",
+          "text": "ローリング",
+          "correct": false,
+          "whyNot": "全部入れ替わるまで止まらない。"
+        }
+      ],
+      "explanation": "様子を見て広げる。"
+    },
+    {
+      "id": "q3",
+      "kind": "situation",
+      "prompt": "資源が少ない。どれ？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "ローリング",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "ブルーグリーン",
+          "correct": false,
+          "whyNot": "資源が倍要る。"
+        },
+        {
+          "id": "c",
+          "text": "台数を倍にする",
+          "correct": false,
+          "whyNot": "資源が足りない前提。"
+        }
+      ],
+      "explanation": "少しだけ増やして入れ替える。"
+    },
+    {
+      "id": "q4",
+      "kind": "predict",
+      "prompt": "カナリアで 5% に出して異常があると？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "5% の利用者だけが影響を受ける",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "全員が影響を受ける",
+          "correct": false,
+          "whyNot": "残りは古い版のまま。"
+        },
+        {
+          "id": "c",
+          "text": "誰も影響を受けない",
+          "correct": false,
+          "whyNot": "5% には届いている。"
+        }
+      ],
+      "explanation": "だから小さく始める。"
+    }
+  ],
+  "practice": {
+    "mode": "terminal",
+    "purpose": "{{term:cluster}}に 3 つの{{term:service}}がある。`rolling`（資源が少ない）・`shop`（すぐ戻したい。`blue` と `green` の 2 組）・`front`（一部で試したい。9 つの `front` と 0 の `front-canary`）。合う届け方で `city-shop:1.1` を届ける。",
+    "environment": "k8s-cluster",
+    "setup": {
+      "hostname": "console",
+      "cluster": {
+        "nodes": 3,
+        "ageDays": 3,
+        "manifests": "apiVersion: apps/v1\nkind: Deployment\nmetadata:\n  name: rolling\nspec:\n  replicas: 3\n  selector:\n    matchLabels:\n      app: rolling\n  template:\n    metadata:\n      labels:\n        app: rolling\n    spec:\n      containers:\n      - name: web\n        image: city-shop:1.0\n        ports:\n        - containerPort: 80\n        readinessProbe:\n          httpGet:\n            path: /\n            port: 80\n          periodSeconds: 5\n---\napiVersion: v1\nkind: Service\nmetadata:\n  name: rolling\nspec:\n  selector:\n    app: rolling\n  ports:\n  - port: 80\n---\napiVersion: apps/v1\nkind: Deployment\nmetadata:\n  name: blue\nspec:\n  replicas: 3\n  selector:\n    matchLabels:\n      app: shop\n      color: blue\n  template:\n    metadata:\n      labels:\n        app: shop\n        color: blue\n    spec:\n      containers:\n      - name: web\n        image: city-shop:1.0\n        ports:\n        - containerPort: 80\n        readinessProbe:\n          httpGet:\n            path: /\n            port: 80\n          periodSeconds: 5\n---\napiVersion: apps/v1\nkind: Deployment\nmetadata:\n  name: green\nspec:\n  replicas: 3\n  selector:\n    matchLabels:\n      app: shop\n      color: green\n  template:\n    metadata:\n      labels:\n        app: shop\n        color: green\n    spec:\n      containers:\n      - name: web\n        image: city-shop:1.1\n        ports:\n        - containerPort: 80\n        readinessProbe:\n          httpGet:\n            path: /\n            port: 80\n          periodSeconds: 5\n---\napiVersion: v1\nkind: Service\nmetadata:\n  name: shop\nspec:\n  selector:\n    app: shop\n    color: blue\n  ports:\n  - port: 80\n---\napiVersion: apps/v1\nkind: Deployment\nmetadata:\n  name: front\nspec:\n  replicas: 9\n  selector:\n    matchLabels:\n      app: front\n      track: stable\n  template:\n    metadata:\n      labels:\n        app: front\n        track: stable\n    spec:\n      containers:\n      - name: web\n        image: city-shop:1.0\n        ports:\n        - containerPort: 80\n        readinessProbe:\n          httpGet:\n            path: /\n            port: 80\n          periodSeconds: 5\n---\napiVersion: apps/v1\nkind: Deployment\nmetadata:\n  name: front-canary\nspec:\n  replicas: 0\n  selector:\n    matchLabels:\n      app: front\n      track: canary\n  template:\n    metadata:\n      labels:\n        app: front\n        track: canary\n    spec:\n      containers:\n      - name: web\n        image: city-shop:1.1\n        ports:\n        - containerPort: 80\n        readinessProbe:\n          httpGet:\n            path: /\n            port: 80\n          periodSeconds: 5\n---\napiVersion: v1\nkind: Service\nmetadata:\n  name: front\nspec:\n  selector:\n    app: front\n  ports:\n  - port: 80\n"
+      }
+    },
+    "steps": [
+      {
+        "id": "rolling",
+        "purpose": "`rolling` は `kubectl set image deployment/rolling web=city-shop:1.1` で順に入れ替え、`kubectl rollout status` で終わるのを待つ。",
+        "check": {
+          "kind": "k8s",
+          "expr": "deployment/rolling image=city-shop:1.1 readyUpdated=3"
+        },
+        "afterward": "少しずつ入れ替わり、止まらなかった。ただ、戻すのにも同じ時間がかかる。",
+        "hints": [
+          "{{term:deployment}} の既定の届け方。",
+          "`set image` と `rollout status`。",
+          "`kubectl set image deployment/rolling web=city-shop:1.1` `kubectl rollout status deployment/rolling` を打つ。"
+        ],
+        "expectedErrors": [
+          "k8s-set-image-container",
+          "k8s-notfound"
+        ]
+      },
+      {
+        "id": "bluegreen",
+        "purpose": "`shop` は `kubectl get deployment` で `green` が揃っているのを確かめ、`kubectl set selector service shop app=shop,color=green` で入口を切り替える。",
+        "check": {
+          "kind": "k8s",
+          "expr": "service/shop selector.color=green endpoints=3"
+        },
+        "afterward": "入口が一度に新しい組へ移った。問題があれば `color=blue` に戻すだけ。動かし続けるので資源は倍要る。",
+        "hints": [
+          "{{term:k8s-service}} の札で、宛先の組が決まる。",
+          "`kubectl set selector service 名前 札`。",
+          "`kubectl get deployment` `kubectl set selector service shop app=shop,color=green` `kubectl get endpoints shop` を打つ。"
+        ],
+        "expectedErrors": [
+          "cicd-a-selector",
+          "k8s-notfound"
+        ]
+      },
+      {
+        "id": "canary",
+        "purpose": "`front` は `kubectl scale deployment/front-canary --replicas=1` で 1 つだけ新しい版を足す。`front` の Service の宛先が 10 になれば達成（10 回に 1 回が新しい版に当たる）。",
+        "check": {
+          "kind": "k8s",
+          "expr": "deployment/front-canary readyReplicas=1 && service/front endpoints=10"
+        },
+        "afterward": "新しい版に当たるのは 1 割。問題が無ければ数を増やし、あれば 0 に戻す。被害はその 1 割で済む。",
+        "hints": [
+          "Service の札は `app=front` だけなので、両方の組に振り分ける。",
+          "`kubectl scale`。",
+          "`kubectl scale deployment/front-canary --replicas=1` `kubectl rollout status deployment/front-canary` `kubectl get endpoints front` を打つ。"
+        ],
+        "expectedErrors": [
+          "k8s-notfound"
+        ]
+      }
+    ]
+  },
+  "result": {
+    "success": "場面に合う届け方を選べた。",
+    "partial": "ヒントを使って届けられた。次は、なぜその届け方かを先に言ってみよう。",
+    "retry": "まだ届いていない。`kubectl get deployment` と `kubectl get endpoints` で今の様子を見よう。"
+  },
+  "summary": {
+    "points": [
+      "止めずに届ける",
+      "被害を小さく",
+      "戻し方を用意"
+    ],
+    "next": [
+      "devops.a.01"
+    ],
+    "terms": [
+      "rolling-update",
+      "blue-green",
+      "canary-release"
+    ]
+  }
+}

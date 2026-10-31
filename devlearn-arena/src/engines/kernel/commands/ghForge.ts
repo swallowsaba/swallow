@@ -97,7 +97,7 @@ export function ghApiForge(ctx: CommandContext, server: GitServer): CommandResul
     url: `https://api.github.com/repos/${forge.setup.repo}/branches/${branch}/protection`,
     required_status_checks: { strict: true, contexts: p.checks },
     required_pull_request_reviews: { required_approving_review_count: p.approvals },
-    enforce_admins: { enabled: p.enforce === true },
+    enforce_admins: { enabled: p.admins === true },
   });
   const held = forge.setup.protect?.branch === branch ? forge.setup.protect : undefined;
   if (method === 'GET') return held ? { stdout: shown(held) } : { stderr: 'gh: Branch not protected (HTTP 404)\n', code: 1 };
@@ -121,8 +121,9 @@ export function ghApiForge(ctx: CommandContext, server: GitServer): CommandResul
   const missing = ['required_status_checks', 'enforce_admins', 'required_pull_request_reviews', 'restrictions'].find((k) => !(k in body));
   if (missing !== undefined) return { stderr: `gh: Invalid request.\n\n"${missing}" wasn't supplied. (HTTP 422)\n`, code: 1 };
   const checks = (body['required_status_checks'] as { contexts?: string[] } | null)?.contexts ?? [];
+  const admins = body['enforce_admins'] === true;
   const approvals = (body['required_pull_request_reviews'] as { required_approving_review_count?: number } | null)?.required_approving_review_count ?? 0;
-  const next = { branch, approvals, checks, enforce: true };
+  const next = { branch, approvals, checks, enforce: true, admins };
   return { stdout: shown(next), patch: save(next) };
 }
 

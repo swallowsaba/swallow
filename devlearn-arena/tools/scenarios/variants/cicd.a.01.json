@@ -1,0 +1,55 @@
+{
+  "lesson": "cicd.a.01",
+  "variants": [
+    {
+      "name": "describe で確かめる",
+      "steps": {
+        "rolling": [
+          "kubectl get deployments",
+          "kubectl set image deployment rolling web=city-shop:1.1",
+          "kubectl rollout status deployment rolling"
+        ],
+        "bluegreen": [
+          "kubectl get pods",
+          "kubectl describe service shop",
+          "kubectl set selector svc shop app=shop,color=green",
+          "kubectl describe service shop"
+        ],
+        "canary": [
+          "kubectl scale deployment front-canary --replicas=1",
+          "kubectl get pods",
+          "kubectl rollout status deployment/front-canary",
+          "kubectl describe service front"
+        ]
+      }
+    },
+    {
+      "name": "札を空白で並べる",
+      "steps": {
+        "rolling": [
+          "kubectl set image deploy/rolling web=city-shop:1.1",
+          "kubectl get pods -w"
+        ],
+        "bluegreen": [
+          "kubectl get endpoints shop",
+          "kubectl set selector service shop app=shop color=green"
+        ],
+        "canary": [
+          "kubectl scale --replicas=1 deployment/front-canary",
+          "kubectl get pods -w",
+          "kubectl get endpoints front"
+        ]
+      }
+    }
+  ],
+  "wrong": {
+    "step": "bluegreen",
+    "why": "selector の書き方を間違える",
+    "input": [
+      "kubectl set selector shop color=green"
+    ],
+    "retry": [
+      "kubectl set selector service shop app=shop,color=green"
+    ]
+  }
+}

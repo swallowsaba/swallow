@@ -61,7 +61,7 @@
 | 上級 | web | 終わり（3 本。下の「上級 web」） |
 | 上級 | sec | 終わり（4 本。下の「上級 sec」） |
 | 上級 | git | 終わり（3 本。下の「上級 git」） |
-| 上級 | cicd | 未着手 |
+| 上級 | cicd | 終わり（3 本。下の「上級 cicd」） |
 | 上級 | ctr | 未着手 |
 | 上級 | docker | 未着手 |
 | 上級 | k8s | 未着手 |
@@ -349,3 +349,21 @@
 - `git blame`（`-L`）・`git bisect run`・`git log --grep`・`git log --format`・`git commit --author`
 - `git filter-repo --path … --invert-paths --force`（本物と同じく `--force` を求め、`origin` を外す）・`git filter-branch --index-filter`・`git push --all`
 - 枝の保護の API: `gh api --method PUT repos/持ち主/名前/branches/枝/protection --input ファイル`（本物と同じく 4 つの項目を求め、足りなければ 422）。入れた後の直接の push は GH006 で断る。判定の `protected:`・`protected-approvals:`・`protected-checks:`
+
+### 上級 cicd（3 本）
+
+| ID | 実戦 | verify-all | verify-free（別解） | verify-wrong |
+|---|---|---|---|---|
+| cicd.a.01 デプロイ戦略 | 端 | 合格 | 合格（2 通り） | 合格 |
+| cicd.a.02 パイプラインを速くする | 編 | 合格 | 合格（2 通り） | 合格 |
+| cicd.a.03 品質の門 | 編 | 合格 | 合格（2 通り） | 合格 |
+
+不合格は無かった。
+
+設計を直した物: cicd.a.01 を「模」から「端」にした（`kubectl set image`・`kubectl set selector`・`kubectl scale` の本物の道具で 3 つの届け方を行う）。cicd.a.02・cicd.a.03 は達成の中身を手順に分けて書いた。`docs/lessons/cicd.md` と `docs/curriculum.md` の表を先に直した。
+
+模擬環境に足した物（テストを先に書いた。`cicdAdvanced.test.ts`）:
+- `actions/cache@`（`key`・`hashFiles`）と `actions/setup-node` の `cache: npm`。保存は実行の後で、次の実行から当たる。`actions.cachedInstallSeconds`
+- `git commit --allow-empty`
+- `kubectl set selector` の札のコンマ区切り、判定の `service/名前 selector.札=値`
+- 枝の保護の `enforce_admins`（判定の `protected-admins:`）と、`null` の項目

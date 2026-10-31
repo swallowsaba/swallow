@@ -1,0 +1,267 @@
+{
+  "id": "cicd.a.03",
+  "domain": "cicd",
+  "level": "advanced",
+  "theme": "品質",
+  "title": "品質の門",
+  "goal": "レビュー・保護・必須チェックを組める",
+  "minutes": 20,
+  "prerequisites": [
+    "git.a.02"
+  ],
+  "related": [
+    "git.a.02",
+    "sec.a.04"
+  ],
+  "next": [],
+  "terms": [
+    "review",
+    "root-user",
+    "permission",
+    "test"
+  ],
+  "explain": {
+    "what": "{{term:review}}・必須の検査・保護で、壊れた物を本番に入れない仕組み。",
+    "why": "人の注意だけでは防げない。急いでいる時ほど飛ばされる。",
+    "use": "チームの品質を保つのに使う。検査を必須にし、{{term:root-user}}も例外にしない。",
+    "when": "検査を飛ばして入れた変更で本番が壊れた。管理者の{{term:permission}}で直接入れていた。",
+    "figures": [
+      "cicd-a03-gate"
+    ]
+  },
+  "understand": [
+    {
+      "kind": "order",
+      "prompt": "門の順に並べる。",
+      "items": [
+        "変更",
+        "必須の検査",
+        "承認",
+        "保護された枝"
+      ],
+      "see": "what"
+    },
+    {
+      "kind": "situation",
+      "prompt": "抜け道はどれ？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "管理者だけ例外にしている",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "必須の検査がある",
+          "correct": false,
+          "whyNot": "それは門そのもの。"
+        },
+        {
+          "id": "c",
+          "text": "承認が 1 人要る",
+          "correct": false,
+          "whyNot": "それは門そのもの。"
+        }
+      ],
+      "see": "when"
+    }
+  ],
+  "quiz": [
+    {
+      "id": "q1",
+      "kind": "situation",
+      "prompt": "検査を飛ばさせないには？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "必須にする",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "頼んで回る",
+          "correct": false,
+          "whyNot": "人の注意に頼っている。"
+        },
+        {
+          "id": "c",
+          "text": "検査を減らす",
+          "correct": false,
+          "whyNot": "守りが減る。"
+        }
+      ],
+      "explanation": "通らなければ取り込めないようにする。"
+    },
+    {
+      "id": "q2",
+      "kind": "cause",
+      "prompt": "管理者が直接入れて壊れた。原因は？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "管理者を例外にしていた",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "{{term:test}}が遅い",
+          "correct": false,
+          "whyNot": "飛ばせること自体が問題。"
+        },
+        {
+          "id": "c",
+          "text": "枝が短い",
+          "correct": false,
+          "whyNot": "短い枝はよいこと。"
+        }
+      ],
+      "explanation": "`enforce_admins` で例外を無くす。"
+    },
+    {
+      "id": "q3",
+      "kind": "multi",
+      "prompt": "門に入れる検査は？（全て）",
+      "choices": [
+        {
+          "id": "a",
+          "text": "テスト",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "静的検査",
+          "correct": true
+        },
+        {
+          "id": "c",
+          "text": "依存の点検",
+          "correct": true
+        },
+        {
+          "id": "d",
+          "text": "作者の出社の記録",
+          "correct": false,
+          "whyNot": "変更の品質と関係が無い。"
+        }
+      ],
+      "explanation": "機械で確かめられる物は全て入れる。"
+    }
+  ],
+  "practice": {
+    "mode": "editor",
+    "purpose": "店の置き場の `main` に、依頼 #1（テストが落ちる変更）が来ている。今の `protect.json` には門が無い。中身を直して保存すると `gh api` で入れ、依頼 #1 を取り込もうとする。壊れた変更が断られれば達成。",
+    "environment": "linux-basic",
+    "setup": {
+      "hostname": "dev",
+      "cwd": "/home/learner/shop",
+      "dirs": [
+        "/home/learner/shop"
+      ],
+      "sites": [],
+      "files": {
+        "/home/learner/shop/price.txt": "tax=10\n",
+        "/home/learner/shop/protect.json": "{\n  \"required_status_checks\": null,\n  \"enforce_admins\": false,\n  \"required_pull_request_reviews\": null,\n  \"restrictions\": null\n}\n"
+      },
+      "run": [
+        "git init -q",
+        "git remote add origin https://git.city.example/city/shop.git",
+        "git add price.txt",
+        "git commit -q -m '始める'",
+        "git push -q -u origin main",
+        "git switch -q -c broken",
+        "sed -i 's/tax=10/tax=8/' price.txt",
+        "git commit -q -am '税を変える'",
+        "git push -q -u origin broken",
+        "gh pr create --title '税を変える' --body '税を変える'"
+      ],
+      "gitServers": [
+        {
+          "url": "https://git.city.example/city/shop.git",
+          "run": [],
+          "forge": {
+            "repo": "city/shop",
+            "checks": [
+              {
+                "name": "test",
+                "path": "price.txt",
+                "pass": [
+                  "tax=10"
+                ],
+                "failLog": [
+                  "price.test: expected tax=10",
+                  "1 failing"
+                ],
+                "passLog": [
+                  "ok",
+                  "all passing"
+                ]
+              }
+            ]
+          }
+        }
+      ],
+      "edit": {
+        "path": "/home/learner/shop/protect.json",
+        "apply": [
+          "gh api --method PUT repos/city/shop/branches/main/protection --input protect.json",
+          "gh pr checks 1"
+        ]
+      }
+    },
+    "steps": [
+      {
+        "id": "check",
+        "purpose": "`required_status_checks` に、必須の検査 `test` を書く（`strict` は `true`、`contexts` に `test`）。",
+        "check": {
+          "kind": "git",
+          "expr": "protected:main protected-checks:main=test !remote-merged:broken>main"
+        },
+        "afterward": "`test` が落ちている依頼は取り込めなくなった。`gh pr checks 1` の結果がそのまま門になる。",
+        "hints": [
+          "`null` のところに中身を書く。",
+          "`\"contexts\": [\"test\"]`。",
+          "`{\n  \"required_status_checks\": { \"strict\": true, \"contexts\": [\"test\"] },\n  \"enforce_admins\": false,\n  \"required_pull_request_reviews\": null,\n  \"restrictions\": null\n}`"
+        ],
+        "expectedErrors": [
+          "cicd-a-422",
+          "cicd-a-gate"
+        ]
+      },
+      {
+        "id": "admin",
+        "purpose": "抜け道を塞ぐ。`required_pull_request_reviews` に承認 1 人（`required_approving_review_count`）を書き、`enforce_admins` を `true` にする。",
+        "check": {
+          "kind": "git",
+          "expr": "protected-checks:main=test protected-approvals:main>=1 protected-admins:main !remote-merged:broken>main"
+        },
+        "afterward": "検査・承認・例外なしの門ができた。壊れた変更は入らない。急いでいる時も同じ通り道を通る。",
+        "hints": [
+          "例外を残さない。",
+          "`\"enforce_admins\": true`。",
+          "`{\n  \"required_status_checks\": { \"strict\": true, \"contexts\": [\"test\"] },\n  \"enforce_admins\": true,\n  \"required_pull_request_reviews\": { \"required_approving_review_count\": 1 },\n  \"restrictions\": null\n}`"
+        ],
+        "expectedErrors": [
+          "cicd-a-422",
+          "cicd-a-gate"
+        ]
+      }
+    ]
+  },
+  "result": {
+    "success": "壊れた変更が入らない門を作れた。",
+    "partial": "ヒントを使って作れた。次は、抜け道を自分で探してみよう。",
+    "retry": "まだ抜け道がある。必須の検査・承認・例外の 3 つを確かめよう。"
+  },
+  "summary": {
+    "points": [
+      "必須の検査",
+      "承認",
+      "例外を作らない"
+    ],
+    "next": [],
+    "terms": [
+      "quality-gate",
+      "branch-protection"
+    ]
+  }
+}

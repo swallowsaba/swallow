@@ -79,7 +79,17 @@ function masked(log: readonly string[], values: readonly string[]): string[] {
   return log.map((l) => values.reduce((t, v) => (v === '' ? t : t.split(v).join('***')), l));
 }
 
-const KNOWN_ACTIONS = ['actions/checkout@', 'actions/setup-node@', 'actions/upload-artifact@', 'actions/download-artifact@'];
+const KNOWN_ACTIONS = ['actions/checkout@', 'actions/setup-node@', 'actions/upload-artifact@', 'actions/download-artifact@', 'actions/cache@'];
+
+/** npm の部品の置き場が戻っている印（npm ci が短くなる。src/engines/kernel/commands/npm.ts） */
+export const NPM_CACHE_HIT = '__NPM_CACHE_HIT';
+
+/** ファイルの中身から決まる短い印（hashFiles。本物は sha256 だが、模擬は中身が同じなら同じ値であればよい） */
+function fileHash(text: string): string {
+  let h = 5381;
+  for (let i = 0; i < text.length; i += 1) h = (h * 33 + text.charCodeAt(i)) % 4294967296;
+  return h.toString(16).padStart(8, '0');
+}
 
 /** その場所の下のファイル（場所 → 中身。場所はその場所からの相対） */
 function filesUnder(vfs: VfsState, dir: string): Record<string, string> {
@@ -125,6 +135,10 @@ interface RunContext {
   id: number;
   files: Map<string, string>;
   artifacts: (ArtifactRecord & { at: number })[];
+  /** 今あるキャッシュの鍵 */
+  caches: ReadonlySet<string>;
+  /** この実行で保存する鍵（job が終わった後に使える。同時に動く job からは見えない） */
+  saving: Set<string>;
 }
 
 function runJob(rc: RunContext, job: WfJob, index: number, start: number, servers: ReadonlyMap<string, GitServer>): JobRun {
@@ -239,6 +253,23 @@ function runStep(rc: RunContext, step: WfStep, ctx: Readonly<Record<string, stri
       log: [...head(`Run ${uses}`, ['with:', `  repository: ${rc.repo}`, ...withLines.slice(1)]), `Syncing repository: ${rc.repo}`, `HEAD is now at ${rc.args.sha.slice(0, 7)} ${subjectOf(serverOf(rc).state, rc.args.sha)}`],
     };
   }
+  // 部品の置き場を戻す（actions/cache の key、setup-node の cache: npm）。無ければ、job の後に保存する
+  const restore = (key: string): { state: ShellState; line: string } => {
+    if (rc.caches.has(key)) return { state: { ...state, vars: new Map([...state.vars, [NPM_CACHE_HIT, '1']]) }, line: `Cache restored from key: ${key}` };
+    rc.saving.add(key);
+    return { state, line: `Cache not found for input keys: ${key}` };
+  };
+  const hashed = (text: string): string => text.replace(/\$\{\{\s*hashFiles\('([^']+)'\)\s*\}\}/g, (_, f: string) => fileHash(rc.files.get(f) ?? ''));
+  if (uses.startsWith('actions/cache@')) {
+    const key = expand(hashed(step.with['key'] ?? ''), ctx);
+    if (key === '') return { ok: false, seconds: 0, state, log: [...head(`Run ${uses}`, withLines), '##[error]Input required and not supplied: key'] };
+    const r = restore(key);
+    return { ok: true, seconds: 0, state: r.state, log: [...head(`Run ${uses}`, withLines), r.line] };
+  }
+  if (uses.startsWith('actions/setup-node@') && w('cache') === 'npm') {
+    const r = restore(`node-cache-Linux-npm-${fileHash(rc.files.get('package-lock.json') ?? '')}`);
+    return { ok: true, seconds: 0, state: r.state, log: [...head(`Run ${uses}`, withLines), r.line] };
+  }
   if (uses.startsWith('actions/setup-node@')) {
     const version = w('node-version') ?? '20';
     return { ok: true, seconds: 0, state, log: [...head(`Run ${uses}`, withLines), `Found in cache @ /opt/hostedtoolcache/node/${version.replace(/\.x$/, '')}.18.0/x64`, 'Environment details', '  node: v20.18.0', '  npm: 10.8.2'] };
@@ -316,6 +347,7 @@ function runStep(rc: RunContext, step: WfStep, ctx: Readonly<Record<string, stri
     ...(env.length === 0 ? [] : ['env:', ...env.map(([k, v]) => `  ${k}: ${expand(v, ctx)}`)]),
   ]);
   const vars = new Map(Object.entries({ ...baseVars, ...Object.fromEntries(env.map(([k, v]) => [k, expand(v, ctx)])) }));
+  if (state.vars.get(NPM_CACHE_HIT) === '1') vars.set(NPM_CACHE_HIT, '1');
   vars.set('__NOW', localTime(t));
   vars.set(CI_SECONDS, '0');
   const r = rc.args.runLine(`set -e\n${script}`, { ...state, cwd: workspace, vars });
@@ -325,7 +357,7 @@ function runStep(rc: RunContext, step: WfStep, ctx: Readonly<Record<string, stri
   const ok = r.code === 0;
   return {
     ok, seconds,
-    state: { ...r.state, cwd: workspace, vars: new Map(Object.entries(baseVars)) },
+    state: { ...r.state, cwd: workspace, vars: new Map([...Object.entries(baseVars), ...(vars.has(NPM_CACHE_HIT) ? [[NPM_CACHE_HIT, '1'] as const] : [])]) },
     log: [...log, ...lines, ...(ok ? [] : [`##[error]Process completed with exit code ${String(r.code)}.`])],
   };
 }
@@ -333,9 +365,9 @@ function runStep(rc: RunContext, step: WfStep, ctx: Readonly<Record<string, stri
 const serverOf = (rc: RunContext): GitServer => rc.args.servers.get(rc.args.url) as GitServer;
 
 /** 1 つのワークフローを動かした記録と、動かした後のサーバ（配った版が変わる） */
-function runWorkflow(args: PushArgs, forge: Forge, workflow: Workflow, number: number, files: Map<string, string>, servers: ReadonlyMap<string, GitServer>): { run: RunRecord; servers: ReadonlyMap<string, GitServer> } {
+function runWorkflow(args: PushArgs, forge: Forge, workflow: Workflow, number: number, files: Map<string, string>, servers: ReadonlyMap<string, GitServer>): { run: RunRecord; servers: ReadonlyMap<string, GitServer>; caches: string[] } {
   const id = runIdOf(number);
-  const rc: RunContext = { args: { ...args, servers }, forge, repo: forge.setup.repo, workflow, number, id, files, artifacts: [] };
+  const rc: RunContext = { args: { ...args, servers }, forge, repo: forge.setup.repo, workflow, number, id, files, artifacts: [], caches: new Set(forge.caches ?? []), saving: new Set() };
   const done = new Map<string, JobRun>();
   const order = workflow.jobs.map((j, i) => ({ j, i }));
   let current = servers;
@@ -380,6 +412,7 @@ function runWorkflow(args: PushArgs, forge: Forge, workflow: Workflow, number: n
       jobs, artifacts: rc.artifacts.map((a) => ({ name: a.name, job: a.job, files: a.files, digest: a.digest })), shape, triggers: Object.keys(workflow.on),
     },
     servers: current,
+    caches: [...rc.saving],
   };
 }
 
@@ -398,6 +431,7 @@ export function runOnPush(args: PushArgs): ReadonlyMap<string, GitServer> {
     if (!now || !f) break;
     const number = (f.setup.actions?.firstRun ?? 1) + (f.runs?.length ?? 0);
     let run: RunRecord;
+    let saved: readonly string[] = [];
     if (!read.ok) {
       run = {
         id: runIdOf(number), number, workflow: read.name, file, title: subjectOf(now.state, args.sha), branch: args.branch, sha: args.sha, event: 'push',
@@ -408,11 +442,12 @@ export function runOnPush(args: PushArgs): ReadonlyMap<string, GitServer> {
       const out = runWorkflow({ ...args, servers }, f, read.workflow, number, files, servers);
       run = out.run;
       servers = out.servers;
+      saved = out.caches;
     }
     const latest = servers.get(args.url) ?? now;
     const forgeNow = latest.forge ?? f;
     const next = new Map(servers);
-    next.set(args.url, { ...latest, forge: { ...forgeNow, runs: [...(forgeNow.runs ?? []), run] } });
+    next.set(args.url, { ...latest, forge: { ...forgeNow, runs: [...(forgeNow.runs ?? []), run], ...(saved.length > 0 ? { caches: [...(forgeNow.caches ?? []), ...saved] } : {}) } });
     servers = next;
   }
   return servers;

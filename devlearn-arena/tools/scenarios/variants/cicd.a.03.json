@@ -1,0 +1,37 @@
+{
+  "lesson": "cicd.a.03",
+  "variants": [
+    {
+      "name": "1 行で書く・承認を 2 人にする",
+      "steps": {
+        "check": [
+          "{\"required_status_checks\":{\"contexts\":[\"test\"],\"strict\":false},\"enforce_admins\":false,\"required_pull_request_reviews\":null,\"restrictions\":null}\n"
+        ],
+        "admin": [
+          "{\"required_status_checks\":{\"contexts\":[\"test\"],\"strict\":false},\"enforce_admins\":true,\"required_pull_request_reviews\":{\"required_approving_review_count\":2},\"restrictions\":null}\n"
+        ]
+      }
+    },
+    {
+      "name": "先に全部書く",
+      "steps": {
+        "check": [
+          "{\n  \"required_status_checks\": { \"strict\": true, \"contexts\": [\"test\"] },\n  \"enforce_admins\": true,\n  \"required_pull_request_reviews\": { \"required_approving_review_count\": 1 },\n  \"restrictions\": null\n}\n"
+        ],
+        "admin": [
+          "{\n  \"required_status_checks\": { \"strict\": true, \"contexts\": [\"test\"] },\n  \"enforce_admins\": true,\n  \"required_pull_request_reviews\": { \"required_approving_review_count\": 1 },\n  \"restrictions\": null\n}\n"
+        ]
+      }
+    }
+  ],
+  "wrong": {
+    "step": "admin",
+    "why": "enforce_admins を false のまま保存する",
+    "input": [
+      "{\n  \"required_status_checks\": { \"strict\": true, \"contexts\": [\"test\"] },\n  \"enforce_admins\": false,\n  \"required_pull_request_reviews\": { \"required_approving_review_count\": 1 },\n  \"restrictions\": null\n}\n"
+    ],
+    "retry": [
+      "{\n  \"required_status_checks\": { \"strict\": true, \"contexts\": [\"test\"] },\n  \"enforce_admins\": true,\n  \"required_pull_request_reviews\": { \"required_approving_review_count\": 1 },\n  \"restrictions\": null\n}\n"
+    ]
+  }
+}

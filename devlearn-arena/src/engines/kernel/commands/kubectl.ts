@@ -309,7 +309,7 @@ const coreSubcommands: Record<string, KubectlHandler> = {
     if (operands[0] === 'selector') {
       const kind = KINDS[operands[1] ?? ''] ?? '';
       const name = operands[2];
-      const pairs = operands.slice(3).filter((o) => o.includes('='));
+      const pairs = operands.slice(3).flatMap((o) => o.split(',')).filter((o) => o.includes('='));
       if (kind !== 'services' || name === undefined || pairs.length === 0) {
         return { stderr: 'usage: kubectl set selector svc <name> <key>=<value>\n', code: 1 };
       }

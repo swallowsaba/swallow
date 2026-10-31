@@ -204,13 +204,13 @@ export interface CommitResult {
   empty: boolean;
 }
 
-export function commit(git: GitState, message: string, now: number): CommitResult {
+export function commit(git: GitState, message: string, now: number, allowEmpty = false): CommitResult {
   const parent = headCommit(git);
   const tree = writeTreeFromIndex(git);
 
   // 衝突を解いた直後の commit は、本物と同じくマージコミットになる
   const merging = git.mergeHead;
-  if (parent !== null && merging === null) {
+  if (parent !== null && merging === null && !allowEmpty) {
     const previous = git.objects.read(parent);
     if (previous && parseCommit(previous.body).tree === tree) {
       return { git, hash: parent, empty: true };

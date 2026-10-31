@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 360" font-family="&quot;Noto Sans JP&quot;, sans-serif">
+  <title>3 つの届け方で、利用者が新しい版に移る様子</title>
+  <g class="el" data-part="rolling">
+    <rect x="20" y="40" width="600" height="80" rx="10" fill="#1a6fd6" />
+    <text x="320" y="74" text-anchor="middle" font-size="16" font-weight="700" fill="#eef2f6">ローリング</text>
+    <text x="320" y="96" text-anchor="middle" font-size="14" fill="#eef2f6">古い Pod を少しずつ新しい Pod に入れ替える。追加の資源が少ない</text>
+  </g>
+  <g class="el" data-part="bluegreen">
+    <rect x="20" y="135" width="600" height="80" rx="10" fill="#f2b632" />
+    <text x="320" y="169" text-anchor="middle" font-size="16" font-weight="700" fill="#0a1424">ブルーグリーン</text>
+    <text x="320" y="191" text-anchor="middle" font-size="14" fill="#0a1424">新しい組を丸ごと用意し、入口を一度に切り替える。すぐ戻せる</text>
+  </g>
+  <g class="el" data-part="canary">
+    <rect x="20" y="230" width="600" height="80" rx="10" fill="#c0392b" />
+    <text x="320" y="264" text-anchor="middle" font-size="16" font-weight="700" fill="#eef2f6">カナリア</text>
+    <text x="320" y="286" text-anchor="middle" font-size="14" fill="#eef2f6">一部の利用者にだけ新しい版を出し、様子を見て広げる</text>
+  </g>
+  <g class="el" data-part="note">
+    <text x="320" y="340" text-anchor="middle" font-size="14" fill="#eef2f6">止めずに届け、壊れても被害を小さくし、戻せるようにする</text>
+  </g>
+</svg>
