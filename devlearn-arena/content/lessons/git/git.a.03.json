@@ -1,0 +1,259 @@
+{
+  "id": "git.a.03",
+  "domain": "git",
+  "level": "advanced",
+  "theme": "事故",
+  "title": "秘密情報をコミットしてしまったら",
+  "goal": "無効化・履歴からの除去・再発防止の順に対処できる",
+  "minutes": 20,
+  "prerequisites": [
+    "sec.b.05",
+    "git.i.04"
+  ],
+  "related": [
+    "sec.a.03",
+    "cicd.i.03"
+  ],
+  "next": [],
+  "terms": [
+    "commit",
+    "token",
+    "api",
+    "file",
+    "service",
+    "path",
+    "ci"
+  ],
+  "explain": {
+    "what": "秘密を{{term:commit}}してしまった時は、無効にする → 履歴から除く → 再発を防ぐ、の順に対処する。",
+    "why": "消すだけでは履歴と複製に残る。push した時点で漏れたと見なし、まず使えなくする。",
+    "use": "事故対応で使う。書き換えは全員に影響するので、無効にしてから落ち着いて行う。",
+    "when": "{{term:api}} の{{term:token}}を push してしまった。",
+    "figures": [
+      "git-a03-leak"
+    ]
+  },
+  "understand": [
+    {
+      "kind": "order",
+      "prompt": "3 段の順に並べる。",
+      "items": [
+        "トークンを無効にする",
+        "履歴から除く",
+        "再発を防ぐ"
+      ],
+      "see": "what"
+    },
+    {
+      "kind": "yesno",
+      "prompt": "{{term:file}}を消してコミットすれば安全？",
+      "answer": false,
+      "why": "過去の記録に残り、誰でも取り出せる。",
+      "see": "why"
+    }
+  ],
+  "quiz": [
+    {
+      "id": "q1",
+      "kind": "situation",
+      "prompt": "最初の一手は？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "トークンを無効にする",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "履歴を書き換える",
+          "correct": false,
+          "whyNot": "書き換える間も使われる。"
+        },
+        {
+          "id": "c",
+          "text": "黙っておく",
+          "correct": false,
+          "whyNot": "自動で探す人がいる。"
+        }
+      ],
+      "explanation": "使えなくすれば、履歴に残っていても被害は止まる。"
+    },
+    {
+      "id": "q2",
+      "kind": "predict",
+      "prompt": "ファイルを消す記録を足すと、履歴は？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "前の記録に残る",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "全部から消える",
+          "correct": false,
+          "whyNot": "足すだけで、前の記録は変わらない。"
+        },
+        {
+          "id": "c",
+          "text": "壊れる",
+          "correct": false,
+          "whyNot": "普通の記録が 1 つ増えるだけ。"
+        }
+      ],
+      "explanation": "`git log -S` で探すと見つかる。"
+    },
+    {
+      "id": "q3",
+      "kind": "multi",
+      "prompt": "再発防止は？（全て）",
+      "choices": [
+        {
+          "id": "a",
+          "text": "`.gitignore`",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "秘密の検査",
+          "correct": true
+        },
+        {
+          "id": "c",
+          "text": "「気を付ける」と書く",
+          "correct": false,
+          "whyNot": "仕組みで止める。"
+        }
+      ],
+      "explanation": "人の注意でなく、機械で止める。"
+    }
+  ],
+  "practice": {
+    "mode": "terminal",
+    "purpose": "決済の鍵 `tk-leaked-1` が入った `config/prod.env` を push してしまった（後で消したが、履歴にある）。鍵の一覧は `/etc/pay/keys`、受ける側の{{term:service}}は `pay`。無効にし、履歴から除き、再発を防ぐ。",
+    "environment": "linux-basic",
+    "setup": {
+      "user": "root",
+      "hostname": "dev",
+      "cwd": "/srv/shop",
+      "dirs": [
+        "/srv/shop/config",
+        "/etc/pay"
+      ],
+      "sites": [],
+      "files": {
+        "/etc/hosts": "127.0.0.1\tlocalhost pay.example\n",
+        "/etc/pay/keys": "tk-leaked-1\n",
+        "/srv/shop/app.txt": "店のアプリ\n"
+      },
+      "services": {
+        "pay": {
+          "description": "Payment API",
+          "enabled": true,
+          "active": true,
+          "port": 80,
+          "keyGuard": {
+            "file": "/etc/pay/keys"
+          }
+        }
+      },
+      "run": [
+        "git init -q",
+        "git remote add origin https://git.city.example/city/shop.git",
+        "git add .",
+        "git commit -q -m '始める'",
+        "echo 'PAY_KEY=tk-leaked-1' > config/prod.env",
+        "git add .",
+        "git commit -q -m '本番の設定を足す'",
+        "echo '次の機能' >> app.txt",
+        "git add .",
+        "git commit -q -m '次の機能'",
+        "git rm -q config/prod.env",
+        "git commit -q -m '設定を消す'",
+        "git push -q -u origin main"
+      ],
+      "gitServers": [
+        {
+          "url": "https://git.city.example/city/shop.git",
+          "run": [],
+          "forge": {
+            "repo": "city/shop"
+          }
+        }
+      ]
+    },
+    "steps": [
+      {
+        "id": "revoke",
+        "purpose": "`/etc/pay/keys` の `tk-leaked-1` を `tk-fresh-2` に替え、`systemctl restart pay` で読み直す。`curl -s -H \"Authorization: Bearer tk-leaked-1\" http://pay.example/` が断られれば達成。",
+        "check": {
+          "kind": "http",
+          "url": "http://pay.example/",
+          "status": 401,
+          "auth": "Bearer tk-leaked-1"
+        },
+        "afterward": "漏れた鍵は使えなくなった。ここで被害は止まった。残りは落ち着いて行える。",
+        "hints": [
+          "書き換えてから動かし直す。",
+          "`sed -i` で置き換える。",
+          "`sed -i 's/tk-leaked-1/tk-fresh-2/' /etc/pay/keys` `systemctl restart pay` `curl -s -H \"Authorization: Bearer tk-leaked-1\" http://pay.example/` を打つ。"
+        ],
+        "expectedErrors": []
+      },
+      {
+        "id": "rewrite",
+        "purpose": "`git log --all -p -S tk-leaked-1` で履歴に残っていることを見る。`git filter-repo --path config/prod.env --invert-paths --force` で除き、外れた `origin` を `git remote add` で付け直して、`git push --force origin main` で置き換える。",
+        "check": {
+          "kind": "git",
+          "expr": "!history:tk-leaked-1 pushed:main"
+        },
+        "afterward": "履歴からも置き場からも消えた。記録の番号が全て変わったので、他の人は取り直す。複製や画面の控えには残り得るので、無効にするのが先だった。",
+        "hints": [
+          "`--invert-paths` は「この{{term:path}}以外を残す」。",
+          "`git filter-repo` は `origin` を外す。付け直してから `--force` で送る。",
+          "`git log --all -p -S tk-leaked-1` `git filter-repo --path config/prod.env --invert-paths --force` `git remote add origin https://git.city.example/city/shop.git` `git push --force origin main` を打つ。"
+        ],
+        "expectedErrors": [
+          "git-a-no-origin",
+          "git-a-filter-force",
+          "git-push-rejected"
+        ]
+      },
+      {
+        "id": "prevent",
+        "purpose": "再発を防ぐ。`.gitignore` に `config/prod.env` を足して記録し、`.git/hooks/pre-commit` に `tk-` を含む変更を止める検査を書く。",
+        "check": {
+          "kind": "git",
+          "expr": "ignored:config/prod.env committed:.gitignore"
+        },
+        "afterward": "名前で除き、中身でも止める。これで人の注意に頼らない。検査は {{term:ci}} にも入れる。",
+        "hints": [
+          "`.gitignore` も記録する。",
+          "検査は、`git diff --cached` に `tk-` があれば `exit 1`。",
+          "`echo 'config/prod.env' >> .gitignore` `git add .gitignore` `git commit -m '本番の設定を除く'` `printf '#!/bin/sh\\nif git diff --cached | grep -q tk-; then echo 秘密が入っている; exit 1; fi\\n' > .git/hooks/pre-commit` `chmod +x .git/hooks/pre-commit` を打つ。"
+        ],
+        "expectedErrors": [
+          "git-a-hook"
+        ]
+      }
+    ]
+  },
+  "result": {
+    "success": "順に対処できた。",
+    "partial": "ヒントを使って対処できた。次は、なぜ無効にするのが先かを説明してみよう。",
+    "retry": "まだ残っている。`git log --all -S tk-leaked-1` で履歴を確かめよう。"
+  },
+  "summary": {
+    "points": [
+      "無効化が先",
+      "履歴から除く",
+      "検査で再発を防ぐ"
+    ],
+    "next": [],
+    "terms": [
+      "history-rewrite",
+      "pre-commit-hook",
+      "gitignore"
+    ]
+  }
+}

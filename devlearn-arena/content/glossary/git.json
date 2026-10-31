@@ -435,6 +435,74 @@
       "lessons": [
         "git.i.06"
       ]
+    },
+    {
+      "id": "git-bisect",
+      "word": "git bisect",
+      "plain": "良い版と悪い版の間を半分ずつ試し、壊した記録を見つける道具。",
+      "why": "100 件の記録でも約 7 回で見つかる。テストがあれば全自動にできる。",
+      "related": [
+        "commit",
+        "git-blame"
+      ],
+      "lessons": [
+        "git.a.01"
+      ]
+    },
+    {
+      "id": "git-blame",
+      "word": "git blame",
+      "plain": "ファイルの行ごとに、最後に変えた記録と人を出す道具。",
+      "why": "この行はなぜこうなったかを、記録の文までたどれる。責めるためではなく理由を知るための道具。",
+      "related": [
+        "commit",
+        "git-bisect"
+      ],
+      "lessons": [
+        "git.a.01"
+      ]
+    },
+    {
+      "id": "branch-protection",
+      "word": "枝の保護（ブランチ保護）",
+      "reading": "えだのほご",
+      "plain": "main などの枝に、直接の push を断り、承認と検査を必須にする決まり。",
+      "why": "人が増えても、確かめていない変更が本番に入らない。",
+      "related": [
+        "pull-request",
+        "review"
+      ],
+      "lessons": [
+        "git.a.02"
+      ]
+    },
+    {
+      "id": "history-rewrite",
+      "word": "履歴の書き換え",
+      "reading": "りれきのかきかえ",
+      "plain": "過去の記録から、ファイルなどを除いて作り直すこと。記録の番号は全て変わる。",
+      "why": "消しただけでは過去の記録に残る。他の人の複製は取り直してもらう必要がある。",
+      "related": [
+        "commit",
+        "gitignore"
+      ],
+      "lessons": [
+        "git.a.03"
+      ]
+    },
+    {
+      "id": "pre-commit-hook",
+      "word": "pre-commit フック",
+      "reading": "ぷりこみっとふっく",
+      "plain": "`git commit` の直前に動く手順。失敗すると記録されない。",
+      "why": "秘密が入った変更を、記録する前に止められる。",
+      "related": [
+        "commit",
+        "gitignore"
+      ],
+      "lessons": [
+        "git.a.03"
+      ]
     }
   ]
 }

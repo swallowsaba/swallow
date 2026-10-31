@@ -39,7 +39,7 @@ export const forgeSetupSchema = z.object({
     approve: z.string().min(1),
   }).strict()).default([]),
   /** 枝の保護（取り込みに要る承認の数と、必須の検査） */
-  protect: z.object({ branch: z.string().min(1), approvals: z.number().int().min(0), checks: z.array(z.string()) }).strict().optional(),
+  protect: z.object({ branch: z.string().min(1), approvals: z.number().int().min(0), checks: z.array(z.string()), enforce: z.boolean().optional() }).strict().optional(),
   /** GitHub Actions（push で .github/workflows のワークフローを動かす。src/engines/cicd） */
   actions: actionsSetupSchema.optional(),
 }).strict();

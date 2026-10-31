@@ -420,6 +420,84 @@
         "git-tag",
         "commit"
       ]
+    },
+    {
+      "id": "git-a-misread",
+      "match": "答えが合っていない",
+      "meaning": "答えが、調べた結果と違う。",
+      "causes": [
+        "良い・悪いの判定を取り違えた。",
+        "別の行や別の記録を読んだ。"
+      ],
+      "hint": "`is the first bad commit` の記録の文と、`git blame` の行を読もう。",
+      "terms": [
+        "git-bisect"
+      ]
+    },
+    {
+      "id": "git-a-protected",
+      "match": "GH006: Protected branch update failed",
+      "meaning": "枝の保護で、直接の push を断られた。依頼を通して入れる決まり。",
+      "causes": [
+        "main に直接 push した。",
+        "枝を作らずに記録した。"
+      ],
+      "hint": "`git switch -c 枝` で枝に移し、`git push -u origin 枝` と `gh pr create` を打とう。",
+      "terms": [
+        "branch-protection"
+      ]
+    },
+    {
+      "id": "git-a-422",
+      "match": "HTTP 422|HTTP 400",
+      "meaning": "保護の中身が足りない・読めない。API は 4 つの項目を全て求める。",
+      "causes": [
+        "`required_status_checks` など、項目が足りない。",
+        "JSON の形が崩れている。"
+      ],
+      "hint": "`cat protect.json` で 4 つの項目を確かめよう。",
+      "terms": [
+        "branch-protection"
+      ]
+    },
+    {
+      "id": "git-a-no-origin",
+      "match": "'origin' does not appear to be a git repository",
+      "meaning": "`origin` が無い。`git filter-repo` は、誤って元へ送らないように `origin` を外す。",
+      "causes": [
+        "書き換えた後に付け直していない。",
+        "別の名前で付け直した。"
+      ],
+      "hint": "`git remote add origin URL` で付け直そう。",
+      "terms": [
+        "history-rewrite"
+      ]
+    },
+    {
+      "id": "git-a-filter-force",
+      "match": "Refusing to destructively overwrite repo history",
+      "meaning": "取ったばかりの複製でないので、書き換えを断られた。",
+      "causes": [
+        "`--force` を付けていない。",
+        "作業中の変更を失わないための確かめ。"
+      ],
+      "hint": "`git status` で失う物が無いことを確かめ、`--force` を付けよう。",
+      "terms": [
+        "history-rewrite"
+      ]
+    },
+    {
+      "id": "git-a-hook",
+      "match": "pre-commit hook が失敗した",
+      "meaning": "秘密の検査が記録を止めた。正しい働き。",
+      "causes": [
+        "秘密の文字が変更に入っている。",
+        "わざと試すために入れた。"
+      ],
+      "hint": "`git restore --staged ファイル` で外そう。",
+      "terms": [
+        "pre-commit-hook"
+      ]
     }
   ]
 }

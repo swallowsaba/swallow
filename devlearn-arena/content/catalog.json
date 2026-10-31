@@ -2310,7 +2310,7 @@
       "title": "チームのブランチ戦略",
       "goal": "保護・レビュー・リリースの流れを設計できる",
       "practice": [
-        "simulation"
+        "terminal"
       ],
       "prerequisites": [
         "git.i.03"

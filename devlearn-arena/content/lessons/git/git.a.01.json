@@ -1,0 +1,276 @@
+{
+  "id": "git.a.01",
+  "domain": "git",
+  "level": "advanced",
+  "theme": "調査",
+  "title": "壊れた変更を探す",
+  "goal": "bisect/blame で原因の変更を特定できる",
+  "minutes": 20,
+  "prerequisites": [
+    "git.i.04"
+  ],
+  "related": [
+    "trouble.a.02",
+    "cicd.i.04"
+  ],
+  "next": [
+    "git.a.02"
+  ],
+  "terms": [
+    "git-bisect",
+    "git-blame",
+    "test"
+  ],
+  "explain": {
+    "what": "多くの記録の中から、壊した記録を半分ずつ絞って見つける方法と、行ごとの最後の変更を見る方法。",
+    "why": "1 件ずつ見ると日が暮れる。半分に絞れば、100 件でも約 7 回で見つかる。",
+    "use": "障害の原因調査で使う。いつから壊れたか分からない時は絞り込み、この行はなぜかを知りたい時は行の履歴。",
+    "when": "100 件前は動いていた。誰も覚えていない。",
+    "figures": [
+      "git-a01-bisect"
+    ]
+  },
+  "understand": [
+    {
+      "kind": "situation",
+      "prompt": "100 件を半分ずつ絞ると、約何回？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "約 7 回",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "約 50 回",
+          "correct": false,
+          "whyNot": "毎回半分になるので、もっと少ない。"
+        },
+        {
+          "id": "c",
+          "text": "100 回",
+          "correct": false,
+          "whyNot": "それは 1 件ずつ見た時。"
+        }
+      ],
+      "see": "why"
+    },
+    {
+      "kind": "match",
+      "prompt": "道具と使い道を結ぶ。",
+      "pairs": [
+        [
+          "{{term:git-bisect}}",
+          "いつから壊れたかを絞る"
+        ],
+        [
+          "{{term:git-blame}}",
+          "この行を誰がなぜ変えたかを見る"
+        ]
+      ],
+      "see": "use"
+    }
+  ],
+  "quiz": [
+    {
+      "id": "q1",
+      "kind": "situation",
+      "prompt": "いつから壊れたか分からない。使うのは？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "`git bisect`",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "`git blame`",
+          "correct": false,
+          "whyNot": "行が分かっている時の道具。"
+        },
+        {
+          "id": "c",
+          "text": "`git status`",
+          "correct": false,
+          "whyNot": "今の変更を見る道具。"
+        }
+      ],
+      "explanation": "良い版と悪い版の間を絞る。"
+    },
+    {
+      "id": "q2",
+      "kind": "situation",
+      "prompt": "この行は誰がなぜ変えた？ 使うのは？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "`git blame`",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "`git bisect`",
+          "correct": false,
+          "whyNot": "壊した記録を探す道具。"
+        },
+        {
+          "id": "c",
+          "text": "`git stash`",
+          "correct": false,
+          "whyNot": "変更を一時的に置く道具。"
+        }
+      ],
+      "explanation": "行ごとの最後の記録が分かる。"
+    },
+    {
+      "id": "q3",
+      "kind": "order",
+      "prompt": "絞り込みの順に並べる。",
+      "order": [
+        "`start`",
+        "`bad`",
+        "`good`",
+        "繰り返す"
+      ],
+      "explanation": "悪い版と良い版を教えると、真ん中へ移る。"
+    },
+    {
+      "id": "q4",
+      "kind": "predict",
+      "prompt": "100 件を半分ずつ絞ると？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "約 7 回で特定",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "必ず 50 回",
+          "correct": false,
+          "whyNot": "毎回半分になる。"
+        },
+        {
+          "id": "c",
+          "text": "運による",
+          "correct": false,
+          "whyNot": "候補の数で決まる。"
+        }
+      ],
+      "explanation": "2 の 7 乗は 128。"
+    }
+  ],
+  "practice": {
+    "mode": "terminal",
+    "purpose": "店の計算の{{term:test}} `test.sh` が落ちている。`v1.0` では通っていた。記録 `#100` から 6 件ある。`git bisect` で壊した記録を見つけ、`git blame` で変えた人を確かめ、取り消して直す。",
+    "environment": "linux-basic",
+    "setup": {
+      "hostname": "dev",
+      "cwd": "/home/learner/shop",
+      "dirs": [
+        "/home/learner/shop"
+      ],
+      "sites": [],
+      "files": {
+        "/home/learner/shop/price.sh": "tax=10\nbase=100\n",
+        "/home/learner/shop/test.sh": "#!/bin/sh\ngrep -q \"tax=10\" price.sh && echo ok\n"
+      },
+      "run": [
+        "git init -q",
+        "git add .",
+        "git commit -q --author='aki <aki@city.example>' -m '#100 始める'",
+        "git tag v1.0",
+        "echo '# 通常の値段' >> price.sh",
+        "git add .",
+        "git commit -q --author='rin <rin@city.example>' -m '#101 説明を足す'",
+        "echo '# 祝日の値段' >> price.sh",
+        "git add .",
+        "git commit -q --author='rin <rin@city.example>' -m '#102 説明を足す'",
+        "sed -i 's/tax=10/tax=8/' price.sh",
+        "git add .",
+        "git commit -q --author='sora <sora@city.example>' -m '#142 税の表を整える'",
+        "echo '# 夜の値段' >> price.sh",
+        "git add .",
+        "git commit -q --author='rin <rin@city.example>' -m '#143 説明を足す'",
+        "echo '# 朝の値段' >> price.sh",
+        "git add .",
+        "git commit -q --author='aki <aki@city.example>' -m '#144 説明を足す'"
+      ]
+    },
+    "steps": [
+      {
+        "id": "find",
+        "purpose": "`git bisect start`、今の版を `bad`、`v1.0` を `good` と伝え、`git bisect run sh test.sh` で絞る。最初に壊した記録の番号（`#` で始まる）を答えの欄に入れる。",
+        "check": {
+          "kind": "answer",
+          "equals": "#142"
+        },
+        "afterward": "テストの結果で自動に絞れた。手で試す時も、`git bisect good`・`git bisect bad` を伝えるだけ。判定を誤ると別の記録に着くので、テストは正確に。",
+        "hints": [
+          "始めて、悪い版と良い版を伝える。",
+          "`git bisect run 命令` は、終了の値で良い・悪いを判定する。",
+          "`git bisect start` `git bisect bad` `git bisect good v1.0` `git bisect run sh test.sh` を打ち、`#142` と答える。"
+        ],
+        "expectedErrors": [
+          "git-a-misread"
+        ]
+      },
+      {
+        "id": "who",
+        "purpose": "`git bisect reset` で元の枝に戻り、`git blame price.sh` で 1 行目を見る。1 行目を最後に変えた人の名前を答えの欄に入れる。",
+        "check": {
+          "kind": "answer",
+          "equals": "sora"
+        },
+        "afterward": "行ごとに記録と人が分かった。責めるためでなく、記録の文（税の表を整える）から理由を知るために使う。",
+        "hints": [
+          "戻ってから行の履歴を見る。",
+          "1 行目の `(` の後の名前。",
+          "`git bisect reset` `git blame price.sh` を打ち、`sora` と答える。"
+        ],
+        "expectedErrors": [
+          "git-a-misread"
+        ]
+      },
+      {
+        "id": "revert",
+        "purpose": "`git log --format=%h --grep=142` で記録の番号を出し、`git revert` で取り消す。`sh test.sh` が `ok` を出せば達成。",
+        "check": {
+          "kind": "ran",
+          "uses": [
+            "sh"
+          ],
+          "result": "ok"
+        },
+        "afterward": "テストが通った。`git revert` は取り消す記録を足すので、後の 2 件の変更は残る。履歴も消えない。",
+        "hints": [
+          "`$( … )` で番号を渡せる。",
+          "`git revert $(git log --format=%h --grep=142)`。",
+          "`git revert $(git log --format=%h --grep=142)` `sh test.sh` を打つ。"
+        ],
+        "expectedErrors": [
+          "git-revert-conflict"
+        ]
+      }
+    ]
+  },
+  "result": {
+    "success": "原因の記録を特定して直せた。",
+    "partial": "ヒントを使って直せた。次は、手で `good`・`bad` を伝えて絞ってみよう。",
+    "retry": "まだテストが落ちている。`git bisect` の結果の記録を確かめよう。"
+  },
+  "summary": {
+    "points": [
+      "半分ずつ絞る",
+      "行の履歴は blame",
+      "判定を正確に"
+    ],
+    "next": [
+      "git.a.02"
+    ],
+    "terms": [
+      "git-bisect",
+      "git-blame"
+    ]
+  }
+}

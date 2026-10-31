@@ -1,0 +1,76 @@
+{
+  "lesson": "git.a.02",
+  "variants": [
+    {
+      "name": "add して送る・保護を読む",
+      "steps": {
+        "direct": [
+          "echo '朝' >> notes.txt",
+          "git add notes.txt",
+          "git commit -m '朝'",
+          "git push"
+        ],
+        "protect": [
+          "echo '{\"required_status_checks\":{\"strict\":true,\"contexts\":[\"test\"]},\"enforce_admins\":true,\"required_pull_request_reviews\":{\"required_approving_review_count\":1},\"restrictions\":null}' > protect.json",
+          "cat protect.json",
+          "gh api -X PUT repos/city/shop/branches/main/protection --input protect.json",
+          "gh api repos/city/shop/branches/main/protection"
+        ],
+        "denied": [
+          "git switch -c fix/notes",
+          "echo '夜' >> notes.txt",
+          "git commit -am '夜'",
+          "git push -u origin fix/notes"
+        ],
+        "pr": [
+          "gh pr create --fill"
+        ],
+        "merge": [
+          "gh pr merge 1 --merge",
+          "1"
+        ]
+      }
+    },
+    {
+      "name": "force でも断られるのを見る",
+      "steps": {
+        "direct": [
+          "echo '朝の点検' >> notes.txt",
+          "git commit -am 'まとめて'",
+          "git push origin main"
+        ],
+        "protect": [
+          "printf '%s' '{\"required_status_checks\":{\"strict\":true,\"contexts\":[\"test\"]},\"enforce_admins\":true,\"required_pull_request_reviews\":{\"required_approving_review_count\":1},\"restrictions\":null}' > rule.json",
+          "gh api --method PUT /repos/city/shop/branches/main/protection --input rule.json"
+        ],
+        "denied": [
+          "echo '夜' >> notes.txt",
+          "git commit -am '夜'",
+          "git push --force origin main || true",
+          "git checkout -b fix/notes",
+          "git push origin fix/notes"
+        ],
+        "pr": [
+          "gh pr create --title '夜' --body '夜の点検'",
+          "gh pr view 1"
+        ],
+        "merge": [
+          "gh pr merge 1 --squash",
+          "１ 人"
+        ]
+      }
+    }
+  ],
+  "wrong": {
+    "step": "protect",
+    "why": "項目が足りない保護を送る",
+    "input": [
+      "echo '{\"enforce_admins\":true}' > protect.json",
+      "gh api -X PUT repos/city/shop/branches/main/protection --input protect.json"
+    ],
+    "retry": [
+      "echo '{\"required_status_checks\":{\"strict\":true,\"contexts\":[\"test\"]},\"enforce_admins\":true,\"required_pull_request_reviews\":{\"required_approving_review_count\":1},\"restrictions\":null}' > protect.json",
+      "gh api -X PUT repos/city/shop/branches/main/protection --input protect.json"
+    ]
+  }
+}

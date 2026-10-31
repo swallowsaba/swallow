@@ -1,0 +1,310 @@
+{
+  "id": "git.a.02",
+  "domain": "git",
+  "level": "advanced",
+  "theme": "運用",
+  "title": "チームのブランチ戦略",
+  "goal": "保護・レビュー・リリースの流れを設計できる",
+  "minutes": 20,
+  "prerequisites": [
+    "git.i.03"
+  ],
+  "related": [
+    "cicd.a.03",
+    "devops.a.02"
+  ],
+  "next": [
+    "cicd.a.03"
+  ],
+  "terms": [
+    "branch-protection",
+    "review",
+    "test",
+    "conflict",
+    "api",
+    "json",
+    "root-user"
+  ],
+  "explain": {
+    "what": "枝の作り方・{{term:branch-protection}}・{{term:review}}・リリースの決まり。main を守り、変更は依頼で入れる。",
+    "why": "人が増えても壊さずに速く進めるため。善意の 1 回の push が本番を止めることがある。",
+    "use": "チーム開発の設計で使う。決まりは文書でなく、置き場の設定で強制する。",
+    "when": "main に直接入れて本番が壊れた。次からは仕組みで防ぎたい。",
+    "figures": [
+      "git-a02-flow"
+    ]
+  },
+  "understand": [
+    {
+      "kind": "order",
+      "prompt": "変更が本番に届く流れに並べる。",
+      "items": [
+        "短い枝を作る",
+        "依頼を出す",
+        "検査と承認",
+        "main に取り込む",
+        "タグでリリース"
+      ],
+      "see": "what"
+    },
+    {
+      "kind": "situation",
+      "prompt": "保護が無いと起きる事故は？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "確かめていない変更が、main に直接入って本番が壊れる",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "枝が作れなくなる",
+          "correct": false,
+          "whyNot": "枝は作れる。"
+        },
+        {
+          "id": "c",
+          "text": "{{term:test}}が遅くなる",
+          "correct": false,
+          "whyNot": "保護とは関係が無い。"
+        }
+      ],
+      "see": "when"
+    }
+  ],
+  "quiz": [
+    {
+      "id": "q1",
+      "kind": "situation",
+      "prompt": "main を守るには？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "保護と必須の検査を入れる",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "「直接入れない」と書いて貼る",
+          "correct": false,
+          "whyNot": "仕組みで止めないと、急ぐ時に破られる。"
+        },
+        {
+          "id": "c",
+          "text": "main を消す",
+          "correct": false,
+          "whyNot": "本番の元が無くなる。"
+        }
+      ],
+      "explanation": "置き場の設定で強制する。"
+    },
+    {
+      "id": "q2",
+      "kind": "choice",
+      "prompt": "枝の寿命は？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "短く",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "長いほど安全",
+          "correct": false,
+          "whyNot": "離れるほど{{term:conflict}}が増える。"
+        },
+        {
+          "id": "c",
+          "text": "消さずに残す",
+          "correct": false,
+          "whyNot": "使い終えた枝は消す。"
+        }
+      ],
+      "explanation": "小さく入れ、早く合わせる。"
+    },
+    {
+      "id": "q3",
+      "kind": "cause",
+      "prompt": "衝突が多い。原因は？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "枝が長すぎる",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "保護がある",
+          "correct": false,
+          "whyNot": "保護は衝突を増やさない。"
+        },
+        {
+          "id": "c",
+          "text": "タグが多い",
+          "correct": false,
+          "whyNot": "タグは衝突と関係が無い。"
+        }
+      ],
+      "explanation": "枝を短くすると減る。"
+    }
+  ],
+  "practice": {
+    "mode": "terminal",
+    "purpose": "店の置き場 `city/shop` の `main` は誰でも直接 push できる。`gh api` で枝の保護を入れ（承認 1 人・必須の検査 `test`）、直接の push が断られ、依頼なら進めることを確かめる。",
+    "environment": "linux-basic",
+    "setup": {
+      "hostname": "dev",
+      "cwd": "/home/learner/shop",
+      "dirs": [
+        "/home/learner/shop"
+      ],
+      "sites": [],
+      "files": {
+        "/home/learner/shop/notes.txt": "店の覚え書き\n"
+      },
+      "run": [
+        "git init -q",
+        "git remote add origin https://git.city.example/city/shop.git",
+        "git add .",
+        "git commit -q -m '始める'",
+        "git push -q -u origin main"
+      ],
+      "gitServers": [
+        {
+          "url": "https://git.city.example/city/shop.git",
+          "run": [],
+          "forge": {
+            "repo": "city/shop",
+            "checks": [
+              {
+                "name": "test",
+                "path": "notes.txt",
+                "pass": [
+                  "店"
+                ],
+                "failLog": [
+                  "not ok",
+                  "1 failing"
+                ],
+                "passLog": [
+                  "ok",
+                  "all passing"
+                ]
+              }
+            ]
+          }
+        }
+      ]
+    },
+    "steps": [
+      {
+        "id": "direct",
+        "purpose": "今は守られていないことを確かめる。`notes.txt` に 1 行足して記録し、`git push origin main` で直接入れる。入ってしまえば達成。",
+        "check": {
+          "kind": "git",
+          "expr": "pushed:main commits:main>=2"
+        },
+        "afterward": "誰の確認も無く入った。これが本番を壊す入口。",
+        "hints": [
+          "1 行足して記録して送る。",
+          "`echo … >> notes.txt`、`git commit -am …`、`git push origin main`。",
+          "`echo '朝の点検' >> notes.txt` `git commit -am '朝の点検を足す'` `git push origin main` を打つ。"
+        ],
+        "expectedErrors": []
+      },
+      {
+        "id": "protect",
+        "purpose": "保護の中身を `protect.json` に書き、`gh api --method PUT repos/city/shop/branches/main/protection --input protect.json` で入れる。項目は `required_status_checks`（`contexts` に `test`）・`enforce_admins`・`required_pull_request_reviews`（承認 1）・`restrictions` の 4 つ。",
+        "check": {
+          "kind": "git",
+          "expr": "protected:main protected-approvals:main>=1 protected-checks:main=test"
+        },
+        "afterward": "決まりが文書でなく、置き場の設定になった。{{term:root-user}}にも当たる（`enforce_admins`）。",
+        "hints": [
+          "本物の {{term:api}} は 4 つの項目を全て求める。",
+          "`echo '…' > protect.json` で 1 行の {{term:json}} を書く。",
+          "`echo '{\"required_status_checks\":{\"strict\":true,\"contexts\":[\"test\"]},\"enforce_admins\":true,\"required_pull_request_reviews\":{\"required_approving_review_count\":1},\"restrictions\":null}' > protect.json` `gh api --method PUT repos/city/shop/branches/main/protection --input protect.json` を打つ。"
+        ],
+        "expectedErrors": [
+          "git-a-422"
+        ]
+      },
+      {
+        "id": "denied",
+        "purpose": "もう 1 行足して記録し、`git push origin main` を打つ。`GH006` で断られることを確かめる。枝 `fix/notes` に移って `git push -u origin fix/notes` で送れば達成。",
+        "check": {
+          "kind": "git",
+          "expr": "pushed:fix/notes on:fix/notes"
+        },
+        "afterward": "直接は断られ、枝なら送れる。変更そのものは止めていない。通り道を決めただけ。",
+        "hints": [
+          "断られた記録は、枝に移せば失わない。",
+          "`git switch -c 枝` は今の記録を連れて移る。",
+          "`echo '夜の点検' >> notes.txt` `git commit -am '夜の点検を足す'` `git push origin main` `git switch -c fix/notes` `git push -u origin fix/notes` を打つ。3 つ目の命令は断られる。"
+        ],
+        "expectedErrors": [
+          "git-a-protected"
+        ],
+        "designedErrors": [
+          "git-a-protected"
+        ]
+      },
+      {
+        "id": "pr",
+        "purpose": "`gh pr create` で依頼を出す。依頼があれば達成。",
+        "check": {
+          "kind": "git",
+          "expr": "pr:fix/notes>main"
+        },
+        "afterward": "依頼ができた。変更と説明が 1 か所に集まり、検査と見る人の返事が付く。",
+        "hints": [
+          "題と説明を付けて出す。",
+          "`gh pr create --title … --body …`。",
+          "`gh pr create --title '夜の点検を足す' --body '夜の点検の項目を足す'` を打つ。"
+        ],
+        "expectedErrors": []
+      },
+      {
+        "id": "merge",
+        "purpose": "`gh pr merge 1 --merge` を試す。断られる。文を読み、要る承認の数を答えの欄に入れる。",
+        "check": {
+          "kind": "answer",
+          "equals": "1"
+        },
+        "afterward": "承認が 1 人分足りないので取り込めない。検査と承認が必須になった。急いでいても、仕組みが止めてくれる。",
+        "hints": [
+          "断りの文に数が書いてある。",
+          "`at least … approving review`。",
+          "`gh pr merge 1 --merge` を打ち、`1` と答える。命令は断られる。"
+        ],
+        "expectedErrors": [
+          "git-pr-blocked",
+          "git-a-misread"
+        ],
+        "designedErrors": [
+          "git-pr-blocked"
+        ]
+      }
+    ]
+  },
+  "result": {
+    "success": "壊れにくい流れを作れた。",
+    "partial": "ヒントを使って作れた。次は、決まりの 4 つの項目を自分で書いてみよう。",
+    "retry": "まだ直接入れられる。`gh api repos/city/shop/branches/main/protection` で保護を読もう。"
+  },
+  "summary": {
+    "points": [
+      "短い枝",
+      "main を保護",
+      "検査と承認を必須に"
+    ],
+    "next": [
+      "cicd.a.03"
+    ],
+    "terms": [
+      "branch-protection",
+      "pull-request"
+    ]
+  }
+}

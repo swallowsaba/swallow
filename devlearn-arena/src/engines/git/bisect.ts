@@ -96,7 +96,7 @@ export function start(git: GitState): GitState {
 export function reset(git: GitState): GitState {
   const refs = new Map(git.refs);
   for (const key of [...refs.keys()]) {
-    if (key === START_REF || key === BAD_REF || key.startsWith(GOOD_PREFIX)) refs.delete(key);
+    if (key === START_REF || key === BAD_REF || key.startsWith(GOOD_PREFIX) || key.startsWith('refs/bisect/branch/')) refs.delete(key);
   }
   return { ...git, refs };
 }

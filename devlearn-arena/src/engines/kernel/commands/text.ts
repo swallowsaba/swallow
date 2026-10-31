@@ -139,6 +139,8 @@ export const textCommands: CommandSpec[] = [
       }
       // 本物の GNU grep と同じ: 読めない場所などの誤りがあれば、一致があっても 2。無ければ一致で 0、無しで 1
       const code = errors.length > 0 ? 2 : total > 0 ? 0 : 1;
+      // -q: 何も出さない。一致があれば、読めない場所があっても 0
+      if (flags.has('q') || flags.has('quiet') || flags.has('silent')) return { code: total > 0 ? 0 : code };
       return {
         ...(out.length > 0 ? { stdout: fromLines(out) } : {}),
         ...(errors.length > 0 ? { stderr: fromLines(errors) } : {}),

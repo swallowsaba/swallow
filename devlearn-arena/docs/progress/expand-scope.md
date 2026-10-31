@@ -60,7 +60,7 @@
 | 上級 | net | 終わり（4 本。下の「上級 net」） |
 | 上級 | web | 終わり（3 本。下の「上級 web」） |
 | 上級 | sec | 終わり（4 本。下の「上級 sec」） |
-| 上級 | git | 未着手 |
+| 上級 | git | 終わり（3 本。下の「上級 git」） |
 | 上級 | cicd | 未着手 |
 | 上級 | ctr | 未着手 |
 | 上級 | docker | 未着手 |
@@ -326,3 +326,26 @@
 設計を直した物: sec.a.01 を「模」から「端」（`dpkg`・`ss`・`apt` の本物の道具がある）、sec.a.04 を「模」から「端」（`npm audit`・`npm ls` の本物の道具がある）にした。`docs/lessons/sec.md` と `docs/curriculum.md` の表を先に直した。sec.a.03 は打つコマンドの無い手順の考え方なので模のまま。
 
 模擬環境に足した物（テストを先に書いた。`npmAudit.test.ts`）: npm の間接の依存（`actions.packages` の `deps`。`node_modules` とロックファイルに入る）・`npm ls [名前]`・`npm audit`（`actions.advisories`。残っていれば終了の状態 1）・`npm install` の最後の行が警告の数を言う。
+
+### 上級 git（3 本）
+
+| ID | 実戦 | verify-all | verify-free（別解） | verify-wrong |
+|---|---|---|---|---|
+| git.a.01 壊れた変更を探す | 端 | 合格 | 合格（2 通り） | 1 回目 不合格 → 合格 |
+| git.a.02 チームのブランチ戦略 | 端 | 合格 | 1 回目 不合格 → 合格（2 通り） | 1 回目 不合格 → 合格 |
+| git.a.03 秘密情報をコミットしてしまったら | 端 | 合格 | 合格（2 通り） | 合格 |
+
+| 不合格 | 原因 | 直したこと |
+|---|---|---|
+| `git bisect reset` の後、元の枝に戻らない（既にある不具合。テストで発見） | 模擬の不具合: 調べる間は HEAD が離れるので、離れたままの場所に戻していた。index も合わせていなかった | 始めた時の枝を控えて枝に戻し、index も合わせる（テストを先に書いた。`gitRewrite.test.ts`） |
+| `grep -q` が結果を出す | 模擬の不具合: `-q` が無かった | `-q` を足した（同） |
+| 別解 `gh pr create --fill` が断られる | 模擬に無かった | `--fill` を足した（同） |
+| git.a.01 の間違える操作で `git revert` が記録を見つけない | 台本の誤り: `who` の答えだけを打つと `git bisect reset` を飛ばす | 間違える手順を `find` にした |
+| lab.i.02 の用語の検証が落ちた | 書き起こしの誤り: 新しい用語の語「枝の保護」が、既にある本文にも当たった | 語を「枝の保護（ブランチ保護）」にした（既にある本文は変えない） |
+
+設計を直した物: git.a.02 を「模」から「端」にした（`gh api` の本物の API と `git push` がある）。`docs/lessons/git.md` と `docs/curriculum.md` の表を先に直した。git.a.03 は達成の中身を手順に分けて書いた。
+
+模擬環境に足した物（テストを先に書いた。`gitRewrite.test.ts`）:
+- `git blame`（`-L`）・`git bisect run`・`git log --grep`・`git log --format`・`git commit --author`
+- `git filter-repo --path … --invert-paths --force`（本物と同じく `--force` を求め、`origin` を外す）・`git filter-branch --index-filter`・`git push --all`
+- 枝の保護の API: `gh api --method PUT repos/持ち主/名前/branches/枝/protection --input ファイル`（本物と同じく 4 つの項目を求め、足りなければ 422）。入れた後の直接の push は GH006 で断る。判定の `protected:`・`protected-approvals:`・`protected-checks:`

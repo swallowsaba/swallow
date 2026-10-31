@@ -1,0 +1,59 @@
+{
+  "lesson": "git.a.03",
+  "variants": [
+    {
+      "name": "filter-branch で除く",
+      "steps": {
+        "revoke": [
+          "echo 'tk-fresh-2' > /etc/pay/keys",
+          "systemctl restart pay",
+          "curl -i -H \"Authorization: Bearer tk-leaked-1\" http://pay.example/"
+        ],
+        "rewrite": [
+          "git log --oneline -S tk-leaked-1",
+          "git filter-branch --force --index-filter \"git rm --cached --ignore-unmatch config/prod.env\" --prune-empty --tag-name-filter cat -- --all",
+          "git push --force origin main"
+        ],
+        "prevent": [
+          "printf 'config/prod.env\\n' >> .gitignore",
+          "git add .",
+          "git commit -m '除く'"
+        ]
+      }
+    },
+    {
+      "name": "--all で送る・先に検査",
+      "steps": {
+        "revoke": [
+          "sed -i '/tk-leaked-1/d' /etc/pay/keys",
+          "echo 'tk-fresh-2' >> /etc/pay/keys",
+          "systemctl restart pay"
+        ],
+        "rewrite": [
+          "git filter-repo --force --invert-paths --path config/prod.env",
+          "git remote add origin https://git.city.example/city/shop.git",
+          "git push --force --all origin"
+        ],
+        "prevent": [
+          "printf '#!/bin/sh\\nif git diff --cached | grep -q tk-; then exit 1; fi\\n' > .git/hooks/pre-commit",
+          "chmod +x .git/hooks/pre-commit",
+          "echo 'config/prod.env' > .gitignore",
+          "git add .gitignore",
+          "git commit -m 'ignore'"
+        ]
+      }
+    }
+  ],
+  "wrong": {
+    "step": "rewrite",
+    "why": "書き換えた後、origin を付け直さずに送る",
+    "input": [
+      "git filter-repo --path config/prod.env --invert-paths --force",
+      "git push --force origin main"
+    ],
+    "retry": [
+      "git remote add origin https://git.city.example/city/shop.git",
+      "git push --force origin main"
+    ]
+  }
+}

@@ -1,0 +1,69 @@
+{
+  "lesson": "git.a.01",
+  "variants": [
+    {
+      "name": "手で良い・悪いを伝える",
+      "steps": {
+        "find": [
+          "git bisect start HEAD",
+          "git bisect bad HEAD",
+          "git bisect good v1.0",
+          "sh test.sh && git bisect good || git bisect bad",
+          "sh test.sh && git bisect good || git bisect bad",
+          "sh test.sh && git bisect good || git bisect bad",
+          "#142"
+        ],
+        "who": [
+          "git bisect reset",
+          "git blame -L 1,1 price.sh",
+          "sora"
+        ],
+        "revert": [
+          "git log --format=%h --grep=142",
+          "git revert $(git log --format=%H --grep=142)",
+          "sh test.sh"
+        ]
+      }
+    },
+    {
+      "name": "git log を読みながら",
+      "steps": {
+        "find": [
+          "git log --oneline",
+          "git bisect start",
+          "git bisect bad",
+          "git bisect good v1.0",
+          "git bisect status",
+          "git bisect run sh test.sh",
+          " #142 "
+        ],
+        "who": [
+          "git bisect reset",
+          "cat price.sh",
+          "git blame price.sh",
+          "SORA"
+        ],
+        "revert": [
+          "sed -i 's/tax=8/tax=10/' price.sh",
+          "git commit -am \"#145 税を戻す\"",
+          "sh test.sh"
+        ]
+      }
+    }
+  ],
+  "wrong": {
+    "step": "find",
+    "why": "一番新しい記録を答える",
+    "commands": false,
+    "input": [
+      "#144"
+    ],
+    "retry": [
+      "git bisect start",
+      "git bisect bad",
+      "git bisect good v1.0",
+      "git bisect run sh test.sh",
+      "#142"
+    ]
+  }
+}

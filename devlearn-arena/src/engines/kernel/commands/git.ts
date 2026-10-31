@@ -4,6 +4,7 @@ import { mkdir } from '../vfs';
 import type { CommandResult, CommandSpec, RunLineResult, ShellState } from '../registry';
 import { basicSubcommands } from './gitBasic';
 import { bisectSubcommands } from './gitBisect';
+import { rewriteSubcommands } from './gitRewrite';
 import { historySubcommands } from './gitHistory';
 import { plumbingSubcommands } from './gitPlumbing';
 import { rebaseSubcommands } from './gitRebase';
@@ -23,6 +24,7 @@ const subcommands: Record<string, GitHandler> = {
   ...rebaseSubcommands,
   ...refSubcommands,
   ...bisectSubcommands,
+  ...rewriteSubcommands,
   ...remoteSubcommands,
 };
 

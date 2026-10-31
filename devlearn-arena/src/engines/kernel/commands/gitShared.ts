@@ -218,6 +218,10 @@ export interface LogOptions {
   since: number | null;
   until: number | null;
   author: string | null;
+  /** --grep 文字（記録の文にその文字を含む記録だけ） */
+  grep?: string;
+  /** --format=書式（%H・%h・%s・%an） */
+  format?: string;
   /** 辿り始める記録（origin/main・HEAD~1 など）。A..B は B から辿れて A から辿れない記録 */
   revs: string[];
   /** -- の後のパス（そのファイルを変えた記録だけ） */
@@ -260,6 +264,8 @@ export function parseLogArgs(rest: readonly string[], now: number): LogOptions |
     else if (/^-n\d+$/.test(arg)) opts.max = Number(arg.slice(2));
     else if (arg === '-n' || name === '--max-count') opts.max = Number(value());
     else if (name === '--author') opts.author = value();
+    else if (name === '--grep') opts.grep = value();
+    else if (name === '--format' || name === '--pretty') opts.format = value().replace(/^format:/, '');
     else if (name === '--since' || name === '--after' || name === '--until' || name === '--before') {
       const raw = value();
       const when = parseApproxDate(raw, now);

@@ -150,8 +150,12 @@ export const basicSubcommands: Record<string, GitHandler> = {
     }
     return { stdout: fromLines(out), code: out.length > 0 ? 0 : 1 };
   },
-  commit: ({ git, shell, rest, nowSeconds, runLine }) => {
-    const { values, flags } = parseArgs(['commit', ...rest], { withValue: ['m'] });
+  commit: ({ git: base, shell, rest, nowSeconds, runLine }) => {
+    const { values, flags } = parseArgs(['commit', ...rest], { withValue: ['m', 'author'] });
+    // --author='名前 <メール>': この記録の作者だけを変える
+    const who = /^(.+?) <(.+)>$/.exec(values.get('author') ?? '');
+    const git: typeof base = who ? { ...base, author: { ...base.author, name: who[1] ?? '', email: who[2] ?? '' } } : base;
+    const after = (r: typeof base): typeof base => (who ? { ...r, author: base.author } : r);
     // 取り込みの途中は、本物と同じく既定の文（Merge branch '枝'）がある。--no-edit はそれを使う（-m が無ければ同じ）
     const message = values.get('m') ?? (git.mergeHead !== null ? mergeMessage(git, git.mergeHead) : undefined);
     if (message === undefined) {
@@ -170,7 +174,7 @@ export const basicSubcommands: Record<string, GitHandler> = {
     }
     if (flags.has('a')) {
       const result = commit(stageTracked(git, shell.vfs), message, nowSeconds);
-      return commitOutput(result.git, result.hash, result.empty, message);
+      return commitOutput(after(result.git), result.hash, result.empty, message);
     }
     if (git.index.size === 0 && headCommit(git) === null) {
       // 本物と同じく、追跡していないファイルがあれば add を促す
@@ -186,7 +190,7 @@ export const basicSubcommands: Record<string, GitHandler> = {
       if (report.unstaged.length > 0) return { stdout: 'no changes added to commit (use "git add" and/or "git commit -a")\n', code: 1 };
       if (report.untracked.length > 0) return { stdout: 'nothing added to commit but untracked files present (use "git add" to track)\n', code: 1 };
     }
-    return commitOutput(result.git, result.hash, result.empty, message);
+    return commitOutput(after(result.git), result.hash, result.empty, message);
   },
   log: ({ git, shell, rest, nowSeconds }) => {
     const opts = parseLogArgs(rest, nowSeconds);
@@ -235,7 +239,12 @@ export const basicSubcommands: Record<string, GitHandler> = {
       .filter((e) => opts.since === null || e.author.timestamp >= opts.since)
       .filter((e) => opts.until === null || e.author.timestamp <= opts.until)
       .filter((e) => opts.author === null || `${e.author.name} <${e.author.email}>`.includes(opts.author))
+      .filter((e) => opts.grep === undefined || e.message.includes(opts.grep))
       .slice(0, opts.max ?? undefined);
+    if (opts.format !== undefined) {
+      const format = opts.format;
+      return { stdout: entries.map((e) => `${format.replace(/%H/g, e.hash).replace(/%h/g, short(e.hash)).replace(/%s/g, e.message.split('\n')[0] ?? '').replace(/%an/g, e.author.name)}\n`).join('') };
+    }
     const patchOf = (hash: string, parents: readonly string[]): string =>
       // マージの記録は、本物と同じく -p でも差分を出さない
       parents.length > 1 ? '' : diffCommits(git, parents[0] ?? null, hash);

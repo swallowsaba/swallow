@@ -55,6 +55,20 @@ export const remoteSubcommands: Record<string, GitHandler> = {
   },
   push: ({ git, shell, rest, nowSeconds, runLine }) => {
     const { flags, operands } = parseArgs(['push', ...rest]);
+    // --all: 手元の全ての枝を送る
+    if (rest.includes('--all')) {
+      const others = rest.filter((a) => a !== '--all' && a !== '-u' && !a.startsWith('--set-upstream'));
+      const names = [...git.refs.keys()].filter((r) => r.startsWith('refs/heads/')).map((r) => r.slice('refs/heads/'.length));
+      let state = shell;
+      let said = '';
+      for (const name of names) {
+        const r = runLine(`git push ${others.filter((a) => a.startsWith('-')).join(' ')} ${operands[0] ?? 'origin'} ${name}`, state);
+        said += r.stdout;
+        if (r.code !== 0) return { stdout: said, stderr: r.stderr, code: r.code, patch: { git: r.state.git, gitServers: r.state.gitServers } };
+        state = r.state;
+      }
+      return { stdout: said, patch: { git: state.git, gitServers: state.gitServers } };
+    }
     const remoteName = operands[0] ?? 'origin';
     const branch = operands[1] ?? currentBranch(git) ?? 'main';
     const known = git.remotes.get(remoteName);
@@ -65,6 +79,11 @@ export const remoteSubcommands: Record<string, GitHandler> = {
     if (serverOf(shell, known.url)) {
       const denied = accessError(shell, known.url);
       if (denied !== null) return { stderr: denied, code: 128 };
+    }
+    // 枝の保護（gh api で入れた物）: 依頼を通さない push は、サーバが断る
+    const guard = serverOf(shell, known.url)?.forge?.setup.protect;
+    if (guard?.enforce === true && guard.branch === branch) {
+      return { stderr: `remote: error: GH006: Protected branch update failed for refs/heads/${branch}.\nremote: error: Changes must be made through a pull request.\nTo ${known.url}\n ! [remote rejected] ${branch} -> ${branch} (protected branch hook declined)\nerror: failed to push some refs to '${known.url}'\n`, code: 1 };
     }
     const remote = withServer(shell, known);
     const result = pushRemote(git, remote, branch, {

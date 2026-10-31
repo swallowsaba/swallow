@@ -3,10 +3,13 @@ import {
 } from '@/engines/github/forge';
 import { runList, runLog, runView, runWatch } from '@/engines/cicd/ghRun';
 import type { RunRecord } from '@/engines/cicd/types';
-import { currentBranch } from '@/engines/git/repository';
+import { parseCommit } from '@/engines/git/objects';
+import { currentBranch, headCommit } from '@/engines/git/repository';
 import { START_TIME } from '../cron';
 import type { CommandContext, CommandResult, GitServer, ShellState } from '../registry';
+import { normalize } from '../path';
 import { createShellState } from '../session';
+import { exists, readFile } from '../vfs';
 import { fromLines, parseArgs } from './args';
 import { parseLocalTime } from './gitShared';
 
@@ -79,6 +82,50 @@ function mergeOnServer(ctx: CommandContext, server: GitServer, pull: ForgePull):
   return { servers: state.gitServers, error: null };
 }
 
+/** gh api: 枝の保護の API だけを、本物の形で受ける（repos/持ち主/名前/branches/枝/protection） */
+export function ghApiForge(ctx: CommandContext, server: GitServer): CommandResult {
+  const { argv, shell } = ctx;
+  const { values, operands } = parseArgs(argv.slice(1), { withValue: ['X', 'method', 'input'] });
+  const method = (values.get('X') ?? values.get('method') ?? 'GET').toUpperCase();
+  const m = /^\/?repos\/([^/]+\/[^/]+)\/branches\/([^/]+)\/protection$/.exec(operands[0] ?? '');
+  const forge = server.forge;
+  if (!forge) return { stderr: 'gh: Not Found (HTTP 404)\n', code: 1 };
+  if (m?.[1] !== forge.setup.repo || m[2] === undefined) return { stderr: 'gh: Not Found (HTTP 404)\n', code: 1 };
+  const branch = m[2];
+  const json = (o: unknown): string => `${JSON.stringify(o, null, 2)}\n`;
+  const shown = (p: NonNullable<typeof forge.setup.protect>): string => json({
+    url: `https://api.github.com/repos/${forge.setup.repo}/branches/${branch}/protection`,
+    required_status_checks: { strict: true, contexts: p.checks },
+    required_pull_request_reviews: { required_approving_review_count: p.approvals },
+    enforce_admins: { enabled: p.enforce === true },
+  });
+  const held = forge.setup.protect?.branch === branch ? forge.setup.protect : undefined;
+  if (method === 'GET') return held ? { stdout: shown(held) } : { stderr: 'gh: Branch not protected (HTTP 404)\n', code: 1 };
+  const save = (protect: typeof forge.setup.protect): Partial<ShellState> => {
+    const setup = { ...forge.setup };
+    delete setup.protect;
+    return withForge(shell, server, { ...forge, setup: { ...setup, ...(protect ? { protect } : {}) } });
+  };
+  if (method === 'DELETE') return held ? { patch: save(undefined) } : { stderr: 'gh: Branch not protected (HTTP 404)\n', code: 1 };
+  if (method !== 'PUT') return { stderr: 'gh: Not Found (HTTP 404)\n', code: 1 };
+  const file = values.get('input');
+  if (file === undefined) return { stderr: 'gh: Invalid request.\n\nFor \'links/0/schema\', nil is not an object. (HTTP 422)\n', code: 1 };
+  const path = normalize(file.startsWith('/') ? file : `${shell.cwd}/${file}`);
+  if (!exists(shell.vfs, path)) return { stderr: `open ${file}: no such file or directory\n`, code: 1 };
+  let body: Record<string, unknown>;
+  try {
+    body = JSON.parse(readFile(shell.vfs, path)) as Record<string, unknown>;
+  } catch {
+    return { stderr: 'gh: Problems parsing JSON (HTTP 400)\n', code: 1 };
+  }
+  const missing = ['required_status_checks', 'enforce_admins', 'required_pull_request_reviews', 'restrictions'].find((k) => !(k in body));
+  if (missing !== undefined) return { stderr: `gh: Invalid request.\n\n"${missing}" wasn't supplied. (HTTP 422)\n`, code: 1 };
+  const checks = (body['required_status_checks'] as { contexts?: string[] } | null)?.contexts ?? [];
+  const approvals = (body['required_pull_request_reviews'] as { required_approving_review_count?: number } | null)?.required_approving_review_count ?? 0;
+  const next = { branch, approvals, checks, enforce: true };
+  return { stdout: shown(next), patch: save(next) };
+}
+
 export function ghPrForge(ctx: CommandContext, server: GitServer): CommandResult {
   const forge = server.forge;
   if (!forge) return { stderr: 'この置き場には Pull Request がありません\n', code: 1 };
@@ -92,10 +139,14 @@ export function ghPrForge(ctx: CommandContext, server: GitServer): CommandResult
   if (action === 'create') {
     const head = v('head', 'H') ?? (shell.git ? currentBranch(shell.git) : null) ?? '';
     const base = v('base', 'B') ?? 'main';
-    const title = v('title', 't');
+    // --fill: 題と説明を、枝の最後の記録の文から作る（本物と同じ）
+    const tipHash = parsed.flags.has('fill') && shell.git ? headCommit(shell.git) : null;
+    const tipObject = tipHash === null ? undefined : shell.git?.objects.read(tipHash);
+    const filled = tipObject ? parseCommit(tipObject.body).message.trimEnd() : undefined;
+    const title = v('title', 't') ?? filled?.split('\n')[0];
     if (title === undefined) return { stderr: 'must provide `--title` and `--body` (or `--fill`) when not running interactively\n', code: 1 };
     const user = shell.vars.get('USER') ?? 'learner';
-    const opened = openPull(forge, server.state, { title, body: v('body', 'b') ?? '', head, base, author: user });
+    const opened = openPull(forge, server.state, { title, body: v('body', 'b') ?? filled ?? '', head, base, author: user });
     if (opened.error !== undefined || !opened.pull) return { stderr: `${opened.error ?? '依頼を作れない'}\n`, code: 1 };
     let next = opened.forge;
     const reviewers = (v('reviewer', 'r') ?? '').split(',').filter((x) => x !== '');
