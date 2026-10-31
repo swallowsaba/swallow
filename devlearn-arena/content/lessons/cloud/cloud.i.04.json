@@ -1,0 +1,240 @@
+{
+  "id": "cloud.i.04",
+  "domain": "cloud",
+  "level": "intermediate",
+  "theme": "費用",
+  "title": "費用の考え方",
+  "goal": "構成から費用の大小を見積もれる",
+  "minutes": 20,
+  "prerequisites": [
+    "cloud.i.02"
+  ],
+  "related": [
+    "cloud.i.02",
+    "mon.b.03"
+  ],
+  "next": [
+    "cloud.a.01"
+  ],
+  "terms": [
+    "cloud",
+    "pay-as-you-go",
+    "db",
+    "service",
+    "log"
+  ],
+  "explain": {
+    "what": "{{term:cloud}}の費用は、使った量で払う{{term:pay-as-you-go}}。計算（動かした時間と大きさ）・保存（量と期間）・転送（外へ出した量）の 3 つの内訳で考える。",
+    "why": "小さく始められる代わりに、気付かない間に膨らむ。止め忘れた機械は、誰も使っていなくても毎時間お金がかかる。",
+    "use": "構成を選ぶ時と、月の請求を見直す時に使う。内訳の大きい物から、同じ働きのまま減らせないかを考える。",
+    "when": "今月の請求が先月より大きい。使っていない検証用の機械と、夜も動いている開発用の機械がありそう。",
+    "figures": [
+      "cloud-i04-cost"
+    ]
+  },
+  "understand": [
+    {
+      "kind": "figure-pick",
+      "figure": "cloud-i04-cost",
+      "prompt": "動かした時間で費用が決まる内訳を押す。",
+      "answer": [
+        "compute"
+      ],
+      "see": "what"
+    },
+    {
+      "kind": "situation",
+      "prompt": "次のうち、無駄はどれ？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "誰も使っていないのに動いている検証用の機械",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "本番の {{term:db}}",
+          "correct": false,
+          "whyNot": "止めると{{term:service}}が止まる。"
+        },
+        {
+          "id": "c",
+          "text": "毎日の控えを保存すること",
+          "correct": false,
+          "whyNot": "必要な保全。消すなら古い物から考える。"
+        }
+      ],
+      "see": "why"
+    }
+  ],
+  "quiz": [
+    {
+      "id": "q1",
+      "kind": "cause",
+      "prompt": "費用が急に増えた。原因の候補は？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "止め忘れか、転送の増加",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "コードの行数が増えた",
+          "correct": false,
+          "whyNot": "行数では請求されない。"
+        },
+        {
+          "id": "c",
+          "text": "利用者のパスワードが長くなった",
+          "correct": false,
+          "whyNot": "費用には関係が無い。"
+        }
+      ],
+      "explanation": "動かした時間と量が費用を決める。"
+    },
+    {
+      "id": "q2",
+      "kind": "situation",
+      "prompt": "開発用の機械は夜に使わない。どうする？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "夜は止めるか、減らす",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "夜も動かし続ける",
+          "correct": false,
+          "whyNot": "使わない時間の分を払い続ける。"
+        },
+        {
+          "id": "c",
+          "text": "本番の機械を止める",
+          "correct": false,
+          "whyNot": "本番は利用者が使っている。"
+        }
+      ],
+      "explanation": "動かした時間に払うので、使わない時間を減らす。"
+    },
+    {
+      "id": "q3",
+      "kind": "choice",
+      "prompt": "費用に一番効くのは？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "動かす時間と量",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "機械の名前",
+          "correct": false,
+          "whyNot": "名前では請求されない。"
+        },
+        {
+          "id": "c",
+          "text": "{{term:log}}の色",
+          "correct": false,
+          "whyNot": "費用には関係が無い。"
+        }
+      ],
+      "explanation": "内訳の大きい物の、時間と量を見る。"
+    }
+  ],
+  "practice": {
+    "mode": "sql",
+    "purpose": "表 `items` に今月の費用の元がある（`qty` は時間や量、`yen` は単価、`in_use` は使っているか）。内訳を計算し、同じ働きのまま、月の費用を 85000 円以下にする。",
+    "environment": "sql-sqlite",
+    "setup": {
+      "sql": "CREATE TABLE items (name TEXT PRIMARY KEY, kind TEXT NOT NULL, qty INTEGER NOT NULL, yen INTEGER NOT NULL, in_use INTEGER NOT NULL) STRICT;\nINSERT INTO items VALUES ('web', '計算', 720, 50, 1), ('db', '計算', 720, 40, 1), ('dev', '計算', 720, 30, 1), ('old-test', '計算', 720, 30, 0), ('images', '保存', 500, 4, 1), ('traffic', '転送', 400, 15, 1);"
+    },
+    "steps": [
+      {
+        "id": "kinds",
+        "purpose": "種類（`kind`）ごとの費用の合計（`qty * yen`）を、大きい順に出す。",
+        "check": {
+          "kind": "ran",
+          "uses": [
+            "SUM",
+            "GROUP"
+          ],
+          "result": "計算 108000\n転送 6000\n保存 2000"
+        },
+        "afterward": "計算が 108000 円で、ほとんどを占める。保存や転送を削るより、ここを見る。",
+        "hints": [
+          "1 行の費用は `qty * yen`。",
+          "`SELECT kind, SUM(qty * yen) FROM items GROUP BY kind` に、大きい順の `ORDER BY` を足す。",
+          "`SELECT kind, SUM(qty * yen) FROM items GROUP BY kind ORDER BY SUM(qty * yen) DESC` を実行する。3 行が出れば達成。"
+        ],
+        "expectedErrors": [
+          "cloud-cost-miss",
+          "db-no-column",
+          "db-syntax"
+        ]
+      },
+      {
+        "id": "idle",
+        "purpose": "使っていない物（`in_use` が 0）の名前を出す。",
+        "check": {
+          "kind": "ran",
+          "uses": [
+            "SELECT"
+          ],
+          "result": "old-test"
+        },
+        "afterward": "`old-test` は誰も使っていないのに、月に 21600 円かかっている。止め忘れの典型。",
+        "hints": [
+          "`WHERE in_use = 0` で絞る。",
+          "`SELECT name FROM items WHERE in_use = 0`。",
+          "`SELECT name FROM items WHERE in_use = 0` を実行する。old-test と出れば達成。"
+        ],
+        "expectedErrors": [
+          "db-no-column",
+          "db-syntax"
+        ]
+      },
+      {
+        "id": "cut",
+        "purpose": "`old-test` を消し、夜に使わない `dev` の時間（`qty`）を半分の 360 にする。月の費用が 85000 円以下になり、`web` と `db` は残っていれば達成。",
+        "check": {
+          "kind": "sql",
+          "query": "SELECT SUM(qty * yen) <= 85000 AND SUM(name = 'web') = 1 AND SUM(name = 'db') = 1 AND SUM(name = 'old-test') = 0 FROM items",
+          "equals": 1
+        },
+        "afterward": "同じ働きのまま、月の費用が 83600 円になった。本番の `web` と `db` は削っていない。",
+        "hints": [
+          "消すのは `DELETE`、変えるのは `UPDATE`。",
+          "本番の `web` と `db` は触らない。",
+          "`DELETE FROM items WHERE name = 'old-test'` `UPDATE items SET qty = 360 WHERE name = 'dev'` `SELECT SUM(qty * yen) FROM items` を順に実行する。"
+        ],
+        "expectedErrors": [
+          "db-no-column",
+          "db-syntax"
+        ]
+      }
+    ]
+  },
+  "result": {
+    "success": "内訳を計算し、働きを落とさずに費用を下げられた。",
+    "partial": "ヒントを使って下げられた。次は転送の費用も考えてみよう。",
+    "retry": "まだ 85000 円を超えているか、要る物まで消している。`SELECT * FROM items` で見直そう。"
+  },
+  "summary": {
+    "points": [
+      "使った分だけ払う",
+      "止め忘れに注意する",
+      "内訳で考える"
+    ],
+    "next": [
+      "cloud.a.01"
+    ],
+    "terms": [
+      "pay-as-you-go",
+      "compute",
+      "cloud"
+    ]
+  }
+}

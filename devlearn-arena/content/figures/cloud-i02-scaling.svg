@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 360" font-family="&quot;Noto Sans JP&quot;, sans-serif">
+  <title>縦は 1 台を大きく、横は数を増やす。負荷に応じて自動で増減できる</title>
+  <defs>
+    <marker id="arrow-gold" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="#f2b632" />
+    </marker>
+  </defs>
+  <g class="el" data-part="up">
+    <rect x="20" y="40" width="280" height="130" rx="10" fill="#7a3fd0" />
+    <text x="160" y="88" text-anchor="middle" font-size="16" font-weight="700" fill="#eef2f6">縦の拡張</text>
+    <text x="160" y="110" text-anchor="middle" font-size="14" fill="#eef2f6">1 台を大きくする</text>
+    <text x="160" y="132" text-anchor="middle" font-size="14" fill="#eef2f6">限りがある・止めて替える</text>
+  </g>
+  <g class="el" data-part="out">
+    <rect x="340" y="40" width="280" height="130" rx="10" fill="#1a6fd6" />
+    <text x="480" y="88" text-anchor="middle" font-size="16" font-weight="700" fill="#eef2f6">横の拡張</text>
+    <text x="480" y="110" text-anchor="middle" font-size="14" fill="#eef2f6">数を増やす</text>
+    <text x="480" y="132" text-anchor="middle" font-size="14" fill="#eef2f6">止めずに増やせる</text>
+  </g>
+  <g class="el" data-part="auto">
+    <rect x="80" y="200" width="480" height="100" rx="10" fill="#1f7a4d" />
+    <text x="320" y="244" text-anchor="middle" font-size="16" font-weight="700" fill="#eef2f6">自動の増減</text>
+    <text x="320" y="266" text-anchor="middle" font-size="14" fill="#eef2f6">使用率を見て増やし、終われば減らす</text>
+  </g>
+  <g class="el" data-part="flow">
+    <path d="M470 170 L400 196" fill="none" stroke="#f2b632" stroke-width="2" marker-end="url(#arrow-gold)" />
+  </g>
+  <g class="el" data-part="note">
+    <text x="320" y="340" text-anchor="middle" font-size="14" fill="#eef2f6">状態を持つ DB は増やしにくく、そこで詰まることが多い</text>
+  </g>
+</svg>

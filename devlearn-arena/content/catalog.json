@@ -4517,7 +4517,7 @@
       "title": "スケーリング",
       "goal": "縦と横、自動の拡縮を設計できる",
       "practice": [
-        "simulation"
+        "terminal"
       ],
       "prerequisites": [
         "cloud.i.01"
@@ -4561,7 +4561,7 @@
       "title": "費用の考え方",
       "goal": "構成から費用の大小を見積もれる",
       "practice": [
-        "simulation"
+        "sql"
       ],
       "prerequisites": [
         "cloud.i.02"

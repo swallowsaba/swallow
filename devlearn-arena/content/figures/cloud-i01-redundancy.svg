@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 360" font-family="&quot;Noto Sans JP&quot;, sans-serif">
+  <title>1 つの区画に全てを置くと停電で全て止まる。2 つの区画に分けると片方が止まっても動く</title>
+  <g class="el" data-part="one">
+    <rect x="20" y="40" width="280" height="240" rx="10" fill="#c0392b" />
+    <text x="160" y="132" text-anchor="middle" font-size="16" font-weight="700" fill="#eef2f6">1 つの区画</text>
+    <text x="160" y="154" text-anchor="middle" font-size="14" fill="#eef2f6">Web・DB が全て同じ場所</text>
+    <text x="160" y="176" text-anchor="middle" font-size="14" fill="#eef2f6">停電で全て止まる</text>
+    <text x="160" y="198" text-anchor="middle" font-size="14" fill="#eef2f6">DB が単一障害点</text>
+  </g>
+  <g class="el" data-part="two">
+    <rect x="340" y="40" width="280" height="240" rx="10" fill="#1f7a4d" />
+    <text x="480" y="132" text-anchor="middle" font-size="16" font-weight="700" fill="#eef2f6">2 つの区画に分ける</text>
+    <text x="480" y="154" text-anchor="middle" font-size="14" fill="#eef2f6">東の区画: Web・DB</text>
+    <text x="480" y="176" text-anchor="middle" font-size="14" fill="#eef2f6">西の区画: Web・DB の控え</text>
+    <text x="480" y="198" text-anchor="middle" font-size="14" fill="#eef2f6">片方が止まっても動く</text>
+  </g>
+  <g class="el" data-part="note">
+    <text x="320" y="340" text-anchor="middle" font-size="14" fill="#eef2f6">壊れる前提で考える</text>
+  </g>
+</svg>

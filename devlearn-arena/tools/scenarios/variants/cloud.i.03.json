@@ -1,0 +1,140 @@
+{
+  "lesson": "cloud.i.03",
+  "variants": [
+    {
+      "name": "先に利用者の札から",
+      "steps": {
+        "split": [
+          {
+            "op": "put",
+            "item": "data",
+            "slot": "owner"
+          },
+          {
+            "op": "put",
+            "item": "patch",
+            "slot": "owner"
+          },
+          {
+            "op": "put",
+            "item": "perm",
+            "slot": "owner"
+          },
+          {
+            "op": "put",
+            "item": "disk",
+            "slot": "provider"
+          },
+          {
+            "op": "put",
+            "item": "room",
+            "slot": "provider"
+          }
+        ],
+        "fix": [
+          {
+            "op": "put",
+            "item": "bucket",
+            "slot": "closed"
+          }
+        ]
+      }
+    },
+    {
+      "name": "先に設定を直す",
+      "steps": {
+        "split": [
+          {
+            "op": "put",
+            "item": "bucket",
+            "slot": "closed"
+          },
+          {
+            "op": "put",
+            "item": "room",
+            "slot": "provider"
+          },
+          {
+            "op": "put",
+            "item": "disk",
+            "slot": "provider"
+          },
+          {
+            "op": "put",
+            "item": "perm",
+            "slot": "owner"
+          },
+          {
+            "op": "put",
+            "item": "patch",
+            "slot": "owner"
+          },
+          {
+            "op": "put",
+            "item": "data",
+            "slot": "owner"
+          }
+        ],
+        "fix": []
+      }
+    }
+  ],
+  "wrong": {
+    "step": "split",
+    "why": "全てを提供者の責任と見る",
+    "input": [
+      {
+        "op": "put",
+        "item": "room",
+        "slot": "provider"
+      },
+      {
+        "op": "put",
+        "item": "disk",
+        "slot": "provider"
+      },
+      {
+        "op": "put",
+        "item": "perm",
+        "slot": "owner"
+      },
+      {
+        "op": "put",
+        "item": "patch",
+        "slot": "owner"
+      },
+      {
+        "op": "put",
+        "item": "data",
+        "slot": "provider"
+      }
+    ],
+    "retry": [
+      {
+        "op": "put",
+        "item": "room",
+        "slot": "provider"
+      },
+      {
+        "op": "put",
+        "item": "disk",
+        "slot": "provider"
+      },
+      {
+        "op": "put",
+        "item": "perm",
+        "slot": "owner"
+      },
+      {
+        "op": "put",
+        "item": "patch",
+        "slot": "owner"
+      },
+      {
+        "op": "put",
+        "item": "data",
+        "slot": "owner"
+      }
+    ]
+  }
+}

@@ -1,0 +1,302 @@
+{
+  "id": "cloud.i.03",
+  "domain": "cloud",
+  "level": "intermediate",
+  "theme": "責任",
+  "title": "責任共有モデル",
+  "goal": "利用者と提供者の責任の境目を説明できる",
+  "minutes": 20,
+  "prerequisites": [
+    "cloud.b.02",
+    "sec.b.01"
+  ],
+  "related": [
+    "sec.b.01",
+    "sec.i.04"
+  ],
+  "next": [
+    "cloud.i.04"
+  ],
+  "terms": [
+    "shared-responsibility",
+    "permission",
+    "cloud",
+    "iaas",
+    "paas",
+    "saas",
+    "file",
+    "app"
+  ],
+  "explain": {
+    "what": "{{term:shared-responsibility}}は、提供者と利用者が、どこまでを守る責任を持つかを分ける考え方。建物や物理の機械は提供者、データや{{term:permission}}の設定は利用者が守る。",
+    "why": "「{{term:cloud}}だから安全」と思い込むと、利用者の設定の誤りで漏れる。漏えい事故の多くは、提供者の故障でなく設定の誤り。",
+    "use": "安全の設計に使う。{{term:iaas}}・{{term:paas}}・{{term:saas}} で境目は変わるが、データと権限の設定は、どの形でも利用者の責任。",
+    "when": "予約の控えの保存場所が、誰でも読める設定になっていた。「クラウドの会社が守っていると思っていた」と担当者は言う。",
+    "figures": [
+      "cloud-i03-shared"
+    ]
+  },
+  "understand": [
+    {
+      "kind": "figure-pick",
+      "figure": "cloud-i03-shared",
+      "prompt": "図の中で、どの形でも利用者が守る部分を押す。",
+      "answer": [
+        "user"
+      ],
+      "see": "what"
+    },
+    {
+      "kind": "yesno",
+      "prompt": "クラウドの保存場所の公開の設定は、提供者の責任である。",
+      "answer": false,
+      "why": "提供者は設定の仕組みを用意する。誰に見せるかを決めるのは利用者。",
+      "see": "why"
+    }
+  ],
+  "quiz": [
+    {
+      "id": "q1",
+      "kind": "cause",
+      "prompt": "保存場所の{{term:file}}を誰でも読めた。原因は？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "利用者の公開の設定",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "提供者の機械の故障",
+          "correct": false,
+          "whyNot": "故障ではない。設定の通りに動いている。"
+        },
+        {
+          "id": "c",
+          "text": "クラウドが元々安全でない",
+          "correct": false,
+          "whyNot": "仕組みはある。設定の問題。"
+        }
+      ],
+      "explanation": "公開の設定は利用者の責任。"
+    },
+    {
+      "id": "q2",
+      "kind": "situation",
+      "prompt": "機械室の入退室の管理は、誰の責任？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "提供者",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "利用者",
+          "correct": false,
+          "whyNot": "利用者は機械室に入れない。"
+        },
+        {
+          "id": "c",
+          "text": "どちらでもない",
+          "correct": false,
+          "whyNot": "提供者が守っている。"
+        }
+      ],
+      "explanation": "物理の物は提供者が守る。"
+    },
+    {
+      "id": "q3",
+      "kind": "choice",
+      "prompt": "どの形でも利用者が必ず守る物は？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "データと権限の設定",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "建物の電源",
+          "correct": false,
+          "whyNot": "提供者の範囲。"
+        },
+        {
+          "id": "c",
+          "text": "物理の機械の交換",
+          "correct": false,
+          "whyNot": "提供者の範囲。"
+        }
+      ],
+      "explanation": "SaaS でも、誰に権限を与えるかは利用者が決める。"
+    }
+  ],
+  "practice": {
+    "mode": "simulation",
+    "purpose": "5 つの作業を、提供者と利用者の責任に分ける。その上で、利用者の設定の誤り（「予約の控えの保存場所」が「誰でも読める」）を直す。",
+    "environment": "sim-assign",
+    "setup": {
+      "slots": [
+        {
+          "id": "provider",
+          "label": "提供者の責任"
+        },
+        {
+          "id": "owner",
+          "label": "利用者の責任"
+        },
+        {
+          "id": "open",
+          "label": "誰でも読める"
+        },
+        {
+          "id": "closed",
+          "label": "関係者だけ読める"
+        }
+      ],
+      "items": [
+        {
+          "id": "room",
+          "label": "機械室の入退室の管理",
+          "refuse": {
+            "open": "これは公開の設定ではない",
+            "closed": "これは公開の設定ではない"
+          }
+        },
+        {
+          "id": "disk",
+          "label": "壊れた物理の機械の交換",
+          "refuse": {
+            "open": "これは公開の設定ではない",
+            "closed": "これは公開の設定ではない"
+          }
+        },
+        {
+          "id": "perm",
+          "label": "誰に権限を与えるかの設定",
+          "refuse": {
+            "open": "これは公開の設定ではない",
+            "closed": "これは公開の設定ではない"
+          }
+        },
+        {
+          "id": "patch",
+          "label": "自分のアプリの脆弱性の修正",
+          "refuse": {
+            "open": "これは公開の設定ではない",
+            "closed": "これは公開の設定ではない"
+          }
+        },
+        {
+          "id": "data",
+          "label": "データの控えを取ること",
+          "refuse": {
+            "open": "これは公開の設定ではない",
+            "closed": "これは公開の設定ではない"
+          }
+        },
+        {
+          "id": "bucket",
+          "label": "予約の控えの保存場所",
+          "refuse": {
+            "provider": "これは責任の仕分けの札でなく、直す設定",
+            "owner": "これは責任の仕分けの札でなく、直す設定"
+          }
+        }
+      ],
+      "initial": {
+        "bucket": "open"
+      }
+    },
+    "steps": [
+      {
+        "id": "split",
+        "purpose": "5 つの札を「提供者の責任」と「利用者の責任」に分ける。",
+        "check": {
+          "kind": "sim",
+          "expr": "in room=provider disk=provider perm=owner patch=owner data=owner"
+        },
+        "afterward": "物理の物は提供者、設定・{{term:app}}・データは利用者。境目が見えた。",
+        "hints": [
+          "物理の物か、自分で決める物かで分ける。",
+          "利用者は機械室に入れない。権限やデータは利用者が決める。",
+          "「機械室の入退室の管理」「壊れた物理の機械の交換」を「提供者の責任」へ、「誰に権限を与えるかの設定」「自分のアプリの脆弱性の修正」「データの控えを取ること」を「利用者の責任」へドラッグして入れる。"
+        ],
+        "actions": [
+          {
+            "op": "put",
+            "item": "room",
+            "slot": "provider"
+          },
+          {
+            "op": "put",
+            "item": "disk",
+            "slot": "provider"
+          },
+          {
+            "op": "put",
+            "item": "perm",
+            "slot": "owner"
+          },
+          {
+            "op": "put",
+            "item": "patch",
+            "slot": "owner"
+          },
+          {
+            "op": "put",
+            "item": "data",
+            "slot": "owner"
+          }
+        ],
+        "expectedErrors": [
+          "cloud-share-miss"
+        ]
+      },
+      {
+        "id": "fix",
+        "purpose": "利用者の設定の誤りを直す。「予約の控えの保存場所」を「関係者だけ読める」へ移す。",
+        "check": {
+          "kind": "sim",
+          "expr": "in bucket=closed"
+        },
+        "afterward": "誰でも読める状態が直った。提供者は守ってくれない部分で、これは利用者の仕事。",
+        "hints": [
+          "札を今の枠から別の枠へ移す。",
+          "公開の設定は利用者が決める。",
+          "「予約の控えの保存場所」を「関係者だけ読める」へドラッグして入れる。"
+        ],
+        "actions": [
+          {
+            "op": "put",
+            "item": "bucket",
+            "slot": "closed"
+          }
+        ],
+        "expectedErrors": [
+          "cloud-share-miss"
+        ]
+      }
+    ]
+  },
+  "result": {
+    "success": "責任の境目を理解し、利用者の設定を直せた。",
+    "partial": "ヒントを使って分けられた。次は SaaS の時の境目を考えてみよう。",
+    "retry": "取り違えがある。物理の物か、自分で決める物かで見直そう。"
+  },
+  "summary": {
+    "points": [
+      "責任は分かち合う",
+      "設定は利用者の責任",
+      "形で境目が変わる"
+    ],
+    "next": [
+      "cloud.i.04"
+    ],
+    "terms": [
+      "shared-responsibility",
+      "iaas",
+      "saas"
+    ]
+  }
+}

@@ -1,0 +1,329 @@
+{
+  "id": "cloud.i.01",
+  "domain": "cloud",
+  "level": "intermediate",
+  "theme": "可用性",
+  "title": "可用性と冗長化",
+  "goal": "1 つ壊れても止まらない構成を作れる",
+  "minutes": 20,
+  "prerequisites": [
+    "cloud.b.03"
+  ],
+  "related": [
+    "k8s.b.05",
+    "db.a.03"
+  ],
+  "next": [
+    "cloud.i.02",
+    "cloud.a.02"
+  ],
+  "terms": [
+    "spof",
+    "redundancy",
+    "web",
+    "db",
+    "service",
+    "availability-zone",
+    "program",
+    "curl"
+  ],
+  "explain": {
+    "what": "{{term:redundancy}}は、壊れても止まらないように同じ物を複数置く設計。{{term:web}} も {{term:db}} も複数の区画に分け、1 つしか無い{{term:spof}}を無くす。",
+    "why": "機械も区画も必ず壊れる。壊れないことを目指すより、壊れても動き続ける形にする方が現実的。",
+    "use": "止まってはいけない{{term:service}}の構成に使う。構成図を見て「これが壊れたらどうなるか」を順に考える。",
+    "when": "1 つの{{term:availability-zone}}が停電した。Web を 2 台にしていたが、どちらも同じ区画にあり、DB も 1 つだけだった。",
+    "figures": [
+      "cloud-i01-redundancy"
+    ]
+  },
+  "understand": [
+    {
+      "kind": "relation",
+      "prompt": "2 つの関係を選ぶ。",
+      "a": "全ての部品を 1 つの区画に寄せる",
+      "b": "区画の停電で全てが止まる",
+      "answer": "cause",
+      "why": "数を増やしても、同じ場所にあれば一緒に止まる。分ける場所も考える。",
+      "see": "why"
+    },
+    {
+      "kind": "situation",
+      "prompt": "Web を 10 台に増やしたが DB は 1 台。DB が止まるとどうなる？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "全ての Web が動かなくなる（DB が単一障害点）",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "Web が多いので影響が無い",
+          "correct": false,
+          "whyNot": "どの Web も同じ DB を使っている。"
+        },
+        {
+          "id": "c",
+          "text": "DB が自動で別の場所に現れる",
+          "correct": false,
+          "whyNot": "控えを用意していなければ、現れない。"
+        }
+      ],
+      "see": "what"
+    }
+  ],
+  "quiz": [
+    {
+      "id": "q1",
+      "kind": "situation",
+      "prompt": "区画の停電に備えるには？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "複数の区画に分けて置く",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "同じ区画で機械の数を増やす",
+          "correct": false,
+          "whyNot": "同じ区画なら一緒に止まる。"
+        },
+        {
+          "id": "c",
+          "text": "機械を大きくする",
+          "correct": false,
+          "whyNot": "大きくても 1 台なら止まる。"
+        }
+      ],
+      "explanation": "壊れる単位より大きな範囲に分けて置く。"
+    },
+    {
+      "id": "q2",
+      "kind": "cause",
+      "prompt": "1 か所の停電で全サービスが止まった。原因は？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "全てが 1 か所に寄っていた",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "Web の台数が少ない",
+          "correct": false,
+          "whyNot": "台数を増やしても、同じ場所なら止まる。"
+        },
+        {
+          "id": "c",
+          "text": "{{term:program}}の誤り",
+          "correct": false,
+          "whyNot": "原因は停電と置き場所。"
+        }
+      ],
+      "explanation": "置き場所を分けていれば、片方は動いた。"
+    },
+    {
+      "id": "q3",
+      "kind": "term",
+      "prompt": "「そこが壊れると全体が止まる所」を何と言う？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "単一障害点",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "冗長化",
+          "correct": false,
+          "whyNot": "冗長化は、壊れても止まらないように複数置くこと。"
+        },
+        {
+          "id": "c",
+          "text": "区画",
+          "correct": false,
+          "whyNot": "区画は、電源や網を分けた場所のまとまり。"
+        }
+      ],
+      "explanation": "構成図から探して無くす。"
+    }
+  ],
+  "practice": {
+    "mode": "simulation",
+    "purpose": "東の区画 が停電した。「利用者」から「DB（西の区画）」まで、動いている機器だけで頼みが届く構成にする。",
+    "environment": "sim-connect",
+    "setup": {
+      "nodes": [
+        {
+          "id": "user",
+          "label": "利用者",
+          "icon": "user",
+          "x": 8,
+          "y": 50
+        },
+        {
+          "id": "lb",
+          "label": "振り分け",
+          "icon": "router",
+          "x": 30,
+          "y": 50,
+          "note": "動いている Web へ送る"
+        },
+        {
+          "id": "weba",
+          "label": "Web（東の区画）",
+          "icon": "server",
+          "x": 58,
+          "y": 20,
+          "down": true,
+          "note": "停電中"
+        },
+        {
+          "id": "dba",
+          "label": "DB（東の区画）",
+          "icon": "db",
+          "x": 88,
+          "y": 20,
+          "down": true,
+          "note": "停電中"
+        },
+        {
+          "id": "webb",
+          "label": "Web（西の区画）",
+          "icon": "server",
+          "x": 58,
+          "y": 80
+        },
+        {
+          "id": "dbb",
+          "label": "DB（西の区画）",
+          "icon": "db",
+          "x": 88,
+          "y": 80,
+          "note": "東の区画の控え"
+        }
+      ],
+      "links": [
+        [
+          "user",
+          "lb"
+        ],
+        [
+          "lb",
+          "weba"
+        ],
+        [
+          "weba",
+          "dba"
+        ]
+      ],
+      "forbid": [
+        {
+          "a": "user",
+          "b": "dbb",
+          "message": "つなげない: DB を外から直接見せてはいけない。Web を通す"
+        },
+        {
+          "a": "lb",
+          "b": "dbb",
+          "message": "つなげない: 振り分けが送る先は Web。DB は Web からつなぐ"
+        },
+        {
+          "a": "weba",
+          "b": "webb",
+          "message": "つなげない: Web どうしをつないでも、停電した区画は通れない"
+        }
+      ],
+      "sends": [
+        {
+          "from": "user",
+          "to": "dbb",
+          "label": "curl 予約のページ（利用者から DB まで）"
+        }
+      ],
+      "panels": [
+        {
+          "kind": "text",
+          "title": "今の状況",
+          "body": "東の区画 が停電した。西の区画 には Web と DB の控えがあるが、どこにもつながっていない。"
+        }
+      ]
+    },
+    "steps": [
+      {
+        "id": "web",
+        "purpose": "「振り分け」から「Web（西の区画）」へ線を引き、動いている Web へ頼みを送れるようにする。",
+        "check": {
+          "kind": "sim",
+          "expr": "reach user webb"
+        },
+        "afterward": "振り分けが、西の区画 の Web へ送れるようになった。ただし Web から DB への線がまだ無い。",
+        "hints": [
+          "止まっている機器は通れない。",
+          "点から点へドラッグして線を引く。",
+          "「振り分け」から「Web（西の区画）」へドラッグしてつなぐ。"
+        ],
+        "actions": [
+          {
+            "op": "connect",
+            "a": "lb",
+            "b": "webb"
+          }
+        ],
+        "expectedErrors": [
+          "cloud-send-stuck"
+        ]
+      },
+      {
+        "id": "db",
+        "purpose": "「Web（西の区画）」から「DB（西の区画）」へ線を引き、「{{term:curl}} 予約のページ（利用者から DB まで）」を押して届くことを確かめる。",
+        "check": {
+          "kind": "sim",
+          "expr": "sent user dbb"
+        },
+        "afterward": "東の区画 が停電したまま、頼みが届いた。DB も 2 つの区画にあるので、単一障害点が無くなった。",
+        "hints": [
+          "DB も西の区画 の控えを使う。",
+          "線を引いてから、送るボタンを押す。",
+          "「Web（西の区画）」から「DB（西の区画）」へドラッグしてつなぎ、「curl 予約のページ（利用者から DB まで）」を押す。"
+        ],
+        "actions": [
+          {
+            "op": "connect",
+            "a": "webb",
+            "b": "dbb"
+          },
+          {
+            "op": "send",
+            "from": "user",
+            "to": "dbb"
+          }
+        ],
+        "expectedErrors": [
+          "cloud-send-stuck"
+        ]
+      }
+    ]
+  },
+  "result": {
+    "success": "区画の停電でも止まらない構成にできた。",
+    "partial": "ヒントを使って作れた。次は、ほかの単一障害点も探してみよう。",
+    "retry": "まだ届かない。止まっている機器を通っていないかを確かめよう。"
+  },
+  "summary": {
+    "points": [
+      "壊れる前提で考える",
+      "複数の区画に分ける",
+      "単一障害点を無くす"
+    ],
+    "next": [
+      "cloud.i.02",
+      "cloud.a.02"
+    ],
+    "terms": [
+      "redundancy",
+      "spof",
+      "availability-zone"
+    ]
+  }
+}

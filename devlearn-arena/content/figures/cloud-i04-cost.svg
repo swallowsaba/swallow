@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 360" font-family="&quot;Noto Sans JP&quot;, sans-serif">
+  <title>費用の内訳は計算・保存・転送。動かした時間と量で決まる</title>
+  <g class="el" data-part="compute">
+    <rect x="20" y="110" width="184" height="110" rx="10" fill="#7a3fd0" />
+    <text x="112" y="159" text-anchor="middle" font-size="16" font-weight="700" fill="#eef2f6">計算</text>
+    <text x="112" y="181" text-anchor="middle" font-size="14" fill="#eef2f6">動かした時間 × 大きさ</text>
+  </g>
+  <g class="el" data-part="storage">
+    <rect x="228" y="110" width="184" height="110" rx="10" fill="#1a6fd6" />
+    <text x="320" y="159" text-anchor="middle" font-size="16" font-weight="700" fill="#eef2f6">保存</text>
+    <text x="320" y="181" text-anchor="middle" font-size="14" fill="#eef2f6">量 × 期間</text>
+  </g>
+  <g class="el" data-part="transfer">
+    <rect x="436" y="110" width="184" height="110" rx="10" fill="#1f7a4d" />
+    <text x="528" y="159" text-anchor="middle" font-size="16" font-weight="700" fill="#eef2f6">転送</text>
+    <text x="528" y="181" text-anchor="middle" font-size="14" fill="#eef2f6">外へ出した量</text>
+  </g>
+  <g class="el" data-part="note">
+    <text x="320" y="340" text-anchor="middle" font-size="14" fill="#eef2f6">止め忘れと、夜も動かしている分が無駄の代表</text>
+  </g>
+</svg>

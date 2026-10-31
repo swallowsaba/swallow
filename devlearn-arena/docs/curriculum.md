@@ -388,9 +388,9 @@ lab は複数分野の組み合わせ
 | cloud.b.02 | 初級 | 形 | IaaS・PaaS・SaaS | どこまでを自分で管理するかで区別できる | 模 | cloud.b.01 | ctr.b.01, db.i.05 | cloud.b.03, cloud.i.03 |
 | cloud.b.03 | 初級 | 資源 | コンピュート・ストレージ・ネットワーク | 3 つの資源を組み合わせて小さな構成を作れる | 模 | cloud.b.02, net.b.03 | net.b.03, linux.a.03 | cloud.i.01, devops.i.01 |
 | cloud.i.01 | 中級 | 可用性 | 可用性と冗長化 | 1 つ壊れても止まらない構成を作れる | 模 | cloud.b.03 | k8s.b.05, db.a.03 | cloud.i.02, cloud.a.02 |
-| cloud.i.02 | 中級 | 規模 | スケーリング | 縦と横、自動の拡縮を設計できる | 模 | cloud.i.01 | k8s.i.06, net.a.03 | cloud.i.04, cloud.a.01 |
+| cloud.i.02 | 中級 | 規模 | スケーリング | 縦と横、自動の拡縮を設計できる | 端 | cloud.i.01 | k8s.i.06, net.a.03 | cloud.i.04, cloud.a.01 |
 | cloud.i.03 | 中級 | 責任 | 責任共有モデル | 利用者と提供者の責任の境目を説明できる | 模 | cloud.b.02, sec.b.01 | sec.b.01, sec.i.04 | cloud.i.04 |
-| cloud.i.04 | 中級 | 費用 | 費用の考え方 | 構成から費用の大小を見積もれる | 模 | cloud.i.02 | cloud.i.02, mon.b.03 | cloud.a.01 |
+| cloud.i.04 | 中級 | 費用 | 費用の考え方 | 構成から費用の大小を見積もれる | S | cloud.i.02 | cloud.i.02, mon.b.03 | cloud.a.01 |
 | cloud.a.01 | 上級 | 設計 | 同じ要件を 3 つの形で作る | IaaS・PaaS・コンテナの構成を比べて選べる | 模 | cloud.i.02, k8s.b.06 | k8s.a.01, devops.i.01 | cloud.a.02 |
 | cloud.a.02 | 上級 | 障害 | 障害に強い構成 | 地域・区画の障害を想定して設計できる | 模 | cloud.i.01, mon.i.03 | mon.i.03, devops.a.01 | — |
 

@@ -1,0 +1,47 @@
+{
+  "lesson": "cloud.i.04",
+  "variants": [
+    {
+      "name": "小文字で書く・別名で並べる",
+      "steps": {
+        "kinds": [
+          "select kind, sum(qty * yen) as total from items group by kind order by total desc;"
+        ],
+        "idle": [
+          "select name from items where in_use = 0;"
+        ],
+        "cut": [
+          "delete from items where name = 'old-test';",
+          "update items set qty = qty / 2 where name = 'dev';"
+        ]
+      }
+    },
+    {
+      "name": "順の番号で並べる",
+      "steps": {
+        "kinds": [
+          "SELECT * FROM items",
+          "SELECT kind, SUM(qty * yen) FROM items GROUP BY 1 ORDER BY 2 DESC"
+        ],
+        "idle": [
+          "SELECT name FROM items WHERE NOT in_use"
+        ],
+        "cut": [
+          "UPDATE items SET qty = 360 WHERE name = 'dev'",
+          "DELETE FROM items WHERE in_use = 0",
+          "SELECT SUM(qty * yen) FROM items"
+        ]
+      }
+    }
+  ],
+  "wrong": {
+    "step": "kinds",
+    "why": "単価だけを足す",
+    "input": [
+      "SELECT kind, SUM(yen) FROM items GROUP BY kind"
+    ],
+    "retry": [
+      "SELECT kind, SUM(qty * yen) FROM items GROUP BY kind ORDER BY 2 DESC"
+    ]
+  }
+}

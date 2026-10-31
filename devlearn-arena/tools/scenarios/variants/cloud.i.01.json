@@ -1,0 +1,71 @@
+{
+  "lesson": "cloud.i.01",
+  "variants": [
+    {
+      "name": "順につなぐ",
+      "steps": {
+        "web": [
+          {
+            "op": "connect",
+            "a": "webb",
+            "b": "lb"
+          }
+        ],
+        "db": [
+          {
+            "op": "connect",
+            "a": "dbb",
+            "b": "webb"
+          },
+          {
+            "op": "send",
+            "from": "user",
+            "to": "dbb"
+          }
+        ]
+      }
+    },
+    {
+      "name": "先に DB をつなぐ",
+      "steps": {
+        "web": [
+          {
+            "op": "connect",
+            "a": "webb",
+            "b": "dbb"
+          },
+          {
+            "op": "connect",
+            "a": "lb",
+            "b": "webb"
+          }
+        ],
+        "db": [
+          {
+            "op": "send",
+            "from": "user",
+            "to": "dbb"
+          }
+        ]
+      }
+    }
+  ],
+  "wrong": {
+    "step": "web",
+    "why": "つなぐ前に送ってみる",
+    "input": [
+      {
+        "op": "send",
+        "from": "user",
+        "to": "dbb"
+      }
+    ],
+    "retry": [
+      {
+        "op": "connect",
+        "a": "lb",
+        "b": "webb"
+      }
+    ]
+  }
+}

@@ -147,6 +147,107 @@
       "lessons": [
         "cloud.b.03"
       ]
+    },
+    {
+      "id": "redundancy",
+      "word": "冗長化",
+      "reading": "じょうちょうか",
+      "plain": "同じ物を複数置き、1 つ壊れても動き続けるようにすること。",
+      "why": "機械も区画も必ず壊れる。1 つしか無い物が壊れると、全体が止まる。",
+      "related": [
+        "availability",
+        "spof",
+        "availability-zone"
+      ],
+      "lessons": [
+        "cloud.i.01"
+      ]
+    },
+    {
+      "id": "spof",
+      "word": "単一障害点",
+      "reading": "たんいつしょうがいてん",
+      "plain": "そこが壊れると全体が止まる、1 つしか無い部品や場所。",
+      "why": "構成図から単一障害点を探して無くすことが、止まらない設計の第一歩。",
+      "related": [
+        "redundancy",
+        "availability"
+      ],
+      "lessons": [
+        "cloud.i.01"
+      ]
+    },
+    {
+      "id": "availability-zone",
+      "word": "区画（ゾーン）",
+      "reading": "くかく",
+      "plain": "データセンターの中か間で、電源や網を分けた場所のまとまり。提供者によりアベイラビリティゾーンなどと呼ぶ。",
+      "why": "1 つの区画の停電でも、別の区画は動き続ける。",
+      "related": [
+        "redundancy",
+        "data-center"
+      ],
+      "lessons": [
+        "cloud.i.01"
+      ]
+    },
+    {
+      "id": "scale-up",
+      "word": "縦の拡張",
+      "reading": "たてのかくちょう",
+      "plain": "1 台の機械を大きくすること（スケールアップ）。",
+      "why": "手軽だが、1 台の大きさに限りがあり、止めて替えることが多い。",
+      "related": [
+        "scale-out",
+        "scaling"
+      ],
+      "lessons": [
+        "cloud.i.02"
+      ]
+    },
+    {
+      "id": "scale-out",
+      "word": "横の拡張",
+      "reading": "よこのかくちょう",
+      "plain": "機械の数を増やすこと（スケールアウト）。",
+      "why": "止めずに増やせ、限りも遠い。ただし状態を持つ物は増やしにくい。",
+      "related": [
+        "scale-up",
+        "scaling",
+        "hpa"
+      ],
+      "lessons": [
+        "cloud.i.02"
+      ]
+    },
+    {
+      "id": "shared-responsibility",
+      "word": "責任共有モデル（責任の境目）",
+      "reading": "せきにんきょうゆうもでる",
+      "plain": "提供者と利用者が、どこまでを守る責任を持つかの境目を決めた考え方。",
+      "why": "「クラウドだから安全」と思い込むと、利用者の設定の誤りで漏れる。",
+      "related": [
+        "iaas",
+        "paas",
+        "saas"
+      ],
+      "lessons": [
+        "cloud.i.03"
+      ]
+    },
+    {
+      "id": "pay-as-you-go",
+      "word": "従量課金",
+      "reading": "じゅうりょうかきん",
+      "plain": "使った量に応じて払う料金の決め方。動かした時間・保存した量・転送した量で決まる。",
+      "why": "小さく始められるが、気付かない間に費用が膨らむことがある。",
+      "related": [
+        "cloud",
+        "compute"
+      ],
+      "lessons": [
+        "cloud.i.04"
+      ]
     }
   ]
 }

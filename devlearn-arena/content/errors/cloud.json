@@ -73,6 +73,47 @@
       "terms": [
         "storage"
       ]
+    },
+    {
+      "id": "cloud-send-stuck",
+      "match": "届かない",
+      "meaning": "頼みが、動いている機器だけをたどって届かない。",
+      "causes": [
+        "振り分けが、停電した Web にしかつながっていない。",
+        "西の区画 の Web から DB への線が無い（DB が 1 つ、という単一障害点が残っている）。"
+      ],
+      "hint": "止まっていない機器だけで、利用者から DB までの道を作ろう。",
+      "terms": [
+        "spof",
+        "redundancy"
+      ]
+    },
+    {
+      "id": "cloud-share-miss",
+      "match": "答えが合っていない",
+      "meaning": "置いた枠が、責任の境目と合っていない。",
+      "causes": [
+        "全てを提供者の責任と見た。設定やデータは利用者の責任。",
+        "機械室や物理の機械まで、利用者の責任と見た。"
+      ],
+      "hint": "物理の物は提供者、設定とデータと権限は利用者。",
+      "terms": [
+        "shared-responsibility"
+      ]
+    },
+    {
+      "id": "cloud-cost-miss",
+      "match": "答えが合っていない",
+      "meaning": "計算の結果が、目的と違う。",
+      "causes": [
+        "掛け算（`qty * yen`）でなく、`yen` だけを足した。",
+        "`ORDER BY` や `GROUP BY` の形が目的と違う。"
+      ],
+      "hint": "`SUM(qty * yen)` を、種類ごとに `GROUP BY kind` で出そう。",
+      "terms": [
+        "pay-as-you-go",
+        "group-by"
+      ]
     }
   ]
 }

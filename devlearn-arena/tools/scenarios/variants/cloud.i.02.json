@@ -1,0 +1,51 @@
+{
+  "lesson": "cloud.i.02",
+  "variants": [
+    {
+      "name": "形を変えて打つ",
+      "steps": {
+        "auto": [
+          "kubectl autoscale deploy/web --min=2 --max=10 --cpu-percent=50"
+        ],
+        "rush": [
+          "kubectl scale deploy/crowd --replicas=1",
+          "kubectl get hpa -w"
+        ],
+        "calm": [
+          "kubectl scale deploy/crowd --replicas=0",
+          "kubectl get hpa -w"
+        ]
+      }
+    },
+    {
+      "name": "様子を見ながら",
+      "steps": {
+        "auto": [
+          "kubectl get deployments",
+          "kubectl autoscale deployment web --max=10 --min=2 --cpu-percent=50",
+          "kubectl describe hpa web"
+        ],
+        "rush": [
+          "kubectl scale deployment crowd --replicas=1",
+          "kubectl get hpa web -w",
+          "kubectl get pods"
+        ],
+        "calm": [
+          "kubectl scale deployment crowd --replicas=0",
+          "kubectl get hpa web -w",
+          "kubectl get deployments"
+        ]
+      }
+    }
+  ],
+  "wrong": {
+    "step": "auto",
+    "why": "上限を書き忘れる",
+    "input": [
+      "kubectl autoscale deployment web --cpu-percent=50 --min=2"
+    ],
+    "retry": [
+      "kubectl autoscale deployment web --min=2 --max=10 --cpu-percent=50"
+    ]
+  }
+}

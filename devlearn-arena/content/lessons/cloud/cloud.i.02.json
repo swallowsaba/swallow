@@ -1,0 +1,242 @@
+{
+  "id": "cloud.i.02",
+  "domain": "cloud",
+  "level": "intermediate",
+  "theme": "規模",
+  "title": "スケーリング",
+  "goal": "縦と横、自動の拡縮を設計できる",
+  "minutes": 20,
+  "prerequisites": [
+    "cloud.i.01"
+  ],
+  "related": [
+    "k8s.i.06",
+    "net.a.03"
+  ],
+  "next": [
+    "cloud.i.04",
+    "cloud.a.01"
+  ],
+  "terms": [
+    "scaling",
+    "scale-up",
+    "scale-out",
+    "service",
+    "web",
+    "db",
+    "k8s-requests",
+    "file",
+    "app"
+  ],
+  "explain": {
+    "what": "{{term:scaling}}は、負荷に合わせて能力を変えること。機械を大きくする{{term:scale-up}}と、数を増やす{{term:scale-out}}があり、使用率を見て自動で増減もできる。",
+    "why": "セールの日だけ 20 倍の人が来る。その日に合わせて常に用意すると無駄で、普段に合わせると当日に止まる。自動なら両方を避けられる。",
+    "use": "負荷の変化が大きい{{term:service}}に使う。状態を持たない {{term:web}} は増やしやすいが、{{term:db}} は増やしにくく、そこで詰まることが多い。",
+    "when": "市のセールの案内が出た。普段の 20 倍の人が来る見込みで、終われば元に戻る。",
+    "figures": [
+      "cloud-i02-scaling"
+    ]
+  },
+  "understand": [
+    {
+      "kind": "relation",
+      "prompt": "2 つの関係を選ぶ。",
+      "a": "Web が状態を持たない",
+      "b": "横に増やしやすい",
+      "answer": "cause",
+      "why": "どの Web でも同じように答えられるので、増やしても減らしても困らない。",
+      "see": "use"
+    },
+    {
+      "kind": "situation",
+      "prompt": "自動で増やすのに、要る物はどれ？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "使用率を測る仕組みと、1 台あたりの要求（{{term:k8s-requests}}）",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "人が 24 時間見張ること",
+          "correct": false,
+          "whyNot": "自動にする意味が無くなる。"
+        },
+        {
+          "id": "c",
+          "text": "1 台の大きな機械",
+          "correct": false,
+          "whyNot": "横の増減には要らない。"
+        }
+      ],
+      "see": "use"
+    }
+  ],
+  "quiz": [
+    {
+      "id": "q1",
+      "kind": "situation",
+      "prompt": "一時的な急増に向いているのは？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "横に自動で増やす",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "常に 20 倍の台数を置く",
+          "correct": false,
+          "whyNot": "普段は無駄になる。"
+        },
+        {
+          "id": "c",
+          "text": "1 台を止めて大きくする",
+          "correct": false,
+          "whyNot": "止まるうえ、大きさに限りがある。"
+        }
+      ],
+      "explanation": "増やして、終われば減らす。"
+    },
+    {
+      "id": "q2",
+      "kind": "cause",
+      "prompt": "Web を増やしても速くならない。原因の候補は？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "DB が詰まっている",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "Web が多すぎて遅い",
+          "correct": false,
+          "whyNot": "多いと遅くなるわけではない。遅い所は別にある。"
+        },
+        {
+          "id": "c",
+          "text": "自動の増減が速すぎる",
+          "correct": false,
+          "whyNot": "速さの問題ではない。"
+        }
+      ],
+      "explanation": "一番細い所が全体の速さを決める。"
+    },
+    {
+      "id": "q3",
+      "kind": "choice",
+      "prompt": "横に増やしやすいのは？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "状態を持たない Web",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "データを書き込む DB",
+          "correct": false,
+          "whyNot": "データを揃える必要があり、増やしにくい。"
+        },
+        {
+          "id": "c",
+          "text": "手元に置いた{{term:file}}を読む{{term:app}}",
+          "correct": false,
+          "whyNot": "ファイルが 1 台にしか無いと、ほかの台で読めない。"
+        }
+      ],
+      "explanation": "状態を外に出すと、増やしやすくなる。"
+    }
+  ],
+  "practice": {
+    "mode": "terminal",
+    "purpose": "セールの日に備え、案内の Web `web` を自動で増減させる。`kubectl autoscale` で 2 台から 10 台の間、使用率 50% を目標にする。頼みを送り続ける `crowd` を動かして急増を再現し、止めた後に減ることを確かめる。",
+    "environment": "k8s-cluster",
+    "setup": {
+      "hostname": "console",
+      "cluster": {
+        "nodes": 2,
+        "ageDays": 3,
+        "manifests": "apiVersion: apps/v1\nkind: Deployment\nmetadata:\n  name: web\nspec:\n  replicas: 2\n  selector:\n    matchLabels:\n      app: web\n  template:\n    metadata:\n      labels:\n        app: web\n    spec:\n      containers:\n      - name: web\n        image: city-shop:1.0\n        ports:\n        - containerPort: 80\n        resources:\n          requests:\n            cpu: 200m\n---\napiVersion: v1\nkind: Service\nmetadata:\n  name: web\nspec:\n  selector:\n    app: web\n  ports:\n  - port: 80\n---\napiVersion: apps/v1\nkind: Deployment\nmetadata:\n  name: crowd\nspec:\n  replicas: 0\n  selector:\n    matchLabels:\n      app: crowd\n  template:\n    metadata:\n      labels:\n        app: crowd\n    spec:\n      containers:\n      - name: crowd\n        image: city-crowd:1.0\n        env:\n        - name: TARGET_URL\n          value: http://web\n"
+      }
+    },
+    "steps": [
+      {
+        "id": "auto",
+        "purpose": "`web` に自動の増減を設定する（`--min=2 --max=10 --cpu-percent=50`）。",
+        "check": {
+          "kind": "k8s",
+          "expr": "hpa/web min=2 max=10 target=50"
+        },
+        "afterward": "使用率が 50% を超えれば増やし、下回れば減らす決まりができた。上限を決めておくので、費用も限りなくは増えない。",
+        "hints": [
+          "自動の増減は `kubectl autoscale`。",
+          "`kubectl autoscale deployment web --cpu-percent=50 --min=2 --max=10` の形。",
+          "`kubectl autoscale deployment web --cpu-percent=50 --min=2 --max=10` `kubectl get hpa` を打つ。"
+        ],
+        "expectedErrors": [
+          "k8s-hpa-max",
+          "k8s-hpa-exists",
+          "k8s-notfound"
+        ]
+      },
+      {
+        "id": "rush",
+        "purpose": "急増を再現する。`crowd` を 1 台にし、`kubectl get hpa web -w` で台数が 6 以上に増えるのを見る。",
+        "check": {
+          "kind": "k8s",
+          "expr": "hpa/web replicas>=6 && deployment/crowd readyReplicas=1"
+        },
+        "afterward": "使用率が上がり、人の手を入れずに台数が増えた。1 回に増やせる数には限りがあるので、少しずつ増える。",
+        "hints": [
+          "`crowd` の数を増やすと、頼みが届き始める。",
+          "`kubectl scale deployment crowd --replicas=1` の後に、見続ける。",
+          "`kubectl scale deployment crowd --replicas=1` `kubectl get hpa web -w` を打つ。"
+        ],
+        "expectedErrors": [
+          "k8s-hpa-idle",
+          "k8s-notfound"
+        ]
+      },
+      {
+        "id": "calm",
+        "purpose": "急増が終わった。`crowd` を 0 台にし、`kubectl get hpa web -w` で 2 台に戻るのを見る。",
+        "check": {
+          "kind": "k8s",
+          "expr": "deployment/crowd replicas=0 && hpa/web replicas=2 && deployment/web readyReplicas=2"
+        },
+        "afterward": "負荷が消えて、少し待ってから 2 台に戻った。すぐに減らさないのは、また増えた時に慌てないため。増やした分の費用も終わった。",
+        "hints": [
+          "`crowd` を 0 にする。",
+          "減るまで数分かかる。見続ける。",
+          "`kubectl scale deployment crowd --replicas=0` `kubectl get hpa web -w` を打つ。"
+        ],
+        "expectedErrors": [
+          "k8s-notfound"
+        ]
+      }
+    ]
+  },
+  "result": {
+    "success": "急増でも増え、終われば減る設定ができた。",
+    "partial": "ヒントを使って設定できた。次は、詰まりそうな DB も考えてみよう。",
+    "retry": "増えない。`kubectl get hpa` の `TARGETS` を読み、測れているかを確かめよう。"
+  },
+  "summary": {
+    "points": [
+      "縦と横がある",
+      "負荷に合わせて自動で増減する",
+      "状態を持つ物は増やしにくい"
+    ],
+    "next": [
+      "cloud.i.04",
+      "cloud.a.01"
+    ],
+    "terms": [
+      "scale-out",
+      "scale-up",
+      "hpa"
+    ]
+  }
+}
