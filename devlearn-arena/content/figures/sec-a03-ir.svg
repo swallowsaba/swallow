@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 360" font-family="&quot;Noto Sans JP&quot;, sans-serif">
+  <title>4 段の流れと、各段でしてはいけない事</title>
+  <defs>
+    <marker id="arrow-gold" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="#f2b632" />
+    </marker>
+  </defs>
+  <g class="el" data-part="contain">
+    <rect x="20" y="110" width="132" height="130" rx="10" fill="#c0392b" />
+    <text x="86" y="169" text-anchor="middle" font-size="16" font-weight="700" fill="#eef2f6">封じ込め</text>
+    <text x="86" y="191" text-anchor="middle" font-size="14" fill="#eef2f6">初期化しない</text>
+  </g>
+  <g class="el" data-part="investigate">
+    <rect x="176" y="110" width="132" height="130" rx="10" fill="#7a3fd0" />
+    <text x="242" y="169" text-anchor="middle" font-size="16" font-weight="700" fill="#eef2f6">調査</text>
+    <text x="242" y="191" text-anchor="middle" font-size="14" fill="#eef2f6">記録を消さない</text>
+  </g>
+  <g class="el" data-part="recover">
+    <rect x="332" y="110" width="132" height="130" rx="10" fill="#1a6fd6" />
+    <text x="398" y="169" text-anchor="middle" font-size="16" font-weight="700" fill="#eef2f6">復旧</text>
+    <text x="398" y="191" text-anchor="middle" font-size="14" fill="#eef2f6">原因を残さない</text>
+  </g>
+  <g class="el" data-part="report">
+    <rect x="488" y="110" width="132" height="130" rx="10" fill="#1f7a4d" />
+    <text x="554" y="169" text-anchor="middle" font-size="16" font-weight="700" fill="#eef2f6">報告</text>
+    <text x="554" y="191" text-anchor="middle" font-size="14" fill="#eef2f6">隠さない</text>
+  </g>
+  <g class="el" data-part="flow">
+    <path d="M152 175 L173 175" fill="none" stroke="#f2b632" stroke-width="2" marker-end="url(#arrow-gold)" />
+    <path d="M308 175 L329 175" fill="none" stroke="#f2b632" stroke-width="2" marker-end="url(#arrow-gold)" />
+    <path d="M464 175 L485 175" fill="none" stroke="#f2b632" stroke-width="2" marker-end="url(#arrow-gold)" />
+  </g>
+  <g class="el" data-part="note">
+    <text x="320" y="340" text-anchor="middle" font-size="14" fill="#eef2f6">封じ込めが先。証拠を残し、報告して再発を防ぐ</text>
+  </g>
+</svg>

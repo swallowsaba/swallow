@@ -1,0 +1,56 @@
+{
+  "lesson": "sec.a.04",
+  "variants": [
+    {
+      "name": "木の全体を見る",
+      "steps": {
+        "audit": [
+          "npm audit"
+        ],
+        "path": [
+          "npm ls",
+          "web-kit"
+        ],
+        "fix": [
+          "npm i web-kit@~1.5.0",
+          "npm ls left-walk"
+        ],
+        "verify": [
+          "npm audit",
+          "npm t"
+        ]
+      }
+    },
+    {
+      "name": "版を固定する",
+      "steps": {
+        "audit": [
+          "npm audit || true"
+        ],
+        "path": [
+          "npm list left-walk",
+          " WEB-KIT "
+        ],
+        "fix": [
+          "npm install --save-exact web-kit@1.5.0",
+          "cat package.json"
+        ],
+        "verify": [
+          "npm test"
+        ]
+      }
+    }
+  ],
+  "wrong": {
+    "step": "verify",
+    "why": "次の大きな版を入れてテストが落ちる",
+    "input": [
+      "npm install web-kit@2.0.0",
+      "npm test"
+    ],
+    "retry": [
+      "npm install web-kit@1.5.0",
+      "npm test"
+    ]
+  }
+}

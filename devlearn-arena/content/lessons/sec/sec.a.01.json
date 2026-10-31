@@ -1,0 +1,280 @@
+{
+  "id": "sec.a.01",
+  "domain": "sec",
+  "level": "advanced",
+  "theme": "対応",
+  "title": "脆弱性の報告から更新まで",
+  "goal": "影響の判断と更新の優先順位を付けられる",
+  "minutes": 20,
+  "prerequisites": [
+    "sec.i.03",
+    "linux.i.03"
+  ],
+  "related": [
+    "linux.i.03",
+    "docker.a.01"
+  ],
+  "next": [
+    "sec.a.02"
+  ],
+  "terms": [
+    "vuln-advisory",
+    "vulnerability",
+    "monitoring",
+    "app",
+    "web-server",
+    "service",
+    "network"
+  ],
+  "explain": {
+    "what": "公開された{{term:vuln-advisory}}を読み、自分への影響を判断し、順を決めて更新する流れ。",
+    "why": "全てを即時に更新はできない。入っていない部品に時間を使い、本当に危ない物を後回しにしないため。",
+    "use": "運用で使う。入っているか・版は当たるか・外に公開しているかの 3 つで判断する。",
+    "when": "使っている部品に重大な{{term:vulnerability}}が見つかったと、朝に 3 件の知らせが届いた。",
+    "figures": [
+      "sec-a01-flow"
+    ]
+  },
+  "understand": [
+    {
+      "kind": "order",
+      "prompt": "対応の順に並べる。",
+      "items": [
+        "情報を読む",
+        "影響を確かめる",
+        "優先度を決める",
+        "更新する",
+        "動くかを確かめる"
+      ],
+      "see": "what"
+    },
+    {
+      "kind": "situation",
+      "prompt": "影響があるかを判断する観点は？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "入っているか・版・外に公開しているか",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "部品の名前の有名さ",
+          "correct": false,
+          "whyNot": "有名さは影響と関係が無い。"
+        },
+        {
+          "id": "c",
+          "text": "点数だけ",
+          "correct": false,
+          "whyNot": "入っていなければ、点数が高くても影響は無い。"
+        }
+      ],
+      "see": "use"
+    }
+  ],
+  "quiz": [
+    {
+      "id": "q1",
+      "kind": "situation",
+      "prompt": "外に公開している部品で、深刻度が高い。どうする？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "最優先で更新する",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "次の定期作業まで待つ",
+          "correct": false,
+          "whyNot": "狙われやすく、待つ間に破られる。"
+        },
+        {
+          "id": "c",
+          "text": "更新せず{{term:monitoring}}だけ足す",
+          "correct": false,
+          "whyNot": "監視では弱点は消えない。"
+        }
+      ],
+      "explanation": "公開と深刻度の組み合わせで順を決める。"
+    },
+    {
+      "id": "q2",
+      "kind": "cause",
+      "prompt": "更新の後に{{term:app}}が動かなくなった。原因は？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "互換性の確認不足",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "脆弱性情報が誤り",
+          "correct": false,
+          "whyNot": "情報の正しさと動作は別。"
+        },
+        {
+          "id": "c",
+          "text": "点数が高すぎる",
+          "correct": false,
+          "whyNot": "点数は動作と関係が無い。"
+        }
+      ],
+      "explanation": "検証の環境で試してから本番へ入れる。"
+    },
+    {
+      "id": "q3",
+      "kind": "multi",
+      "prompt": "判断に要る情報は？（全て）",
+      "choices": [
+        {
+          "id": "a",
+          "text": "入っている版",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "使い方",
+          "correct": true
+        },
+        {
+          "id": "c",
+          "text": "公開の有無",
+          "correct": true
+        },
+        {
+          "id": "d",
+          "text": "報告した人の名前",
+          "correct": false,
+          "whyNot": "影響の判断には要らない。"
+        }
+      ],
+      "explanation": "自分の環境と照らして判断する。"
+    }
+  ],
+  "practice": {
+    "mode": "terminal",
+    "purpose": "{{term:web-server}} `city-web` に 3 件の知らせが届いた（`/root/advisories/`）。影響を確かめて順を決め、最優先の部品を更新し、{{term:service}}が動くことを確かめる。",
+    "environment": "linux-basic",
+    "setup": {
+      "user": "root",
+      "cwd": "/root",
+      "hostname": "city-web",
+      "sites": [],
+      "dirs": [
+        "/root",
+        "/root/advisories",
+        "/var/www/site"
+      ],
+      "files": {
+        "/var/lib/dpkg/status": "Package: openssl\nStatus: install ok installed\nVersion: 3.0.13-0ubuntu3.1\n\nPackage: libssl3\nStatus: install ok installed\nVersion: 3.0.13-0ubuntu3.1\n\nPackage: htop\nStatus: install ok installed\nVersion: 3.3.0-4build1\n\nPackage: nginx\nStatus: install ok installed\nVersion: 1.24.0-2ubuntu7\n\nPackage: nginx-common\nStatus: install ok installed\nVersion: 1.24.0-2ubuntu7\n",
+        "/etc/hosts": "127.0.0.1\tlocalhost site.example\n",
+        "/etc/nginx/conf.d/site.conf": "server {\n  listen 80;\n  server_name site.example;\n  root /var/www/site;\n}\n",
+        "/var/www/site/index.html": "<h1>市の案内</h1>\n",
+        "/root/advisories/adv-1.txt": "番号: ADV-2026-011\n部品: openssl\n深刻度: 9.1\n攻撃の経路: ネットワーク越し\n当たる版: 3.0.13-0ubuntu3.1\n直った版: 3.0.13-0ubuntu3.4\n",
+        "/root/advisories/adv-2.txt": "番号: ADV-2026-012\n部品: htop\n深刻度: 6.2\n攻撃の経路: その機械に入れる利用者だけ\n当たる版: 3.3.0-4build1\n直った版: 3.3.0-4build2\n",
+        "/root/advisories/adv-3.txt": "番号: ADV-2026-013\n部品: tree\n深刻度: 9.8\n攻撃の経路: ネットワーク越し\n当たる版: 2.1.1-2ubuntu3\n直った版: 2.1.1-2ubuntu4\n"
+      },
+      "services": {
+        "nginx": {
+          "description": "nginx web server",
+          "enabled": true,
+          "config": "/etc/nginx/conf.d/site.conf"
+        }
+      },
+      "run": [
+        "systemctl start nginx"
+      ]
+    },
+    "steps": [
+      {
+        "id": "impact",
+        "purpose": "`/root/advisories/` の 3 件を `cat` で読み、`dpkg -l` で入っている部品と比べる。この機械に入っていない部品の名前を答えの欄に入れる。",
+        "check": {
+          "kind": "answer",
+          "equals": "tree"
+        },
+        "afterward": "`tree` は点数が一番高いが、入っていないので影響は無い。点数だけで順を決めると、時間を無駄にする。",
+        "hints": [
+          "`dpkg -l` の一覧に名前があるか。",
+          "3 件の部品を順に探す。",
+          "`cat /root/advisories/adv-1.txt /root/advisories/adv-2.txt /root/advisories/adv-3.txt` `dpkg -l` を打ち、`tree` と答える。"
+        ],
+        "expectedErrors": [
+          "sec-adv-misread"
+        ]
+      },
+      {
+        "id": "priority",
+        "purpose": "残る 2 件の攻撃の経路を読む。`ss -ltnp` で、この機械が外に公開している物も見る。最優先の部品の名前を答えの欄に入れる。",
+        "check": {
+          "kind": "answer",
+          "equals": "openssl"
+        },
+        "afterward": "`openssl` はネットワーク越しに狙え、Web サーバが公開している。`htop` は機械に入れる利用者だけなので、次でよい。",
+        "hints": [
+          "攻撃の経路が「{{term:network}}越し」か。",
+          "公開している物があるか。",
+          "`ss -ltnp` を打ち、`openssl` と答える。"
+        ],
+        "expectedErrors": [
+          "sec-adv-misread"
+        ]
+      },
+      {
+        "id": "update",
+        "purpose": "`apt update` と `apt list --upgradable` で新しい版を確かめ、`apt install openssl` で更新する。直った版 `3.0.13-0ubuntu3.4` が入れば達成。",
+        "check": {
+          "kind": "fs",
+          "path": "/var/lib/dpkg/status",
+          "contains": "Package: openssl\nStatus: install ok installed\nVersion: 3.0.13-0ubuntu3.4"
+        },
+        "afterward": "部品は直った版になった。依存する `libssl3` も一緒に上がった。ただ、動いているサービスは古い部品を読み込んだままのことがある。",
+        "hints": [
+          "先に手元の一覧を新しくする。",
+          "`apt update` の後に `apt install`。",
+          "`apt update` `apt list --upgradable` `apt install openssl` を打つ。"
+        ],
+        "expectedErrors": []
+      },
+      {
+        "id": "verify",
+        "purpose": "`systemctl restart nginx` で動かし直し、`curl -i http://site.example/` で頁が出ることを確かめる。",
+        "check": {
+          "kind": "http",
+          "url": "http://site.example/",
+          "status": 200,
+          "contains": "市の案内"
+        },
+        "afterward": "更新の後も動いている。本番の前に検証の環境で試しておくと、止めずに済む。",
+        "hints": [
+          "読み込み直すには動かし直す。",
+          "返事が 200 か。",
+          "`systemctl restart nginx` `dpkg -l openssl` `curl -i http://site.example/` を打つ。"
+        ],
+        "expectedErrors": []
+      }
+    ]
+  },
+  "result": {
+    "success": "影響から順を決め、更新まで行えた。",
+    "partial": "ヒントを使って行えた。次は、点数を見る前に入っているかを見よう。",
+    "retry": "まだ終わっていない。入っているか・公開しているかを順に確かめよう。"
+  },
+  "summary": {
+    "points": [
+      "影響を確かめる",
+      "優先順位を付ける",
+      "試してから更新"
+    ],
+    "next": [
+      "sec.a.02"
+    ],
+    "terms": [
+      "vuln-advisory",
+      "cvss"
+    ]
+  }
+}

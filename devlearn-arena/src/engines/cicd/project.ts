@@ -28,6 +28,9 @@ const cmp = (x: string, y: string): number => {
   return a[0] - b[0] || a[1] - b[1] || a[2] - b[2];
 };
 
+/** その版が below より古いか */
+export const versionBelow = (version: string, below: string): boolean => cmp(version, below) < 0;
+
 /** 版の範囲（^1.2.3・~1.2.3・1.2.3・*・latest）に、その版が入るか */
 export function satisfies(version: string, range: string): boolean {
   const r = range.trim();

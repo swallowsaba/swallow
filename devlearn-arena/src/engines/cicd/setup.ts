@@ -75,12 +75,14 @@ export const siteSchema = z.object({
 }).strict().refine((s) => s.releases.some((r) => r.version === s.current), { message: 'current は releases のどれか' });
 
 export const actionsSetupSchema = z.object({
+  /** 部品の警告（npm audit）。below より古い版に当たる */
+  advisories: z.array(z.object({ name: z.string(), below: z.string(), severity: z.enum(['low', 'moderate', 'high', 'critical']), title: z.string(), id: z.string() }).strict()).optional(),
   /** 初めの実行の番号（#58 から始めるなど） */
   firstRun: z.number().int().min(1).default(1),
   /** npm ci・npm install にかかる秒 */
   installSeconds: z.number().int().min(0).default(0),
   /** 部品の置き場（npm の registry）。名前 → 版（published はその時刻から入れられる。無ければ初めから） */
-  packages: z.record(z.array(z.object({ version: z.string().regex(/^\d+\.\d+\.\d+$/), published: z.string().optional() }).strict()).min(1)).default({}),
+  packages: z.record(z.array(z.object({ version: z.string().regex(/^\d+\.\d+\.\d+$/), published: z.string().optional(), deps: z.record(z.string()).optional() }).strict()).min(1)).default({}),
   /** package.json の scripts の名前 → 振る舞い。書いていない script は、本物と同じくシェルで動かす */
   scripts: z.record(scriptSchema).default({}),
   sites: z.array(siteSchema).default([]),

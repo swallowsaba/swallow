@@ -1,0 +1,51 @@
+{
+  "lesson": "sec.a.02",
+  "variants": [
+    {
+      "name": "awk で読む",
+      "steps": {
+        "who": [
+          "awk '/Accepted/ && !/from 10\\./' /var/log/auth.log",
+          "svc-report"
+        ],
+        "when": [
+          "awk '/Accepted password/ {print $3}' /var/log/auth.log",
+          "02:14"
+        ],
+        "what": [
+          "grep COMMAND /var/log/auth.log | grep svc-report",
+          " /etc/sudoers.d/90-report "
+        ]
+      }
+    },
+    {
+      "name": "全部を読んでから",
+      "steps": {
+        "who": [
+          "cat /var/log/auth.log",
+          "grep -c Failed /var/log/auth.log",
+          "SVC-REPORT"
+        ],
+        "when": [
+          "grep \"Accepted password\" /var/log/auth.log",
+          "０２：１４"
+        ],
+        "what": [
+          "grep -n \"tee\" /var/log/auth.log",
+          "/etc/sudoers.d/90-report"
+        ]
+      }
+    }
+  ],
+  "wrong": {
+    "step": "who",
+    "why": "失敗した接続の root を答える",
+    "commands": false,
+    "input": [
+      "root"
+    ],
+    "retry": [
+      "svc-report"
+    ]
+  }
+}

@@ -1,0 +1,246 @@
+{
+  "id": "sec.a.02",
+  "domain": "sec",
+  "level": "advanced",
+  "theme": "監査",
+  "title": "ログと監査",
+  "goal": "不審な操作をログから見つけられる",
+  "minutes": 20,
+  "prerequisites": [
+    "mon.b.02"
+  ],
+  "related": [
+    "linux.i.02",
+    "mon.i.03"
+  ],
+  "next": [
+    "sec.a.03"
+  ],
+  "terms": [
+    "authentication",
+    "root-user",
+    "permission",
+    "log",
+    "server",
+    "file",
+    "containment"
+  ],
+  "explain": {
+    "what": "誰がいつ何をしたかの記録を読み、時刻でつないで事実を組み立てること。",
+    "why": "不正や事故の後に、何が起きたかを確かめられる。思い込みでなく記録で話せる。",
+    "use": "不審な操作の発見で使う。{{term:authentication}}の記録から入り、その後の操作をたどる。",
+    "when": "朝に調べると、深夜に{{term:root-user}}の{{term:permission}}で設定が変えられていた。",
+    "figures": [
+      "sec-a02-audit"
+    ]
+  },
+  "understand": [
+    {
+      "kind": "order",
+      "prompt": "調べる順に並べる。",
+      "items": [
+        "認証の記録で入口を見る",
+        "同じ利用者の操作をたどる",
+        "変わった物を確かめる"
+      ],
+      "see": "use"
+    },
+    {
+      "kind": "situation",
+      "prompt": "記録のうち不審なのは？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "深夜に見知らぬ送り元からパスワードで入り、権限を足した",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "朝に社内から鍵で入り、{{term:log}}を読んだ",
+          "correct": false,
+          "whyNot": "普段の運用。"
+        },
+        {
+          "id": "c",
+          "text": "毎晩 3 時の決まったバックアップ",
+          "correct": false,
+          "whyNot": "決まった作業。"
+        }
+      ],
+      "see": "when"
+    }
+  ],
+  "quiz": [
+    {
+      "id": "q1",
+      "kind": "cause",
+      "prompt": "深夜に見知らぬ場所からの接続が成功している。どう見る？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "不審として調べる",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "成功しているので問題なし",
+          "correct": false,
+          "whyNot": "盗まれた情報でも成功する。"
+        },
+        {
+          "id": "c",
+          "text": "失敗より安全",
+          "correct": false,
+          "whyNot": "入られた方が深刻。"
+        }
+      ],
+      "explanation": "失敗の山より、成功の 1 行が危ない。"
+    },
+    {
+      "id": "q2",
+      "kind": "situation",
+      "prompt": "記録を消されないためには？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "別の場所に送る",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "同じ{{term:server}}に 2 つ残す",
+          "correct": false,
+          "whyNot": "権限を奪われると両方消される。"
+        },
+        {
+          "id": "c",
+          "text": "残す期間を短くする",
+          "correct": false,
+          "whyNot": "調べられなくなる。"
+        }
+      ],
+      "explanation": "侵入者の手の届かない所へ送る。"
+    },
+    {
+      "id": "q3",
+      "kind": "multi",
+      "prompt": "監査の記録に要る物は？（全て）",
+      "choices": [
+        {
+          "id": "a",
+          "text": "誰",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "いつ",
+          "correct": true
+        },
+        {
+          "id": "c",
+          "text": "何を",
+          "correct": true
+        },
+        {
+          "id": "d",
+          "text": "どこから",
+          "correct": true
+        },
+        {
+          "id": "e",
+          "text": "パスワード",
+          "correct": false,
+          "whyNot": "秘密は記録に書かない。"
+        }
+      ],
+      "explanation": "4 つが揃えば事実を組み立てられる。"
+    }
+  ],
+  "practice": {
+    "mode": "terminal",
+    "purpose": "`city-web` の設定が深夜に変えられた。認証の記録は `/var/log/auth.log`。社内の送り元は `10.` で始まる。不審な利用者・時刻・変えられた{{term:file}}を特定する。",
+    "environment": "linux-basic",
+    "setup": {
+      "hostname": "city-web",
+      "sites": [],
+      "dirs": [
+        "/var/log"
+      ],
+      "files": {
+        "/var/log/auth.log": "Oct 02 21:03:11 city-web sshd[1102]: Accepted publickey for admin from 10.0.0.5 port 50112 ssh2\nOct 02 21:04:02 city-web sudo:    admin : TTY=pts/0 ; PWD=/home/admin ; USER=root ; COMMAND=/usr/bin/systemctl reload nginx\nOct 02 22:30:45 city-web sshd[1240]: Failed password for root from 198.51.100.23 port 41022 ssh2\nOct 02 22:30:49 city-web sshd[1240]: Failed password for root from 198.51.100.23 port 41022 ssh2\nOct 03 02:14:07 city-web sshd[1533]: Accepted password for svc-report from 203.0.113.66 port 52200 ssh2\nOct 03 02:14:31 city-web sudo: svc-report : TTY=pts/1 ; PWD=/home/svc-report ; USER=root ; COMMAND=/usr/bin/tee -a /etc/sudoers.d/90-report\nOct 03 02:15:02 city-web sudo: svc-report : TTY=pts/1 ; PWD=/home/svc-report ; USER=root ; COMMAND=/usr/bin/systemctl stop auditd\nOct 03 03:00:01 city-web CRON[1602]: pam_unix(cron:session): session opened for user backup by (uid=0)\nOct 03 09:01:18 city-web sshd[1810]: Accepted publickey for admin from 10.0.0.5 port 50344 ssh2\nOct 03 09:02:40 city-web sudo:    admin : TTY=pts/0 ; PWD=/home/admin ; USER=root ; COMMAND=/usr/bin/journalctl -u nginx\n"
+      }
+    },
+    "steps": [
+      {
+        "id": "who",
+        "purpose": "`grep` で `Accepted`（入れた記録）の行を出し、社内でない送り元を探す。その利用者の名前を答えの欄に入れる。",
+        "check": {
+          "kind": "answer",
+          "equals": "svc-report"
+        },
+        "afterward": "`svc-report` が `203.0.113.66` からパスワードで入っている。普段は鍵で、社内から入る。",
+        "hints": [
+          "`Failed` の行は入れなかった記録。",
+          "`grep -v` で社内の行を除く。",
+          "`grep Accepted /var/log/auth.log` `grep Accepted /var/log/auth.log | grep -v \"from 10\\.\"` を打ち、`svc-report` と答える。"
+        ],
+        "expectedErrors": [
+          "sec-audit-misread"
+        ]
+      },
+      {
+        "id": "when",
+        "purpose": "その利用者が入った時刻を、`時:分` の形で答えの欄に入れる。",
+        "check": {
+          "kind": "answer",
+          "equals": "02:14"
+        },
+        "afterward": "午前 2 時 14 分。人が働いていない時刻に入っている。",
+        "hints": [
+          "その利用者の `Accepted` の行の時刻。",
+          "`grep svc-report` で絞る。",
+          "`grep svc-report /var/log/auth.log` を打ち、`02:14` と答える。"
+        ],
+        "expectedErrors": [
+          "sec-audit-misread"
+        ]
+      },
+      {
+        "id": "what",
+        "purpose": "`sudo` の記録（`COMMAND=`）で、その利用者が管理者の権限で打った物を読む。書き足されたファイルの場所を答えの欄に入れる。",
+        "check": {
+          "kind": "answer",
+          "equals": "/etc/sudoers.d/90-report"
+        },
+        "afterward": "権限を足すファイルに書き足し、続けて `auditd` を止めている。入口・時刻・操作が時刻でつながった。次は{{term:containment}}（sec.a.03）。",
+        "hints": [
+          "`COMMAND=` の行を見る。",
+          "`tee -a` の先のファイル。",
+          "`grep \"svc-report :\" /var/log/auth.log` を打ち、`/etc/sudoers.d/90-report` と答える。"
+        ],
+        "expectedErrors": [
+          "sec-audit-misread"
+        ]
+      }
+    ]
+  },
+  "result": {
+    "success": "記録から事実を組み立てられた。",
+    "partial": "ヒントを使って組み立てられた。次は、自分で絞る語を選んでみよう。",
+    "retry": "まだ違う。`Accepted` の行のうち、社内でない送り元を探そう。"
+  },
+  "summary": {
+    "points": [
+      "誰・いつ・何を・どこから",
+      "記録は別の場所へ",
+      "時刻でつなぐ"
+    ],
+    "next": [
+      "sec.a.03"
+    ],
+    "terms": [
+      "audit-log",
+      "grep"
+    ]
+  }
+}

@@ -1,0 +1,64 @@
+{
+  "lesson": "sec.a.01",
+  "variants": [
+    {
+      "name": "grep で絞る",
+      "steps": {
+        "impact": [
+          "grep 部品 /root/advisories/adv-1.txt /root/advisories/adv-2.txt /root/advisories/adv-3.txt",
+          "dpkg -l | grep -E \"openssl|htop|tree\"",
+          " tree "
+        ],
+        "priority": [
+          "grep 攻撃 /root/advisories/adv-1.txt /root/advisories/adv-2.txt",
+          "netstat -tlnp",
+          "OPENSSL"
+        ],
+        "update": [
+          "apt update",
+          "apt upgrade"
+        ],
+        "verify": [
+          "systemctl restart nginx",
+          "curl http://site.example/"
+        ]
+      }
+    },
+    {
+      "name": "1 件ずつ読む",
+      "steps": {
+        "impact": [
+          "cat /root/advisories/adv-3.txt",
+          "dpkg -l tree || true",
+          "tree"
+        ],
+        "priority": [
+          "cat /root/advisories/adv-1.txt",
+          "cat /root/advisories/adv-2.txt",
+          "ss -ltn",
+          "openssl"
+        ],
+        "update": [
+          "apt update",
+          "apt install openssl libssl3"
+        ],
+        "verify": [
+          "systemctl restart nginx",
+          "systemctl status nginx",
+          "curl -I http://site.example/"
+        ]
+      }
+    }
+  ],
+  "wrong": {
+    "step": "priority",
+    "why": "点数だけで tree を選ぶ",
+    "commands": false,
+    "input": [
+      "tree"
+    ],
+    "retry": [
+      "openssl"
+    ]
+  }
+}

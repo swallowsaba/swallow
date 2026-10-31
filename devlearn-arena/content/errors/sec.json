@@ -519,6 +519,76 @@
       "terms": [
         "api"
       ]
+    },
+    {
+      "id": "sec-adv-misread",
+      "match": "答えが合っていない",
+      "meaning": "答えが、調べた結果と違う。",
+      "causes": [
+        "点数だけで判断した。",
+        "入っていない部品を数えた。",
+        "公開しているかを見ていない。"
+      ],
+      "hint": "`dpkg -l` で入っているかを、`ss -ltnp` で公開しているかを見よう。",
+      "terms": [
+        "vuln-advisory"
+      ]
+    },
+    {
+      "id": "sec-audit-misread",
+      "match": "答えが合っていない",
+      "meaning": "答えが、記録と違う。",
+      "causes": [
+        "通常の運用の記録を不審と見た。",
+        "失敗した接続を見た。入られたのは `Accepted` の行。"
+      ],
+      "hint": "`Accepted` の行のうち、社内（`10.`）でない送り元を探そう。",
+      "terms": [
+        "audit-log"
+      ]
+    },
+    {
+      "id": "sec-ir-order",
+      "match": "答えが合っていない",
+      "meaning": "順が違う。",
+      "causes": [
+        "被害を止める前に調べている。",
+        "記録を残す前に作り直している。"
+      ],
+      "hint": "まず被害を止め、次に証拠を残す。",
+      "terms": [
+        "containment"
+      ]
+    },
+    {
+      "id": "sec-npm-vuln",
+      "match": "\\d+ \\w+ severity vulnerabilit",
+      "meaning": "入っている部品に、知られた弱点がある。",
+      "causes": [
+        "奥の部品（間接の依存）が古い。",
+        "直接の部品の版が古い。"
+      ],
+      "hint": "`npm ls 名前` で、どの部品から入ったかをたどろう。",
+      "terms": [
+        "transitive-dep"
+      ],
+      "output": true,
+      "outputOf": "\\bnpm\\b.*\\baudit\\b"
+    },
+    {
+      "id": "sec-npm-break",
+      "match": "is not a function",
+      "meaning": "部品の版を上げたら、テストが落ちた。使い方が変わる大きな版を入れた可能性がある。",
+      "causes": [
+        "互換性の無い次の大きな版（2.x）を入れた。",
+        "親の使い方が変わったのに、コードを直していない。"
+      ],
+      "hint": "同じ大きな版の中で、直った版を探そう。",
+      "terms": [
+        "transitive-dep"
+      ],
+      "output": true,
+      "outputOf": "\\bnpm\\b.*\\b(test|t)\\b"
     }
   ]
 }

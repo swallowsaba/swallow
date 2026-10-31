@@ -1,0 +1,141 @@
+{
+  "lesson": "sec.a.03",
+  "variants": [
+    {
+      "name": "先に全部並べる",
+      "steps": {
+        "contain": [
+          {
+            "op": "arrange",
+            "stages": [
+              [
+                "revoke"
+              ],
+              [
+                "copy"
+              ],
+              [
+                "trace"
+              ]
+            ]
+          }
+        ],
+        "rest": [
+          {
+            "op": "arrange",
+            "stages": [
+              [
+                "revoke"
+              ],
+              [
+                "copy"
+              ],
+              [
+                "trace"
+              ],
+              [
+                "close"
+              ],
+              [
+                "newkey"
+              ],
+              [
+                "report"
+              ]
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "下から足す",
+      "steps": {
+        "contain": [
+          {
+            "op": "arrange",
+            "stages": [
+              [
+                "revoke"
+              ],
+              [
+                "copy"
+              ]
+            ]
+          }
+        ],
+        "rest": [
+          {
+            "op": "arrange",
+            "stages": [
+              [
+                "revoke"
+              ],
+              [
+                "copy"
+              ],
+              [
+                "trace"
+              ],
+              [
+                "close"
+              ]
+            ]
+          },
+          {
+            "op": "arrange",
+            "stages": [
+              [
+                "revoke"
+              ],
+              [
+                "copy"
+              ],
+              [
+                "trace"
+              ],
+              [
+                "close"
+              ],
+              [
+                "newkey"
+              ],
+              [
+                "report"
+              ]
+            ]
+          }
+        ]
+      }
+    }
+  ],
+  "wrong": {
+    "step": "contain",
+    "why": "調べてから鍵を止める",
+    "input": [
+      {
+        "op": "arrange",
+        "stages": [
+          [
+            "copy"
+          ],
+          [
+            "revoke"
+          ]
+        ]
+      }
+    ],
+    "retry": [
+      {
+        "op": "arrange",
+        "stages": [
+          [
+            "revoke"
+          ],
+          [
+            "copy"
+          ]
+        ]
+      }
+    ]
+  }
+}

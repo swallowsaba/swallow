@@ -1,0 +1,312 @@
+{
+  "id": "sec.a.03",
+  "domain": "sec",
+  "level": "advanced",
+  "theme": "事故",
+  "title": "インシデント対応の基本",
+  "goal": "封じ込め・調査・復旧・報告の流れを実行できる",
+  "minutes": 20,
+  "prerequisites": [
+    "sec.a.02",
+    "trouble.i.01"
+  ],
+  "related": [
+    "trouble.a.03",
+    "devops.i.03"
+  ],
+  "next": [
+    "sec.a.04"
+  ],
+  "terms": [
+    "containment",
+    "api",
+    "server",
+    "service"
+  ],
+  "explain": {
+    "what": "セキュリティの事故に、{{term:containment}}・調査・復旧・報告の順で対応すること。",
+    "why": "慌てて証拠を消したり、被害を広げたりしない。順が決まっていれば、落ち着いて動ける。",
+    "use": "鍵の漏えいや侵入の事故で使う。誰が何をするかも先に決めておく。",
+    "when": "本番の {{term:api}} の鍵が公開の場所に漏れていたと、夜に連絡が来た。",
+    "figures": [
+      "sec-a03-ir"
+    ]
+  },
+  "understand": [
+    {
+      "kind": "order",
+      "prompt": "4 段の順に並べる。",
+      "items": [
+        "封じ込め",
+        "調査",
+        "復旧",
+        "報告"
+      ],
+      "see": "what"
+    },
+    {
+      "kind": "yesno",
+      "prompt": "まず{{term:server}}を初期化して直す？",
+      "answer": false,
+      "why": "証拠が消え、原因が分からないまま再発する。",
+      "see": "why"
+    }
+  ],
+  "quiz": [
+    {
+      "id": "q1",
+      "kind": "situation",
+      "prompt": "鍵が漏れた。最初の一手は？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "鍵を無効にする",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "漏れた経路を調べる",
+          "correct": false,
+          "whyNot": "調べる間も使われ続ける。"
+        },
+        {
+          "id": "c",
+          "text": "報告書を書く",
+          "correct": false,
+          "whyNot": "先に被害を止める。"
+        }
+      ],
+      "explanation": "被害を止めるのが先。"
+    },
+    {
+      "id": "q2",
+      "kind": "cause",
+      "prompt": "直したのに再発した。原因は？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "原因を取り除いていない",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "鍵の文字数が短い",
+          "correct": false,
+          "whyNot": "長さの問題ではない。"
+        },
+        {
+          "id": "c",
+          "text": "報告が遅い",
+          "correct": false,
+          "whyNot": "報告では再発は止まらない。"
+        }
+      ],
+      "explanation": "入口を塞がないと、同じ所からまた入られる。"
+    },
+    {
+      "id": "q3",
+      "kind": "multi",
+      "prompt": "報告に要る物は？（全て）",
+      "choices": [
+        {
+          "id": "a",
+          "text": "時系列",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "影響",
+          "correct": true
+        },
+        {
+          "id": "c",
+          "text": "対策",
+          "correct": true
+        },
+        {
+          "id": "d",
+          "text": "担当者への叱責",
+          "correct": false,
+          "whyNot": "責めると次から隠れる。"
+        }
+      ],
+      "explanation": "仕組みの改善につなげる。"
+    }
+  ],
+  "practice": {
+    "mode": "simulation",
+    "purpose": "本番の API の鍵が漏れた。札を、上から順に並べて対応の流れを作る。「サーバを初期化する」は流れに入れない。",
+    "environment": "sim-order",
+    "setup": {
+      "unit": "手順",
+      "items": [
+        {
+          "id": "revoke",
+          "label": "漏れた鍵を無効にする",
+          "minutes": 1
+        },
+        {
+          "id": "copy",
+          "label": "記録を別の場所へ複写する",
+          "minutes": 1,
+          "needs": [
+            "revoke"
+          ]
+        },
+        {
+          "id": "trace",
+          "label": "漏れた経路と使われた跡を調べる",
+          "minutes": 1,
+          "needs": [
+            "copy"
+          ]
+        },
+        {
+          "id": "close",
+          "label": "漏れた経路を塞ぐ",
+          "minutes": 1,
+          "needs": [
+            "trace"
+          ]
+        },
+        {
+          "id": "newkey",
+          "label": "新しい鍵でサービスを戻す",
+          "minutes": 1,
+          "needs": [
+            "close"
+          ]
+        },
+        {
+          "id": "report",
+          "label": "時系列・影響・対策を報告する",
+          "minutes": 1,
+          "needs": [
+            "newkey"
+          ]
+        },
+        {
+          "id": "wipe",
+          "label": "サーバを初期化する",
+          "extra": true,
+          "stop": "ここで止まる: 記録が消え、経路が分からなくなる"
+        }
+      ],
+      "panels": [
+        {
+          "kind": "log",
+          "title": "今の状況",
+          "lines": [
+            "22:04 公開の場所に本番の鍵があると連絡",
+            "22:06 その鍵での頼みが増え続けている"
+          ]
+        },
+        {
+          "kind": "text",
+          "title": "被害の様子",
+          "body": "鍵が無効になるまで、頼みが増え続ける。",
+          "when": "!seq revoke<copy"
+        },
+        {
+          "kind": "text",
+          "title": "被害の様子",
+          "body": "鍵を止めたので、不正な頼みが止まった。",
+          "when": "seq revoke<copy"
+        }
+      ]
+    },
+    "steps": [
+      {
+        "id": "contain",
+        "purpose": "「漏れた鍵を無効にする」と「記録を別の場所へ複写する」を、この順に上から並べる。",
+        "check": {
+          "kind": "sim",
+          "expr": "seq revoke<copy"
+        },
+        "afterward": "被害が止まり、証拠も残った。ここで初めて、落ち着いて調べられる。",
+        "hints": [
+          "被害を止めるのが先。",
+          "次に証拠を残す。",
+          "「漏れた鍵を無効にする」「記録を別の場所へ複写する」の順に、上から並べる。"
+        ],
+        "actions": [
+          {
+            "op": "arrange",
+            "stages": [
+              [
+                "revoke"
+              ],
+              [
+                "copy"
+              ]
+            ]
+          }
+        ],
+        "expectedErrors": [
+          "sec-ir-order"
+        ]
+      },
+      {
+        "id": "rest",
+        "purpose": "続けて「漏れた経路と使われた跡を調べる」「漏れた経路を塞ぐ」「新しい鍵で{{term:service}}を戻す」「時系列・影響・対策を報告する」を並べ、流れを完成させる。",
+        "check": {
+          "kind": "sim",
+          "expr": "seq revoke<copy<trace<close<newkey<report && deps && !has wipe"
+        },
+        "afterward": "4 段が揃った。経路を塞いでから戻すので再発しない。報告で仕組みを直す所まで終わる。",
+        "hints": [
+          "調べる → 塞ぐ → 戻す → 報告。",
+          "塞がずに戻すと再発する。",
+          "上から「漏れた鍵を無効にする」「記録を別の場所へ複写する」「漏れた経路と使われた跡を調べる」「漏れた経路を塞ぐ」「新しい鍵でサービスを戻す」「時系列・影響・対策を報告する」の順に並べる。"
+        ],
+        "actions": [
+          {
+            "op": "arrange",
+            "stages": [
+              [
+                "revoke"
+              ],
+              [
+                "copy"
+              ],
+              [
+                "trace"
+              ],
+              [
+                "close"
+              ],
+              [
+                "newkey"
+              ],
+              [
+                "report"
+              ]
+            ]
+          }
+        ],
+        "expectedErrors": [
+          "sec-ir-order"
+        ]
+      }
+    ]
+  },
+  "result": {
+    "success": "手順に沿って対応できた。",
+    "partial": "ヒントを使って対応できた。次は、各段でしてはいけない事も言ってみよう。",
+    "retry": "まだ順が違う。被害を止める → 証拠 → 調査 → 塞ぐ → 戻す → 報告。"
+  },
+  "summary": {
+    "points": [
+      "封じ込めが先",
+      "証拠を残す",
+      "報告して再発を防ぐ"
+    ],
+    "next": [
+      "sec.a.04"
+    ],
+    "terms": [
+      "containment",
+      "audit-log"
+    ]
+  }
+}

@@ -59,7 +59,7 @@
 | 上級 | linux | 終わり（4 本。下の「上級 linux」） |
 | 上級 | net | 終わり（4 本。下の「上級 net」） |
 | 上級 | web | 終わり（3 本。下の「上級 web」） |
-| 上級 | sec | 未着手 |
+| 上級 | sec | 終わり（4 本。下の「上級 sec」） |
 | 上級 | git | 未着手 |
 | 上級 | cicd | 未着手 |
 | 上級 | ctr | 未着手 |
@@ -311,3 +311,18 @@
 - `curl -w` の `%{time_namelookup}`・`%{time_connect}`・`%{time_appconnect}`・`%{time_pretransfer}`・`%{time_starttransfer}`・`%{time_total}`・`%{size_download}`（本物と同じく累計）。setup の `sites` の `timing`
 - サービスの `envCheck`（動かす時に環境のファイルの値を読み、違えば頼みに 500 を返してログに理由を書く）
 - サービスの `tokenApi`（`POST /token` で秘密と引き換えにトークンを渡し、`Authorization: Bearer` を確かめる。無い・綴りの誤り・期限切れは 401）
+
+### 上級 sec（4 本）
+
+| ID | 実戦 | verify-all | verify-free（別解） | verify-wrong | verify-drag |
+|---|---|---|---|---|---|
+| sec.a.01 脆弱性の報告から更新まで | 端 | 合格 | 合格（2 通り） | 合格 | — |
+| sec.a.02 ログと監査 | 端 | 合格 | 合格（2 通り） | 合格 | — |
+| sec.a.03 インシデント対応の基本 | 模（並べる） | 合格 | 合格（2 通り） | 合格 | 合格 |
+| sec.a.04 依存関係の安全 | 端 | 合格 | 合格（2 通り） | 合格 | — |
+
+不合格は無かった。
+
+設計を直した物: sec.a.01 を「模」から「端」（`dpkg`・`ss`・`apt` の本物の道具がある）、sec.a.04 を「模」から「端」（`npm audit`・`npm ls` の本物の道具がある）にした。`docs/lessons/sec.md` と `docs/curriculum.md` の表を先に直した。sec.a.03 は打つコマンドの無い手順の考え方なので模のまま。
+
+模擬環境に足した物（テストを先に書いた。`npmAudit.test.ts`）: npm の間接の依存（`actions.packages` の `deps`。`node_modules` とロックファイルに入る）・`npm ls [名前]`・`npm audit`（`actions.advisories`。残っていれば終了の状態 1）・`npm install` の最後の行が警告の数を言う。

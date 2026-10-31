@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 360" font-family="&quot;Noto Sans JP&quot;, sans-serif">
+  <title>直接の依存と、その先の間接の依存の木</title>
+  <defs>
+    <marker id="arrow-gold" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="#f2b632" />
+    </marker>
+  </defs>
+  <g class="el" data-part="app">
+    <rect x="20" y="130" width="150" height="100" rx="10" fill="#1a6fd6" />
+    <text x="95" y="174" text-anchor="middle" font-size="16" font-weight="700" fill="#eef2f6">自分のアプリ</text>
+    <text x="95" y="196" text-anchor="middle" font-size="14" fill="#eef2f6">city-shop</text>
+  </g>
+  <g class="el" data-part="kit">
+    <rect x="230" y="60" width="170" height="90" rx="10" fill="#f2b632" />
+    <text x="315" y="99" text-anchor="middle" font-size="16" font-weight="700" fill="#0a1424">web-kit</text>
+    <text x="315" y="121" text-anchor="middle" font-size="14" fill="#0a1424">直接の依存</text>
+  </g>
+  <g class="el" data-part="date">
+    <rect x="230" y="210" width="170" height="90" rx="10" fill="#1f7a4d" />
+    <text x="315" y="249" text-anchor="middle" font-size="16" font-weight="700" fill="#eef2f6">date-lite</text>
+    <text x="315" y="271" text-anchor="middle" font-size="14" fill="#eef2f6">直接の依存</text>
+  </g>
+  <g class="el" data-part="walk">
+    <rect x="460" y="60" width="160" height="90" rx="10" fill="#c0392b" />
+    <text x="540" y="99" text-anchor="middle" font-size="16" font-weight="700" fill="#eef2f6">left-walk</text>
+    <text x="540" y="121" text-anchor="middle" font-size="14" fill="#eef2f6">間接の依存</text>
+  </g>
+  <g class="el" data-part="flow">
+    <path d="M170 165 L227 110" fill="none" stroke="#f2b632" stroke-width="2" marker-end="url(#arrow-gold)" />
+    <path d="M170 195 L227 250" fill="none" stroke="#f2b632" stroke-width="2" marker-end="url(#arrow-gold)" />
+    <path d="M400 105 L457 105" fill="none" stroke="#f2b632" stroke-width="2" marker-end="url(#arrow-gold)" />
+  </g>
+  <g class="el" data-part="note">
+    <text x="320" y="340" text-anchor="middle" font-size="14" fill="#eef2f6">弱点は奥にある。直すのは、その部品を連れてくる親の版</text>
+  </g>
+</svg>

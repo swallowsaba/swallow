@@ -1,4 +1,4 @@
-import { allMatch, bundleText, fill, lockText, readLock, readPackageJson, resolveVersion, type Files, type PackageJson } from '@/engines/cicd/project';
+import { allMatch, bundleText, fill, lockText, readLock, readPackageJson, resolveVersion, satisfies, versionBelow, type Files, type PackageJson } from '@/engines/cicd/project';
 import type { ActionsSetup, ScriptModel } from '@/engines/cicd/setup';
 import type { SiteState } from '@/engines/cicd/types';
 import type { Forge } from '@/engines/github/forge';
@@ -86,6 +86,72 @@ function installed(shell: ShellState): Record<string, string> {
   return out;
 }
 
+/** その版の部品が頼る部品（名前 → 範囲） */
+const depsOf = (model: ActionsSetup, name: string, version: string): Record<string, string> =>
+  model.packages[name]?.find((p) => p.version === version)?.deps ?? {};
+
+interface AuditHit { name: string; below: string; severity: string; title: string; id: string; parents: string[] }
+
+/** 入っている版に当たる警告と、それを使う親（直接の部品） */
+function auditOf(model: ActionsSetup, direct: Readonly<Record<string, string>>, versions: Readonly<Record<string, string>>): AuditHit[] {
+  const reaches = (from: string, to: string, seen = new Set<string>()): boolean => {
+    if (seen.has(from)) return false;
+    seen.add(from);
+    return Object.keys(depsOf(model, from, versions[from] ?? '')).some((c) => c === to || reaches(c, to, seen));
+  };
+  return (model.advisories ?? []).flatMap((a) => {
+    const v = versions[a.name];
+    if (v === undefined || !versionBelow(v, a.below)) return [];
+    return [{ ...a, parents: Object.keys(direct).filter((d) => d !== a.name && reaches(d, a.name)) }];
+  });
+}
+
+/** 警告の数の行（親も数える。本物の npm と同じ） */
+function auditLine(hits: readonly AuditHit[]): string {
+  const count = hits.reduce((n, h) => n + 1 + h.parents.length, 0);
+  if (count === 0) return 'found 0 vulnerabilities';
+  const severity = hits[0]?.severity ?? 'high';
+  return `${String(count)} ${severity} severity vulnerabilit${count === 1 ? 'y' : 'ies'}`;
+}
+
+const directOf = (pkg: PackageJson, versions: Readonly<Record<string, string>>): Record<string, string> =>
+  Object.fromEntries(Object.keys({ ...pkg.dependencies, ...pkg.devDependencies }).flatMap((n) => (versions[n] === undefined ? [] : [[n, versions[n]]])));
+
+/** npm audit: 本物の形で、脆弱な部品と親を出す。残っていれば終了の値は 1 */
+function audit(shell: ShellState, model: ActionsSetup, pkg: PackageJson): CommandResult {
+  const versions = installed(shell);
+  const hits = auditOf(model, directOf(pkg, versions), versions);
+  if (hits.length === 0) return { stdout: 'found 0 vulnerabilities\n' };
+  const lines = ['# npm audit report', ''];
+  for (const h of hits) {
+    lines.push(`${h.name}  <${h.below}`, `Severity: ${h.severity}`, `${h.title} - https://github.com/advisories/${h.id}`, 'fix available via `npm audit fix`', `node_modules/${h.name}`);
+    for (const p of h.parents) lines.push(`  ${p}  ${versions[p] ?? ''}`, `  Depends on vulnerable versions of ${h.name}`, `  node_modules/${p}`);
+    lines.push('');
+  }
+  lines.push(auditLine(hits), '', 'To address all issues, run:', '  npm audit fix');
+  return { stdout: `${lines.join('\n')}\n`, code: 1 };
+}
+
+/** npm ls [名前]: 部品の木。名前を書くと、その部品への道だけを出す */
+function listTree(shell: ShellState, model: ActionsSetup, pkg: PackageJson, want: string | undefined): CommandResult {
+  const versions = installed(shell);
+  const lines = [`${pkg.name}@${pkg.version} ${shell.cwd}`];
+  const leads = (name: string, seen: ReadonlySet<string> = new Set()): boolean =>
+    want === undefined || name === want || (!seen.has(name) && Object.keys(depsOf(model, name, versions[name] ?? '')).some((c) => leads(c, new Set([...seen, name]))));
+  const walk = (names: string[], prefix: string, depth: number): void => {
+    names.forEach((name, i) => {
+      const last = i === names.length - 1;
+      const kids = depth > 8 ? [] : Object.keys(depsOf(model, name, versions[name] ?? '')).filter((c) => versions[c] !== undefined && leads(c)).sort();
+      lines.push(`${prefix}${last ? '└─' : '├─'}${kids.length > 0 ? '┬' : '─'} ${name}@${versions[name] ?? ''}`);
+      walk(kids, `${prefix}${last ? '  ' : '│ '}`, depth + 1);
+    });
+  };
+  const top = Object.keys({ ...pkg.dependencies, ...pkg.devDependencies }).filter((n) => versions[n] !== undefined && leads(n)).sort();
+  if (top.length === 0) return { stdout: `${lines[0] ?? ''}\n└── (empty)\n`, ...(want !== undefined ? { code: 1 } : {}) };
+  walk(top, '', 0);
+  return { stdout: `${lines.join('\n')}\n` };
+}
+
 function install({ shell, argv }: CommandContext, model: ActionsSetup, pkg: PackageJson): CommandResult {
   const ci = argv[1] === 'ci';
   const lockPath = resolve(shell.cwd, 'package-lock.json');
@@ -96,6 +162,7 @@ function install({ shell, argv }: CommandContext, model: ActionsSetup, pkg: Pack
   }
   const now = nowOf(shell);
   const versions: Record<string, string> = {};
+  const direct: Record<string, string> = {};
   for (const [name, range] of Object.entries(wanted)) {
     const locked = lock?.[name];
     if (ci) {
@@ -103,15 +170,32 @@ function install({ shell, argv }: CommandContext, model: ActionsSetup, pkg: Pack
         return npmError(shell, ['code EUSAGE', '', '`npm ci` can only install packages when your package.json and package-lock.json or', 'npm-shrinkwrap.json are in sync. Please update your lock file with `npm install`', 'before continuing.', '', `Missing: ${name}@${range} from lock file`], 1);
       }
       versions[name] = locked;
+      direct[name] = locked;
       continue;
     }
     if (locked !== undefined) {
       versions[name] = locked;
+      direct[name] = locked;
       continue;
     }
     const v = resolveVersion(model, name, range, now, parseLocalTime);
     if (v === null) return npmError(shell, ['code ETARGET', `notarget No matching version found for ${name}@${range}.`, 'notarget In most cases you or one of your dependencies are requesting', "notarget a package version that doesn't exist."], 1);
     versions[name] = v;
+    direct[name] = v;
+  }
+  // 部品が頼る部品（間接の依存）も入れる。前の版が範囲に合えば、そのまま
+  const pending = Object.entries(direct);
+  while (pending.length > 0) {
+    const [parent = '', version = ''] = pending.pop() ?? [];
+    for (const [child, range] of Object.entries(depsOf(model, parent, version))) {
+      const have = versions[child];
+      if (have !== undefined && satisfies(have, range)) continue;
+      const held = lock?.[child];
+      const v = held !== undefined && satisfies(held, range) ? held : resolveVersion(model, child, range, now, parseLocalTime);
+      if (v === null) return npmError(shell, ['code ETARGET', `notarget No matching version found for ${child}@${range}.`], 1);
+      versions[child] = v;
+      pending.push([child, v]);
+    }
   }
   const nm = resolve(shell.cwd, 'node_modules');
   let vfs = exists(shell.vfs, nm) ? remove(shell.vfs, nm, true) : shell.vfs;
@@ -123,7 +207,7 @@ function install({ shell, argv }: CommandContext, model: ActionsSetup, pkg: Pack
   const n = Object.keys(versions).length;
   const secs = Math.max(1, model.installSeconds);
   return {
-    stdout: `\nadded ${String(n)} package${n === 1 ? '' : 's'}, and audited ${String(n + 1)} packages in ${String(secs)}s\n\nfound 0 vulnerabilities\n`,
+    stdout: `\nadded ${String(n)} package${n === 1 ? '' : 's'}, and audited ${String(n + 1)} packages in ${String(secs)}s\n\n${auditLine(auditOf(model, direct, versions))}\n`,
     patch: { vfs, ...spent(shell, model.installSeconds) },
   };
 }
@@ -256,6 +340,8 @@ export const npmCommands: CommandSpec[] = [
       const pkg = readPkg(shell);
       if (!('scripts' in pkg)) return pkg;
       if (sub === 'ci') return install(ctx, model.actions, pkg);
+      if (sub === 'audit') return audit(shell, model.actions, pkg);
+      if (sub === 'ls' || sub === 'list') return listTree(shell, model.actions, pkg, argv.slice(2).find((a) => !a.startsWith('-')));
       if (sub === 'install' || sub === 'i') {
         const names = argv.slice(2).filter((a) => !a.startsWith('-'));
         if (names.length === 0) return install({ ...ctx, argv: ['npm', 'install'] }, model.actions, pkg);

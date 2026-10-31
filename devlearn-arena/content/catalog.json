@@ -1947,7 +1947,7 @@
       "title": "脆弱性の報告から更新まで",
       "goal": "影響の判断と更新の優先順位を付けられる",
       "practice": [
-        "simulation"
+        "terminal"
       ],
       "prerequisites": [
         "sec.i.03",
@@ -2012,7 +2012,7 @@
       "title": "依存関係の安全（サプライチェーン）",
       "goal": "依存の脆弱性を調べ、更新と固定を判断できる",
       "practice": [
-        "simulation"
+        "terminal"
       ],
       "prerequisites": [
         "cicd.i.02"

@@ -1,0 +1,331 @@
+{
+  "id": "sec.a.04",
+  "domain": "sec",
+  "level": "advanced",
+  "theme": "依存",
+  "title": "依存関係の安全（サプライチェーン）",
+  "goal": "依存の脆弱性を調べ、更新と固定を判断できる",
+  "minutes": 20,
+  "prerequisites": [
+    "cicd.i.02"
+  ],
+  "related": [
+    "ctr.a.02",
+    "cicd.a.03"
+  ],
+  "next": [],
+  "terms": [
+    "image",
+    "app",
+    "ci",
+    "vulnerability",
+    "transitive-dep",
+    "test"
+  ],
+  "explain": {
+    "what": "使っている外部の部品とその版を把握し、安全に保つこと。部品は木のようにつながっている。",
+    "why": "自分のコードが安全でも、部品が危ないと全体が危ない。奥の部品は普段見えない。",
+    "use": "{{term:app}}・{{term:image}}・{{term:ci}} で使う。点検を自動にし、警告の経路をたどって親の版を上げる。",
+    "when": "使った覚えの無い部品に{{term:vulnerability}}があると、点検で警告された。",
+    "figures": [
+      "sec-a04-tree"
+    ]
+  },
+  "understand": [
+    {
+      "kind": "figure-pick",
+      "figure": "sec-a04-tree",
+      "prompt": "図で、脆弱な部品を連れてくる直接の依存を押す。",
+      "answer": [
+        "kit"
+      ],
+      "see": "use"
+    },
+    {
+      "kind": "relation",
+      "prompt": "関係を選ぶ。",
+      "a": "版を固定する",
+      "b": "予期しない更新で壊れない",
+      "answer": "cause",
+      "why": "ただし固定したままだと古くなるので、定期的に上げる。",
+      "see": "use"
+    }
+  ],
+  "quiz": [
+    {
+      "id": "q1",
+      "kind": "situation",
+      "prompt": "予期しない更新を防ぐには？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "版を固定する（ロックファイル）",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "点検をやめる",
+          "correct": false,
+          "whyNot": "弱点に気づけなくなる。"
+        },
+        {
+          "id": "c",
+          "text": "常に最新を入れる",
+          "correct": false,
+          "whyNot": "壊れた版も入ってくる。"
+        }
+      ],
+      "explanation": "ロックファイルで同じ版を入れる。"
+    },
+    {
+      "id": "q2",
+      "kind": "cause",
+      "prompt": "使っていないはずの部品の警告が出た。原因は？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "{{term:transitive-dep}}",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "点検の誤り",
+          "correct": false,
+          "whyNot": "実際に入っている。"
+        },
+        {
+          "id": "c",
+          "text": "別のアプリの部品",
+          "correct": false,
+          "whyNot": "このアプリの木を見ている。"
+        }
+      ],
+      "explanation": "`npm ls 名前` で経路が分かる。"
+    },
+    {
+      "id": "q3",
+      "kind": "choice",
+      "prompt": "定期的にすることは？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "依存の点検と更新",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "部品を手で書き換える",
+          "correct": false,
+          "whyNot": "次の更新で消え、記録も残らない。"
+        },
+        {
+          "id": "c",
+          "text": "警告を隠す",
+          "correct": false,
+          "whyNot": "弱点は残る。"
+        }
+      ],
+      "explanation": "点検を CI に入れて自動にする。"
+    }
+  ],
+  "practice": {
+    "mode": "terminal",
+    "purpose": "市の店のアプリ `/home/learner/shop` の部品を点検する。`npm audit` で警告を読み、`npm ls` で経路をたどり、親の `web-kit` を安全な版に上げて、{{term:test}}が通ることを確かめる。",
+    "environment": "linux-basic",
+    "setup": {
+      "hostname": "shop-dev",
+      "cwd": "/home/learner/shop",
+      "dirs": [
+        "/home/learner/shop/src"
+      ],
+      "sites": [],
+      "files": {
+        "/home/learner/shop/package.json": "{\n  \"name\": \"city-shop\",\n  \"version\": \"1.0.0\",\n  \"scripts\": {\n    \"test\": \"vitest run\"\n  },\n  \"dependencies\": {\n    \"web-kit\": \"~1.4.0\",\n    \"date-lite\": \"^2.0.0\"\n  }\n}\n",
+        "/home/learner/shop/src/server.ts": "import kit from 'web-kit';\nkit.serve(8080);\n"
+      },
+      "run": [
+        "git init -q",
+        "git remote add origin https://git.city.example/city/shop.git",
+        "npm install"
+      ],
+      "gitServers": [
+        {
+          "url": "https://git.city.example/city/shop.git",
+          "run": [],
+          "forge": {
+            "repo": "city/shop",
+            "actions": {
+              "installSeconds": 5,
+              "packages": {
+                "web-kit": [
+                  {
+                    "version": "1.4.0",
+                    "deps": {
+                      "left-walk": "^0.2.0"
+                    }
+                  },
+                  {
+                    "version": "1.5.0",
+                    "deps": {
+                      "left-walk": "^0.3.0"
+                    }
+                  },
+                  {
+                    "version": "2.0.0",
+                    "deps": {
+                      "left-walk": "^0.3.0"
+                    }
+                  }
+                ],
+                "date-lite": [
+                  {
+                    "version": "2.1.0"
+                  }
+                ],
+                "left-walk": [
+                  {
+                    "version": "0.2.1"
+                  },
+                  {
+                    "version": "0.3.0"
+                  }
+                ]
+              },
+              "advisories": [
+                {
+                  "name": "left-walk",
+                  "below": "0.3.0",
+                  "severity": "high",
+                  "title": "Prototype pollution in left-walk",
+                  "id": "GHSA-city-0001"
+                }
+              ],
+              "scripts": {
+                "test": {
+                  "kind": "test",
+                  "log": [
+                    " Test Files  1 passed (1)",
+                    "      Tests  3 passed (3)"
+                  ],
+                  "faults": [
+                    {
+                      "when": [
+                        {
+                          "path": "package.json",
+                          "has": "\"web-kit\": \"^2"
+                        }
+                      ],
+                      "code": 1,
+                      "log": [
+                        " FAIL  tests/server.test.ts",
+                        "TypeError: kit.serve is not a function",
+                        "      Tests  3 failed (3)"
+                      ]
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    "steps": [
+      {
+        "id": "audit",
+        "purpose": "`npm audit` で点検する。脆弱な部品 `left-walk` の行が出れば達成（警告があると終了の状態は 1）。",
+        "check": {
+          "kind": "ran",
+          "uses": [
+            "npm"
+          ],
+          "shows": [
+            "left-walk  <0.3.0"
+          ]
+        },
+        "afterward": "`left-walk` に高い深刻度の弱点がある。`package.json` には書いていない部品。",
+        "hints": [
+          "点検の道具を打つ。",
+          "`npm audit`。",
+          "`npm audit` を打つ。"
+        ],
+        "expectedErrors": [
+          "sec-npm-vuln"
+        ],
+        "designedErrors": [
+          "sec-npm-vuln"
+        ]
+      },
+      {
+        "id": "path",
+        "purpose": "`npm ls left-walk` で、どの直接の部品から入ったかをたどる。その部品の名前を答えの欄に入れる。",
+        "check": {
+          "kind": "answer",
+          "equals": "web-kit"
+        },
+        "afterward": "`web-kit@1.4.0` が連れてきた間接の依存だった。直すのは親の版。",
+        "hints": [
+          "`npm ls 名前` は、その部品への道を出す。",
+          "木の一番上の枝。",
+          "`npm ls left-walk` を打ち、`web-kit` と答える。"
+        ],
+        "expectedErrors": []
+      },
+      {
+        "id": "fix",
+        "purpose": "`npm install web-kit@1.5.0` で親を上げる（同じ大きな版の中で直った版）。入った `left-walk` が `0.3.0` になれば達成。",
+        "check": {
+          "kind": "fs",
+          "path": "/home/learner/shop/node_modules/left-walk/package.json",
+          "contains": "\"version\": \"0.3.0\""
+        },
+        "afterward": "親を上げると、間接の部品も安全な版になった。ロックファイルにも残る。",
+        "hints": [
+          "親の版を指定して入れる。",
+          "大きな版を変えない方が壊れにくい。",
+          "`npm install web-kit@1.5.0` を打つ。"
+        ],
+        "expectedErrors": []
+      },
+      {
+        "id": "verify",
+        "purpose": "`npm audit` と `npm test` で、警告が消えてテストも通ることを確かめる。",
+        "check": {
+          "kind": "ran",
+          "uses": [
+            "npm"
+          ],
+          "shows": [
+            "      Tests  3 passed (3)"
+          ]
+        },
+        "afterward": "警告が消え、テストも通った。点検を CI に入れれば、次の弱点にも自動で気づける（cicd.a.03）。",
+        "hints": [
+          "2 つの確かめを順に。",
+          "`npm audit` の次に `npm test`。",
+          "`npm audit` `npm test` を打つ。"
+        ],
+        "expectedErrors": [
+          "sec-npm-break"
+        ]
+      }
+    ]
+  },
+  "result": {
+    "success": "部品の安全を保てた。",
+    "partial": "ヒントを使って直せた。次は、木の経路を先に読もう。",
+    "retry": "まだ警告かテストの失敗が残っている。`npm ls` と `npm test` の結果を読もう。"
+  },
+  "summary": {
+    "points": [
+      "依存は木になる",
+      "版を固定し定期的に更新",
+      "点検を自動にする"
+    ],
+    "next": [],
+    "terms": [
+      "supply-chain",
+      "transitive-dep"
+    ]
+  }
+}
