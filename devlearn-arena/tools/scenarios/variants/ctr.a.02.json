@@ -1,0 +1,37 @@
+{
+  "lesson": "ctr.a.02",
+  "variants": [
+    {
+      "name": "注釈を消す・docker.io を書く",
+      "steps": {
+        "small": [
+          "FROM docker.io/library/nginx:1.27-alpine\nCOPY site/ /usr/share/nginx/html/\n"
+        ],
+        "user": [
+          "FROM docker.io/nginxinc/nginx-unprivileged:1.27-alpine\nCOPY site/ /usr/share/nginx/html/\n"
+        ]
+      }
+    },
+    {
+      "name": "先に一般の利用者の土台へ",
+      "steps": {
+        "small": [
+          "# 掲示板のイメージ\nFROM nginxinc/nginx-unprivileged:1.27-alpine\nCOPY site /usr/share/nginx/html\n"
+        ],
+        "user": [
+          "# 掲示板のイメージ\nFROM nginxinc/nginx-unprivileged:1.27-alpine\nCOPY site /usr/share/nginx/html\n"
+        ]
+      }
+    }
+  ],
+  "wrong": {
+    "step": "user",
+    "why": "USER だけを足して 80 番で動けない",
+    "input": [
+      "# 掲示板のイメージ\nFROM nginx:1.27-alpine\nCOPY site /usr/share/nginx/html\nUSER nginx\n"
+    ],
+    "retry": [
+      "# 掲示板のイメージ\nFROM nginxinc/nginx-unprivileged:1.27-alpine\nCOPY site /usr/share/nginx/html\n"
+    ]
+  }
+}

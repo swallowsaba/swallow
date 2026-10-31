@@ -357,6 +357,85 @@
       "terms": [
         "yaml"
       ]
+    },
+    {
+      "id": "docker-a-misread",
+      "match": "答えが合っていない",
+      "meaning": "保存したが、まだ条件を満たさない。",
+      "causes": [
+        "実行に要る物を写し忘れた（`COPY --from`）。",
+        "最後の段の土台が大きいまま。",
+        "段の名前が合っていない。"
+      ],
+      "hint": "`docker images` の大きさと、`curl` の答えを読もう。",
+      "terms": [
+        "multi-stage"
+      ]
+    },
+    {
+      "id": "docker-a-stage",
+      "match": "invalid from flag value",
+      "meaning": "`COPY --from=` の段の名前が無い。",
+      "causes": [
+        "`FROM … AS 名前` の名前と違う。",
+        "`AS` を書いていない。"
+      ],
+      "hint": "`FROM` の行の `AS` の名前と合わせよう。",
+      "terms": [
+        "multi-stage"
+      ]
+    },
+    {
+      "id": "docker-a-copy",
+      "match": "failed to compute cache key|failed to calculate checksum",
+      "meaning": "写す物が見つからない。",
+      "causes": [
+        "`/app/dist` の綴りが違う。",
+        "前の段で `npm run build` を打っていない。"
+      ],
+      "hint": "前の段で作った場所を、そのまま書こう。",
+      "terms": [
+        "multi-stage"
+      ]
+    },
+    {
+      "id": "docker-a-exit",
+      "match": "答えが合っていない",
+      "meaning": "答えが、調べた結果と違う。",
+      "causes": [
+        "別の行を読んだ。",
+        "`docker ps -a` の括弧の番号を見ていない。"
+      ],
+      "hint": "`docker logs` の最初の Error の行を読もう。",
+      "terms": [
+        "exit-code"
+      ]
+    },
+    {
+      "id": "docker-a-privileged",
+      "match": "rootlessport cannot expose privileged port",
+      "meaning": "Podman は利用者の権限で動かすので、1024 より小さいポートは公開できない。Docker との権限の違い。",
+      "causes": [
+        "Docker の時の `-p 80:80` のまま打った。",
+        "手元のポートを小さくした。"
+      ],
+      "hint": "`-p 8080:80` のように、1024 以上のポートにしよう。",
+      "terms": [
+        "podman"
+      ]
+    },
+    {
+      "id": "docker-a-nodocker",
+      "match": "docker: command not found",
+      "meaning": "この機械には Docker が入っていない。",
+      "causes": [
+        "Docker の無い環境で作業している。",
+        "Podman だけが入っている。"
+      ],
+      "hint": "`podman` で同じように打とう。",
+      "terms": [
+        "podman"
+      ]
     }
   ]
 }

@@ -244,6 +244,48 @@
       "lessons": [
         "docker.i.06"
       ]
+    },
+    {
+      "id": "multi-stage",
+      "word": "マルチステージビルド",
+      "reading": "まるちすてーじびるど",
+      "plain": "作る段と動かす段を分け、最後の段だけをイメージにする Dockerfile の書き方。",
+      "why": "道具を入れずに済むので、小さく安全になる。",
+      "related": [
+        "dockerfile",
+        "image"
+      ],
+      "lessons": [
+        "docker.a.01"
+      ]
+    },
+    {
+      "id": "exit-code",
+      "word": "終了コード（終わりの番号）",
+      "reading": "しゅうりょうこーど",
+      "plain": "コンテナの主のプロセスが終わった時の番号。0 は正常、1 はアプリの失敗、137 は強制終了。",
+      "why": "止まった理由の見当が付く。次に見る場所が決まる。",
+      "related": [
+        "docker",
+        "exit-137"
+      ],
+      "lessons": [
+        "docker.a.02"
+      ]
+    },
+    {
+      "id": "buildkit",
+      "word": "BuildKit",
+      "reading": "びるどきっと",
+      "plain": "イメージを作る本体の 1 つ。段を並行に作り、作らなくてよい段を飛ばす。",
+      "why": "Docker の中の 1 部品。ほかの道具からも使える。",
+      "related": [
+        "dockerfile",
+        "podman"
+      ],
+      "lessons": [
+        "docker.a.03"
+      ]
     }
   ]
 }

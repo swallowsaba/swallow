@@ -1,6 +1,7 @@
 import {
   allNetworks, connectNetwork, createNetwork, createVolume, disconnectNetwork, engineOf, hostProcesses, login, logout, push, withEngine, filesInside, findContainer, findNetwork, serverOf, networksOf, removeNetwork, hexOf, isVolumeName, longId, memoryOf, normalizeRef, procsOf, pull, remove, removeImage, removeVolume, repoOf, run, start, stop, tagOf, writeInside,
   type Container, type ContainerError, type ContainerHost, type Image, type PortMap,
+  fromRegistry,
 } from '@/engines/container/container';
 import { psql, readTables, TABLES_FILE } from '@/engines/container/pg';
 import { build } from '@/engines/container/build';
@@ -232,6 +233,7 @@ function commandOf(host: ContainerHost, c: Container): string {
 
 export function status(c: Container): string {
   if (c.state === 'running') return 'Up 2 seconds';
+  if (c.looping === true) return `Restarting (${String(c.exitCode)}) 3 seconds ago`;
   if (c.state === 'created') return 'Created';
   return `Exited (${String(c.exitCode)}) 2 seconds ago`;
 }
@@ -268,6 +270,10 @@ interface RunArgs {
   volumes: { host: string; container: string }[];
   env: Record<string, string>;
   memory?: number;
+  restart?: string;
+  user?: string;
+  logDriver?: string;
+  logOpts?: Record<string, string>;
   network?: string;
   image?: string;
   error?: string;
@@ -305,6 +311,15 @@ export function parseRun(args: readonly string[]): RunArgs {
       const bytes = parseBytes(raw);
       if (bytes === null) return { ...out, error: `invalid argument "${raw}" for "-m, --memory" flag: invalid size: '${raw}'` };
       out.memory = bytes;
+    } else if (a === '--restart' || a.startsWith('--restart=')) {
+      const policy = value('--restart');
+      if (!/^(no|always|unless-stopped|on-failure(:\d+)?)$/.test(policy)) return { ...out, error: `invalid restart policy: unknown policy '${policy}'; use one of 'no', 'always', 'on-failure', or 'unless-stopped'` };
+      out.restart = policy.split(':')[0] ?? policy;
+    } else if (a === '-u' || a === '--user' || a.startsWith('--user=')) out.user = value('--user');
+    else if (a === '--log-driver' || a.startsWith('--log-driver=')) out.logDriver = value('--log-driver');
+    else if (a === '--log-opt' || a.startsWith('--log-opt=')) {
+      const [k = '', v = ''] = value('--log-opt').split('=');
+      out.logOpts = { ...out.logOpts, [k]: v };
     } else if (a.startsWith('-')) return { ...out, error: `unknown flag: ${a}` };
     else {
       out.image = a;
@@ -398,6 +413,13 @@ export function execIn(host: ContainerHost, c: Container, cmd: readonly string[]
       if (names.length === 0 && c.volumes.some((v) => v.container.replace(/(.)\/+$/, '$1') === dir)) return {};
       if (names.length === 0) return { stderr: image?.tools ? `ls: ${dir}: No such file or directory\n` : `ls: cannot access '${dir}': No such file or directory\n`, code: image?.tools ? 1 : 2 };
       return { stdout: lines(names) };
+    }
+    case 'id':
+    case 'whoami': {
+      const who = c.user ?? image?.user ?? 'root';
+      if (bin === 'whoami') return { stdout: `${who}\n` };
+      const uid = who === 'root' ? '0' : who === 'nginx' ? '101' : who === 'postgres' ? '999' : '1000';
+      return { stdout: `uid=${uid}(${who}) gid=${uid}(${who}) groups=${uid}(${who})\n` };
     }
     case 'hostname':
       return { stdout: `${c.id}\n` };
@@ -632,8 +654,54 @@ function statsRow(host: ContainerHost, c: Container, totalMiB: number): string[]
   return [c.id, c.name, '0.15%', `${bytesSize(used)} / ${bytesSize(limit)}`, `${((used / limit) * 100).toFixed(2)}%`, '1.25kB / 648B', '0B / 0B', String(procsOf(image).length)];
 }
 
+/** 再起動の方針・利用者・ログの出し方（run の引数から、run の頼みへ） */
+export const runExtras = (o: RunArgs): { restart?: string; user?: string; logDriver?: string; logOpts?: Record<string, string> } => ({
+  ...(o.restart !== undefined ? { restart: o.restart } : {}),
+  ...(o.user !== undefined ? { user: o.user } : {}),
+  ...(o.logDriver !== undefined ? { logDriver: o.logDriver } : {}),
+  ...(o.logOpts !== undefined ? { logOpts: o.logOpts } : {}),
+});
+
+/** docker update: 動いているコンテナの再起動の方針を変える */
+export function updateContainer(host: ContainerHost, args: readonly string[]): CommandResult {
+  let policy: string | undefined;
+  const refs: string[] = [];
+  for (let i = 0; i < args.length; i += 1) {
+    const a = args[i] ?? '';
+    if (a === '--restart') policy = args[(i += 1)];
+    else if (a.startsWith('--restart=')) policy = a.slice('--restart='.length);
+    else if (!a.startsWith('-')) refs.push(a);
+  }
+  if (policy === undefined || refs.length === 0) return { stderr: '"docker update" requires at least 1 argument.\n', code: 1 };
+  const ref = refs[0] ?? '';
+  const c = findContainer(host, ref);
+  if (!c) return { stderr: `Error response from daemon: No such container: ${ref}\n`, code: 1 };
+  return { stdout: `${ref}\n`, patch: { containers: { ...host, containers: host.containers.map((x) => (x.id === c.id ? { ...x, restart: policy } : x)) } } };
+}
+
+/** trivy image: イメージの脆弱性の件数を、深刻度ごとに出す */
+function trivy(argv: readonly string[], host: ContainerHost | null): CommandResult {
+  if (argv[1] !== 'image') return { stderr: `Error: unknown command "${argv[1] ?? ''}" for "trivy"\nRun 'trivy --help' for usage.\n`, code: 1 };
+  const rest = argv.slice(2);
+  const exitAt = rest.indexOf('--exit-code');
+  const exit = exitAt >= 0 ? Number(rest[exitAt + 1]) : 0;
+  const name = rest.filter((a, i) => !a.startsWith('-') && !(exitAt >= 0 && i === exitAt + 1)).pop();
+  const ref = dockerRef((name ?? '').replace(/^localhost\//, ''));
+  const image = host?.images.find((i) => i.ref === ref) ?? (name === undefined ? undefined : fromRegistry(ref));
+  if (!image) return { stderr: `FATAL\timage scan error: scan error: unable to initialize a scan service: unable to find the specified image "${name ?? ''}"\n`, code: 1 };
+  const total = image.vulns ?? 0;
+  const critical = Math.floor(total * 0.05);
+  const high = Math.floor(total * 0.2);
+  const medium = Math.floor(total * 0.4);
+  const title = `${name ?? ''} (${/alpine/.test(image.ref) || total < 10 ? 'alpine 3.20.3' : 'debian 12.7'})`;
+  return {
+    stdout: lines([title, '='.repeat(title.length), `Total: ${String(total)} (UNKNOWN: 0, LOW: ${String(total - critical - high - medium)}, MEDIUM: ${String(medium)}, HIGH: ${String(high)}, CRITICAL: ${String(critical)})`]),
+    ...(total > 0 && exit !== 0 ? { code: exit } : {}),
+  };
+}
+
 /** docker inspect の値（-f の {{.State.Pid}} などで読む物） */
-function inspectFields(c: Container): Record<string, string> {
+function inspectFields(c: Container, imageUser?: string): Record<string, string> {
   return {
     '.Id': fullId(c),
     '.Name': `/${c.name}`,
@@ -644,6 +712,10 @@ function inspectFields(c: Container): Record<string, string> {
     '.State.OOMKilled': String(c.oomKilled === true),
     '.State.Pid': String(c.state === 'running' ? c.pid : 0),
     '.HostConfig.Memory': String(c.memoryLimit ?? 0),
+    '.HostConfig.RestartPolicy.Name': c.restart ?? 'no',
+    '.HostConfig.LogConfig.Type': c.logDriver ?? 'json-file',
+    '.RestartCount': String(c.restarts ?? 0),
+    '.Config.User': c.user ?? imageUser ?? '',
     '.NetworkSettings.IPAddress': c.addresses?.bridge ?? '',
   };
 }
@@ -665,7 +737,7 @@ function inspect(host: ContainerHost, args: readonly string[]): CommandResult {
     if (!c) return { ...(out.length ? { stdout: lines(out) } : {}), stderr: `Error: No such object: ${ref}\n`, code: 1 };
     found.push(c);
     if (format === null) continue;
-    const fields = inspectFields(c);
+    const fields = inspectFields(c, host.images.find((x) => x.ref === c.image)?.user);
     const unknown: string[] = [];
     const text = format.replace(/\{\{\s*(\.[A-Za-z.]+)\s*\}\}/g, (_, key: string) => {
       const v = fields[key];
@@ -747,6 +819,11 @@ function loginCommand(world: ContainerHost, verb: 'login' | 'logout', args: read
 
 export const dockerCommands: CommandSpec[] = [
   {
+    name: 'trivy',
+    summary: 'イメージの脆弱性を点検する（trivy image 名前）',
+    handler: ({ argv, shell }) => trivy(argv, shell.containers),
+  },
+  {
     name: 'docker',
     summary: 'コンテナを動かす・止める・一覧する（Docker）',
     handler: ({ argv, shell }) => {
@@ -801,7 +878,7 @@ function dockerOn(host: ContainerHost, verb: string | undefined, rest: readonly 
           if (!o.image) return { stderr: '"docker run" requires at least 1 argument.\n', code: 125 };
           if (o.memory !== undefined && o.memory < MIN_MEMORY) return { stderr: 'docker: Error response from daemon: Minimum memory limit allowed is 6MB.\n', code: 125 };
           const had = host.images.some((i) => i.ref === o.image || i.ref === `${o.image ?? ''}:latest` || i.ref.startsWith(`${o.image ?? ''}:`));
-          const r = run(host, { image: o.image, ports: o.ports, volumes: o.volumes, env: o.env, ...(o.name ? { name: o.name } : {}), ...(o.memory !== undefined ? { memory: o.memory } : {}), ...(o.network !== undefined ? { network: o.network } : {}) });
+          const r = run(host, { image: o.image, ports: o.ports, volumes: o.volumes, env: o.env, ...(o.name ? { name: o.name } : {}), ...(o.memory !== undefined ? { memory: o.memory } : {}), ...runExtras(o), ...(o.network !== undefined ? { network: o.network } : {}) });
           if (!r.ok) return { ...daemonError(r.error, 'run'), patch: { containers: r.host } };
           const image = r.host.images.find((i) => i.ref === r.value.image);
           const pulled = had || !image ? [] : [`Unable to find image '${r.value.image}' locally`, ...pullLines(image, false).slice(0, -1)];
@@ -934,6 +1011,8 @@ function dockerOn(host: ContainerHost, verb: string | undefined, rest: readonly 
           if (!r.ok) return daemonError(r.error, 'rmi');
           return set(r.host, { stdout: lines([`Untagged: ${r.value.ref}`, `Deleted: sha256:${r.value.id}`]) });
         }
+        case 'update':
+          return updateContainer(host, rest);
         case 'logs': {
           const ref = operandsOf(rest, VALUED.logs ?? [])[0] ?? '';
           const c = findContainer(host, ref);

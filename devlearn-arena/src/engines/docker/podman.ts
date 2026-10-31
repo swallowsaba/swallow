@@ -7,7 +7,7 @@ import { build, type BuildTrace } from '@/engines/container/build';
 import { resolve } from '@/engines/kernel/path';
 import type { CommandResult, CommandSpec, ShellState } from '@/engines/kernel/registry';
 import { exists, isDir, readFile } from '@/engines/kernel/vfs';
-import { contextFiles, diffLines, execIn, lines, MIN_MEMORY, operandsOf, parseRun, portLines, portsOf, qualified, shortForm, status, tailOf, topLines, VALUED } from './cli';
+import { contextFiles, diffLines, runExtras, execIn, lines, MIN_MEMORY, operandsOf, parseRun, portLines, portsOf, qualified, shortForm, status, tailOf, topLines, VALUED } from './cli';
 import { composeCommand } from './compose';
 
 /**
@@ -259,6 +259,9 @@ function inspectFields(host: ContainerHost, c: Container): Record<string, string
     '.Id': longId(c.id),
     '.Name': c.name,
     '.ImageName': fullName(host, c.image),
+    '.RestartCount': String(c.restarts ?? 0),
+    '.HostConfig.RestartPolicy.Name': c.restart ?? 'no',
+    '.Config.User': c.user ?? host.images.find((i) => i.ref === c.image)?.user ?? '',
     '.State.Status': c.state,
     '.State.Running': String(c.state === 'running'),
     '.State.ExitCode': String(c.exitCode),
@@ -430,10 +433,13 @@ function podmanOn(host: ContainerHost, verb: string | undefined, rest: readonly 
       if (o.error) return { stderr: `Error: ${o.error}\nSee 'podman run --help'\n`, code: 125 };
       if (!o.image) return { stderr: 'Error: requires at least 1 arg(s), only received 0\n', code: 125 };
       if (o.memory !== undefined && o.memory < MIN_MEMORY) return { stderr: 'Error: minimum memory limit allowed is 6MB\n', code: 125 };
+      // 利用者の権限で動かすので、1024 より小さいポートは公開できない（本物と同じ文）
+      const low = o.ports.find((p) => p.host < 1024);
+      if (low) return { stderr: `Error: rootlessport cannot expose privileged port ${String(low.host)}, you can add 'net.ipv4.ip_unprivileged_port_start=${String(low.host)}' to /etc/sysctl.conf (currently 1024), or choose a larger port number (>= 1024): listen tcp 0.0.0.0:${String(low.host)}: bind: permission denied\n`, code: 126 };
       const ref = modelRef(o.image);
       const had = host.images.some((i) => i.ref === ref);
       const network = o.network === 'podman' ? 'bridge' : o.network;
-      const r = run(host, { image: ref, ports: o.ports, volumes: o.volumes, env: o.env, ...(o.name ? { name: o.name } : {}), ...(o.memory !== undefined ? { memory: o.memory } : {}), ...(network !== undefined ? { network } : {}) });
+      const r = run(host, { image: ref, ports: o.ports, volumes: o.volumes, env: o.env, ...(o.name ? { name: o.name } : {}), ...(o.memory !== undefined ? { memory: o.memory } : {}), ...runExtras(o), ...(network !== undefined ? { network } : {}) });
       if (!r.ok) return { ...podmanError(r.host, r.error, 'run'), patch: { containers: r.host } };
       const image = r.host.images.find((i) => i.ref === r.value.image);
       const pulled = had || !image ? [] : pullLines(r.host, o.image, image, false);

@@ -1,0 +1,228 @@
+{
+  "id": "ctr.a.02",
+  "domain": "ctr",
+  "level": "advanced",
+  "theme": "安全",
+  "title": "コンテナの安全",
+  "goal": "最小イメージ・root で動かさない・脆弱性の走査を実践できる",
+  "minutes": 20,
+  "prerequisites": [
+    "ctr.a.01",
+    "sec.i.04"
+  ],
+  "related": [
+    "sec.i.04",
+    "sec.a.04"
+  ],
+  "next": [],
+  "terms": [
+    "image",
+    "vulnerability",
+    "permission",
+    "container",
+    "rootless",
+    "least-privilege",
+    "port",
+    "log"
+  ],
+  "explain": {
+    "what": "小さな{{term:image}}を使い、root で動かさず、{{term:vulnerability}}を定期的に点検すること。",
+    "why": "中身が多いほど、{{term:permission}}が強いほど危ない。破られた時の被害も大きくなる。",
+    "use": "本番のイメージで使う。土台の選び方で、件数は大きく変わる。",
+    "when": "点検で 100 件近い脆弱性が出た。中を見ると root で動いている。",
+    "figures": [
+      "ctr-a02-safe"
+    ]
+  },
+  "understand": [
+    {
+      "kind": "relation",
+      "prompt": "関係を選ぶ。",
+      "a": "中身が多い",
+      "b": "脆弱性の件数が増える",
+      "answer": "cause",
+      "why": "部品が増えるほど、弱点も増える。",
+      "see": "why"
+    },
+    {
+      "kind": "yesno",
+      "prompt": "{{term:container}}の中の root は安全？",
+      "answer": false,
+      "why": "抜け出された時に、機械でも強い権限を持つことがある。{{term:rootless}}。",
+      "see": "what"
+    }
+  ],
+  "quiz": [
+    {
+      "id": "q1",
+      "kind": "situation",
+      "prompt": "脆弱性の件数を減らすには？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "小さな土台にする",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "イメージの名前を変える",
+          "correct": false,
+          "whyNot": "中身は変わらない。"
+        },
+        {
+          "id": "c",
+          "text": "点検をやめる",
+          "correct": false,
+          "whyNot": "弱点は残る。"
+        }
+      ],
+      "explanation": "要らない部品を入れない。"
+    },
+    {
+      "id": "q2",
+      "kind": "choice",
+      "prompt": "動かす利用者は？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "一般の利用者",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "root",
+          "correct": false,
+          "whyNot": "破られた時の被害が大きい。"
+        },
+        {
+          "id": "c",
+          "text": "誰でもよい",
+          "correct": false,
+          "whyNot": "{{term:least-privilege}}の考え方に反する。"
+        }
+      ],
+      "explanation": "`USER` か、一般の利用者で動く土台を使う。"
+    },
+    {
+      "id": "q3",
+      "kind": "cause",
+      "prompt": "古い脆弱性が残り続ける。原因は？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "土台を更新していない",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "{{term:port}}が多い",
+          "correct": false,
+          "whyNot": "件数と関係が無い。"
+        },
+        {
+          "id": "c",
+          "text": "{{term:log}}が多い",
+          "correct": false,
+          "whyNot": "件数と関係が無い。"
+        }
+      ],
+      "explanation": "定期的に作り直す。"
+    }
+  ],
+  "practice": {
+    "mode": "editor",
+    "purpose": "掲示板のイメージ `city-board:2.0` を作る `Dockerfile` を直す。保存すると作り直して `trivy` で点検し、動かす（手元の 8080 は中の 80、8081 は中の 8080）。件数を 5 以下にし、一般の利用者で動かす。",
+    "environment": "linux-basic",
+    "setup": {
+      "hostname": "board-01",
+      "containerCli": "podman",
+      "cwd": "/home/learner/board",
+      "dirs": [
+        "/home/learner/board/site"
+      ],
+      "sites": [],
+      "images": [
+        "nginx:1.27",
+        "nginx:1.27-alpine",
+        "nginxinc/nginx-unprivileged:1.27-alpine"
+      ],
+      "files": {
+        "/home/learner/board/site/index.html": "<h1>市の掲示板</h1>\n",
+        "/home/learner/board/Dockerfile": "# 掲示板のイメージ\nFROM nginx:1.27\nCOPY site /usr/share/nginx/html\n"
+      },
+      "run": [
+        "podman build -t city-board:2.0 .",
+        "podman run -d --name board -p 8080:80 -p 8081:8080 city-board:2.0"
+      ],
+      "edit": {
+        "path": "/home/learner/board/Dockerfile",
+        "apply": [
+          "podman build -t city-board:2.0 .",
+          "podman images city-board",
+          "trivy image city-board:2.0",
+          "podman rm -f board",
+          "podman run -d --name board -p 8080:80 -p 8081:8080 city-board:2.0",
+          "podman ps -a",
+          "podman exec board id"
+        ]
+      }
+    },
+    "steps": [
+      {
+        "id": "small",
+        "purpose": "`FROM` を小さな土台 `nginx:1.27-alpine` に替える。点検の件数が 5 以下になり、掲示板が動けば達成。",
+        "check": {
+          "kind": "container",
+          "expr": "vulns:city-board:2.0<=5 running:board body:board~市の掲示板"
+        },
+        "afterward": "86 件から 3 件に減った。大きさも 4 分の 1 になった。ただ `id` を見ると、まだ root で動いている。",
+        "hints": [
+          "`FROM` の行だけを替える。",
+          "`alpine` の土台。",
+          "`# 掲示板のイメージ\nFROM nginx:1.27-alpine\nCOPY site /usr/share/nginx/html`"
+        ],
+        "expectedErrors": [
+          "ctr-a-misread",
+          "ctr-a-not-running",
+          "ctr-build-parse"
+        ]
+      },
+      {
+        "id": "user",
+        "purpose": "一般の利用者で動かす。`USER nginx` だけでは 80 番を使えないので、8080 番で待つ土台 `nginxinc/nginx-unprivileged:1.27-alpine` に替える。",
+        "check": {
+          "kind": "container",
+          "expr": "vulns:city-board:2.0<=5 running:board user:board=nginx body:board~市の掲示板"
+        },
+        "afterward": "`uid=101(nginx)` で動いた。件数は少ないまま。作り直しを定期的に行えば、土台の修正も入る。",
+        "hints": [
+          "一般の利用者は 1024 より小さいポートで待てない。",
+          "8080 番で待つように作られた土台がある。",
+          "`# 掲示板のイメージ\nFROM nginxinc/nginx-unprivileged:1.27-alpine\nCOPY site /usr/share/nginx/html`"
+        ],
+        "expectedErrors": [
+          "ctr-a-misread",
+          "ctr-a-not-running",
+          "ctr-build-parse"
+        ]
+      }
+    ]
+  },
+  "result": {
+    "success": "安全なイメージにできた。",
+    "partial": "ヒントを使ってできた。次は、なぜ 80 番で動けないかを説明してみよう。",
+    "retry": "まだ条件を満たさない。`trivy` の件数と `podman exec board id` を読もう。"
+  },
+  "summary": {
+    "points": [
+      "小さく作る",
+      "root で動かさない",
+      "定期的に点検"
+    ],
+    "next": [],
+    "terms": [
+      "image-scan",
+      "rootless"
+    ]
+  }
+}

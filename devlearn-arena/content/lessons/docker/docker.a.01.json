@@ -1,0 +1,217 @@
+{
+  "id": "docker.a.01",
+  "domain": "docker",
+  "level": "advanced",
+  "theme": "軽量化",
+  "title": "マルチステージビルド",
+  "goal": "小さく安全なイメージを作れる",
+  "minutes": 20,
+  "prerequisites": [
+    "docker.i.01"
+  ],
+  "related": [
+    "ctr.a.02",
+    "cicd.a.02"
+  ],
+  "next": [
+    "docker.a.02"
+  ],
+  "terms": [
+    "image",
+    "port",
+    "log",
+    "file"
+  ],
+  "explain": {
+    "what": "作る段と動かす段を分け、動かすのに要る物だけを最後の段に入れる書き方。",
+    "why": "小さく安全な{{term:image}}にするため。作る道具は動かす時に要らず、残すと危ない。",
+    "use": "本番のイメージで使う。作る道具が重いほど効く。",
+    "when": "イメージが 1GB ある。配るのも遅く、点検の件数も多い。",
+    "figures": [
+      "docker-a01-stages"
+    ]
+  },
+  "understand": [
+    {
+      "kind": "relation",
+      "prompt": "関係を選ぶ。",
+      "a": "最後の段",
+      "b": "できるイメージの中身",
+      "answer": "cause",
+      "why": "前の段の中身は、写した物の他は入らない。",
+      "see": "what"
+    },
+    {
+      "kind": "situation",
+      "prompt": "道具を残すと何が危ない？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "破られた時に、その道具を使って広げられる",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "{{term:port}}が増える",
+          "correct": false,
+          "whyNot": "ポートは増えない。"
+        },
+        {
+          "id": "c",
+          "text": "{{term:log}}が消える",
+          "correct": false,
+          "whyNot": "関係が無い。"
+        }
+      ],
+      "see": "why"
+    }
+  ],
+  "quiz": [
+    {
+      "id": "q1",
+      "kind": "predict",
+      "prompt": "作る道具は、最後のイメージに入る？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "入らない",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "全て入る",
+          "correct": false,
+          "whyNot": "最後の段だけがイメージになる。"
+        },
+        {
+          "id": "c",
+          "text": "半分入る",
+          "correct": false,
+          "whyNot": "写した物だけが入る。"
+        }
+      ],
+      "explanation": "`COPY --from` で写した物だけ。"
+    },
+    {
+      "id": "q2",
+      "kind": "situation",
+      "prompt": "小さくしたい。どうする？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "マルチステージにする",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "名前を短くする",
+          "correct": false,
+          "whyNot": "中身は変わらない。"
+        },
+        {
+          "id": "c",
+          "text": "タグを消す",
+          "correct": false,
+          "whyNot": "中身は変わらない。"
+        }
+      ],
+      "explanation": "道具を最後の段に入れない。"
+    },
+    {
+      "id": "q3",
+      "kind": "cause",
+      "prompt": "段を分けたのに大きいまま。原因は？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "最後の段の土台が大きい",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "段が多すぎる",
+          "correct": false,
+          "whyNot": "前の段の大きさは入らない。"
+        },
+        {
+          "id": "c",
+          "text": "{{term:file}}名が長い",
+          "correct": false,
+          "whyNot": "関係が無い。"
+        }
+      ],
+      "explanation": "最後の `FROM` を小さくする。"
+    }
+  ],
+  "practice": {
+    "mode": "editor",
+    "purpose": "店の画面を作る `Dockerfile` は 1 段で、1GB を超える。`node:20` で作り、`dist` だけを `nginx:1.27-alpine` に写して、100MB 以下にする。保存すると作り直して動かす。",
+    "environment": "container-host",
+    "setup": {
+      "hostname": "dev-01",
+      "cwd": "/home/learner/shop",
+      "dirs": [
+        "/home/learner/shop/src"
+      ],
+      "files": {
+        "/home/learner/shop/package.json": "{\n  \"name\": \"shop\",\n  \"version\": \"2.0.0\",\n  \"scripts\": { \"build\": \"vite build\" },\n  \"dependencies\": { \"vite\": \"^5.0.0\" }\n}\n",
+        "/home/learner/shop/src/index.html": "<h1>港の店</h1>\n",
+        "/home/learner/shop/Dockerfile": "# 店の画面を作るイメージ\nFROM node:20\nWORKDIR /app\nCOPY package.json .\nRUN npm ci\nCOPY src src\nRUN npm run build\n"
+      },
+      "run": [
+        "docker build -t city-shop:1.9 ."
+      ],
+      "edit": {
+        "path": "/home/learner/shop/Dockerfile",
+        "apply": [
+          "docker build -t city-shop:2.0 .",
+          "docker images city-shop",
+          "docker rm -f shop || true",
+          "docker run -d --name shop -p 8080:80 -p 8081:8080 city-shop:2.0",
+          "curl -s http://localhost:8080/ || curl -s http://localhost:8081/"
+        ]
+      }
+    },
+    "steps": [
+      {
+        "id": "split",
+        "purpose": "最初の `FROM` に `AS build` を付け、最後に `FROM nginx:1.27-alpine` と `COPY --from=build /app/dist /usr/share/nginx/html` を足す。100MB 以下で頁が出れば達成。",
+        "check": {
+          "kind": "container",
+          "expr": "size:city-shop:2.0<=100 running:shop body:shop~港の店"
+        },
+        "afterward": "1.1GB から 48MB になった。動かす物は同じ頁。`node` も `npm` も入っていないので、破られても使える道具が少ない。",
+        "hints": [
+          "段は `FROM` で分かれる。",
+          "`AS` で名前を付け、`COPY --from=名前` で写す。",
+          "`# 店の画面を作るイメージ\nFROM node:20 AS build\nWORKDIR /app\nCOPY package.json .\nRUN npm ci\nCOPY src src\nRUN npm run build\n\nFROM nginx:1.27-alpine\nCOPY --from=build /app/dist /usr/share/nginx/html`"
+        ],
+        "expectedErrors": [
+          "docker-a-misread",
+          "docker-a-stage",
+          "docker-a-copy",
+          "docker-build-parse"
+        ]
+      }
+    ]
+  },
+  "result": {
+    "success": "小さくできた。",
+    "partial": "ヒントを使って小さくできた。次は、最後の段に何が要るかを先に考えよう。",
+    "retry": "まだ条件を満たさない。`docker images` の大きさと `curl` の答えを読もう。"
+  },
+  "summary": {
+    "points": [
+      "段を分ける",
+      "要る物だけ",
+      "小さいほど安全"
+    ],
+    "next": [
+      "docker.a.02"
+    ],
+    "terms": [
+      "multi-stage",
+      "dockerfile"
+    ]
+  }
+}

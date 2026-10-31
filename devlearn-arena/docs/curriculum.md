@@ -306,7 +306,7 @@ lab は複数分野の組み合わせ
 | ctr.i.03 | 中級 | ネットワーク | コンテナのネットワーク | コンテナどうし・外との通信の仕組みを説明できる | 端 | ctr.b.03, net.b.04 | docker.i.04, net.b.04 | ctr.i.05, docker.i.04 |
 | ctr.i.04 | 中級 | ストレージ | コンテナとデータ | 消える領域と残す領域（ボリューム）を使い分けられる | 端 | ctr.b.04 | docker.i.03, k8s.i.03 | ctr.i.05, docker.i.03, k8s.i.03 |
 | ctr.i.05 | 中級 | 複数 | 複数コンテナで 1 つのサービス | 役割を分けて組み合わせる設計ができる | 編 | ctr.i.03, ctr.i.04 | docker.i.06, k8s.a.01 | ctr.a.01 |
-| ctr.a.01 | 上級 | 運用 | コンテナ運用 | ログ・資源制限・更新・再起動方針を設計できる | 模 | ctr.i.05 | k8s.i.07, mon.b.02 | ctr.a.02 |
+| ctr.a.01 | 上級 | 運用 | コンテナ運用 | ログ・資源制限・更新・再起動方針を設計できる | 端 | ctr.i.05 | k8s.i.07, mon.b.02 | ctr.a.02 |
 | ctr.a.02 | 上級 | 安全 | コンテナの安全 | 最小イメージ・root で動かさない・脆弱性の走査を実践できる | 編 | ctr.a.01, sec.i.04 | sec.i.04, sec.a.04 | — |
 
 ### 4.9 Docker（docker）— コンテナ施設（Docker 工房）
@@ -328,7 +328,7 @@ lab は複数分野の組み合わせ
 | docker.i.06 | 中級 | Compose | Compose で複数コンテナ | compose.yaml で Web と DB を一緒に動かせる | 編 | docker.i.04, docker.i.03 | ctr.i.05, k8s.a.01 | lab.a.01 |
 | docker.a.01 | 上級 | 軽量化 | マルチステージビルド | 小さく安全なイメージを作れる | 編 | docker.i.01 | ctr.a.02, cicd.a.02 | docker.a.02 |
 | docker.a.02 | 上級 | 障害 | 起動しないコンテナを直す | 終了コード・ログ・設定から原因を特定できる | 端 | docker.b.05, trouble.i.01 | trouble.a.01, k8s.a.02 | docker.a.03 |
-| docker.a.03 | 上級 | 周辺 | Docker 以外の道具 | Podman・BuildKit などとの関係を説明できる | 模 | ctr.i.01 | ctr.i.01, k8s.b.03 | — |
+| docker.a.03 | 上級 | 周辺 | Docker 以外の道具 | Podman・BuildKit などとの関係を説明できる | 端 | ctr.i.01 | ctr.i.01, k8s.b.03 | — |
 
 ### 4.10 Kubernetes（k8s）— クラスタ施設
 

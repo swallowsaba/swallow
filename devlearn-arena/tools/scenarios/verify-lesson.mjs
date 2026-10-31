@@ -25,7 +25,7 @@ export const DESIGNED_FAILURES = new Set(['git.b.06', 'git.i.05', 'git.i.02', 't
   // 範囲を広げた 80 本（docs/progress/expand-scope.md）: 目的の文が「curl の警告の文を読み」と、失敗を見ることを書いている手順
   'sec.i.01',
   // 目的の文が「これが断られる」と、失敗を見ることを書いている手順
-  'db.i.04', 'trouble.i.02', 'trouble.i.03', 'linux.a.01', 'net.a.01', 'net.a.02', 'web.a.02', 'git.a.02']);
+  'db.i.04', 'trouble.i.02', 'trouble.i.03', 'linux.a.01', 'net.a.01', 'net.a.02', 'web.a.02', 'git.a.02', 'docker.a.03']);
 
 /** 確かめるための台本側の別解と、間違える操作（tools/scenarios/variants/<ID>.json。無ければ null） */
 export function variantsFile(id) {

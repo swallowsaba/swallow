@@ -1,0 +1,31 @@
+{
+  "lesson": "docker.a.01",
+  "variants": [
+    {
+      "name": "一般の利用者の土台にする",
+      "steps": {
+        "split": [
+          "FROM node:20 AS builder\nWORKDIR /app\nCOPY package.json .\nRUN npm ci\nCOPY src src\nRUN npm run build\nFROM nginxinc/nginx-unprivileged:1.27-alpine\nCOPY --from=builder /app/dist /usr/share/nginx/html\n"
+        ]
+      }
+    },
+    {
+      "name": "段を番号で指す",
+      "steps": {
+        "split": [
+          "FROM node:20\nWORKDIR /app\nCOPY package.json .\nRUN npm ci\nCOPY src src\nRUN npm run build\nFROM nginx:1.27-alpine\nCOPY --from=0 /app/dist/ /usr/share/nginx/html/\n"
+        ]
+      }
+    }
+  ],
+  "wrong": {
+    "step": "split",
+    "why": "成果物を写し忘れる",
+    "input": [
+      "FROM node:20 AS build\nWORKDIR /app\nCOPY package.json .\nRUN npm ci\nCOPY src src\nRUN npm run build\nFROM nginx:1.27-alpine\n"
+    ],
+    "retry": [
+      "# 店の画面を作るイメージ\nFROM node:20 AS build\nWORKDIR /app\nCOPY package.json .\nRUN npm ci\nCOPY src src\nRUN npm run build\n\nFROM nginx:1.27-alpine\nCOPY --from=build /app/dist /usr/share/nginx/html\n"
+    ]
+  }
+}

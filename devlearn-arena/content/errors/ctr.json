@@ -394,6 +394,33 @@
       "terms": [
         "containerfile"
       ]
+    },
+    {
+      "id": "ctr-a-misread",
+      "match": "答えが合っていない",
+      "meaning": "保存したが、まだ条件を満たさない。",
+      "causes": [
+        "土台が大きいまま（件数や大きさが多い）。",
+        "`USER` を足したが、80 番で待つ土台のまま（一般の利用者は 80 番を使えない）。",
+        "頁を写していない。"
+      ],
+      "hint": "`podman ps -a` と `podman logs board` を読み、8080 番で待つ土台を使おう。",
+      "terms": [
+        "rootless"
+      ]
+    },
+    {
+      "id": "ctr-a-not-running",
+      "match": "can only create exec sessions on running containers",
+      "meaning": "止まっているコンテナの中では命令を打てない。",
+      "causes": [
+        "起動してすぐ止まった。",
+        "`bind() … Permission denied` で 80 番を使えなかった。"
+      ],
+      "hint": "`podman logs board` で止まった理由を読もう。",
+      "terms": [
+        "rootless"
+      ]
     }
   ]
 }

@@ -1,0 +1,72 @@
+{
+  "lesson": "ctr.a.01",
+  "variants": [
+    {
+      "name": "番号を読んでから落とす",
+      "steps": {
+        "crash": [
+          "podman ps",
+          "kill -KILL $(podman inspect -f '{{.State.Pid}}' shop)",
+          "podman ps -a"
+        ],
+        "policy": [
+          "podman rm shop",
+          "podman run -d --name shop --restart always -m 128m --log-opt max-size=5m -p 8080:80 city-shop:1.0",
+          "podman ps"
+        ],
+        "recover": [
+          "kill -9 $(podman inspect -f '{{.State.Pid}}' shop)",
+          "podman ps",
+          "podman inspect -f '{{.RestartCount}}' shop"
+        ],
+        "config": [
+          "podman run -d --name crowd --restart=on-failure city-crowd:1.0",
+          "podman ps -a",
+          "podman logs crowd",
+          "podman rm -f crowd",
+          "podman run -d --name crowd -e TARGET_URL=http://localhost:8080/ --restart=on-failure city-crowd:1.0"
+        ],
+        "update": [
+          "podman rm -f shop",
+          "podman run -d --name shop --restart=always -m 128m --log-opt max-size=5m -p 8080:80 city-shop:1.1"
+        ]
+      }
+    },
+    {
+      "name": "上限を大きくする",
+      "steps": {
+        "crash": [
+          "kill -9 $(podman inspect -f '{{.State.Pid}}' shop)"
+        ],
+        "policy": [
+          "podman rm -f shop",
+          "podman run -d --restart always --name shop --memory 256m --log-opt max-size=10m --log-opt max-file=3 -p 8080:80 city-shop:1.0"
+        ],
+        "recover": [
+          "kill -TERM $(podman inspect -f '{{.State.Pid}}' shop)",
+          "podman ps"
+        ],
+        "config": [
+          "podman run -d --name crowd --restart=always -e TARGET_URL=http://localhost:8080/ city-crowd:1.0"
+        ],
+        "update": [
+          "podman pull city-shop:1.1",
+          "podman stop shop",
+          "podman rm shop",
+          "podman run -d --restart=always --name shop --memory 256m --log-opt max-size=10m -p 8080:80 city-shop:1.1"
+        ]
+      }
+    }
+  ],
+  "wrong": {
+    "step": "policy",
+    "why": "消さずに同じ名前で作る",
+    "input": [
+      "podman run -d --name shop --restart=always --memory=128m --log-opt max-size=10m -p 8080:80 city-shop:1.0"
+    ],
+    "retry": [
+      "podman rm shop",
+      "podman run -d --name shop --restart=always --memory=128m --log-opt max-size=10m -p 8080:80 city-shop:1.0"
+    ]
+  }
+}

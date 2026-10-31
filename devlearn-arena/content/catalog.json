@@ -3327,7 +3327,7 @@
       "title": "コンテナ運用",
       "goal": "ログ・資源制限・更新・再起動方針を設計できる",
       "practice": [
-        "simulation"
+        "terminal"
       ],
       "prerequisites": [
         "ctr.i.05"
@@ -3649,7 +3649,7 @@
       "title": "Docker 以外の道具",
       "goal": "Podman・BuildKit などとの関係を説明できる",
       "practice": [
-        "simulation"
+        "terminal"
       ],
       "prerequisites": [
         "ctr.i.01"

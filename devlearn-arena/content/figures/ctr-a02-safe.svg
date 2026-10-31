@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 360" font-family="&quot;Noto Sans JP&quot;, sans-serif">
+  <title>大きなイメージと小さなイメージの、含まれる物と点検の結果</title>
+  <g class="el" data-part="big">
+    <rect x="20" y="40" width="290" height="240" rx="10" fill="#c0392b" />
+    <text x="165" y="121" text-anchor="middle" font-size="16" font-weight="700" fill="#eef2f6">大きなイメージ</text>
+    <text x="165" y="143" text-anchor="middle" font-size="14" fill="#eef2f6">192MB</text>
+    <text x="165" y="165" text-anchor="middle" font-size="14" fill="#eef2f6">シェル・道具が多い</text>
+    <text x="165" y="187" text-anchor="middle" font-size="14" fill="#eef2f6">点検 86 件</text>
+    <text x="165" y="209" text-anchor="middle" font-size="14" fill="#eef2f6">root で動く</text>
+  </g>
+  <g class="el" data-part="small">
+    <rect x="330" y="40" width="290" height="240" rx="10" fill="#1f7a4d" />
+    <text x="475" y="121" text-anchor="middle" font-size="16" font-weight="700" fill="#eef2f6">小さなイメージ</text>
+    <text x="475" y="143" text-anchor="middle" font-size="14" fill="#eef2f6">52MB</text>
+    <text x="475" y="165" text-anchor="middle" font-size="14" fill="#eef2f6">動かすのに要る物だけ</text>
+    <text x="475" y="187" text-anchor="middle" font-size="14" fill="#eef2f6">点検 3 件</text>
+    <text x="475" y="209" text-anchor="middle" font-size="14" fill="#eef2f6">一般の利用者で動く</text>
+  </g>
+  <g class="el" data-part="note">
+    <text x="320" y="340" text-anchor="middle" font-size="14" fill="#eef2f6">中身が少なく、権限が弱いほど安全</text>
+  </g>
+</svg>

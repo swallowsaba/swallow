@@ -1,0 +1,56 @@
+{
+  "lesson": "docker.a.03",
+  "variants": [
+    {
+      "name": "docker.io を書く・ポートを変える",
+      "steps": {
+        "run": [
+          "podman images",
+          "podman pull docker.io/library/city-shop:1.0",
+          "podman run -d --name shop -p 8080:80 docker.io/library/city-shop:1.0"
+        ],
+        "same": [
+          "curl -s -o podman-result.txt http://localhost:8080/",
+          "diff --report-identical-files docker-result.txt podman-result.txt"
+        ],
+        "build": [
+          "cd /home/learner/note",
+          "podman build -t city-note:1.0 -f Dockerfile .",
+          "podman run -d --name note -p 9090:80 city-note:1.0"
+        ]
+      }
+    },
+    {
+      "name": "run で取ってくる",
+      "steps": {
+        "run": [
+          "podman run -d --name shop -p 8080:80 city-shop:1.0"
+        ],
+        "same": [
+          "curl -s http://localhost:8080/ > podman-result.txt",
+          "cat docker-result.txt",
+          "diff docker-result.txt podman-result.txt",
+          "diff -s docker-result.txt podman-result.txt"
+        ],
+        "build": [
+          "cd note",
+          "cat Dockerfile",
+          "podman build -t city-note:1.0 .",
+          "podman images",
+          "podman run -d -p 8081:80 --name note city-note:1.0",
+          "podman ps"
+        ]
+      }
+    }
+  ],
+  "wrong": {
+    "step": "run",
+    "why": "Docker の時の手元のポート 80 のまま打つ",
+    "input": [
+      "podman run -d --name shop -p 80:80 city-shop:1.0"
+    ],
+    "retry": [
+      "podman run -d --name shop -p 8080:80 city-shop:1.0"
+    ]
+  }
+}

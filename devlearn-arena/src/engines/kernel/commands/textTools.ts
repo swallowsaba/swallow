@@ -371,11 +371,15 @@ export const textToolCommands: CommandSpec[] = [
     name: 'diff',
     summary: '2つのファイルの差分を unified 形式で出す',
     handler: ({ argv, shell }) => {
-      const { operands } = parseArgs(argv);
+      const { operands, flags } = parseArgs(argv);
       const left = operands[0];
       const right = operands[1];
       if (left === undefined || right === undefined) {
         return { stderr: 'diff: missing operand\n', code: 2 };
+      }
+      // -s: 同じ時も、同じと言う
+      if ((flags.has('s') || flags.has('report-identical-files')) && readFile(shell.vfs, resolve(shell.cwd, left)) === readFile(shell.vfs, resolve(shell.cwd, right))) {
+        return { stdout: `Files ${left} and ${right} are identical\n` };
       }
       const a = toLines(readFile(shell.vfs, resolve(shell.cwd, left)));
       const b = toLines(readFile(shell.vfs, resolve(shell.cwd, right)));

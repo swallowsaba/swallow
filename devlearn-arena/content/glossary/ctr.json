@@ -264,6 +264,61 @@
         "ctr.b.03",
         "ctr.i.04"
       ]
+    },
+    {
+      "id": "restart-policy",
+      "word": "再起動の方針",
+      "reading": "さいきどうのほうしん",
+      "plain": "コンテナが止まった時に、自動で動かし直すかの決まり。",
+      "why": "夜中に落ちても、人が起きる前に戻る。ただし設定の誤りは直らず、繰り返すだけ。",
+      "related": [
+        "container"
+      ],
+      "lessons": [
+        "ctr.a.01"
+      ]
+    },
+    {
+      "id": "exit-137",
+      "word": "終了コード 137（強制終了）",
+      "reading": "しゅうりょうこーど",
+      "plain": "強制的に止められたコンテナの終わりの番号（128 + SIGKILL の 9）。",
+      "why": "メモリの上限を超えた時や、手で `kill -9` した時に出る。",
+      "related": [
+        "cgroups"
+      ],
+      "lessons": [
+        "ctr.a.01",
+        "docker.a.02"
+      ]
+    },
+    {
+      "id": "image-scan",
+      "word": "イメージの点検",
+      "reading": "いめーじのてんけん",
+      "plain": "イメージの中の部品の版を調べ、知られた脆弱性を数えること。`trivy` など。",
+      "why": "中身が多いほど件数が増える。小さな土台にすると減る。",
+      "related": [
+        "image",
+        "rootless"
+      ],
+      "lessons": [
+        "ctr.a.02"
+      ]
+    },
+    {
+      "id": "rootless",
+      "word": "一般の利用者で動かす",
+      "reading": "いっぱんのりようしゃでうごかす",
+      "plain": "コンテナの中のプロセスを root 以外で動かすこと。",
+      "why": "抜け出された時の被害が小さい。1024 より小さいポートは使えない。",
+      "related": [
+        "container",
+        "namespace"
+      ],
+      "lessons": [
+        "ctr.a.02"
+      ]
     }
   ]
 }

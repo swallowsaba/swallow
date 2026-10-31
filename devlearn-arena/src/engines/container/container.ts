@@ -43,6 +43,10 @@ export interface Image {
      */
     warmup?: number;
   };
+  /** 点検（trivy）で出る脆弱性の件数。作ったイメージは土台の件数を受け継ぐ */
+  vulns?: number;
+  /** 動かす利用者（Dockerfile の USER。無ければ root） */
+  user?: string;
   /** 動かすのに要る環境変数（無いと止まる） */
   requiresEnv?: { name: string; error: readonly string[] };
   /** 動き出してすぐ、要る物を確かめる前に出すログ（起動の行。原因の行はこの後に出る） */
@@ -129,6 +133,17 @@ export interface Container {
   memoryLimit?: number;
   /** 上限を超えてカーネルに止められた */
   oomKilled?: boolean;
+  /** 再起動の方針（--restart）。no・always・on-failure・unless-stopped */
+  restart?: string;
+  /** 自動で動かし直した回数 */
+  restarts?: number;
+  /** 動かしてもすぐ止まり、再起動を繰り返している（ps の Restarting） */
+  looping?: boolean;
+  /** 動かす利用者（--user。無ければイメージの物） */
+  user?: string;
+  /** ログの出し方（--log-driver・--log-opt） */
+  logDriver?: string;
+  logOpts?: Readonly<Record<string, string>>;
   /** 主のプロセスの、機械から見た PID（動いている間。シムはその 1 つ前） */
   pid: number;
   /** 中のアプリが待ち受けて答える物（作ったイメージのアプリが動いている時） */
@@ -224,12 +239,12 @@ const NGINX_404 = nginxError('404 Not Found');
 /** 模擬のレジストリに置いてあるイメージ（docs/learning-design.md 6 章: 本物は取りに行かない） */
 export const REGISTRY: readonly Image[] = [
   {
-    ref: 'nginx:1.27-alpine', id: 'b1a2c39e4f7d', size: '48.3MB', tools: true, files: NGINX_FILES, command: "/docker-entrypoint.sh nginx -g 'daemon off;'",
+    ref: 'nginx:1.27-alpine', id: 'b1a2c39e4f7d', size: '48.3MB', vulns: 3, tools: true, files: NGINX_FILES, command: "/docker-entrypoint.sh nginx -g 'daemon off;'",
     serves: { port: 80, body: '<!DOCTYPE html>\n<html><head><title>Welcome to nginx!</title></head><body><h1>Welcome to nginx!</h1></body></html>' },
     startLog: ['/docker-entrypoint.sh: Configuration complete; ready for start up', 'nginx: start worker processes'],
     procs: [{ command: 'nginx: master process nginx -g daemon off;', memory: 3.4 }, { command: 'nginx: worker process', memory: 2.6, user: 'nginx' }, { command: 'nginx: worker process', memory: 2.6, user: 'nginx' }],
   },
-  { ref: 'nginx:1.27', id: '3b25b682ea82', size: '192MB', files: NGINX_FILES, command: "/docker-entrypoint.sh nginx -g 'daemon off;'", serves: { port: 80, body: '<!DOCTYPE html>\n<html><head><title>Welcome to nginx!</title></head><body><h1>Welcome to nginx!</h1></body></html>' }, startLog: ['/docker-entrypoint.sh: Configuration complete; ready for start up', 'nginx: start worker processes'] },
+  { ref: 'nginx:1.27', id: '3b25b682ea82', size: '192MB', vulns: 86, files: NGINX_FILES, command: "/docker-entrypoint.sh nginx -g 'daemon off;'", serves: { port: 80, body: '<!DOCTYPE html>\n<html><head><title>Welcome to nginx!</title></head><body><h1>Welcome to nginx!</h1></body></html>' }, startLog: ['/docker-entrypoint.sh: Configuration complete; ready for start up', 'nginx: start worker processes'] },
   { ref: 'httpd:2.4', id: '9cfd0d8c7a1e', size: '148MB', command: 'httpd-foreground', serves: { port: 80, body: '<html><body><h1>It works!</h1></body></html>' }, startLog: ['AH00558: httpd: Could not reliably determine the server\'s fully qualified domain name', 'Apache/2.4 configured -- resuming normal operations'] },
   // ログを集めて送る付き添い（サイドカー）のコンテナ。待ち受けない（k8s.b.02 の Pod の 2 つ目のコンテナ）
   { ref: 'fluent/fluent-bit:3.1', id: '8e4b1f0c6a27', size: '86.2MB', command: '/fluent-bit/bin/fluent-bit -c /fluent-bit/etc/fluent-bit.conf', startLog: ['Fluent Bit v3.1.9', '[engine] started (pid=1)', '[input:tail:tail.0] initializing', '[output:stdout:stdout.0] worker #0 started'], procs: [{ command: '/fluent-bit/bin/fluent-bit -c /fluent-bit/etc/fluent-bit.conf', memory: 14.8 }] },
@@ -366,7 +381,20 @@ export const REGISTRY: readonly Image[] = [
     startLog: ['ui: listening on :80'],
     upstream: { env: 'API_URL', who: 'ui', port: 80, body: '<html><body><h1>市の予約</h1><p>予約 {reservations} 件</p></body></html>' },
   },
-  { ref: 'node:20-alpine', id: '1f3d7a9c4e21', size: '135MB', tools: true, command: 'docker-entrypoint.sh node', cmd: ['node'], workdir: '/', startLog: [] },
+  { ref: 'node:20-alpine', id: '1f3d7a9c4e21', size: '135MB', vulns: 4, tools: true, command: 'docker-entrypoint.sh node', cmd: ['node'], workdir: '/', startLog: [] },
+  { ref: 'node:20', id: '9a1c4e7d3b62', size: '1.1GB', vulns: 143, tools: true, command: 'docker-entrypoint.sh node', cmd: ['node'], workdir: '/', startLog: [] },
+  {
+    ref: 'nginxinc/nginx-unprivileged:1.27-alpine', id: 'a47d0c3e9b15', size: '52.1MB', vulns: 3, user: 'nginx', tools: true, files: NGINX_FILES, command: "/docker-entrypoint.sh nginx -g 'daemon off;'",
+    serves: { port: 8080, body: '<!DOCTYPE html>\n<html><head><title>Welcome to nginx!</title></head><body><h1>Welcome to nginx!</h1></body></html>' },
+    startLog: ['/docker-entrypoint.sh: Configuration complete; ready for start up', 'nginx: start worker processes'],
+    procs: [{ command: 'nginx: master process nginx -g daemon off;', memory: 3.4, user: 'nginx' }, { command: 'nginx: worker process', memory: 2.6, user: 'nginx' }],
+  },
+  {
+    ref: 'city-batch:1.0', id: 'd6a93c0f1e72', size: '96MB', command: 'node /app/batch.js',
+    requiresEnv: { name: 'DATABASE_URL', error: ['Error: missing environment variable DATABASE_URL', '    at main (/app/batch.js:4:9)'] },
+    startLog: ['batch: loading jobs into memory', 'batch: ready'],
+    procs: [{ command: 'node /app/batch.js', memory: 182 }],
+  },
   { ref: 'alpine:3.20', id: '91ef0af61f39', size: '7.8MB', command: '/bin/sh', oneShot: true, startLog: [] },
   { ref: 'hello-world:latest', id: 'd2c94e258dcb', size: '13.3kB', command: '/hello', oneShot: true, startLog: ['Hello from Docker!', 'This message shows that your installation appears to be working correctly.'] },
 ];
@@ -498,6 +526,11 @@ function boot(c: Container, image: Image): Container {
     }
   }
   if (image.oneShot) return { ...c, state: 'exited', exitCode: 0, log: [...c.log, ...image.startLog] };
+  // 一般の利用者は、1024 より小さいポートで待ち受けられない
+  const who = c.user ?? image.user;
+  if (who !== undefined && who !== 'root' && image.serves && image.serves.port < 1024) {
+    return { ...c, state: 'exited', exitCode: 1, log: [...head, `nginx: [emerg] bind() to 0.0.0.0:${String(image.serves.port)} failed (13: Permission denied)`] };
+  }
   if (c.memoryLimit !== undefined && memoryOf(image) * 1024 * 1024 > c.memoryLimit) {
     // 動き出して読み込む途中で、上限を超えて止められる（SIGKILL。128 + 9）
     return { ...c, state: 'exited', exitCode: 137, oomKilled: true, log: [...c.log, ...image.startLog.slice(0, 1)] };
@@ -585,6 +618,10 @@ export interface RunOptions {
   env?: Readonly<Record<string, string>>;
   /** メモリの上限（バイト） */
   memory?: number;
+  restart?: string;
+  user?: string;
+  logDriver?: string;
+  logOpts?: Readonly<Record<string, string>>;
   /** 入る網（無ければ bridge） */
   network?: string;
   aliases?: readonly string[];
@@ -609,6 +646,10 @@ export function run(host0: ContainerHost, o: RunOptions): Result<Container> {
     id: idOf(host.seq + 1), name, image: pulled.value.ref, state: 'created', exitCode: 0,
     ports: o.ports ?? [], volumes: o.volumes ?? [], env: o.env ?? {}, log: [], pid: pidOf(host.seq + 1), networks: [],
     ...(o.memory !== undefined ? { memoryLimit: o.memory } : {}),
+    ...(o.restart !== undefined ? { restart: o.restart } : {}),
+    ...(o.user !== undefined ? { user: o.user } : {}),
+    ...(o.logDriver !== undefined ? { logDriver: o.logDriver } : {}),
+    ...(o.logOpts !== undefined ? { logOpts: o.logOpts } : {}),
     ...(o.aliases ? { aliases: o.aliases } : {}),
     ...(o.labels ? { labels: o.labels } : {}),
   }, net);
@@ -622,7 +663,35 @@ export function run(host0: ContainerHost, o: RunOptions): Result<Container> {
   };
   // 外のポートが使用中なら、作ったコンテナは Created のまま残る
   for (const p of c.ports) if (portOwner(host, p.host)) return { ok: false, host, error: { kind: 'port-in-use', port: p.host, name: c.name, id: c.id } };
-  return bootIn(host, c, pulled.value);
+  const booted = bootIn(host, c, pulled.value);
+  // 方針があると、止まっても動かし直す。設定の誤りは直らないので、繰り返す
+  if (booted.ok && booted.value.state === 'exited' && booted.value.exitCode !== 0 && restartsOnFailure(booted.value.restart)) {
+    const looping: Container = { ...booted.value, looping: true, restarts: 3, log: [...booted.value.log, ...booted.value.log, ...booted.value.log] };
+    return { ok: true, host: replace(booted.host, looping), value: looping };
+  }
+  return booted;
+}
+
+/** 失敗で止まった時に動かし直す方針か */
+export const restartsOnFailure = (policy: string | undefined): boolean => policy === 'always' || policy === 'unless-stopped' || policy === 'on-failure';
+
+/** 機械から主のプロセスに合図を送った（kill -9 PID）。方針があれば動かし直す。そのプロセスのコンテナが無ければ null */
+export function crash(host: ContainerHost, pid: number, signal: number): ContainerHost | null {
+  const c = host.containers.find((x) => x.state === 'running' && x.pid === pid);
+  if (!c) return null;
+  const stopped: Container = { ...c, state: 'exited', exitCode: 128 + signal };
+  const image = host.images.find((i) => i.ref === c.image);
+  if (!restartsOnFailure(c.restart) || !image) return replace(host, stopped);
+  const again = boot({ ...stopped, pid: c.pid + 10, restarts: (c.restarts ?? 0) + 1 }, image);
+  return replace(host, again);
+}
+
+/** 大きさの文字（48.3MB・1.1GB・13.3kB）を MB の数にする */
+export function sizeInMb(size: string): number {
+  const n = Number.parseFloat(size);
+  if (/GB$/i.test(size)) return n * 1000;
+  if (/kB$/i.test(size)) return n / 1000;
+  return n;
 }
 
 export function stop(host: ContainerHost, ref: string): Result<Container> {
@@ -922,6 +991,6 @@ export function servedAt(host: ContainerHost | null, port: number, read: (path: 
   const root = image.serves.root;
   if (root === undefined) return { container: c, body: image.serves.body, status: 200 };
   const volume = c.volumes.find((v) => v.container.replace(/\/+$/, '') === root);
-  const page = volume ? read(`${volume.host.replace(/\/+$/, '')}/index.html`) : null;
+  const page = volume ? read(`${volume.host.replace(/\/+$/, '')}/index.html`) : image.files?.[`${root}/index.html`] ?? null;
   return page === null ? { container: c, body: FORBIDDEN, status: 403 } : { container: c, body: page, status: 200 };
 }

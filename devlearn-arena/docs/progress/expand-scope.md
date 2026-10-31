@@ -62,8 +62,8 @@
 | 上級 | sec | 終わり（4 本。下の「上級 sec」） |
 | 上級 | git | 終わり（3 本。下の「上級 git」） |
 | 上級 | cicd | 終わり（3 本。下の「上級 cicd」） |
-| 上級 | ctr | 未着手 |
-| 上級 | docker | 未着手 |
+| 上級 | ctr | 終わり（2 本。下の「上級 ctr」） |
+| 上級 | docker | 終わり（3 本。下の「上級 docker」） |
 | 上級 | k8s | 未着手 |
 | 上級 | db | 未着手 |
 | 上級 | cloud | 未着手 |
@@ -367,3 +367,42 @@
 - `git commit --allow-empty`
 - `kubectl set selector` の札のコンマ区切り、判定の `service/名前 selector.札=値`
 - 枝の保護の `enforce_admins`（判定の `protected-admins:`）と、`null` の項目
+
+### 上級 ctr（2 本）
+
+| ID | 実戦 | verify-all | verify-free（別解） | verify-wrong |
+|---|---|---|---|---|
+| ctr.a.01 コンテナ運用 | 端 | 合格 | 1 回目 不合格 → 合格（2 通り） | 1 回目 不合格 → 合格 |
+| ctr.a.02 コンテナの安全 | 編 | 合格 | 合格（2 通り） | 1 回目 不合格 → 合格 |
+
+| 不合格 | 原因 | 直したこと |
+|---|---|---|
+| 別解 `podman inspect -f '{{.RestartCount}}'` が読めない | 模擬に無かった: podman の inspect の項目 | `.RestartCount`・`.HostConfig.RestartPolicy.Name`・`.Config.User` を足した |
+| ctr.a.02 の間違える操作で手順が達成になる | 別解の誤り: 先に一般の利用者の土台を保存する別解を 1 つ目にしたので、次の手順が初めから満たされた | 別解の順を入れ替えた |
+| k8s.i.07 の用語の検証が落ちた | 書き起こしの誤り: 新しい用語の語が、既にある本文にも当たった | 語を「終了コード 137（強制終了）」にした（既にある本文は変えない） |
+
+設計を直した物: ctr.a.01 を「模」から「端」にした（`podman run --restart`・`kill`・`podman logs` の本物の道具がある）。ctr.a.02 は達成の中身を手順に分けて書いた。`docs/lessons/ctr.md` と `docs/curriculum.md` の表を先に直した。
+
+模擬環境に足した物（テストを先に書いた。`src/engines/docker/advanced.test.ts`）:
+- `--restart`（`no`・`always`・`on-failure`・`unless-stopped`）・`--log-driver`・`--log-opt`・`--user`・`docker update --restart`。機械から主のプロセスに `kill -9` すると止まり、方針があれば動かし直す。設定の誤りは `Restarting` を繰り返す。`podman`・`docker` の両方
+- `trivy image`（件数は土台から受け継ぐ。`--exit-code`）・イメージの `USER`（一般の利用者は 1024 より小さいポートで待てない）・`exec id`・`whoami`・土台 `nginxinc/nginx-unprivileged:1.27-alpine`
+- 判定の `vulns:`・`size:`・`user:`・`restart:`・`restarts:`・`limit:`・`logopt:`
+
+### 上級 docker（3 本）
+
+| ID | 実戦 | verify-all | verify-free（別解） | verify-wrong |
+|---|---|---|---|---|
+| docker.a.01 マルチステージビルド | 編 | 合格 | 合格（2 通り） | 合格 |
+| docker.a.02 起動しないコンテナを直す | 端 | 合格 | 合格（2 通り） | 合格 |
+| docker.a.03 Docker 以外の道具 | 端 | 合格 | 合格（2 通り） | 合格 |
+
+| 不合格 | 原因 | 直したこと |
+|---|---|---|
+| k8s.i.07 の用語の検証が落ちた | 書き起こしの誤り: 新しい用語の語「終了コード」が既にある本文に当たった | 語を「終了コード（終わりの番号）」にした |
+
+設計を直した物: docker.a.03 を「模」から「端」にした（`podman`・`diff` の本物の道具がある）。docker.a.02 は達成の中身を手順に分けて書いた。`docs/lessons/docker.md` と `docs/curriculum.md` の表を先に直した。
+
+模擬環境に足した物（テストを先に書いた。`src/engines/docker/advanced.test.ts`）:
+- マルチステージ: `FROM … AS 名前`・`COPY --from=名前か番号`・`RUN npm run build`。イメージになるのは最後の段だけで、大きさも最後の段で決まる。土台 `node:20`（1.1GB）。nginx の土台から作ったイメージは、写した頁を答える
+- イメージ `city-batch:1.0`（環境変数とメモリの 2 つの原因が重なる）
+- `podman` の手元の 1024 より小さいポートの断り（本物の文）・`diff -s`

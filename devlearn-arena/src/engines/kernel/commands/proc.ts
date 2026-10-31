@@ -1,4 +1,4 @@
-import { hostProcesses } from '@/engines/container/container';
+import { crash, hostProcesses } from '@/engines/container/container';
 import { resolve } from '../path';
 import {
   findByPattern, killMany, normalizeSignal, signal, totalCpu, usedMemory, type Process,
@@ -228,6 +228,16 @@ export const procCommands: CommandSpec[] = [
       const pids = rest.filter((a) => !a.startsWith('-')).map(Number);
       if (pids.length === 0 || pids.some((n) => !Number.isInteger(n))) {
         return { stderr: 'usage: kill [-signal] <pid>\n', code: 2 };
+      }
+      // コンテナの主のプロセス（機械から見える PID）に送ると、そのコンテナが止まる。方針があれば動かし直す
+      if (shell.containers && pids.length === 1) {
+        const pid = pids[0] ?? 0;
+        const target = shell.containers.containers.find((c) => c.state === 'running' && c.pid === pid);
+        if (target) {
+          if (shell.containers.cli !== 'podman' && currentUser(shell) !== 'root') return { stderr: `bash: kill: (${String(pid)}) - Operation not permitted\n`, code: 1 };
+          const next = crash(shell.containers, pid, sig === 'SIGKILL' || sig === 'KILL' || String(sig) === '9' ? 9 : 15);
+          if (next) return { patch: { containers: next } };
+        }
       }
       const result = killMany(shell.procs, pids, sig, currentUser(shell));
       if (result.error !== null) return { stderr: `${result.error}\n`, code: 1 };

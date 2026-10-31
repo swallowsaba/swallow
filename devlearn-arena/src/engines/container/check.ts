@@ -1,4 +1,4 @@
-import { appAnswer, engineOf, filesInside, findContainer, findNetwork, networksOf, normalizeRef, resolveName, serverOf, type ContainerHost } from './container';
+import { appAnswer, engineOf, filesInside, findContainer, findNetwork, networksOf, normalizeRef, resolveName, serverOf, type ContainerHost, sizeInMb } from './container';
 import { readTables, TABLES_FILE } from './pg';
 
 /**
@@ -79,7 +79,9 @@ function termHolds(host: ContainerHost, term: string): boolean {
       if (at < 1) throw new Error(`コンテナの条件「${term}」は知らない形`);
       const c = findContainer(host, arg.slice(0, at));
       if (c?.state !== 'running') return false;
-      const body = c.app ? appAnswer(host, c).body : (host.images.find((i) => i.ref === c.image)?.serves?.body ?? '');
+      const image = host.images.find((i) => i.ref === c.image);
+      const served = image?.serves?.root !== undefined ? image.files?.[`${image.serves.root}/index.html`] : undefined;
+      const body = c.app ? appAnswer(host, c).body : (served ?? image?.serves?.body ?? '');
       return body.includes(arg.slice(at + 1));
     }
     case 'log': {
@@ -104,6 +106,41 @@ function termHolds(host: ContainerHost, term: string): boolean {
       const ref = normalizeRef(arg.slice(0, at));
       const step = host.images.find((i) => i.ref === ref)?.built?.find((s) => s.step.includes(arg.slice(at + 1)));
       return step?.cached === true;
+    }
+    case 'vulns':
+    case 'size': {
+      // vulns:名前:タグ<=件数・size:名前:タグ<=MB（点検の件数・イメージの大きさ）
+      const m = /^(.+?)(<=|>=)(\d+(?:\.\d+)?)$/.exec(arg);
+      if (!m) throw new Error(`コンテナの条件「${term}」は知らない形`);
+      const image = host.images.find((i) => i.ref === normalizeRef(m[1] ?? ''));
+      if (!image) return false;
+      const value = kind === 'size' ? sizeInMb(image.size) : image.vulns ?? 0;
+      return m[2] === '<=' ? value <= Number(m[3]) : value >= Number(m[3]);
+    }
+    case 'user': {
+      // user:コンテナ=利用者（動かしている利用者。--user かイメージの USER。無ければ root）
+      const [name = '', want = ''] = arg.split('=');
+      const c = findContainer(host, name);
+      return c !== undefined && (c.user ?? host.images.find((i) => i.ref === c.image)?.user ?? 'root') === want;
+    }
+    case 'restart': {
+      // restart:コンテナ=方針
+      const [name = '', want = ''] = arg.split('=');
+      return findContainer(host, name)?.restart === want;
+    }
+    case 'restarts': {
+      // restarts:コンテナ>=回数（自動で動かし直した回数）
+      const m = /^([^>]+)>=(\d+)$/.exec(arg);
+      if (!m) throw new Error(`コンテナの条件「${term}」は知らない形`);
+      return (findContainer(host, m[1] ?? '')?.restarts ?? 0) >= Number(m[2]);
+    }
+    case 'limit':
+      // limit:コンテナ（メモリの上限を付けた）
+      return findContainer(host, arg)?.memoryLimit !== undefined;
+    case 'logopt': {
+      // logopt:コンテナ=項目（ログの上限などの項目を書いた）
+      const [name = '', want = ''] = arg.split('=');
+      return findContainer(host, name)?.logOpts?.[want] !== undefined;
     }
     case 'made': {
       // made:名前>=数（その名前でコンテナを作った回数。作り直したことを確かめる）

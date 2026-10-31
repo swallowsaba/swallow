@@ -1,0 +1,275 @@
+{
+  "id": "ctr.a.01",
+  "domain": "ctr",
+  "level": "advanced",
+  "theme": "運用",
+  "title": "コンテナ運用",
+  "goal": "ログ・資源制限・更新・再起動方針を設計できる",
+  "minutes": 20,
+  "prerequisites": [
+    "ctr.i.05"
+  ],
+  "related": [
+    "k8s.i.07",
+    "mon.b.02"
+  ],
+  "next": [
+    "ctr.a.02"
+  ],
+  "terms": [
+    "restart-policy",
+    "container",
+    "log",
+    "memory",
+    "image",
+    "port",
+    "file",
+    "process",
+    "compose",
+    "cluster"
+  ],
+  "explain": {
+    "what": "{{term:log}}・資源の制限・更新・{{term:restart-policy}}を決めて、{{term:container}}を運用すること。",
+    "why": "動かした後の方が長い。夜中に落ちた時に誰も起きなくても戻るようにしたい。",
+    "use": "本番の運用で使う。動かす時の指定として書いておく。",
+    "when": "夜中に落ちたコンテナが起き上がらない。ログも残っていない。",
+    "figures": [
+      "ctr-a01-ops"
+    ]
+  },
+  "understand": [
+    {
+      "kind": "situation",
+      "prompt": "方針が無いと、どんな事故が起きる？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "落ちたまま朝まで止まり、1 つのコンテナが{{term:memory}}を使い切って隣も巻き込む",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "{{term:image}}が消える",
+          "correct": false,
+          "whyNot": "イメージは残る。"
+        },
+        {
+          "id": "c",
+          "text": "{{term:port}}が増える",
+          "correct": false,
+          "whyNot": "関係が無い。"
+        }
+      ],
+      "see": "why"
+    },
+    {
+      "kind": "relation",
+      "prompt": "関係を選ぶ。",
+      "a": "ログを標準出力へ出す",
+      "b": "集めやすい",
+      "answer": "cause",
+      "why": "実行の道具がまとめて受け取り、外へ送れる。",
+      "see": "what"
+    }
+  ],
+  "quiz": [
+    {
+      "id": "q1",
+      "kind": "situation",
+      "prompt": "落ちたら自動で動かしたい。何を決める？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "再起動の方針",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "イメージの名前",
+          "correct": false,
+          "whyNot": "名前では戻らない。"
+        },
+        {
+          "id": "c",
+          "text": "ポートの番号",
+          "correct": false,
+          "whyNot": "関係が無い。"
+        }
+      ],
+      "explanation": "`--restart=always` など。"
+    },
+    {
+      "id": "q2",
+      "kind": "choice",
+      "prompt": "ログの出し方は？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "標準出力",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "コンテナの中の{{term:file}}",
+          "correct": false,
+          "whyNot": "作り直すと消える。"
+        },
+        {
+          "id": "c",
+          "text": "画面に出さない",
+          "correct": false,
+          "whyNot": "調べられない。"
+        }
+      ],
+      "explanation": "`podman logs` で読め、外へ送れる。"
+    },
+    {
+      "id": "q3",
+      "kind": "cause",
+      "prompt": "何度も再起動している。原因は？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "起動直後に失敗している",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "方針が無い",
+          "correct": false,
+          "whyNot": "方針があるから繰り返している。"
+        },
+        {
+          "id": "c",
+          "text": "ポートが多い",
+          "correct": false,
+          "whyNot": "関係が無い。"
+        }
+      ],
+      "explanation": "再起動では設定の誤りは直らない。ログを読む。"
+    }
+  ],
+  "practice": {
+    "mode": "terminal",
+    "purpose": "売店のコンテナ `shop` を `podman` で動かしている。方針が何も無い。落ちた時に戻らないことを見て、再起動・ログの上限・メモリの上限を付けて作り直し、更新まで行う。",
+    "environment": "linux-basic",
+    "setup": {
+      "hostname": "reserve-01",
+      "containerCli": "podman",
+      "cwd": "/home/learner",
+      "sites": [],
+      "images": [
+        "city-shop:1.0",
+        "city-shop:1.1",
+        "city-crowd:1.0"
+      ],
+      "run": [
+        "podman run -d --name shop -p 8080:80 city-shop:1.0"
+      ]
+    },
+    "steps": [
+      {
+        "id": "crash",
+        "purpose": "`podman inspect -f '{{.State.Pid}}' shop` で機械から見た番号を読み、`kill -9` で{{term:process}}を落とす（夜中の事故の代わり）。`podman ps -a` で止まったままなのを見る。",
+        "check": {
+          "kind": "container",
+          "expr": "exited:shop"
+        },
+        "afterward": "`Exited (137)`。方針が無いので、朝まで止まったまま。",
+        "hints": [
+          "機械からはコンテナのプロセスが見える。",
+          "`$( … )` で番号を渡せる。",
+          "`kill -9 $(podman inspect -f '{{.State.Pid}}' shop)` `podman ps -a` を打つ。"
+        ],
+        "expectedErrors": []
+      },
+      {
+        "id": "policy",
+        "purpose": "止まった `shop` を `podman rm` で消し、`--restart=always`・`--memory=128m`・`--log-opt max-size=10m` を付けて作り直す。",
+        "check": {
+          "kind": "container",
+          "expr": "running:shop restart:shop=always logopt:shop=max-size limit:shop"
+        },
+        "afterward": "3 つの方針が付いた。消してから作り直すのは、方針が作る時の指定だから。",
+        "hints": [
+          "同じ名前は消してから。",
+          "動かす時の指定として書く。",
+          "`podman rm shop` `podman run -d --name shop --restart=always --memory=128m --log-opt max-size=10m -p 8080:80 city-shop:1.0` を打つ。"
+        ],
+        "expectedErrors": [
+          "ctr-name-in-use"
+        ]
+      },
+      {
+        "id": "recover",
+        "purpose": "もう一度 `kill -9` で落とす。`podman ps` で動いていて、`podman logs shop` で前のログが残っていれば達成。",
+        "check": {
+          "kind": "container",
+          "expr": "running:shop restarts:shop>=1"
+        },
+        "afterward": "人が起きなくても戻った。ログも残っている。`{{.RestartCount}}` で回数も読める。",
+        "hints": [
+          "同じように落とす。",
+          "`podman ps` で `Up` か。",
+          "`kill -9 $(podman inspect -f '{{.State.Pid}}' shop)` `podman ps` `podman logs shop` を打つ。"
+        ],
+        "expectedErrors": []
+      },
+      {
+        "id": "config",
+        "purpose": "`podman run -d --name crowd --restart=always city-crowd:1.0` を打つ。`podman ps -a` で `Restarting` を繰り返すのを見て、`podman logs crowd` で理由を読み、`-e TARGET_URL=http://localhost:8080/` を付けて作り直す。",
+        "check": {
+          "kind": "container",
+          "expr": "running:crowd"
+        },
+        "afterward": "再起動で直らない物もある。設定の誤りは何度動かしても同じ所で止まる。ログを読んで直す。",
+        "hints": [
+          "繰り返す時は、ログに理由がある。",
+          "`podman rm -f crowd` で消す。",
+          "`podman run -d --name crowd --restart=always city-crowd:1.0` `podman ps -a` `podman logs crowd` `podman rm -f crowd` `podman run -d --name crowd --restart=always -e TARGET_URL=http://localhost:8080/ city-crowd:1.0` を打つ。"
+        ],
+        "expectedErrors": [
+          "ctr-name-in-use",
+          "ctr-running-rm"
+        ]
+      },
+      {
+        "id": "update",
+        "purpose": "`shop` を `city-shop:1.1` に更新する。`podman pull` で先に取り、`podman rm -f shop` で消して、同じ方針で作り直す。",
+        "check": {
+          "kind": "container",
+          "expr": "from:shop=city-shop:1.1 running:shop restart:shop=always"
+        },
+        "afterward": "コンテナは直さず作り直す。方針を毎回書くのは大変なので、{{term:compose}} や{{term:cluster}}に書いておく（k8s.i.05）。",
+        "hints": [
+          "先に取ると、止まる時間が短い。",
+          "同じ指定で版だけ替える。",
+          "`podman pull city-shop:1.1` `podman rm -f shop` `podman run -d --name shop --restart=always --memory=128m --log-opt max-size=10m -p 8080:80 city-shop:1.1` を打つ。"
+        ],
+        "expectedErrors": [
+          "ctr-name-in-use",
+          "ctr-running-rm"
+        ]
+      }
+    ]
+  },
+  "result": {
+    "success": "運用の方針を作れた。",
+    "partial": "ヒントを使って作れた。次は、4 つの方針を何も見ずに言ってみよう。",
+    "retry": "まだ足りない。`podman ps -a` と `podman inspect` で方針を確かめよう。"
+  },
+  "summary": {
+    "points": [
+      "再起動・ログ・上限・更新",
+      "ログは標準出力",
+      "再起動で直らない物もある"
+    ],
+    "next": [
+      "ctr.a.02"
+    ],
+    "terms": [
+      "restart-policy",
+      "exit-137"
+    ]
+  }
+}

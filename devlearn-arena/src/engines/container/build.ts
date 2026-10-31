@@ -1,5 +1,5 @@
 import { globMatch } from '@/engines/kernel/glob';
-import { fromRegistry, hexOf, normalizeRef, type ContainerHost, type Image } from './container';
+import { fromRegistry, hexOf, normalizeRef, sizeInMb, type ContainerHost, type Image } from './container';
 
 /**
  * docker build（Dockerfile からイメージを作る。docs/lessons/docker.md docker.i.01・i.02）。純粋な関数。
@@ -17,6 +17,8 @@ export interface BuildInput {
   context: Readonly<Record<string, string>>;
   /** -t で付ける名前 */
   tags: readonly string[];
+  /** 前の段で作った物（段の名前か番号 → その段のファイル）。COPY --from で読む */
+  stages?: Readonly<Record<string, Readonly<Record<string, string>>>>;
 }
 
 export interface BuildOutput {
@@ -125,6 +127,7 @@ interface Stage {
   env: Record<string, string>;
   cmd: readonly string[];
   installed: boolean;
+  user?: string;
 }
 
 /** npm で部品を入れる命令と、その別名（本物の npm と同じ） */
@@ -138,6 +141,13 @@ function runOne(stage: Stage, line: string, alpine: boolean): { out: string[]; c
   switch (bin) {
     case 'npm': {
       const sub = args[0] ?? '';
+      // npm run build: 成果物を作る。src の中身を dist に写す（模擬の束ね方）
+      if (sub === 'run' && args[1] === 'build') {
+        const from = join(stage.workdir, 'src');
+        const made = Object.entries(stage.files).filter(([p]) => p.startsWith(`${from}/`));
+        for (const [p, c] of made) stage.files[join(stage.workdir, `dist/${p.slice(from.length + 1)}`)] = c;
+        return { out: [`✓ built in 1.2s (${String(made.length)} files)`], code: 0 };
+      }
       if (!NPM_INSTALL.has(sub)) {
         if (NPM_OTHER.has(sub)) return { out: [], code: 0 };
         // 本物の npm と同じく、知らない命令は Unknown command で止まる
@@ -179,6 +189,30 @@ function runOne(stage: Stage, line: string, alpine: boolean): { out: string[]; c
   }
 }
 
+/** 段を前から順に作る。最後の段の結果を返す（進みの表示はつなげる） */
+function buildStages(host: ContainerHost, input: BuildInput, lines: readonly Line[], froms: readonly Line[]): BuildOutput {
+  const stages: Record<string, Readonly<Record<string, string>>> = { ...input.stages };
+  const said: string[] = [];
+  let now = host;
+  for (const [i, from] of froms.entries()) {
+    const at = lines.indexOf(from);
+    const end = froms[i + 1] ? lines.indexOf(froms[i + 1] as Line) : lines.length;
+    const text = lines.slice(at, end).map((l) => l.raw).join('\n');
+    const last = i === froms.length - 1;
+    const r = build(now, { dockerfile: `${text}\n`, context: input.context, tags: last ? input.tags : [], stages });
+    said.push(...r.stdout);
+    if (!r.ok || !r.image) return { ...r, stdout: said };
+    if (last) return { ...r, stdout: said };
+    const files = r.image.files ?? {};
+    stages[String(i)] = files;
+    const name = /\sAS\s+(\S+)/i.exec(from.args)?.[1];
+    if (name !== undefined) stages[name] = files;
+    // 途中の段は、名前の無いイメージとして残さない
+    now = { ...r.host, images: r.host.images.filter((x) => x.ref !== '<none>:<none>') };
+  }
+  return { ok: false, host, stdout: said, error: 'no build stage in current context', trace: { steps: [] } };
+}
+
 const pad = (text: string, time: string): string => `${text.padEnd(72)} ${time}`;
 
 /** Dockerfile からイメージを作る */
@@ -190,6 +224,9 @@ export function build(host: ContainerHost, input: BuildInput): BuildOutput {
   const lines = parse(input.dockerfile);
   const def = pad(' => [internal] load build definition from Dockerfile', '0.0s');
   if (typeof lines === 'string') return { ok: false, host, stdout: [head(1, 1, false, 0), def], error: lines, trace: { steps: [], failure: { kind: 'parse', detail: lines } } };
+  // 段が 2 つ以上あれば、前の段から順に作る。イメージになるのは最後の段だけ
+  const froms = lines.filter((l) => l.op === 'FROM');
+  if (froms.length > 1) return buildStages(host, input, lines, froms);
   const first = lines.find((l) => l.op !== 'ARG');
   if (first?.op !== 'FROM') return { ok: false, host, stdout: [head(1, 1, false, 0), def], error: 'no build stage in current context', trace: { steps: [], failure: { kind: 'no-from', detail: 'no FROM statement found' } } };
 
@@ -219,7 +256,7 @@ export function build(host: ContainerHost, input: BuildInput): BuildOutput {
   let n = 0;
   let runOut: string[] = [];
   let secs = 0.4;
-  let size = Number.parseFloat(base.size);
+  let size = sizeInMb(base.size);
   for (const l of lines.slice(lines.indexOf(first) + 1)) {
     switch (l.op) {
       case 'ENV': {
@@ -230,6 +267,9 @@ export function build(host: ContainerHost, input: BuildInput): BuildOutput {
       case 'CMD':
       case 'ENTRYPOINT':
         stage.cmd = commandOf(l.args);
+        break;
+      case 'USER':
+        stage.user = l.args;
         break;
       default:
         break;
@@ -246,11 +286,20 @@ export function build(host: ContainerHost, input: BuildInput): BuildOutput {
     } else if (l.op === 'COPY' || l.op === 'ADD') {
       const parts = l.args.split(/\s+/).filter((a) => !a.startsWith('--'));
       const dest = parts.pop() ?? '.';
+      // COPY --from=段: 前の段のファイルから写す（元の場所は段の中の絶対の場所）
+      const fromStage = /--from=(\S+)/.exec(l.args)?.[1];
+      const stageFiles = fromStage === undefined ? undefined : input.stages?.[fromStage];
+      if (fromStage !== undefined && !stageFiles) {
+        out.push(pad(` => ERROR ${label}`, '0.0s'));
+        trace.failure = { kind: 'copy', raw: l.raw, detail: fromStage };
+        return { ok: false, host, stdout: [head(n + 2, total + 2, false, secs), ...out], error: `invalid from flag value ${fromStage}: pull access denied, repository does not exist or may require authorization`, trace };
+      }
+      const source: Readonly<Record<string, string>> = stageFiles ? Object.fromEntries(Object.entries(stageFiles).map(([p, c]) => [p.replace(/^\//, ''), c])) : input.context;
       const srcs = parts;
       const copied: [string, string][] = [];
       for (const src of srcs) {
-        const rel = src.replace(/^\.\/?/, '').replace(/\/$/, '');
-        const all = Object.entries(input.context);
+        const rel = src.replace(/^\.\/?/, '').replace(/^\//, '').replace(/\/$/, '');
+        const all = Object.entries(source);
         // * ? [ を含む元（package*.json）は、合うファイルをそれぞれの名前で写す
         const hits = rel === ''
           ? all.map(([p, c]) => [p, c, p] as const)
@@ -306,7 +355,11 @@ export function build(host: ContainerHost, input: BuildInput): BuildOutput {
   const id = hexOf(key, 12);
   const argv = stage.cmd[0] === '/bin/sh' && stage.cmd[1] === '-c' ? stage.cmd[2] ?? '' : stage.cmd.join(' ');
   const made = (ref: string): Image => ({
-    ref, id, size: `${String(Math.round(size * 10) / 10)}MB`, startLog: [], files: stage.files, cmd: stage.cmd, workdir: stage.workdir, env: stage.env,
+    ref, id, size: size >= 1000 ? `${(size / 1000).toFixed(2)}GB` : `${String(Math.round(size * 10) / 10)}MB`, startLog: [], files: stage.files, cmd: stage.cmd, workdir: stage.workdir, env: stage.env,
+    ...(base.vulns !== undefined ? { vulns: base.vulns } : {}),
+    ...(stage.user ?? base.user ? { user: stage.user ?? base.user } : {}),
+    // Web サーバの土台は、そのまま待ち受け、公開の場所の頁を答える（動かす命令を替えていない時）
+    ...(base.serves && stage.cmd === (base.cmd ?? stage.cmd) ? { serves: { ...base.serves, root: '/usr/share/nginx/html' }, startLog: base.startLog } : {}),
     ...(base.tools ? { tools: true } : {}), command: argv === '' ? (base.command ?? 'node') : argv, procs: [{ command: argv === '' ? 'node' : argv, memory: 41.6 }],
     local: true, built: trace.steps.map((x) => ({ step: x.raw, cached: x.cached })),
   });

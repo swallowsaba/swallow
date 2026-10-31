@@ -1,0 +1,56 @@
+{
+  "lesson": "docker.a.02",
+  "variants": [
+    {
+      "name": "grep で読む",
+      "steps": {
+        "env": [
+          "docker ps -a --filter name=batch",
+          "docker logs batch 2>&1 | grep Error",
+          " database_url "
+        ],
+        "fix1": [
+          "docker rm -f batch",
+          "docker run -d --name batch -m 64m -e DATABASE_URL=postgres://db/batch city-batch:1.0"
+        ],
+        "oom": [
+          "docker inspect batch",
+          "docker rm -f batch",
+          "docker run -d --name batch -m 512m -e DATABASE_URL=postgres://db/batch city-batch:1.0",
+          "docker stats --no-stream batch"
+        ]
+      }
+    },
+    {
+      "name": "上限を読んでから",
+      "steps": {
+        "env": [
+          "docker logs batch",
+          "docker inspect -f '{{.State.ExitCode}}' batch",
+          "DATABASE_URL"
+        ],
+        "fix1": [
+          "docker rm batch",
+          "docker run -d --name batch --memory=64m -e DATABASE_URL=postgres://db/batch city-batch:1.0",
+          "docker logs batch"
+        ],
+        "oom": [
+          "docker inspect -f '{{.HostConfig.Memory}}' batch",
+          "docker rm batch",
+          "docker run -d --name batch --memory=256m -e DATABASE_URL=postgres://db/batch city-batch:1.0"
+        ]
+      }
+    }
+  ],
+  "wrong": {
+    "step": "fix1",
+    "why": "消さずに同じ名前で作る",
+    "input": [
+      "docker run -d --name batch --memory 64m -e DATABASE_URL=postgres://db/batch city-batch:1.0"
+    ],
+    "retry": [
+      "docker rm batch",
+      "docker run -d --name batch --memory 64m -e DATABASE_URL=postgres://db/batch city-batch:1.0"
+    ]
+  }
+}

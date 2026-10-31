@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 360" font-family="&quot;Noto Sans JP&quot;, sans-serif">
+  <title>再起動の方針・ログの出し先・資源の上限・更新の手順</title>
+  <g class="el" data-part="restart">
+    <rect x="20" y="30" width="290" height="130" rx="10" fill="#1a6fd6" />
+    <text x="165" y="78" text-anchor="middle" font-size="16" font-weight="700" fill="#eef2f6">再起動の方針</text>
+    <text x="165" y="100" text-anchor="middle" font-size="14" fill="#eef2f6">落ちたら起こす</text>
+    <text x="165" y="122" text-anchor="middle" font-size="14" fill="#eef2f6">--restart</text>
+  </g>
+  <g class="el" data-part="logs">
+    <rect x="330" y="30" width="290" height="130" rx="10" fill="#7a3fd0" />
+    <text x="475" y="78" text-anchor="middle" font-size="16" font-weight="700" fill="#eef2f6">ログの出し先</text>
+    <text x="475" y="100" text-anchor="middle" font-size="14" fill="#eef2f6">標準出力へ出す</text>
+    <text x="475" y="122" text-anchor="middle" font-size="14" fill="#eef2f6">大きさに上限</text>
+  </g>
+  <g class="el" data-part="limit">
+    <rect x="20" y="180" width="290" height="130" rx="10" fill="#f2b632" />
+    <text x="165" y="228" text-anchor="middle" font-size="16" font-weight="700" fill="#0a1424">資源の上限</text>
+    <text x="165" y="250" text-anchor="middle" font-size="14" fill="#0a1424">隣を巻き込まない</text>
+    <text x="165" y="272" text-anchor="middle" font-size="14" fill="#0a1424">--memory</text>
+  </g>
+  <g class="el" data-part="update">
+    <rect x="330" y="180" width="290" height="130" rx="10" fill="#1f7a4d" />
+    <text x="475" y="228" text-anchor="middle" font-size="16" font-weight="700" fill="#eef2f6">更新の手順</text>
+    <text x="475" y="250" text-anchor="middle" font-size="14" fill="#eef2f6">新しいイメージで</text>
+    <text x="475" y="272" text-anchor="middle" font-size="14" fill="#eef2f6">作り直す</text>
+  </g>
+  <g class="el" data-part="note">
+    <text x="320" y="340" text-anchor="middle" font-size="14" fill="#eef2f6">動かした後の方が長い。4 つを先に決める</text>
+  </g>
+</svg>

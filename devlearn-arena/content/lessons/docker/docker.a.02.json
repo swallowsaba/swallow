@@ -1,0 +1,263 @@
+{
+  "id": "docker.a.02",
+  "domain": "docker",
+  "level": "advanced",
+  "theme": "障害",
+  "title": "起動しないコンテナを直す",
+  "goal": "終了コード・ログ・設定から原因を特定できる",
+  "minutes": 20,
+  "prerequisites": [
+    "docker.b.05",
+    "trouble.i.01"
+  ],
+  "related": [
+    "trouble.a.01",
+    "k8s.a.02"
+  ],
+  "next": [
+    "docker.a.03"
+  ],
+  "terms": [
+    "container",
+    "log",
+    "ps",
+    "app",
+    "memory",
+    "image",
+    "env-var",
+    "service",
+    "db"
+  ],
+  "explain": {
+    "what": "終了コード・{{term:log}}・設定から、{{term:container}}が止まった原因を特定して直す。",
+    "why": "コンテナは失敗するとすぐ止まり、原因が見えにくい。順に見れば見当が付く。",
+    "use": "障害対応で使う。原因は重なることがある。",
+    "when": "起動直後に止まる。作り直しても止まる。",
+    "figures": [
+      "docker-a02-debug"
+    ]
+  },
+  "understand": [
+    {
+      "kind": "order",
+      "prompt": "調べる順に並べる。",
+      "items": [
+        "{{term:ps}} -a で終了コード",
+        "logs で{{term:app}}の言葉",
+        "inspect で設定",
+        "直して作り直す"
+      ],
+      "see": "use"
+    },
+    {
+      "kind": "match",
+      "prompt": "終了コードと意味を結ぶ。",
+      "pairs": [
+        [
+          "0",
+          "正常に終わった"
+        ],
+        [
+          "1",
+          "アプリの失敗"
+        ],
+        [
+          "137",
+          "強制終了（{{term:memory}}不足など）"
+        ]
+      ],
+      "see": "what"
+    }
+  ],
+  "quiz": [
+    {
+      "id": "q1",
+      "kind": "cause",
+      "prompt": "137 で止まった。原因は？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "強制終了（メモリ不足など）",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "アプリの文法の誤り",
+          "correct": false,
+          "whyNot": "それなら 1 など。"
+        },
+        {
+          "id": "c",
+          "text": "正常に終わった",
+          "correct": false,
+          "whyNot": "それは 0。"
+        }
+      ],
+      "explanation": "`{{.State.OOMKilled}}` で確かめる。"
+    },
+    {
+      "id": "q2",
+      "kind": "cause",
+      "prompt": "1 で止まった。原因は？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "アプリの失敗",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "メモリ不足",
+          "correct": false,
+          "whyNot": "それは 137。"
+        },
+        {
+          "id": "c",
+          "text": "{{term:image}}が無い",
+          "correct": false,
+          "whyNot": "それなら動き出す前に断られる。"
+        }
+      ],
+      "explanation": "ログにアプリの言葉がある。"
+    },
+    {
+      "id": "q3",
+      "kind": "situation",
+      "prompt": "設定を見るには？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "`inspect`",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "`pull`",
+          "correct": false,
+          "whyNot": "イメージを取る命令。"
+        },
+        {
+          "id": "c",
+          "text": "`rmi`",
+          "correct": false,
+          "whyNot": "イメージを消す命令。"
+        }
+      ],
+      "explanation": "{{term:env-var}}やメモリの上限が読める。"
+    },
+    {
+      "id": "q4",
+      "kind": "term",
+      "prompt": "終了コード 0 の意味は？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "正常に終わった",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "動いている",
+          "correct": false,
+          "whyNot": "終わった時の番号。"
+        },
+        {
+          "id": "c",
+          "text": "失敗した",
+          "correct": false,
+          "whyNot": "0 は成功。"
+        }
+      ],
+      "explanation": "動き続けるはずの{{term:service}}が 0 で終わるのは、別の問題。"
+    }
+  ],
+  "practice": {
+    "mode": "terminal",
+    "purpose": "夜間の処理 `batch` のコンテナ（イメージ `city-batch:1.0`）が起動直後に止まる。{{term:db}} の場所は `postgres://db/batch`。終了コード・ログ・設定を順に見て、2 つの原因を直す。",
+    "environment": "container-host",
+    "setup": {
+      "hostname": "batch-01",
+      "cwd": "/home/learner",
+      "images": [
+        "city-batch:1.0"
+      ],
+      "run": [
+        "docker run -d --name batch --memory 64m city-batch:1.0"
+      ]
+    },
+    "steps": [
+      {
+        "id": "env",
+        "purpose": "`docker ps -a` で終了コードを、`docker logs batch` で理由を読む。足りない環境変数の名前を答えの欄に入れる。",
+        "check": {
+          "kind": "answer",
+          "equals": "DATABASE_URL"
+        },
+        "afterward": "`Exited (1)`。アプリが環境変数が無いと言って止まった。",
+        "hints": [
+          "1 はアプリの失敗。",
+          "ログの最初の `Error` の行。",
+          "`docker ps -a` `docker logs batch` を打ち、`DATABASE_URL` と答える。"
+        ],
+        "expectedErrors": [
+          "docker-a-exit"
+        ]
+      },
+      {
+        "id": "fix1",
+        "purpose": "`docker rm batch` で消し、`-e DATABASE_URL=postgres://db/batch` を付けて同じ `--memory 64m` で作り直す。今度はログが進むが、また止まる。",
+        "check": {
+          "kind": "container",
+          "expr": "made:batch>=2 log:batch~loading exited:batch"
+        },
+        "afterward": "環境変数の誤りは直った。ただ、また止まった。1 つ目に隠れていた次の原因がある。",
+        "hints": [
+          "作り直す時に `-e` を足す。",
+          "名前は消してから使う。",
+          "`docker rm batch` `docker run -d --name batch --memory 64m -e DATABASE_URL=postgres://db/batch city-batch:1.0` `docker ps -a` を打つ。"
+        ],
+        "expectedErrors": [
+          "docker-conflict",
+          "docker-rm-running"
+        ]
+      },
+      {
+        "id": "oom",
+        "purpose": "`docker ps -a` は `Exited (137)`。`docker inspect -f '{{.State.OOMKilled}}' batch` で確かめ、`--memory 256m` で作り直す。動き続ければ達成。",
+        "check": {
+          "kind": "container",
+          "expr": "running:batch"
+        },
+        "afterward": "動いた。137 と `OOMKilled` が、メモリの上限（64MB）より多く使ったと教えていた。1 つずつ直して確かめた。",
+        "hints": [
+          "137 は強制終了。",
+          "上限を増やして作り直す。",
+          "`docker inspect -f '{{.State.OOMKilled}}' batch` `docker rm batch` `docker run -d --name batch --memory 256m -e DATABASE_URL=postgres://db/batch city-batch:1.0` `docker ps` を打つ。"
+        ],
+        "expectedErrors": [
+          "docker-conflict",
+          "docker-rm-running"
+        ]
+      }
+    ]
+  },
+  "result": {
+    "success": "原因を特定して直せた。",
+    "partial": "ヒントを使って直せた。次は、番号から原因を先に言ってみよう。",
+    "retry": "まだ止まる。`docker ps -a` の番号と `docker logs` を読もう。"
+  },
+  "summary": {
+    "points": [
+      "終了コードから推測",
+      "ログと設定",
+      "1 つずつ直して確かめる"
+    ],
+    "next": [
+      "docker.a.03"
+    ],
+    "terms": [
+      "exit-code",
+      "exit-137"
+    ]
+  }
+}
