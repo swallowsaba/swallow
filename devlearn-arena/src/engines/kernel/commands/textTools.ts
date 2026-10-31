@@ -147,7 +147,7 @@ export function parseSedScript(script: string): SedCommand[] {
           action: {
             kind: 's',
             pattern: compileOrThrow(pattern, jsFlags),
-            replacement: replacement.replace(/\\(\d)/g, '$$$1'),
+            replacement: replacement.replace(/\\(\d)/g, '$$$1').replace(/\\n/g, '\n').replace(/\\t/g, '\t'),
           },
         };
         return address === undefined ? command : { ...command, address };

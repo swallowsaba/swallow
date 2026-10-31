@@ -875,6 +875,19 @@
       "lessons": [
         "sec.i.04"
       ]
+    },
+    {
+      "id": "ufw",
+      "word": "ufw",
+      "plain": "機械の入口の規則（ファイアウォール）を決めるコマンド。`ufw allow 443/tcp` のように書く。",
+      "why": "Web サーバを動かしても、入口を開けなければ外から届かない。要るポートだけを開ける。",
+      "related": [
+        "firewall",
+        "port"
+      ],
+      "lessons": [
+        "lab.i.01"
+      ]
     }
   ]
 }

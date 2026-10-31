@@ -1,0 +1,288 @@
+{
+  "id": "lab.i.01",
+  "domain": "lab",
+  "level": "intermediate",
+  "theme": "総合",
+  "title": "Web サービスを公開する",
+  "goal": "サーバを用意し、Web サーバを動かし、HTTPS で公開できる",
+  "minutes": 20,
+  "prerequisites": [
+    "linux.i.01",
+    "web.i.03",
+    "sec.i.02"
+  ],
+  "related": [
+    "web.i.03",
+    "sec.i.02"
+  ],
+  "next": [
+    "lab.i.02"
+  ],
+  "terms": [
+    "network",
+    "linux",
+    "https",
+    "server",
+    "web",
+    "command",
+    "service",
+    "web-server",
+    "port",
+    "certificate",
+    "enable",
+    "certificate-chain",
+    "root-user",
+    "permission",
+    "dns",
+    "a-record",
+    "secret-key"
+  ],
+  "explain": {
+    "what": "{{term:server}}の用意から {{term:https}} での公開までを、通して行う課題。{{term:linux}}・{{term:network}}・{{term:web}}・セキュリティの知識を、1 つの仕事として組み合わせる。",
+    "why": "個々の知識を、仕事の単位で使えるようにする。実務では「この{{term:command}}を打って」でなく「この{{term:service}}を公開して」と頼まれる。",
+    "use": "実務の最初の一歩になる。依存の順に組み、各段で確かめる。問題が起きても、どの段かで切り分けられる。",
+    "when": "新しいサービスを公開して、と頼まれた。サーバはある。何から手を付ければよいか。",
+    "figures": [
+      "lab-i01-publish"
+    ]
+  },
+  "understand": [
+    {
+      "kind": "order",
+      "prompt": "作業を依存の順に並べる。",
+      "items": [
+        "{{term:web-server}}を動かす",
+        "入口の{{term:port}}を開ける",
+        "名前で開けるようにする",
+        "{{term:certificate}}を置いて HTTPS にする",
+        "再起動しても動くか確かめる"
+      ],
+      "see": "use"
+    },
+    {
+      "kind": "match",
+      "prompt": "作業と分野を結ぶ。",
+      "pairs": [
+        [
+          "サービスの{{term:enable}}",
+          "Linux"
+        ],
+        [
+          "入口の規則",
+          "ネットワーク"
+        ],
+        [
+          "証明書の設定",
+          "セキュリティ"
+        ]
+      ],
+      "see": "what"
+    }
+  ],
+  "quiz": [
+    {
+      "id": "q1",
+      "kind": "order",
+      "prompt": "作業を順に並べる。",
+      "order": [
+        "Web サーバを動かす",
+        "ポートを開ける",
+        "名前を決める",
+        "証明書を置く"
+      ],
+      "explanation": "下から順に積む。問題が起きた時も、この順で見る。"
+    },
+    {
+      "id": "q2",
+      "kind": "situation",
+      "prompt": "HTTPS で警告が出た。まず何を見る？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "{{term:certificate-chain}}と名前と期限",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "Web サーバを入れ直す",
+          "correct": false,
+          "whyNot": "動いている。問題は証明書。"
+        },
+        {
+          "id": "c",
+          "text": "ポートを閉じる",
+          "correct": false,
+          "whyNot": "閉じると届かなくなるだけ。"
+        }
+      ],
+      "explanation": "警告は、証明書の関門のどれかで止まった知らせ。"
+    },
+    {
+      "id": "q3",
+      "kind": "cause",
+      "prompt": "手元では開けるのに、外から届かない。原因の候補は？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "入口の規則か、待ち受けの住所",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "ページの文字が多い",
+          "correct": false,
+          "whyNot": "届く・届かないには関係が無い。"
+        },
+        {
+          "id": "c",
+          "text": "証明書の期限",
+          "correct": false,
+          "whyNot": "それなら届いた上で警告が出る。"
+        }
+      ],
+      "explanation": "手元で開けるなら、Web サーバは動いている。入口を見る。"
+    }
+  ],
+  "practice": {
+    "mode": "terminal",
+    "purpose": "港の店 `shop.example` を公開する。止まっている nginx を動かして有効にし、入口のポートを開け、名前で開けるようにし、受け取りの場所 `/home/learner/inbox` の証明書で HTTPS にして、再起動しても動くことを確かめる。",
+    "environment": "linux-basic",
+    "setup": {
+      "hostname": "minato-shop",
+      "dirs": [
+        "/var/www/shop",
+        "/etc/nginx/certs"
+      ],
+      "sites": [],
+      "files": {
+        "/etc/hosts": "127.0.0.1\tlocalhost\n",
+        "/etc/nginx/conf.d/shop.conf": "# 港の店（今は http だけ）\nserver {\n  listen 80;\n  server_name shop.example;\n  root /var/www/shop;\n}\n",
+        "/home/learner/inbox/shop.example.crt": "-----BEGIN CERTIFICATE-----\nsubject: shop.example\nissuer: Minato Issuing CA\nnames: shop.example\nvalid: 2026-09-20 2027-10-20\nkey: shop-2026\n-----END CERTIFICATE-----\n-----BEGIN CERTIFICATE-----\nsubject: Minato Issuing CA\nissuer: Minato Root CA\nvalid: 2024-01-01 2030-01-01\nca: yes\n-----END CERTIFICATE-----\n",
+        "/home/learner/inbox/shop.example.key": "-----BEGIN PRIVATE KEY-----\npair: shop-2026\n-----END PRIVATE KEY-----\n",
+        "/var/www/shop/index.html": "<html><body><h1>港の店</h1><p>本日の入荷: 灯台の模型</p></body></html>\n"
+      },
+      "services": {
+        "nginx": {
+          "description": "nginx web server",
+          "enabled": false,
+          "config": "/etc/nginx/conf.d/shop.conf"
+        }
+      }
+    },
+    "steps": [
+      {
+        "id": "web",
+        "purpose": "nginx を動かし、機械が起動した時も動くように有効にする（`systemctl enable --now`）。",
+        "check": {
+          "kind": "service",
+          "name": "nginx",
+          "active": true,
+          "enabled": true
+        },
+        "afterward": "nginx が動き、有効になった。`localhost` でページが見られる。",
+        "hints": [
+          "今は止まっていて、有効でもない。",
+          "`systemctl enable --now` は、有効にして動かす。",
+          "`sudo systemctl enable --now nginx` `systemctl status nginx` `curl http://localhost/` を打つ。"
+        ],
+        "expectedErrors": [
+          "enoent"
+        ]
+      },
+      {
+        "id": "port",
+        "purpose": "入口の規則を決める。Web の 80 番と 443 番を開け、`ufw` を動かす。",
+        "check": {
+          "kind": "fs",
+          "path": "/etc/ufw/user.rules",
+          "contains": "--dport 443"
+        },
+        "afterward": "要るポートだけが開いた。全てを開けず、要る物だけを開ける。",
+        "hints": [
+          "入口の規則は `ufw`。{{term:root-user}}の{{term:permission}}が要る。",
+          "`sudo ufw allow 80/tcp` `sudo ufw allow 443/tcp` `sudo ufw enable`。",
+          "`sudo ufw allow 80/tcp` `sudo ufw allow 443/tcp` `sudo ufw enable` `sudo ufw status` を打つ。"
+        ],
+        "expectedErrors": [
+          "lab-ufw-root"
+        ]
+      },
+      {
+        "id": "name",
+        "purpose": "`/etc/hosts` に名前を足し、`curl http://shop.example/` でページが出ることを確かめる（公開では {{term:dns}} の `A レコード` に書く所。今は手元で確かめる）。",
+        "check": {
+          "kind": "http",
+          "url": "http://shop.example/",
+          "status": 200,
+          "contains": "港の店"
+        },
+        "afterward": "名前で開けた。公開する時は、同じ対応を DNS の {{term:a-record}}に書く。",
+        "hints": [
+          "名前と住所の対応を足す。",
+          "`/etc/hosts` の `localhost` の行に名前を足す。`sudo sed -i 's/localhost/localhost shop.example/' /etc/hosts`。",
+          "`sudo sed -i 's/localhost/localhost shop.example/' /etc/hosts` `curl http://shop.example/` を打つ。"
+        ]
+      },
+      {
+        "id": "tls",
+        "purpose": "証明書を `/etc/nginx/certs` に置き、{{term:secret-key}}を 600 にし、`shop.conf` を `listen 443 ssl;` と証明書の 2 行に替えて読み直す。`curl https://shop.example/` が警告なしでページを返せば達成。",
+        "check": {
+          "kind": "http",
+          "url": "https://shop.example/",
+          "status": 200,
+          "contains": "港の店"
+        },
+        "afterward": "警告なしで HTTPS になった。設定の検査（`nginx -t`）をしてから読み直したので、誤っていても止まらなかった。",
+        "hints": [
+          "`cp`・`chmod 600`・`sed -i`・`nginx -t`・`systemctl reload` の順。",
+          "`listen 80;` を替え、`server_name` の次に `ssl_certificate` と `ssl_certificate_key` の 2 行を足す。",
+          "`cp /home/learner/inbox/shop.example.crt /home/learner/inbox/shop.example.key /etc/nginx/certs/` `chmod 600 /etc/nginx/certs/shop.example.key` `sed -i 's|listen 80;|listen 443 ssl;|' /etc/nginx/conf.d/shop.conf` `sed -i '/server_name/a ssl_certificate_key /etc/nginx/certs/shop.example.key;' /etc/nginx/conf.d/shop.conf` `sed -i '/server_name/a ssl_certificate /etc/nginx/certs/shop.example.crt;' /etc/nginx/conf.d/shop.conf` `nginx -t` `systemctl reload nginx` `curl https://shop.example/` を打つ。"
+        ],
+        "expectedErrors": [
+          "sec-key-mismatch",
+          "sec-key-missing",
+          "sec-key-path",
+          "sec-cert-path",
+          "sec-chain-incomplete"
+        ]
+      },
+      {
+        "id": "reboot",
+        "purpose": "最後に通しで確かめる。`sudo reboot` で機械を起動し直し、`curl https://shop.example/` を打って、番号が 200 と出れば達成（`-s -o /dev/null -w` で番号だけを出す）。",
+        "check": {
+          "kind": "ran",
+          "uses": [
+            "curl"
+          ],
+          "result": "200"
+        },
+        "afterward": "起動し直しても、名前で HTTPS の 200 が返った。全ての段が揃った。研究施設の発表会で、この成果が都市に展示される。",
+        "hints": [
+          "有効にしてあれば、起動し直しても動く。",
+          "`curl -s -o /dev/null -w '%{http_code}' URL` は番号だけを出す。",
+          "`sudo reboot` `curl -s -o /dev/null -w '%{http_code}' https://shop.example/` を打つ。200 と出れば達成。"
+        ]
+      }
+    ]
+  },
+  "result": {
+    "success": "サーバから HTTPS の公開まで、依存の順に組み、通しで確かめられた。研究施設の発表会で成果が都市に展示される。",
+    "partial": "ヒントを使って公開できた。次は、ヒント無しで順を組み立ててみよう。",
+    "retry": "止まった段を確かめよう。Web サーバ → ポート → 名前 → 証明書の順に見る。"
+  },
+  "summary": {
+    "points": [
+      "依存の順に組む",
+      "各段で確かめる",
+      "最後に通しで確かめる"
+    ],
+    "next": [
+      "lab.i.02"
+    ],
+    "terms": [
+      "web-server",
+      "ufw",
+      "https"
+    ]
+  }
+}

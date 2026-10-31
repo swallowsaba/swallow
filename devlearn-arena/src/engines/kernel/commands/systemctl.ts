@@ -1,6 +1,6 @@
 import { changedState, type CommandResult, type CommandSpec, type ShellState } from '../registry';
 import {
-  reloadService, restartService, serviceOf, setEnabled, startService, stopService, unitName, type ConfigLoader, type ServiceAccess, type ServiceResult, type TextReader, type ServiceTable,
+  reboot, reloadService, restartService, serviceOf, setEnabled, startService, stopService, unitName, type ConfigLoader, type ServiceAccess, type ServiceResult, type TextReader, type ServiceTable,
 } from '../services';
 import { allows } from '../perm';
 import { groupsOfUser, userExists } from '../users';
@@ -132,6 +132,14 @@ function staleUnits(shell: ShellState, units: readonly string[]): string {
 const warned = (warn: string, r: CommandResult): CommandResult => (warn === '' ? r : { ...r, stderr: `${warn}${r.stderr ?? ''}` });
 
 export const systemctlCommands: CommandSpec[] = [
+  {
+    name: 'reboot',
+    summary: '機械を起動し直す（有効なサービスだけが動き出す。root だけ）',
+    handler: ({ shell }) => {
+      if ((shell.vars.get('USER') ?? 'learner') !== 'root') return { stderr: 'Call to Reboot failed: Interactive authentication required.\n', code: 1 };
+      return shell.services ? { patch: { services: reboot(shell.services, loaderOf(shell), readerOf(shell)) } } : {};
+    },
+  },
   {
     name: 'systemctl',
     summary: 'サービスの状態を見る・動かす・止める・起動時に動くようにする',

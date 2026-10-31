@@ -40,6 +40,8 @@ export const ALLOW = [
   { path: 'src/engines/kernel/webConfig', rule: 'private-key', reason: '端末の模擬の nginx が読む、形だけの鍵のファイルの頭の行（sec.i.01・sec.i.02）。本物の鍵ではない' },
   { path: 'src/engines/kernel/commands/openssl.test.ts', rule: 'private-key', reason: '端末の模擬の openssl のテストに置く、形だけの鍵のファイル' },
   { path: 'content/lessons/sec/sec.i.0', rule: 'private-key', reason: 'sec.i.01・sec.i.02 の実戦に置く、形だけの鍵のファイル（中身は対の印だけ）' },
+  { path: 'content/lessons/lab/lab.i.01.json', rule: 'private-key', reason: 'lab.i.01 の実戦に置く、形だけの鍵のファイル（中身は対の印だけ）' },
+  { path: 'content/lessons/trouble/trouble.i.03.json', rule: 'private-key', reason: 'trouble.i.03 の実戦に置く、形だけの鍵のファイル（中身は対の印だけ）' },
   { path: 'dist/assets/', rule: 'private-key', reason: '上の 2 つを束ねた物。束ねる前の場所を調べている' },
 ];
 

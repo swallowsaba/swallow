@@ -1,0 +1,359 @@
+{
+  "id": "lab.i.02",
+  "domain": "lab",
+  "level": "intermediate",
+  "theme": "総合",
+  "title": "チーム開発から自動デプロイ",
+  "goal": "プルリクエストからテスト・配布まで自動で流せる",
+  "minutes": 20,
+  "prerequisites": [
+    "git.i.03",
+    "cicd.i.03"
+  ],
+  "related": [
+    "cicd.i.03",
+    "git.a.02"
+  ],
+  "next": [
+    "lab.a.01"
+  ],
+  "terms": [
+    "pull-request",
+    "secret-info",
+    "git",
+    "ci",
+    "continuous-delivery",
+    "test",
+    "gh-secrets",
+    "config-file",
+    "repository",
+    "workflow",
+    "file",
+    "runner",
+    "commit"
+  ],
+  "explain": {
+    "what": "{{term:pull-request}}から検査・配布までを自動で流す課題。{{term:git}}・{{term:ci}}/{{term:continuous-delivery}}・{{term:secret-info}}の知識を、チームの開発の流れとして組み合わせる。",
+    "why": "手作業の配布は、手順を間違え、確かめを忘れ、担当者が居ないと止まる。流れを自動にすれば、誰の変更も同じ門を通る。",
+    "use": "実務の開発の流れに使う。依頼で{{term:test}}を動かし、main に入った物だけを配り、配った後に確かめる。",
+    "when": "毎週金曜に、担当者が手作業で配布している。先週は確かめを忘れて、壊れた版が週末の間ずっと動いていた。",
+    "figures": [
+      "lab-i02-flow"
+    ]
+  },
+  "understand": [
+    {
+      "kind": "order",
+      "prompt": "流れの順に並べる。",
+      "items": [
+        "枝で作業する",
+        "依頼を出す",
+        "検査が通る",
+        "承認されて main へ",
+        "配布して確かめる"
+      ],
+      "see": "use"
+    },
+    {
+      "kind": "relation",
+      "prompt": "2 つの関係を選ぶ。",
+      "a": "配布の鍵を {{term:gh-secrets}} に置く",
+      "b": "{{term:config-file}}に鍵を書かずに済む",
+      "answer": "cause",
+      "why": "名前で引くだけなので、{{term:repository}}を読める人に値が見えない。",
+      "see": "why"
+    }
+  ],
+  "quiz": [
+    {
+      "id": "q1",
+      "kind": "situation",
+      "prompt": "配布の鍵をどこに置く？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "Secrets",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "{{term:workflow}}の{{term:file}}",
+          "correct": false,
+          "whyNot": "全員に見え、履歴に残る。"
+        },
+        {
+          "id": "c",
+          "text": "担当者の手元",
+          "correct": false,
+          "whyNot": "担当者が居ないと配れない。"
+        }
+      ],
+      "explanation": "実行の時だけ渡す。"
+    },
+    {
+      "id": "q2",
+      "kind": "cause",
+      "prompt": "テストを飛ばして main に入った。原因は？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "枝の保護で、検査を必須にしていない",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "テストが速すぎる",
+          "correct": false,
+          "whyNot": "速さは関係が無い。"
+        },
+        {
+          "id": "c",
+          "text": "{{term:runner}} が多い",
+          "correct": false,
+          "whyNot": "数は関係が無い。"
+        }
+      ],
+      "explanation": "門は、通らないと入れない形にする。"
+    },
+    {
+      "id": "q3",
+      "kind": "choice",
+      "prompt": "配布の後の確かめとして、よいのは？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "動いているサイトの `/health` を確かめる",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "ファイルを置けたことだけを見る",
+          "correct": false,
+          "whyNot": "置けても動いているとは限らない。"
+        },
+        {
+          "id": "c",
+          "text": "確かめない",
+          "correct": false,
+          "whyNot": "壊れたまま週末を迎える。"
+        }
+      ],
+      "explanation": "利用者と同じ道で確かめる。"
+    }
+  ],
+  "practice": {
+    "mode": "terminal",
+    "purpose": "予約サイトのワークフロー `.github/workflows/ci.yml` の下書きがある。今は `deploy` が `test` を待たずに動く。`test` の後にだけ配る流れに直し、正しい変更が届くこと、壊れた変更が止まることを確かめる。配布の鍵は Secrets の `DEPLOY_TOKEN`。",
+    "environment": "linux-basic",
+    "setup": {
+      "hostname": "reserve-dev",
+      "cwd": "/home/learner/reserve",
+      "dirs": [
+        "/home/learner/reserve/src",
+        "/home/learner/reserve/.github/workflows"
+      ],
+      "sites": [],
+      "files": {
+        "/home/learner/reserve/package.json": "{\n  \"name\": \"reserve-site\",\n  \"version\": \"1.5.0\",\n  \"private\": true,\n  \"scripts\": {\n    \"build\": \"esbuild src/server.ts --bundle --outfile=dist/server.js\",\n    \"test\": \"vitest run\",\n    \"deploy\": \"rsync -av dist/ deploy@reserve.example:/srv/reserve/\"\n  },\n  \"devDependencies\": {\n    \"vitest\": \"^2.1.0\",\n    \"esbuild\": \"^0.24.0\"\n  }\n}\n",
+        "/home/learner/reserve/.gitignore": "node_modules/\ndist/\n",
+        "/home/learner/reserve/src/server.ts": "export const app = '港の予約';\n",
+        "/home/learner/reserve/.github/workflows/ci.yml": "name: ci\non:\n  pull_request:\n    branches: [main]\n  push:\n    branches: [main]\njobs:\n  test:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@v4\n      - run: npm ci\n      - run: npm run build\n      - run: npm test\n  deploy:\n    runs-on: ubuntu-latest\n    if: ${{ github.ref_name == 'main' }}\n    steps:\n      - uses: actions/checkout@v4\n      - run: npm ci\n      - run: npm run build\n      - run: npm run deploy\n        env:\n          DEPLOY_TOKEN: ${{ secrets.DEPLOY_TOKEN }}\n      - name: 配った後に確かめる\n        run: curl -fsS https://reserve.example/health\n"
+      },
+      "run": [
+        "export __NOW='2026-10-15 09:00'",
+        "git init -q",
+        "git remote add origin https://git.city.example/city/reserve.git",
+        "npm install",
+        "git add .",
+        "git commit -q -m '予約サイト 1.5.0'"
+      ],
+      "gitServers": [
+        {
+          "url": "https://git.city.example/city/reserve.git",
+          "run": [],
+          "forge": {
+            "repo": "city/reserve",
+            "actions": {
+              "firstRun": 40,
+              "installSeconds": 15,
+              "secrets": {
+                "DEPLOY_TOKEN": "tok-3f9a1c7e"
+              },
+              "scripts": {
+                "build": {
+                  "kind": "build",
+                  "seconds": 30,
+                  "sources": "src",
+                  "bundle": "dist/server.js",
+                  "log": [
+                    "",
+                    "  dist/server.js  1.1kb",
+                    ""
+                  ]
+                },
+                "test": {
+                  "kind": "test",
+                  "seconds": 20,
+                  "log": [
+                    "      Tests  3 passed (3)"
+                  ],
+                  "faults": [
+                    {
+                      "when": [
+                        {
+                          "path": "src/server.ts",
+                          "has": "こわれた"
+                        }
+                      ],
+                      "code": 1,
+                      "log": [
+                        " FAIL  tests/server.test.ts > 予約の名前",
+                        "      Tests  1 failed | 2 passed (3)"
+                      ]
+                    }
+                  ]
+                },
+                "deploy": {
+                  "kind": "deploy",
+                  "seconds": 10,
+                  "out": "dist",
+                  "site": "reserve.example",
+                  "log": [
+                    "switched to {version}"
+                  ],
+                  "token": {
+                    "env": "DEPLOY_TOKEN",
+                    "secret": "DEPLOY_TOKEN",
+                    "log": [
+                      "deploy: 401 Unauthorized (token is empty or wrong)"
+                    ],
+                    "code": 5
+                  }
+                }
+              },
+              "sites": [
+                {
+                  "host": "reserve.example",
+                  "chain": [
+                    {
+                      "id": "leaf-reserve.example",
+                      "subject": "reserve.example",
+                      "issuer": "Minato Issuing CA",
+                      "sans": [
+                        "reserve.example"
+                      ],
+                      "notBefore": "2026-01-01",
+                      "notAfter": "2027-01-01",
+                      "ca": false
+                    },
+                    {
+                      "id": "inter",
+                      "subject": "Minato Issuing CA",
+                      "issuer": "Minato Root CA",
+                      "sans": [],
+                      "notBefore": "2024-01-01",
+                      "notAfter": "2030-01-01",
+                      "ca": true
+                    }
+                  ],
+                  "releases": [
+                    {
+                      "version": "1.4.0",
+                      "files": {}
+                    }
+                  ],
+                  "current": "1.4.0",
+                  "routes": {
+                    "/": {
+                      "status": 200,
+                      "body": "版 {version}"
+                    },
+                    "/health": {
+                      "status": 200,
+                      "body": "{\"status\":\"ok\"}"
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    "steps": [
+      {
+        "id": "gate",
+        "purpose": "`deploy` の下に `needs: test` を足し、`test` の後にだけ動くようにする。{{term:commit}}して push し、`test` の後に配られて、配った後の確かめまで緑になれば達成。",
+        "check": {
+          "kind": "ci",
+          "expr": "head needs:deploy=test job:test=success job:deploy=success deployed:reserve.example=1.5.0 step:deploy/curl=success"
+        },
+        "afterward": "テストが通った後に配布が動き、確かめも通った。正しい変更が、人の手を入れずに届いた。",
+        "hints": [
+          "順は `needs` で決める。行を足すのは `sed -i`。",
+          "`sed -i '/^  deploy:/a \\    needs: test' .github/workflows/ci.yml` で `deploy:` の次の行に足す。字下げは 4 つ。",
+          "`sed -i '/^  deploy:/a \\    needs: test' .github/workflows/ci.yml` `git add .` `git commit -m 'テストの後に配る'` `git push -u origin main` `gh run view` を打つ。"
+        ],
+        "expectedErrors": [
+          "cicd-workflow-invalid",
+          "cicd-needs-unknown",
+          "git-nothing-to-commit"
+        ]
+      },
+      {
+        "id": "broken",
+        "purpose": "壊れた変更を試す。`src/server.ts` の `港の予約` を `こわれた` に替えてコミットして push し、`test` で止まって配られないことを確かめる。",
+        "check": {
+          "kind": "ci",
+          "expr": "head job:test=failure job:deploy=skipped !release:reserve.example~こわれた"
+        },
+        "afterward": "`test` が赤くなり、`deploy` は動かなかった（`-`）。本番は無事。これが壊れた変更を止める門。",
+        "hints": [
+          "今度はテストが落ちる。",
+          "`sed -i 's/港の予約/こわれた/' src/server.ts` の後にコミットして push。",
+          "`sed -i 's/港の予約/こわれた/' src/server.ts` `git commit -am '名前を替える'` `git push` `gh run view` を打つ。"
+        ],
+        "expectedErrors": [
+          "git-nothing-to-commit"
+        ]
+      },
+      {
+        "id": "recover",
+        "purpose": "壊れた変更を `git revert` で戻して push する。全ての仕事が緑に戻れば達成。",
+        "check": {
+          "kind": "ci",
+          "expr": "head run=success job:deploy=success !release:reserve.example~こわれた"
+        },
+        "afterward": "緑に戻り、配布も動いた。流れ全体が自動になった。都市のデプロイセンターに自動の線が引かれる。",
+        "hints": [
+          "履歴を消さずに戻す。",
+          "`git revert --no-edit HEAD` の後に push。",
+          "`git revert --no-edit HEAD` `git push` `gh run view` を打つ。"
+        ],
+        "expectedErrors": [
+          "git-nothing-to-commit"
+        ]
+      }
+    ]
+  },
+  "result": {
+    "success": "依頼から配布までの自動の流れを作れた。都市のデプロイセンターに自動の線が引かれる。",
+    "partial": "ヒントを使って作れた。次は、枝の保護で検査を必須にする所まで考えてみよう。",
+    "retry": "止まった段を `gh run view` で読もう。テストか、鍵か、順か。"
+  },
+  "summary": {
+    "points": [
+      "流れ全体を自動にする",
+      "秘密は安全に渡す",
+      "壊れた物を止める門を置く"
+    ],
+    "next": [
+      "lab.a.01"
+    ],
+    "terms": [
+      "pipeline",
+      "gh-secrets",
+      "deploy"
+    ]
+  }
+}

@@ -1,0 +1,67 @@
+{
+  "lesson": "lab.i.02",
+  "variants": [
+    {
+      "name": "差分を見ながら・枝を書いて push する",
+      "steps": {
+        "gate": [
+          "sed -i 's/^  deploy:$/  deploy:\\n    needs: test/' .github/workflows/ci.yml",
+          "git diff",
+          "git add .github/workflows/ci.yml",
+          "git commit -m 'needs を足す'",
+          "git push origin main"
+        ],
+        "broken": [
+          "sed -i 's/港の予約/こわれた/' src/server.ts",
+          "git add src/server.ts",
+          "git commit -m 'わざと壊す'",
+          "git push origin main",
+          "gh run view --log-failed"
+        ],
+        "recover": [
+          "git log --oneline -2",
+          "git revert --no-edit HEAD",
+          "git push origin main"
+        ]
+      }
+    },
+    {
+      "name": "配列で書く",
+      "steps": {
+        "gate": [
+          "sed -i '/^  deploy:/a \\    needs: [test]' .github/workflows/ci.yml",
+          "cat .github/workflows/ci.yml",
+          "git commit -am \"テストを待つ\"",
+          "git push -u origin main"
+        ],
+        "broken": [
+          "sed -i 's/港の予約/こわれた/' src/server.ts",
+          "git commit -am 壊す",
+          "git push",
+          "gh run list"
+        ],
+        "recover": [
+          "git revert --no-edit HEAD",
+          "git push",
+          "gh run view"
+        ]
+      }
+    }
+  ],
+  "wrong": {
+    "step": "gate",
+    "why": "無い仕事を needs に書く",
+    "input": [
+      "sed -i '/^  deploy:/a \\    needs: tests' .github/workflows/ci.yml",
+      "git add .",
+      "git commit -m 'needs を足す'",
+      "git push -u origin main",
+      "gh run view"
+    ],
+    "retry": [
+      "sed -i 's/needs: tests/needs: test/' .github/workflows/ci.yml",
+      "git commit -am 'needs を直す'",
+      "git push"
+    ]
+  }
+}

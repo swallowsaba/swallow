@@ -4109,7 +4109,7 @@
       "title": "チーム開発から自動デプロイ",
       "goal": "プルリクエストからテスト・配布まで自動で流せる",
       "practice": [
-        "editor"
+        "terminal"
       ],
       "prerequisites": [
         "git.i.03",

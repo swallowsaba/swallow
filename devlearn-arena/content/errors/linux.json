@@ -393,6 +393,20 @@
         "スクリプトに実行の権限 x が無い。"
       ],
       "hint": "cat /var/log/backup.log で記録を読み、crontab -l で登録の 1 行を見直そう。"
+    },
+    {
+      "id": "lab-ufw-root",
+      "match": "You need to be root",
+      "meaning": "`ufw` は管理者の権限が要る。",
+      "causes": [
+        "`sudo` を付けていない。",
+        "別の機械の利用者で打っている。"
+      ],
+      "hint": "`sudo ufw …` の形で打とう。",
+      "terms": [
+        "sudo",
+        "ufw"
+      ]
     }
   ]
 }
