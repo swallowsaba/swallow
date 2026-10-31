@@ -1,0 +1,51 @@
+{
+  "lesson": "web.a.01",
+  "variants": [
+    {
+      "name": "区間を選んで測る",
+      "steps": {
+        "report": [
+          "curl -s -o /dev/null -w \"%{time_connect} %{time_starttransfer}\\n\" http://report.example/",
+          " 処理 "
+        ],
+        "news": [
+          "curl -s -o /dev/null -w \"%{time_namelookup} %{time_total}\\n\" http://news.example/",
+          "名前解決"
+        ],
+        "photo": [
+          "curl -s -o /dev/null -w \"%{time_starttransfer} %{time_total} %{size_download}\\n\" http://photo.example/",
+          "転送"
+        ]
+      }
+    },
+    {
+      "name": "全部の区間を 1 行で",
+      "steps": {
+        "report": [
+          "curl -s -o /dev/null -w \"%{time_namelookup} %{time_connect} %{time_appconnect} %{time_pretransfer} %{time_starttransfer} %{time_total}\\n\" http://report.example/",
+          "処理"
+        ],
+        "news": [
+          "curl -s http://news.example/",
+          "curl -s -o /dev/null -w \"%{time_namelookup} %{time_connect} %{time_appconnect} %{time_pretransfer} %{time_starttransfer} %{time_total}\\n\" http://news.example/",
+          "名前解決"
+        ],
+        "photo": [
+          "curl -s -o /dev/null -w \"%{time_namelookup} %{time_connect} %{time_appconnect} %{time_pretransfer} %{time_starttransfer} %{time_total}\\n\" http://photo.example/",
+          " 転送"
+        ]
+      }
+    }
+  ],
+  "wrong": {
+    "step": "photo",
+    "why": "合計だけを見て処理と答える",
+    "commands": false,
+    "input": [
+      "処理"
+    ],
+    "retry": [
+      "転送"
+    ]
+  }
+}

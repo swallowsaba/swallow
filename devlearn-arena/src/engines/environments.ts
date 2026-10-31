@@ -52,6 +52,10 @@ const serviceSetup = z.object({
   keyGuard: z.object({ file: z.string().startsWith('/') }).strict().optional(),
   /** API の鍵で頼む側: 環境のファイル・鍵の変数の名前・頼む先のポート */
   keyClient: z.object({ envFile: z.string().startsWith('/'), name: z.string(), upstream: z.number().int() }).strict().optional(),
+  /** 動かす時に環境のファイルの値を確かめるアプリ。違えば頼みに 500 を返し、error の文（${value} は読んだ値）をログに書く */
+  envCheck: z.object({ file: z.string().startsWith('/'), key: z.string(), want: z.string(), error: z.string() }).strict().optional(),
+  /** トークンで守る API（POST /token で秘密と引き換えに取り、Authorization: Bearer で使う） */
+  tokenApi: z.object({ token: z.string(), expired: z.array(z.string()), secret: z.string() }).strict().optional(),
   /** 落ちた後（状態が failed）から始める */
   failed: z.boolean().optional(),
   /** 落ちた理由（systemctl status の Result。メモリが足りずにカーネルに止められたなら oom-kill。無ければ exit-code） */
@@ -109,6 +113,8 @@ const siteSetup = z.object({
   /** 対応する HTTP の版（無ければ 1.1 だけ） */
   versions: z.array(z.enum(['1.1', '2', '3'])).optional(),
   routes: routesSetup,
+  /** 頼みの時間の内訳（秒。curl -w の time_ が読む） */
+  timing: z.object({ dns: z.number().min(0), connect: z.number().min(0), tls: z.number().min(0), wait: z.number().min(0), transfer: z.number().min(0), size: z.number().int().positive().optional() }).strict().optional(),
   /** 資源の集まりを覚えている API（/items と /items/3。src/engines/http） */
   api: z.object({
     base: z.string().startsWith('/'),
@@ -437,6 +443,8 @@ export function shellOptions(environment: string, setup: unknown): SessionOption
       ...(v.diskGuard !== undefined ? { diskGuard: v.diskGuard } : {}),
       ...(v.keyGuard !== undefined ? { keyGuard: v.keyGuard, ...(v.active ? { validKeys: readKeys(s.files?.[v.keyGuard.file] ?? '') } : {}) } : {}),
       ...(v.keyClient !== undefined ? { keyClient: v.keyClient, ...(v.active ? { heldKey: readEnvValue(s.files?.[v.keyClient.envFile] ?? '', v.keyClient.name) } : {}) } : {}),
+      ...(v.envCheck !== undefined ? { envCheck: v.envCheck, ...(v.active ? { envValue: readEnvValue(s.files?.[v.envCheck.file] ?? '', v.envCheck.key) } : {}) } : {}),
+      ...(v.tokenApi !== undefined ? { tokenApi: v.tokenApi } : {}),
       ...(v.log !== undefined ? { log: v.log } : {}),
     })), s.hostname);
   }

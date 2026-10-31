@@ -43,6 +43,17 @@ export interface Site {
   versions?: readonly HttpVersion[];
   routes: Readonly<Record<string, Route>>;
   api?: Api;
+  /** 頼みの時間の内訳（秒。curl -w の time_ が読む。size は転送する大きさ） */
+  timing?: Timing;
+}
+
+export interface Timing {
+  dns: number;
+  connect: number;
+  tls: number;
+  wait: number;
+  transfer: number;
+  size?: number;
 }
 
 /** 手元の Web サーバへの頼み（名前で振り分けるため、頼んだ名前も渡す） */

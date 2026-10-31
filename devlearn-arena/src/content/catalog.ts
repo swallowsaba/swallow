@@ -41,7 +41,7 @@ export const PRACTICE_NAMES = { terminal: '仮想端末', simulation: '模擬環
  * 書き起こしの途中は、書き終えた分野を 1 つずつ足す（docs/progress/expand-scope.md）
  */
 const RELEASE_INTERMEDIATE: ReadonlySet<DomainId> = new Set(['found', 'sec', 'cicd', 'db', 'mon', 'cloud', 'devops', 'linux', 'net', 'web', 'git', 'ctr', 'docker', 'k8s']);
-const RELEASE_ADVANCED: ReadonlySet<DomainId> = new Set(['linux', 'net']);
+const RELEASE_ADVANCED: ReadonlySet<DomainId> = new Set(['linux', 'net', 'web']);
 
 /** 公開の範囲のレッスンか（docs/decisions.md Q-04） */
 export const inFirstRelease = (e: Pick<CatalogEntry, 'domain' | 'level'>): boolean =>

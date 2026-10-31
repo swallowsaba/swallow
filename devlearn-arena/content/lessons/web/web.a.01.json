@@ -1,0 +1,306 @@
+{
+  "id": "web.a.01",
+  "domain": "web",
+  "level": "advanced",
+  "theme": "性能",
+  "title": "遅い Web を調べる",
+  "goal": "遅延の内訳（DNS・接続・TLS・処理・転送）を切り分けられる",
+  "minutes": 20,
+  "prerequisites": [
+    "web.i.04",
+    "sec.b.06"
+  ],
+  "related": [
+    "mon.i.01",
+    "net.a.02"
+  ],
+  "next": [
+    "web.a.02"
+  ],
+  "terms": [
+    "name-resolution",
+    "tls",
+    "server",
+    "dns",
+    "app",
+    "db",
+    "byte",
+    "certificate",
+    "mb"
+  ],
+  "explain": {
+    "what": "ページの遅さは、{{term:name-resolution}}・接続・{{term:tls}}・処理・転送の区間に分けて測る。どこが遅いかで、対策が全く違う。",
+    "why": "合計だけ見ても手が打てない。遅い区間でない所を直しても、速くならない。",
+    "use": "性能の障害対応で使う。一番長い区間から順に直す。",
+    "when": "ページの表示に 5 秒かかると言われた。{{term:server}}を増やす前に、どこが遅いかを知りたい。",
+    "figures": [
+      "web-a01-segments"
+    ]
+  },
+  "understand": [
+    {
+      "kind": "figure-pick",
+      "figure": "web-a01-segments",
+      "prompt": "図で、最も長い区間を押す。",
+      "answer": [
+        "wait"
+      ],
+      "see": "what"
+    },
+    {
+      "kind": "match",
+      "prompt": "遅い区間と対策を結ぶ。",
+      "pairs": [
+        [
+          "名前解決",
+          "{{term:dns}} のサーバや `TTL` を見直す"
+        ],
+        [
+          "処理",
+          "{{term:app}}や {{term:db}} の遅い処理を直す"
+        ],
+        [
+          "転送",
+          "大きさを減らす・圧縮する"
+        ]
+      ],
+      "see": "use"
+    }
+  ],
+  "quiz": [
+    {
+      "id": "q1",
+      "kind": "cause",
+      "prompt": "名前解決の区間だけが長い。原因は？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "DNS",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "DB",
+          "correct": false,
+          "whyNot": "DB はサーバに届いた後の処理。"
+        },
+        {
+          "id": "c",
+          "text": "画像の大きさ",
+          "correct": false,
+          "whyNot": "それは転送の区間。"
+        }
+      ],
+      "explanation": "名前を引くのに時間がかかっている。"
+    },
+    {
+      "id": "q2",
+      "kind": "cause",
+      "prompt": "最初の 1 {{term:byte}}までが長い。原因は？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "サーバの処理",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "回線の細さ",
+          "correct": false,
+          "whyNot": "細さは転送の区間に出る。"
+        },
+        {
+          "id": "c",
+          "text": "{{term:certificate}}の期限",
+          "correct": false,
+          "whyNot": "期限切れなら遅くなるのではなく失敗する。"
+        }
+      ],
+      "explanation": "アプリや DB を調べる。"
+    },
+    {
+      "id": "q3",
+      "kind": "situation",
+      "prompt": "転送の区間が長い。対策は？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "大きさを減らす・圧縮する",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "DB にインデックスを足す",
+          "correct": false,
+          "whyNot": "それは処理の区間に効く。"
+        },
+        {
+          "id": "c",
+          "text": "DNS を替える",
+          "correct": false,
+          "whyNot": "それは名前解決の区間に効く。"
+        }
+      ],
+      "explanation": "運ぶ量を減らす。"
+    },
+    {
+      "id": "q4",
+      "kind": "predict",
+      "prompt": "画像を圧縮すると？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "転送の区間が短くなる",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "処理の区間が短くなる",
+          "correct": false,
+          "whyNot": "処理の前後は変わらない。"
+        },
+        {
+          "id": "c",
+          "text": "名前解決が速くなる",
+          "correct": false,
+          "whyNot": "名前とは関係が無い。"
+        }
+      ],
+      "explanation": "効くのは、その区間だけ。"
+    }
+  ],
+  "practice": {
+    "mode": "terminal",
+    "purpose": "市の 3 つのサイト `report.example`・`news.example`・`photo.example` が遅い。`curl -w` で区間ごとの時間を測り、一番長い区間を答える。`time_` は頼み始めからの累計なので、前の値を引いて比べる。",
+    "environment": "web-client",
+    "setup": {
+      "sites": [
+        {
+          "host": "report.example",
+          "port": 80,
+          "timing": {
+            "dns": 0.02,
+            "connect": 0.03,
+            "tls": 0,
+            "wait": 4.2,
+            "transfer": 0.08
+          },
+          "routes": {
+            "/": {
+              "status": 200,
+              "body": "<h1>月次の報告</h1>"
+            }
+          }
+        },
+        {
+          "host": "news.example",
+          "port": 80,
+          "timing": {
+            "dns": 3.1,
+            "connect": 0.03,
+            "tls": 0,
+            "wait": 0.15,
+            "transfer": 0.06
+          },
+          "routes": {
+            "/": {
+              "status": 200,
+              "body": "<h1>市の知らせ</h1>"
+            }
+          }
+        },
+        {
+          "host": "photo.example",
+          "port": 80,
+          "timing": {
+            "dns": 0.02,
+            "connect": 0.04,
+            "tls": 0,
+            "wait": 0.2,
+            "transfer": 5.4,
+            "size": 48000000
+          },
+          "routes": {
+            "/": {
+              "status": 200,
+              "body": "<h1>写真の館</h1>"
+            }
+          }
+        }
+      ]
+    },
+    "steps": [
+      {
+        "id": "report",
+        "purpose": "`report.example` を測る。一番長い区間（`名前解決`・`接続`・`処理`・`転送` のどれか）を答えの欄に入れる。",
+        "check": {
+          "kind": "answer",
+          "equals": "処理"
+        },
+        "afterward": "接続の後、最初の 1 バイトまで 4.2 秒待っている。サーバの処理が遅い。アプリや DB の遅い処理を調べる（mon・db の分野）。",
+        "hints": [
+          "`-o /dev/null` で中身を捨て、`-w` で時間を出す。",
+          "最初の 1 バイトの値から接続の値を引くと、処理の時間。",
+          "`curl -s -o /dev/null -w \"名前解決 %{time_namelookup}\\n接続 %{time_connect}\\n最初の1バイト %{time_starttransfer}\\n全体 %{time_total}\\n大きさ %{size_download}\\n\" http://report.example/` を打ち、`処理` と答える。"
+        ],
+        "expectedErrors": [
+          "web-a-segment"
+        ]
+      },
+      {
+        "id": "news",
+        "purpose": "`news.example` を測り、一番長い区間を答える。",
+        "check": {
+          "kind": "answer",
+          "equals": "名前解決"
+        },
+        "afterward": "頼む前に 3.1 秒かかっている。名前解決が遅い。DNS のサーバや `TTL` を見直す。サーバを増やしても速くならない。",
+        "hints": [
+          "最初の値がそのまま名前解決の時間。",
+          "全体の大半が名前解決。",
+          "`curl -s -o /dev/null -w \"名前解決 %{time_namelookup}\\n接続 %{time_connect}\\n最初の1バイト %{time_starttransfer}\\n全体 %{time_total}\\n大きさ %{size_download}\\n\" http://news.example/` を打ち、`名前解決` と答える。"
+        ],
+        "expectedErrors": [
+          "web-a-segment"
+        ]
+      },
+      {
+        "id": "photo",
+        "purpose": "`photo.example` を測り、一番長い区間を答える。大きさの欄も見る。",
+        "check": {
+          "kind": "answer",
+          "equals": "転送"
+        },
+        "afterward": "最初の 1 バイトの後に 5.4 秒。大きさは 48 {{term:mb}}。画像を小さくする・圧縮する。合計はどれも数秒だが、対策は 3 つとも違う。",
+        "hints": [
+          "全体の値から最初の 1 バイトの値を引く。",
+          "大きさが 48000000 バイトある。",
+          "`curl -s -o /dev/null -w \"名前解決 %{time_namelookup}\\n接続 %{time_connect}\\n最初の1バイト %{time_starttransfer}\\n全体 %{time_total}\\n大きさ %{size_download}\\n\" http://photo.example/` を打ち、`転送` と答える。"
+        ],
+        "expectedErrors": [
+          "web-a-segment"
+        ]
+      }
+    ]
+  },
+  "result": {
+    "success": "内訳から原因の区間を特定できた。",
+    "partial": "ヒントを使って特定できた。次は、引き算を先に頭でしてみよう。",
+    "retry": "まだ違う区間を答えている。隣り合う値を引き算して、区間ごとの長さを比べよう。"
+  },
+  "summary": {
+    "points": [
+      "遅さを区間に分ける",
+      "最も長い所から",
+      "対策は区間ごと"
+    ],
+    "next": [
+      "web.a.02"
+    ],
+    "terms": [
+      "curl",
+      "ttfb",
+      "dns"
+    ]
+  }
+}

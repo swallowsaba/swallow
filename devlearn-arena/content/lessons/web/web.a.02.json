@@ -1,0 +1,295 @@
+{
+  "id": "web.a.02",
+  "domain": "web",
+  "level": "advanced",
+  "theme": "障害",
+  "title": "4xx と 5xx を直す",
+  "goal": "症状から Web サーバ・アプリ・後段のどこかを特定できる",
+  "minutes": 20,
+  "prerequisites": [
+    "web.i.03",
+    "trouble.b.03"
+  ],
+  "related": [
+    "trouble.i.03",
+    "mon.i.03"
+  ],
+  "next": [
+    "web.a.03"
+  ],
+  "terms": [
+    "app",
+    "log",
+    "web",
+    "dns",
+    "port",
+    "authentication",
+    "certificate",
+    "http",
+    "firewall",
+    "db"
+  ],
+  "explain": {
+    "what": "返事の数字と{{term:log}}から、入口・{{term:app}}・後ろのどこが原因かを特定して直す。層ごとにログがある。",
+    "why": "{{term:web}} の障害は利用者に直結する。数字で層を絞れば、見るログがすぐ決まる。",
+    "use": "障害対応で使う。1 つ直すと次の層の誤りが見えてくることがある。",
+    "when": "サイトが 502 を返す。直しても、次は 500 になった。",
+    "figures": [
+      "web-a02-layers"
+    ]
+  },
+  "understand": [
+    {
+      "kind": "order",
+      "prompt": "見る順に並べる。",
+      "items": [
+        "返事の数字",
+        "入口のログ",
+        "アプリのログ",
+        "直して動かし直す",
+        "全体で確かめる"
+      ],
+      "see": "use"
+    },
+    {
+      "kind": "situation",
+      "prompt": "502 と 504 の違いは？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "502 は後ろに届かない・変な答え、504 は後ろの答えが遅すぎる",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "502 はアプリの誤り、504 は {{term:dns}} の誤り",
+          "correct": false,
+          "whyNot": "どちらも入口と後ろの間の話。"
+        },
+        {
+          "id": "c",
+          "text": "同じ意味",
+          "correct": false,
+          "whyNot": "原因の調べ方が変わる。"
+        }
+      ],
+      "see": "what"
+    }
+  ],
+  "quiz": [
+    {
+      "id": "q1",
+      "kind": "cause",
+      "prompt": "502 が返る。原因は？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "入口が後ろに届かない",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "利用者の頼みの誤り",
+          "correct": false,
+          "whyNot": "それは 4xx。"
+        },
+        {
+          "id": "c",
+          "text": "ページが無い",
+          "correct": false,
+          "whyNot": "それは 404。"
+        }
+      ],
+      "explanation": "中継先の{{term:port}}と、アプリが動いているかを見る。"
+    },
+    {
+      "id": "q2",
+      "kind": "cause",
+      "prompt": "504 が返る。原因は？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "後ろの答えが遅すぎる",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "{{term:authentication}}の誤り",
+          "correct": false,
+          "whyNot": "それは 401 や 403。"
+        },
+        {
+          "id": "c",
+          "text": "{{term:certificate}}の誤り",
+          "correct": false,
+          "whyNot": "それなら {{term:http}} の前に失敗する。"
+        }
+      ],
+      "explanation": "後ろの処理か、途中の網を調べる。"
+    },
+    {
+      "id": "q3",
+      "kind": "situation",
+      "prompt": "500 が返る。まず見るのは？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "アプリのログ",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "{{term:firewall}}の規則",
+          "correct": false,
+          "whyNot": "アプリまで届いている。"
+        },
+        {
+          "id": "c",
+          "text": "DNS",
+          "correct": false,
+          "whyNot": "名前は引けている。"
+        }
+      ],
+      "explanation": "アプリの中の失敗。理由はアプリのログにある。"
+    },
+    {
+      "id": "q4",
+      "kind": "predict",
+      "prompt": "中継先のポートを直すと？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "502 が消え、アプリ側のエラーが見える",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "全て直る",
+          "correct": false,
+          "whyNot": "次の層の誤りは残る。"
+        },
+        {
+          "id": "c",
+          "text": "アプリが止まる",
+          "correct": false,
+          "whyNot": "中継先を直しただけ。"
+        }
+      ],
+      "explanation": "下の誤りに隠れていた次の誤りが見える。"
+    }
+  ],
+  "practice": {
+    "mode": "terminal",
+    "purpose": "`shop.example` が `502` を返す。入口の設定は `/etc/nginx/conf.d/shop.conf`、アプリの `shop` の設定は `/etc/shop/app.env`。{{term:db}} の正しい名前は `db.internal`。層ごとにログを読み、2 つ直して `200` に戻す。",
+    "environment": "linux-basic",
+    "setup": {
+      "user": "root",
+      "cwd": "/root",
+      "hostname": "minato-shop",
+      "sites": [],
+      "dirs": [
+        "/root",
+        "/etc/shop",
+        "/var/log/nginx"
+      ],
+      "files": {
+        "/etc/hosts": "127.0.0.1\tlocalhost shop.example\n",
+        "/etc/nginx/conf.d/shop.conf": "server {\n  listen 80;\n  server_name shop.example;\n  location / {\n    proxy_pass http://127.0.0.1:3000;\n  }\n}\n",
+        "/etc/shop/app.env": "DB_HOST=db.old.internal\nDB_PORT=5432\n",
+        "/var/log/nginx/error.log": "2026/10/03 09:00:12 [error] 812#812: *41 connect() failed (111: Connection refused) while connecting to upstream, client: 10.0.0.7, server: shop.example, request: \"GET / HTTP/1.1\", upstream: \"http://127.0.0.1:3000/\", host: \"shop.example\"\n"
+      },
+      "services": {
+        "nginx": {
+          "description": "nginx web server",
+          "enabled": true,
+          "config": "/etc/nginx/conf.d/shop.conf"
+        },
+        "shop": {
+          "description": "Shop app",
+          "enabled": true,
+          "active": true,
+          "port": 8080,
+          "body": "<h1>港の店</h1>",
+          "envCheck": {
+            "file": "/etc/shop/app.env",
+            "key": "DB_HOST",
+            "want": "db.internal",
+            "error": "FATAL: could not connect to database at ${value}:5432: Name or service not known"
+          },
+          "log": [
+            "Oct 03 08:58:02 minato-shop shop[801]: FATAL: could not connect to database at db.old.internal:5432: Name or service not known"
+          ]
+        }
+      },
+      "run": [
+        "systemctl start nginx"
+      ]
+    },
+    "steps": [
+      {
+        "id": "proxy",
+        "purpose": "`curl -fsS http://shop.example/` は `502` で失敗する。`/var/log/nginx/error.log` の `upstream:` と `ss -ltnp` のポートを比べ、設定の `proxy_pass` を直して読み直す。`502` が消えれば達成。",
+        "check": {
+          "kind": "http",
+          "url": "http://shop.example/",
+          "status": 500
+        },
+        "afterward": "入口はアプリの 8080 番に届くようになった。ただ、今度は 500。隠れていた次の層の誤りが見えた。",
+        "hints": [
+          "ログの 3000 番と、実際に待っている番号を比べる。",
+          "`sed -i` でポートを置き換え、`nginx -t` と `systemctl reload nginx`。",
+          "`curl -fsS http://shop.example/` `tail -n 1 /var/log/nginx/error.log` `ss -ltnp` `sed -i 's/127.0.0.1:3000/127.0.0.1:8080/' /etc/nginx/conf.d/shop.conf` `nginx -t` `systemctl reload nginx` を打つ。1 つ目の命令は失敗する。"
+        ],
+        "expectedErrors": [
+          "web-a-502",
+          "linux-nginx-emerg"
+        ],
+        "designedErrors": [
+          "web-a-502"
+        ]
+      },
+      {
+        "id": "app",
+        "purpose": "`curl -fsS http://shop.example/` は `500` で失敗する。`journalctl -u shop` でアプリのログを読み、`/etc/shop/app.env` の `DB_HOST` を直して動かし直す。頁が出れば達成。",
+        "check": {
+          "kind": "http",
+          "url": "http://shop.example/",
+          "status": 200,
+          "contains": "港の店"
+        },
+        "afterward": "200 に戻った。入口の誤りの後ろに、アプリの設定の誤りが隠れていた。設定は動かす時に読むので、動かし直して初めて効く。",
+        "hints": [
+          "アプリの理由はアプリのログにある。",
+          "`sed -i` で名前を置き換え、`systemctl restart shop`。",
+          "`curl -fsS http://shop.example/` `journalctl -u shop -n 5` `sed -i 's/db.old.internal/db.internal/' /etc/shop/app.env` `systemctl restart shop` `curl -fsS http://shop.example/` を打つ。1 つ目の命令は失敗する。"
+        ],
+        "expectedErrors": [
+          "web-a-500"
+        ],
+        "designedErrors": [
+          "web-a-500"
+        ]
+      }
+    ]
+  },
+  "result": {
+    "success": "層をまたいで 2 つの原因を直せた。",
+    "partial": "ヒントを使って直せた。次は、数字から見るログを先に言ってみよう。",
+    "retry": "まだ 200 が返らない。今の数字から、どの層のログを見るかを決めよう。"
+  },
+  "summary": {
+    "points": [
+      "数字で層を推測",
+      "各層のログ",
+      "直したら全体で確かめる"
+    ],
+    "next": [
+      "web.a.03"
+    ],
+    "terms": [
+      "status-code",
+      "reverse-proxy",
+      "log"
+    ]
+  }
+}

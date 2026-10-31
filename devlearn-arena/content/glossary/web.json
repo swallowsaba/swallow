@@ -576,6 +576,34 @@
       "lessons": [
         "web.i.06"
       ]
+    },
+    {
+      "id": "ttfb",
+      "word": "最初の 1 バイトまでの時間",
+      "reading": "さいしょのいちばいとまでのじかん",
+      "plain": "頼みを送ってから返事の始まりが届くまでの時間。",
+      "why": "これが長ければ、サーバの処理（アプリや DB）が遅い。",
+      "related": [
+        "request",
+        "response"
+      ],
+      "lessons": [
+        "web.a.01"
+      ]
+    },
+    {
+      "id": "bearer-token",
+      "word": "Bearer トークン",
+      "reading": "べあらーとーくん",
+      "plain": "持っている人を本人と見なす文字列。`Authorization: Bearer 文字列` の見出しで送る。",
+      "why": "パスワードを毎回送らずに済む。漏れると使われるので、期限を付け、コードに書かない。",
+      "related": [
+        "api",
+        "header"
+      ],
+      "lessons": [
+        "web.a.03"
+      ]
     }
   ]
 }

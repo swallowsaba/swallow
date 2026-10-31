@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 360" font-family="&quot;Noto Sans JP&quot;, sans-serif">
+  <title>トークンを取り、見出しに付けて頼み、期限が切れたら取り直す</title>
+  <defs>
+    <marker id="arrow-gold" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="#f2b632" />
+    </marker>
+  </defs>
+  <g class="el" data-part="get">
+    <rect x="20" y="110" width="132" height="130" rx="10" fill="#1a6fd6" />
+    <text x="86" y="169" text-anchor="middle" font-size="16" font-weight="700" fill="#eef2f6">トークンを取る</text>
+    <text x="86" y="191" text-anchor="middle" font-size="14" fill="#eef2f6">秘密と引き換え</text>
+  </g>
+  <g class="el" data-part="use">
+    <rect x="176" y="110" width="132" height="130" rx="10" fill="#1f7a4d" />
+    <text x="242" y="169" text-anchor="middle" font-size="16" font-weight="700" fill="#eef2f6">見出しに付ける</text>
+    <text x="242" y="191" text-anchor="middle" font-size="14" fill="#eef2f6">Authorization</text>
+  </g>
+  <g class="el" data-part="expire">
+    <rect x="332" y="110" width="132" height="130" rx="10" fill="#c0392b" />
+    <text x="398" y="169" text-anchor="middle" font-size="16" font-weight="700" fill="#eef2f6">期限切れ</text>
+    <text x="398" y="191" text-anchor="middle" font-size="14" fill="#eef2f6">401</text>
+  </g>
+  <g class="el" data-part="again">
+    <rect x="488" y="110" width="132" height="130" rx="10" fill="#f2b632" />
+    <text x="554" y="169" text-anchor="middle" font-size="16" font-weight="700" fill="#0a1424">取り直す</text>
+    <text x="554" y="191" text-anchor="middle" font-size="14" fill="#0a1424">呼び直す</text>
+  </g>
+  <g class="el" data-part="flow">
+    <path d="M152 175 L173 175" fill="none" stroke="#f2b632" stroke-width="2" marker-end="url(#arrow-gold)" />
+    <path d="M308 175 L329 175" fill="none" stroke="#f2b632" stroke-width="2" marker-end="url(#arrow-gold)" />
+    <path d="M464 175 L485 175" fill="none" stroke="#f2b632" stroke-width="2" marker-end="url(#arrow-gold)" />
+  </g>
+  <g class="el" data-part="note">
+    <text x="320" y="340" text-anchor="middle" font-size="14" fill="#eef2f6">トークンはコードに書かず、環境変数か秘密の置き場から読む</text>
+  </g>
+</svg>

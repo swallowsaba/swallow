@@ -217,7 +217,7 @@ lab は複数分野の組み合わせ
 | web.i.04 | 中級 | 性能 | キャッシュ | どこで何が保存されるかを説明し、設定できる | 編 | web.b.05 | net.a.03, db.i.03 | web.a.01 |
 | web.i.05 | 中級 | 安全 | CORS | ブラウザが他のサイトへの通信を止める理由と許可の仕方 | 編 | web.i.01 | sec.b.02, web.i.01 | web.i.06 |
 | web.i.06 | 中級 | 版 | HTTP/2 と HTTP/3 | 違いと利点を説明できる | 端 | web.b.02, net.b.05 | net.b.05, sec.b.06 | web.a.01 |
-| web.a.01 | 上級 | 性能 | 遅い Web を調べる | 遅延の内訳（DNS・接続・TLS・処理・転送）を切り分けられる | 模 | web.i.04, sec.b.06 | mon.i.01, net.a.02 | web.a.02 |
+| web.a.01 | 上級 | 性能 | 遅い Web を調べる | 遅延の内訳（DNS・接続・TLS・処理・転送）を切り分けられる | 端 | web.i.04, sec.b.06 | mon.i.01, net.a.02 | web.a.02 |
 | web.a.02 | 上級 | 障害 | 4xx と 5xx を直す | 症状から Web サーバ・アプリ・後段のどこかを特定できる | 端 | web.i.03, trouble.b.03 | trouble.i.03, mon.i.03 | web.a.03 |
 | web.a.03 | 上級 | API | 認証付き API | トークンを使った API 呼び出しと失敗時の扱い | 端 | web.i.01, sec.b.02 | sec.b.02, sec.i.05 | — |
 

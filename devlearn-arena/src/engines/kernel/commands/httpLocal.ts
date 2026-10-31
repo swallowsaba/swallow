@@ -123,6 +123,25 @@ function serveConfigured(shell: ShellState, env: () => HttpEnv, s: Service, serv
   return withHeaders(plainAnswer(s, req));
 }
 
+/** トークンで守る API の答え（web.a.03） */
+function tokenAnswer(api: NonNullable<Service['tokenApi']>, s: Service, req: LocalRequest): Route {
+  const json = { 'Content-Type': 'application/json' };
+  const p = req.path.split('?')[0] ?? '/';
+  if (p === '/token') {
+    if (req.method !== 'POST') return { status: 405, body: '{"error":"method_not_allowed"}', headers: json };
+    const secret = new URLSearchParams(req.data ?? '').get('client_secret');
+    if (secret !== api.secret) return { status: 401, body: '{"error":"invalid_client"}', headers: json };
+    return { status: 200, body: JSON.stringify({ access_token: api.token, token_type: 'Bearer', expires_in: 3600 }), headers: json };
+  }
+  const denied = (error: string): Route => ({ status: 401, body: `{"error":"${error}"}`, headers: { ...json, 'WWW-Authenticate': `Bearer error="${error === 'missing_token' ? 'invalid_request' : 'invalid_token'}"` } });
+  if (req.authorization === undefined) return denied('missing_token');
+  const token = /^Bearer\s+(\S+)$/.exec(req.authorization)?.[1];
+  if (token === undefined) return denied('invalid_token');
+  if (api.expired.includes(token)) return denied('token_expired');
+  if (token !== api.token) return denied('invalid_token');
+  return { status: 200, body: s.body ?? '{}', headers: json };
+}
+
 /** API の鍵を受ける側の答え: 読み込んだ一覧にある鍵だけを受ける（無い鍵は 401） */
 function keyGuardAnswer(s: Service, req: LocalRequest): Route {
   const key = /^Bearer\s+(\S+)$/i.exec(req.authorization ?? '')?.[1];
@@ -142,6 +161,8 @@ function keyClientAnswer(s: Service, env: () => HttpEnv, req: LocalRequest): Rou
 
 /** 設定を持たないサービスの答え（ログインを覚えるアプリならセッション、routes があれば道ごと、無ければ / で中身） */
 function plainAnswer(s: Service, req: LocalRequest, env?: () => HttpEnv): Route {
+  if (s.tokenApi) return tokenAnswer(s.tokenApi, s, req);
+  if (s.envCheck && s.envValue !== s.envCheck.want) return { status: 500, body: pageOf(500) };
   if (s.keyGuard) return keyGuardAnswer(s, req);
   if (s.keyClient && env) return keyClientAnswer(s, env, req);
   if (s.session && s.cookie) return sessionAnswer(s.session, s.cookie, req);
@@ -286,9 +307,22 @@ function parseCurl(argv: readonly string[]): CurlArgs | string {
 }
 
 /** -w の書式（%{http_code} など） */
-function writeOut(fmt: string, o: Extract<HttpOutcome, { ok: true }>): string {
+function writeOut(fmt: string, o: Extract<HttpOutcome, { ok: true }>, sites: readonly Site[]): string {
   const r = o.response;
+  const t = sites.find((s) => s.host === o.url.host)?.timing ?? { dns: 0.004, connect: 0.003, tls: 0, wait: 0.012, transfer: 0.001 };
+  // time_ は本物と同じく、頼み始めからの累計（TLS の無い頼みの appconnect は 0）
+  const connect = t.dns + t.connect;
+  const app = t.tls > 0 ? connect + t.tls : 0;
+  const start = connect + t.tls + t.wait;
+  const sec = (n: number): string => n.toFixed(6);
   return fmt
+    .replace(/%\{time_namelookup\}/g, sec(t.dns))
+    .replace(/%\{time_connect\}/g, sec(connect))
+    .replace(/%\{time_appconnect\}/g, sec(app))
+    .replace(/%\{time_pretransfer\}/g, sec(connect + t.tls))
+    .replace(/%\{time_starttransfer\}/g, sec(start))
+    .replace(/%\{time_total\}/g, sec(start + t.transfer))
+    .replace(/%\{size_download\}/g, String(t.size ?? r.body.length))
     .replace(/%\{http_code\}|%\{response_code\}/g, String(r.status).padStart(3, '0'))
     .replace(/%\{http_version\}/g, r.version)
     .replace(/%\{content_type\}/g, r.headers['Content-Type'] ?? '')
@@ -386,7 +420,7 @@ export function localCurl(argv: readonly string[], shell: ShellState): CommandRe
     if (a.out === undefined || a.out === '-') stdout += body;
     else if (a.out !== '/dev/null') vfs = writeFile(vfs, normalize(a.out.startsWith('/') ? a.out : `${shell.cwd}/${a.out}`), r.body);
   }
-  if (a.write !== undefined) stdout += writeOut(a.write, last);
+  if (a.write !== undefined) stdout += writeOut(a.write, last, sites);
   if (a.jar !== undefined && jar.length > 0) {
     if (a.jar === '-') stdout += jarText(jar);
     else vfs = writeFile(vfs, fileOf(shell, a.jar), jarText(jar));

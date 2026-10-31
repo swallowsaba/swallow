@@ -1,0 +1,281 @@
+{
+  "id": "web.a.03",
+  "domain": "web",
+  "level": "advanced",
+  "theme": "API",
+  "title": "認証付き API",
+  "goal": "トークンを使った API 呼び出しと失敗時の扱い",
+  "minutes": 18,
+  "prerequisites": [
+    "web.i.01",
+    "sec.b.02"
+  ],
+  "related": [
+    "sec.b.02",
+    "sec.i.05"
+  ],
+  "next": [],
+  "terms": [
+    "token",
+    "api",
+    "service",
+    "permission",
+    "repository",
+    "env-var",
+    "server",
+    "secret-store",
+    "log",
+    "command",
+    "shell-variable",
+    "shell",
+    "app"
+  ],
+  "explain": {
+    "what": "{{term:token}}を見出しに付けて呼ぶ {{term:api}} と、失敗した時の扱い。トークンは期限が切れたら取り直す。",
+    "why": "誰の頼みかを確かめ、許された操作だけを行うため。パスワードを毎回送らずに済む。",
+    "use": "外部{{term:service}}との連携で使う。夜間の処理が、ある日から止まる原因の多くは期限切れ。",
+    "when": "毎晩動かしている注文の取り込みが、今朝 401 で止まっていた。",
+    "figures": [
+      "web-a03-token"
+    ]
+  },
+  "understand": [
+    {
+      "kind": "match",
+      "prompt": "番号と意味を結ぶ。",
+      "pairs": [
+        [
+          "401",
+          "誰か分からない（トークンが無い・切れている）"
+        ],
+        [
+          "403",
+          "誰かは分かるが{{term:permission}}が無い"
+        ]
+      ],
+      "see": "what"
+    },
+    {
+      "kind": "yesno",
+      "prompt": "トークンをコードに直書きしてよい？",
+      "answer": false,
+      "why": "{{term:repository}}に残り、漏れる。{{term:env-var}}や秘密の置き場から読む。",
+      "see": "why"
+    }
+  ],
+  "quiz": [
+    {
+      "id": "q1",
+      "kind": "cause",
+      "prompt": "401 が返った。原因は？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "トークンが無いか期限切れ",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "権限が足りない",
+          "correct": false,
+          "whyNot": "それは 403。"
+        },
+        {
+          "id": "c",
+          "text": "{{term:server}}が止まっている",
+          "correct": false,
+          "whyNot": "答えが返っている。"
+        }
+      ],
+      "explanation": "本文や `WWW-Authenticate` に理由が書いてある。"
+    },
+    {
+      "id": "q2",
+      "kind": "cause",
+      "prompt": "403 が返った。原因は？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "権限が足りない",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "トークンの綴りの誤り",
+          "correct": false,
+          "whyNot": "それなら 401。"
+        },
+        {
+          "id": "c",
+          "text": "期限切れ",
+          "correct": false,
+          "whyNot": "それなら 401。"
+        }
+      ],
+      "explanation": "誰かは分かっている。"
+    },
+    {
+      "id": "q3",
+      "kind": "situation",
+      "prompt": "トークンの置き場所は？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "環境変数や{{term:secret-store}}",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "ソースコード",
+          "correct": false,
+          "whyNot": "履歴に残って漏れる。"
+        },
+        {
+          "id": "c",
+          "text": "{{term:log}}",
+          "correct": false,
+          "whyNot": "ログは多くの人に読まれる。"
+        }
+      ],
+      "explanation": "コードから離して置く。"
+    },
+    {
+      "id": "q4",
+      "kind": "predict",
+      "prompt": "期限切れのトークンで呼ぶと？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "401",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "200 で古い答え",
+          "correct": false,
+          "whyNot": "確かめて断る。"
+        },
+        {
+          "id": "c",
+          "text": "404",
+          "correct": false,
+          "whyNot": "道はある。"
+        }
+      ],
+      "explanation": "取り直して呼び直す。"
+    }
+  ],
+  "practice": {
+    "mode": "terminal",
+    "purpose": "注文の取り込みが止まった。API は `http://api.example/orders`。環境変数は `/home/learner/.env` にある（`API_TOKEN` と `CLIENT_SECRET`）。見出しでトークンを送り、期限切れなら取り直して、`.env` も新しいトークンに替える。",
+    "environment": "linux-basic",
+    "setup": {
+      "hostname": "batch",
+      "sites": [],
+      "files": {
+        "/etc/hosts": "127.0.0.1\tlocalhost api.example\n",
+        "/home/learner/.env": "export API_TOKEN=tk-old-7f3a\nexport CLIENT_SECRET=city-batch-s3\n"
+      },
+      "services": {
+        "api": {
+          "description": "Orders API",
+          "enabled": true,
+          "active": true,
+          "port": 80,
+          "body": "{\"orders\":3}",
+          "tokenApi": {
+            "token": "tk-new-91c2",
+            "expired": [
+              "tk-old-7f3a"
+            ],
+            "secret": "city-batch-s3"
+          }
+        }
+      }
+    },
+    "steps": [
+      {
+        "id": "call",
+        "purpose": "`source /home/learner/.env` で環境変数を読み、`curl -s -H \"Authorization: Bearer $API_TOKEN\" http://api.example/orders` で呼ぶ。本文に `token_expired` が出れば達成。",
+        "check": {
+          "kind": "ran",
+          "uses": [
+            "curl"
+          ],
+          "shows": [
+            "{\"error\":\"token_expired\"}"
+          ]
+        },
+        "afterward": "期限切れと分かった。綴りの誤りなら `invalid_token`、権限の不足なら 403 になる。",
+        "hints": [
+          "`Authorization` の見出しに `Bearer` を付ける。",
+          "`-H` で見出しを足す。",
+          "`source /home/learner/.env` `curl -s -H \"Authorization: Bearer $API_TOKEN\" http://api.example/orders` を打つ。"
+        ],
+        "expectedErrors": [
+          "web-a-401"
+        ]
+      },
+      {
+        "id": "refresh",
+        "purpose": "`curl -s -X POST -d \"client_id=batch\" -d \"client_secret=$CLIENT_SECRET\" http://api.example/token` で取り直し、`jq -r .access_token` で取り出して `API_TOKEN` に入れる。もう一度呼び、`{\"orders\":3}` が出れば達成。",
+        "check": {
+          "kind": "ran",
+          "uses": [
+            "curl"
+          ],
+          "shows": [
+            "{\"orders\":3}"
+          ]
+        },
+        "afterward": "動いた。秘密を画面やコードに書かず、環境変数のまま送れた。",
+        "hints": [
+          "`$( … )` で{{term:command}}の結果を{{term:shell-variable}}に入れる。",
+          "`export API_TOKEN=$(curl … | jq -r .access_token)`。",
+          "`export API_TOKEN=$(curl -s -X POST -d \"client_id=batch\" -d \"client_secret=$CLIENT_SECRET\" http://api.example/token | jq -r .access_token)` `curl -s -H \"Authorization: Bearer $API_TOKEN\" http://api.example/orders` を打つ。"
+        ],
+        "expectedErrors": [
+          "web-a-401",
+          "web-jq-parse"
+        ]
+      },
+      {
+        "id": "save",
+        "purpose": "次の実行でも使えるように、`sed -i` で `/home/learner/.env` の `API_TOKEN` の行を新しいトークンに替える。古いトークンが残っていなければ達成。",
+        "check": {
+          "kind": "fs",
+          "path": "/home/learner/.env",
+          "contains": "API_TOKEN=tk-new-91c2",
+          "lacks": [
+            "tk-old-7f3a"
+          ]
+        },
+        "afterward": "次の実行は新しいトークンで動く。本番では期限が切れる前に取り直す処理を{{term:app}}に持たせる。",
+        "hints": [
+          "`$API_TOKEN` の値を `sed` の中で使う。",
+          "{{term:shell}}の変数を展開するので `\"` で囲む。",
+          "`sed -i \"s/^export API_TOKEN=.*/export API_TOKEN=$API_TOKEN/\" /home/learner/.env` を打つ。"
+        ],
+        "expectedErrors": []
+      }
+    ]
+  },
+  "result": {
+    "success": "安全にトークンを使い、期限切れから戻せた。",
+    "partial": "ヒントを使って戻せた。次は、401 の本文の理由を先に読もう。",
+    "retry": "まだ呼べない。見出しの形と、`$API_TOKEN` の中身を確かめよう。"
+  },
+  "summary": {
+    "points": [
+      "トークンは見出しで送る",
+      "401 と 403 の違い",
+      "トークンを直書きしない"
+    ],
+    "next": [],
+    "terms": [
+      "bearer-token",
+      "env-var",
+      "api"
+    ]
+  }
+}

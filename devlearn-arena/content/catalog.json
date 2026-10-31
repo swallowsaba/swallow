@@ -1616,7 +1616,7 @@
       "title": "遅い Web を調べる",
       "goal": "遅延の内訳（DNS・接続・TLS・処理・転送）を切り分けられる",
       "practice": [
-        "simulation"
+        "terminal"
       ],
       "prerequisites": [
         "web.i.04",

@@ -1,0 +1,54 @@
+{
+  "lesson": "web.a.03",
+  "variants": [
+    {
+      "name": "変数を分けて入れる",
+      "steps": {
+        "call": [
+          ". /home/learner/.env",
+          "curl -i -H \"Authorization: Bearer $API_TOKEN\" http://api.example/orders",
+          "curl -s -H \"Authorization: Bearer $API_TOKEN\" http://api.example/orders"
+        ],
+        "refresh": [
+          "curl -s -X POST -d \"client_id=batch&client_secret=$CLIENT_SECRET\" http://api.example/token",
+          "API_TOKEN=$(curl -s -X POST -d \"client_id=batch&client_secret=$CLIENT_SECRET\" http://api.example/token | jq -r .access_token)",
+          "curl -s -H \"Authorization: Bearer $API_TOKEN\" http://api.example/orders"
+        ],
+        "save": [
+          "sed -i \"1s/.*/export API_TOKEN=$API_TOKEN/\" /home/learner/.env",
+          "grep API_TOKEN /home/learner/.env"
+        ]
+      }
+    },
+    {
+      "name": "-fsS で確かめる",
+      "steps": {
+        "call": [
+          "source /home/learner/.env",
+          "curl -s http://api.example/orders",
+          "curl -fsS -H \"Authorization: Bearer $API_TOKEN\" http://api.example/orders || true",
+          "curl -s -H \"Authorization: Bearer $API_TOKEN\" http://api.example/orders"
+        ],
+        "refresh": [
+          "export API_TOKEN=$(curl -s -d \"client_id=batch\" -d \"client_secret=$CLIENT_SECRET\" http://api.example/token | jq -r .access_token)",
+          "echo $API_TOKEN",
+          "curl -fsS -H \"Authorization: Bearer $API_TOKEN\" http://api.example/orders"
+        ],
+        "save": [
+          "sed -i \"s/tk-old-7f3a/$API_TOKEN/\" /home/learner/.env"
+        ]
+      }
+    }
+  ],
+  "wrong": {
+    "step": "refresh",
+    "why": "期限切れのまま -f で呼ぶ",
+    "input": [
+      "curl -fsS -H \"Authorization: Bearer $API_TOKEN\" http://api.example/orders"
+    ],
+    "retry": [
+      "export API_TOKEN=$(curl -s -X POST -d \"client_id=batch\" -d \"client_secret=$CLIENT_SECRET\" http://api.example/token | jq -r .access_token)",
+      "curl -s -H \"Authorization: Bearer $API_TOKEN\" http://api.example/orders"
+    ]
+  }
+}

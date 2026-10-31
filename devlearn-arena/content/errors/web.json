@@ -382,6 +382,59 @@
         "https",
         "http"
       ]
+    },
+    {
+      "id": "web-a-segment",
+      "match": "答えが合っていない",
+      "meaning": "答えが、測った結果と違う。",
+      "causes": [
+        "合計だけを見た。",
+        "`time_` は累計なので、前の値を引かずに比べた。"
+      ],
+      "hint": "隣り合う 2 つの値を引き算して、区間ごとの長さを比べよう。",
+      "terms": [
+        "ttfb"
+      ]
+    },
+    {
+      "id": "web-a-500",
+      "match": "500 Internal Server Error|returned error: 500",
+      "meaning": "アプリが頼みを受けたが、中で失敗した。入口までは動いている。",
+      "causes": [
+        "アプリの設定が違う。",
+        "設定を直したが、動かし直していない。"
+      ],
+      "hint": "`journalctl -u アプリの名前` でアプリのログを読もう。",
+      "terms": [
+        "log"
+      ],
+      "output": true
+    },
+    {
+      "id": "web-a-502",
+      "match": "returned error: 502",
+      "meaning": "入口の Web サーバは動いているが、後ろのアプリに届かない。",
+      "causes": [
+        "中継先のポートが違う。",
+        "アプリが止まっている。"
+      ],
+      "hint": "`/var/log/nginx/error.log` の `upstream:` と、`ss -ltnp` のポートを比べよう。",
+      "terms": [
+        "reverse-proxy"
+      ]
+    },
+    {
+      "id": "web-a-401",
+      "match": "returned error: 401",
+      "meaning": "誰の頼みか確かめられなかった。トークンが無いか、期限が切れている。",
+      "causes": [
+        "`Bearer` の綴りが違う。",
+        "トークンの期限が切れている。"
+      ],
+      "hint": "`curl -s` で本文の `error` の理由を読もう。",
+      "terms": [
+        "bearer-token"
+      ]
     }
   ]
 }

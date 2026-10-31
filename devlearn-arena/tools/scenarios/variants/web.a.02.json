@@ -1,0 +1,59 @@
+{
+  "lesson": "web.a.02",
+  "variants": [
+    {
+      "name": "ログを grep で読む・動かし直す",
+      "steps": {
+        "proxy": [
+          "curl -i http://shop.example/",
+          "grep upstream /var/log/nginx/error.log",
+          "netstat -tlnp",
+          "sed -i 's/:3000/:8080/' /etc/nginx/conf.d/shop.conf",
+          "nginx -t",
+          "systemctl restart nginx"
+        ],
+        "app": [
+          "curl -i http://shop.example/",
+          "journalctl -u shop --no-pager | grep FATAL",
+          "sed -i 's/^DB_HOST=.*/DB_HOST=db.internal/' /etc/shop/app.env",
+          "cat /etc/shop/app.env",
+          "systemctl restart shop",
+          "curl -i http://shop.example/"
+        ]
+      }
+    },
+    {
+      "name": "行の番号で置き換える",
+      "steps": {
+        "proxy": [
+          "cat /var/log/nginx/error.log",
+          "ss -ltn",
+          "sed -i '5s/3000/8080/' /etc/nginx/conf.d/shop.conf",
+          "nginx -t",
+          "systemctl reload nginx",
+          "curl -s -o /dev/null -w \"%{http_code}\\n\" http://shop.example/"
+        ],
+        "app": [
+          "systemctl status shop",
+          "journalctl -u shop",
+          "sed -i '1s/db.old.internal/db.internal/' /etc/shop/app.env",
+          "systemctl stop shop",
+          "systemctl start shop",
+          "curl http://shop.example/"
+        ]
+      }
+    }
+  ],
+  "wrong": {
+    "step": "app",
+    "why": "設定を直さずに動かし直す",
+    "input": [
+      "systemctl restart shop",
+      "curl -fsS http://shop.example/"
+    ],
+    "retry": [
+      "sed -i 's/db.old.internal/db.internal/' /etc/shop/app.env",
+      "systemctl restart shop"
+    ]
+  }
+}

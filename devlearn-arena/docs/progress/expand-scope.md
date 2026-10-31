@@ -58,7 +58,7 @@
 | 中級 | lab | 終わり（2 本。下の「中級 lab」） |
 | 上級 | linux | 終わり（4 本。下の「上級 linux」） |
 | 上級 | net | 終わり（4 本。下の「上級 net」） |
-| 上級 | web | 未着手 |
+| 上級 | web | 終わり（3 本。下の「上級 web」） |
 | 上級 | sec | 未着手 |
 | 上級 | git | 未着手 |
 | 上級 | cicd | 未着手 |
@@ -294,3 +294,20 @@
 - 振り分け: nginx の `upstream`（`weight`・`down`・`backup`・`ip_hash`・`least_conn`）と `proxy_next_upstream off`。本物と同じ文で断る（`no servers are inside upstream`・`host not found in upstream`）。番は `curl` を打つたびに進む。判定の `http` の `turns`・`seen`
 - IPv6: 口の `ip6`（setup の `addrs6`）。`ip -6 addr`・`ip -6 route`・`ping -6`・`ping6`・`curl -6`・`http://[住所]/`・AAAA の検査（`bad IPv6 address`）。判定の `reach6`・`addr6`。線と経路は 4 の計算を使う（デュアルスタックの網）
 - 網の `curl` の `-o`・`-w`（`%{http_code}`）
+
+### 上級 web（3 本）
+
+| ID | 実戦 | verify-all | verify-free（別解） | verify-wrong |
+|---|---|---|---|---|
+| web.a.01 遅い Web を調べる | 端 | 合格 | 合格（2 通り） | 合格 |
+| web.a.02 4xx と 5xx を直す | 端 | 合格 | 合格（2 通り） | 合格 |
+| web.a.03 認証付き API | 端 | 合格 | 合格（2 通り） | 合格 |
+
+不合格は無かった。
+
+設計を直した物: web.a.01 を「模」から「端」にした（`curl -w` の `time_` という本物の道具がある）。対策は押して選ばず、手順の後に示す。web.a.02・web.a.03 は達成の中身を手順に分けて書いた。`docs/lessons/web.md` と `docs/curriculum.md` の表を先に直した。
+
+模擬環境に足した物（テストを先に書いた。`webAdvanced.test.ts`）:
+- `curl -w` の `%{time_namelookup}`・`%{time_connect}`・`%{time_appconnect}`・`%{time_pretransfer}`・`%{time_starttransfer}`・`%{time_total}`・`%{size_download}`（本物と同じく累計）。setup の `sites` の `timing`
+- サービスの `envCheck`（動かす時に環境のファイルの値を読み、違えば頼みに 500 を返してログに理由を書く）
+- サービスの `tokenApi`（`POST /token` で秘密と引き換えにトークンを渡し、`Authorization: Bearer` を確かめる。無い・綴りの誤り・期限切れは 401）

@@ -78,6 +78,12 @@ export interface Service {
   keyClient?: { envFile: string; name: string; upstream: number };
   /** 読み込んだ鍵 */
   heldKey?: string;
+  /** 動かす時に環境のファイルの値を確かめる（web.a.02）。want と違えば頼みに 500 を返す */
+  envCheck?: { file: string; key: string; want: string; error: string };
+  /** 動かした時に読んだ、確かめる値 */
+  envValue?: string;
+  /** トークンで守る API（web.a.03） */
+  tokenApi?: { token: string; expired: readonly string[]; secret: string };
   /** ログ（journalctl で読む） */
   log: readonly string[];
 }
@@ -228,6 +234,11 @@ export function startService(table: ServiceTable, raw: string, load?: ConfigLoad
   // php.ini が無ければ、PHP と同じく既定の決まりで動く
   if (s.keyGuard) ready = { ...ready, validKeys: readKeys((read ? read(s.keyGuard.file) : null) ?? '') };
   if (s.keyClient) ready = { ...ready, heldKey: readEnvValue((read ? read(s.keyClient.envFile) : null) ?? '', s.keyClient.name) };
+  if (s.envCheck) {
+    const envValue = readEnvValue((read ? read(s.envCheck.file) : null) ?? '', s.envCheck.key);
+    ready = { ...ready, envValue };
+    if (envValue !== s.envCheck.want) served = [...served, { from: `${s.name}[${String(800 + table.tick)}]`, text: s.envCheck.error.replace('${value}', envValue) }];
+  }
   if (s.session) ready = { ...ready, cookie: readSessionIni((read ? read(s.session.ini) : null) ?? '') };
   for (const port of portsOf(ready)) {
     const other = [...table.services.values()].find((o) => o.name !== s.name && o.active === 'active' && portsOf(o).includes(port));
