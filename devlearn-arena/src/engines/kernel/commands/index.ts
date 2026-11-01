@@ -19,6 +19,7 @@ import { jqCommands } from './jq';
 import { kubeadmCommands } from './kubeadm';
 import { kubectlCommands } from './kubectl';
 import { netCommands } from './net';
+import { pythonCommands } from './python';
 import { netLabCommands } from './netBuild';
 import { netToolCommands } from './netTools';
 import { npmCommands } from './npm';
@@ -70,6 +71,7 @@ export function createDefaultRegistry(): CommandRegistry {
     ...sshCommands,
     ...dockerCommands,
     ...podmanCommands,
+    ...pythonCommands,
     ...miscCommands,
   ]);
 }
