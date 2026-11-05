@@ -1,8 +1,6 @@
 ﻿devlearn-arena/CLAUDE.md を最初に全部読め。規則が全てに優先する。
-次に devlearn-arena/RESET-STACK.txt を読み、書いてあるとおりに仕様書を書き換えろ。
-この段ではコードを書くな。仕様書だけだ。
-Cloudflare の無料枠は、公式の情報を調べてから書け。古い知識で書くな。
-docs/progress/reset-stack.md があれば読め。どこまで終わったかの記録だ。記録の続きから進めろ。
+次に devlearn-arena/PIPELINE.txt を読み、書いてあるとおりに配信の流れを作れ。
+Cloudflare の無料枠と設定は、公式の情報を調べてから書け。古い知識で書くな。
+docs/progress/pipeline.md があれば読め。どこまで終わったかの記録だ。記録の続きから進めろ。
 確認を求めず、止まるな。
-仕様書だけでは決められない事が出たら、docs/decisions.md の未決に「問題 → 影響 → 変更案」を書いてコミットし、DECISIONNEEDED とだけ出力して終われ。
-終わったら ALLDONE とだけ出力して終われ。
+【4】を全て満たしたら ALLDONE とだけ出力して終われ。
